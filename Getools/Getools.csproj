@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <FileVersion>21.8.2.1</FileVersion>
+    <Version>21.8.2.1</Version>
+    <Authors>Ben Burns</Authors>
+    <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
+  </ItemGroup>
+
+</Project>

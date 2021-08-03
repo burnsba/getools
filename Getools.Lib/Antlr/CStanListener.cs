@@ -1,0 +1,499 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Antlr4.Runtime.Misc;
+using Getools.Lib;
+using Getools.Lib.Antlr.Gen;
+using Getools.Lib.Game;
+using Getools.Lib.Game.Asset.Stan;
+
+namespace Getools.Lib.Antlr
+{
+    public class CStanListener : CBaseListener
+    {
+        private ParseState _parseState = ParseState.Unset;
+        private int _currentFieldIndex = -1;
+        private bool _ignoreNextAssignment = false;
+
+        private StandFileTile _workingTile = null;
+        private StandFilePointList _workingPointsList = null;
+        private StandFilePoint _workingPoint = null;
+
+        private StandFile _workingResult = null;
+
+        private enum ParseState
+        {
+            // used on extern declarations
+            IgnoreDeclaration = -2,
+
+            Unset = -1,
+
+            DefaultUnknown = 0,
+
+            Header = 1,
+            Tile = 2,
+            Point = 3,
+            Footer = 4,
+        }
+
+        public CStanListener()
+        {
+        }
+
+        /// <summary>
+        /// Gets the result after parsing a stan C file.
+        /// </summary>
+        public StandFile Result { get; private set; }
+
+        /// <summary>
+        /// Entry point to begin parsing.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterCompilationUnit([NotNull] CParser.CompilationUnitContext context)
+        {
+            Result = null;
+            _workingResult = new StandFile();
+        }
+
+        /// <summary>
+        /// Finalize current parsing.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void ExitCompilationUnit([NotNull] CParser.CompilationUnitContext context)
+        {
+            _workingResult.PointLists = _workingResult.PointLists.OrderBy(x => x.OrderId).ToList();
+            _workingResult.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderId).ToList();
+
+            Result = _workingResult;
+        }
+
+        /// <summary>
+        /// Resets parse state to start parsing a declaration.
+        /// Unsets <see cref="_currentFieldIndex"/>.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterDeclaration([NotNull] CParser.DeclarationContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            _parseState = ParseState.Unset;
+            _currentFieldIndex = -1;
+        }
+
+        /// <summary>
+        /// Unsets the current parse state.
+        /// If this is the close of a tile or point, also adds current item to the appropriate result collection.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void ExitDeclaration([NotNull] CParser.DeclarationContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            if (_parseState == ParseState.Tile)
+            {
+                if (!object.ReferenceEquals(null, _workingTile))
+                {
+                    _workingResult.Tiles.Add(_workingTile);
+                }
+
+                _workingTile = null;
+            }
+            else if (_parseState == ParseState.Point)
+            {
+                if (!object.ReferenceEquals(null, _workingPointsList))
+                {
+                    _workingResult.PointLists.Add(_workingPointsList);
+                }
+
+                _workingPointsList = null;
+            }
+
+            _parseState = ParseState.Unset;
+        }
+
+        /// <summary>
+        /// Called once for each single value in an array or struct declaration.
+        /// Sets the next property depending on current parse state.
+        /// Header values are only set once, from the first header found.
+        /// Footer values are only set once, from the first footer found.
+        /// Will add <see cref="_workingPoint"/> to <see cref="_workingPointsList"/> once all values are set.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterAssignmentExpression([NotNull] CParser.AssignmentExpressionContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            if (_ignoreNextAssignment)
+            {
+                _ignoreNextAssignment = false;
+                return;
+            }
+
+            var text = context.GetText();
+
+            // String values include open and closing quotes which are no longer needed.
+            if (text.StartsWith("\"") && text.EndsWith("\""))
+            {
+                text = text.Substring(1, text.Length - 2);
+            }
+
+            int? val = null;
+            int i;
+
+            // assume value will be an int and try to parse it
+            if (ParseHelpers.TryParseInt(text, out i))
+            {
+                val = i;
+            }
+
+            if (_parseState == ParseState.Header)
+            {
+                // header
+                if (object.ReferenceEquals(null, _workingResult.Header))
+                {
+                    _workingResult.Header = new StandFileHeader();
+                }
+
+                switch (_currentFieldIndex)
+                {
+                    case -1:
+                    case 0:
+                        _workingResult.Header.Unknown1 = val;
+                        _currentFieldIndex = 1;
+                        break;
+
+                    case 1:
+                        _workingResult.Header.FirstTileOffset = val;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 2:
+                        _workingResult.Header.Unknown2 = val;
+                        _currentFieldIndex++;
+                        break;
+                }
+            }
+            else if (_parseState == ParseState.Tile)
+            {
+                // tile
+                if (object.ReferenceEquals(null, _workingTile))
+                {
+                    _workingTile = new StandFileTile();
+                }
+
+                if (!val.HasValue)
+                {
+                    throw new InvalidOperationException("Tile does not allow nulls");
+                }
+
+                switch (_currentFieldIndex)
+                {
+                    case -1:
+                    case 0:
+                        _workingTile.InternalName = val.Value;
+                        _currentFieldIndex = 1;
+                        break;
+
+                    case 1:
+                        _workingTile.Room = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 2:
+                        _workingTile.Flags = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 3:
+                        _workingTile.R = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 4:
+                        _workingTile.G = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 5:
+                        _workingTile.B = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 6:
+                        _workingTile.PointCount = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 7:
+                        _workingTile.HeaderC = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 8:
+                        _workingTile.HeaderD = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 9:
+                        _workingTile.HeaderE = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+                }
+            }
+            else if (_parseState == ParseState.Point)
+            {
+                // point
+
+                if (object.ReferenceEquals(null, _workingPointsList))
+                {
+                    _workingPointsList = new StandFilePointList();
+                }
+
+                if (!val.HasValue)
+                {
+                    throw new InvalidOperationException("Point does not allow nulls");
+                }
+
+                switch (_currentFieldIndex)
+                {
+                    case -1:
+                    case 0:
+                        _workingPoint = new StandFilePoint();
+                        _workingPoint.X = (short)val.Value;
+                        _currentFieldIndex = 1;
+                        break;
+
+                    case 1:
+                        _workingPoint.Y = (short)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 2:
+                        _workingPoint.Z = (short)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 3:
+                        _workingPoint.Link = (short)val.Value;
+                        // This declaration is an inline array listing, so need to reset the working point
+                        // for the next value in the array.
+                        _currentFieldIndex = 0;
+                        _workingPointsList.Points.Add(_workingPoint);
+                        break;
+                }
+            }
+            else if (_parseState == ParseState.Footer)
+            {
+                // footer
+                if (object.ReferenceEquals(null, _workingResult.Footer))
+                {
+                    _workingResult.Footer = new StandFileFooter();
+                }
+
+                switch (_currentFieldIndex)
+                {
+                    case -1:
+                    case 0:
+                        _workingResult.Footer.Unknown1 = val;
+                        _currentFieldIndex = 1;
+                        break;
+
+                    case 1:
+                        _workingResult.Footer.Unknown2 = val;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 2:
+                        _workingResult.Footer.C = text;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 3:
+                        _workingResult.Footer.Unknown3 = val;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 4:
+                        _workingResult.Footer.Unknown4 = val;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 5:
+                        _workingResult.Footer.Unknown5 = val;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 6:
+                        _workingResult.Footer.Unknown5 = val;
+                        _currentFieldIndex++;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Only used to flag extern declarations to be ignored.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterStorageClassSpecifier([NotNull] CParser.StorageClassSpecifierContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            var text = context.GetText();
+
+            if (text == "extern")
+            {
+                _parseState = ParseState.IgnoreDeclaration;
+                _currentFieldIndex = -1;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Type specifier determines the parse state, and how properties are set in <see cref="EnterAssignmentExpression"/>.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterTypeSpecifier([NotNull] CParser.TypeSpecifierContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            var text = context.GetText();
+
+            if (_parseState == ParseState.Unset)
+            {
+                if (text == Config.Stan.HeaderCTypeName)
+                {
+                    _parseState = ParseState.Header;
+                }
+                else if (text == Config.Stan.TileCTypeName)
+                {
+                    _parseState = ParseState.Tile;
+                }
+                else if (text == Config.Stan.PointCTypeName)
+                {
+                    _parseState = ParseState.Point;
+                }
+                else if (text == Config.Stan.FooterCTypeName)
+                {
+                    _parseState = ParseState.Footer;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Declarator contains the name and optional array length.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterDeclarator([NotNull] CParser.DeclaratorContext context)
+        {
+            Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            var text = context.GetText();
+
+            if (_parseState == ParseState.Header)
+            {
+                if (object.ReferenceEquals(null, _workingResult.Header))
+                {
+                    _workingResult.Header = new StandFileHeader();
+                }
+
+                _workingResult.Header.Name = text;
+            }
+            else if (_parseState == ParseState.Tile)
+            {
+                if (object.ReferenceEquals(null, _workingTile))
+                {
+                    _workingTile = new StandFileTile();
+                }
+
+                _workingTile.Name = text;
+
+                int i = SplitToOrderId(text, 16);
+                if (i > -1)
+                {
+                    _workingTile.OrderId = i;
+                }
+            }
+            else if (_parseState == ParseState.Point)
+            {
+                if (object.ReferenceEquals(null, _workingPointsList))
+                {
+                    _workingPointsList = new StandFilePointList();
+                }
+
+                // check if this is an array declaration
+                var openBracket = text.IndexOf('[');
+                var closeBracket = text.IndexOf(']');
+                int i;
+
+                if (openBracket > -1 && closeBracket > (openBracket + 1))
+                {
+                    // calculate array length first.
+                    string bracketText = text.Substring(openBracket + 1, closeBracket - openBracket - 1);
+                    if (ParseHelpers.TryParseInt(bracketText, out i))
+                    {
+                        _workingPointsList.DeclaredLength = i;
+                    }
+
+                    // Now truncate array declaration text to get just the name
+                    text = text.Substring(0, openBracket);
+                    _ignoreNextAssignment = true;
+                }
+
+                _workingPointsList.Name = text;
+
+                i = SplitToOrderId(text, 16);
+                if (i > -1)
+                {
+                    _workingPointsList.OrderId = i;
+                }
+            }
+            else if (_parseState == ParseState.Footer)
+            {
+                if (object.ReferenceEquals(null, _workingResult.Footer))
+                {
+                    _workingResult.Footer = new StandFileFooter();
+                }
+
+                _workingResult.Footer.Name = text;
+            }
+        }
+
+        /// <summary>
+        /// Initializer and assignment are both called for assignments, but initializer
+        /// is called once per struct instead of starting with the first value.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void EnterInitializer([NotNull] CParser.InitializerContext context)
+        {
+            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+        }
+
+        
+
+        /// <summary>
+        /// Tiles and points in the stan .c file are named according to the order
+        /// they are listed in the file, e.g., "tile_0", "tile_1", etc. This splits
+        /// text on the first underscore and parses the remaining text and
+        /// returns the value.
+        /// </summary>
+        /// <param name="s">Name of variable.</param>
+        /// <param name="numberBase">Base to convert number as.</param>
+        /// <returns>Parsed number, or -1 if unsuccessful.</returns>
+        public static int SplitToOrderId(string s, int numberBase)
+        {
+            int result;
+            var underscore = s.IndexOf('_');
+            if (underscore > 1 && (underscore + 1) < s.Length)
+            {
+                string text = s.Substring(underscore + 1);
+                result = Convert.ToInt32(text, numberBase);
+                return result;
+            }
+
+            return -1;
+        }
+    }
+}

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <FileVersion>21.8.2.1</FileVersion>
+    <Version>21.8.2.1</Version>
+    <Authors>Ben Burns</Authors>
+    <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="test.c" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Antlr\Gen\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+  </ItemGroup>
+
+</Project>
