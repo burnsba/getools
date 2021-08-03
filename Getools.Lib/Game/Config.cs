@@ -23,7 +23,7 @@ namespace Getools.Lib.Game
         {
             public static List<string> IncludeHeaders = new List<string>()
             {
-                "baselib.h",
+                "ultra64.h",
                 "stan.h",
             };
 
@@ -31,6 +31,10 @@ namespace Getools.Lib.Game
             public const string TileCTypeName = "StandFileTile";
             public const string PointCTypeName = "StandFilePoint";
             public const string FooterCTypeName = "StandFileFooter";
+
+            public const string DefaultDeclarationName_StandFileTile = "tile";
+            public const string DefaultDeclarationName_StandFilePoint = "points";
+            public const string DefaultDeclarationName_StandFileFooter = "footer";
         }
     }
 }

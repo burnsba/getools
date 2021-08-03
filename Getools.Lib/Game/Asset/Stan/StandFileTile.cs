@@ -92,13 +92,62 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sb.AppendLine($"{prefix}{Config.Stan.TileCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{InternalName:x6}, 0x{Room:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{Flags:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{R:x2}, 0x{G:x2}, 0x{B:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{PointCount:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{HeaderC:x2}, 0x{HeaderD:x2}, 0x{HeaderE:x2}");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{Flags:x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{R:x1}, 0x{G:x1}, 0x{B:x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{HeaderC:x1}, 0x{HeaderD:x1}, 0x{HeaderE:x1}");
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        public static StandFileTile ReadFromBinFile(BinaryReader br, int tileIndex)
+        {
+            var result = new StandFileTile();
+
+            Byte b;
+
+            b = br.ReadByte();
+            result.InternalName = b << 16;
+            b = br.ReadByte();
+            result.InternalName |= b << 8;
+            b = br.ReadByte();
+            result.InternalName |= b;
+
+            result.Room = br.ReadByte();
+
+            // "Tile beginning with room 0 is the true way the file format ends, engine does not check for unstric string"
+            if (result.Room == 0)
+            {
+                br.BaseStream.Seek(-4, SeekOrigin.Current);
+                throw new Error.ExpectedStreamEndException();
+            }
+
+            b = br.ReadByte();
+            result.Flags = (byte)((b >> 4) & 0xf);
+            result.R = (byte)((b) & 0xf);
+
+            b = br.ReadByte();
+            result.G = (byte)((b >> 4) & 0xf);
+            result.B = (byte)((b) & 0xf);
+
+            b = br.ReadByte();
+            result.PointCount = (byte)((b >> 4) & 0xf);
+            result.HeaderC = (byte)((b) & 0xf);
+
+            if (result.PointCount < 1)
+            {
+                throw new Exception("Tile is defined with zero points");
+            }
+
+            b = br.ReadByte();
+            result.HeaderD = (byte)((b >> 4) & 0xf);
+            result.HeaderE = (byte)((b) & 0xf);
+
+            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFileTile}_{tileIndex:X}";
+            result.OrderId = tileIndex;
+
+            return result;
         }
     }
 }

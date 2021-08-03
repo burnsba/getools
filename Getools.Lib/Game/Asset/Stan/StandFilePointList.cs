@@ -42,11 +42,31 @@ namespace Getools.Lib.Game.Asset.Stan
                 sb.AppendLine(p.ToCInlineDeclaration(Config.DefaultIndent) + ",");
             }
 
-            sb.AppendLine(Points.Last().ToCInlineDeclaration(Config.DefaultIndent));
+            if (Points.Any())
+            {
+                sb.AppendLine(Points.Last().ToCInlineDeclaration(Config.DefaultIndent));
+            }
 
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        public static StandFilePointList ReadFromBinFile(BinaryReader br, int tileIndex, int pointsCount)
+        {
+            var result = new StandFilePointList();
+
+            for (int i=0; i<pointsCount; i++)
+            {
+                var point = StandFilePoint.ReadFromBinFile(br);
+                result.Points.Add(point);
+            }
+
+            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFilePoint}_{tileIndex:X}";
+            result.OrderId = tileIndex;
+            result.DeclaredLength = pointsCount;
+
+            return result;
         }
     }
 }

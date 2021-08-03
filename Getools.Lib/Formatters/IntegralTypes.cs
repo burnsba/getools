@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Getools.Lib.Formatters
@@ -15,6 +16,13 @@ namespace Getools.Lib.Formatters
             }
 
             return "NULL";
+        }
+
+        public static string ToCInlineByteArray(IEnumerable<byte> bytes)
+        {
+            var byteString = string.Join(", ", bytes.Select(x => "0x" + x.ToString("x2")));
+
+            return "{" + byteString + "}";
         }
     }
 }

@@ -156,23 +156,31 @@ namespace Getools.Lib.Antlr
                     _workingResult.Header = new StandFileHeader();
                 }
 
-                switch (_currentFieldIndex)
+                if (_currentFieldIndex == -1 || _currentFieldIndex == 0)
                 {
-                    case -1:
-                    case 0:
-                        _workingResult.Header.Unknown1 = val;
-                        _currentFieldIndex = 1;
-                        break;
-
-                    case 1:
-                        _workingResult.Header.FirstTileOffset = val;
+                    _workingResult.Header.Unknown1 = val;
+                    _currentFieldIndex = 1;
+                }
+                else if (_currentFieldIndex == 1)
+                {
+                    _workingResult.Header.FirstTileOffset = val.Value;
+                    _currentFieldIndex++;
+                }
+                else if (_currentFieldIndex >= 2)
+                {
+                    if (val == null)
+                    {
+                        // convert NULL pointer to bytes
+                        _workingResult.Header.UnknownHeaderData.Add(0);
+                        _workingResult.Header.UnknownHeaderData.Add(0);
+                        _workingResult.Header.UnknownHeaderData.Add(0);
+                        _workingResult.Header.UnknownHeaderData.Add(0);
+                    }
+                    else
+                    {
+                        _workingResult.Header.UnknownHeaderData.Add((byte)val.Value);
                         _currentFieldIndex++;
-                        break;
-
-                    case 2:
-                        _workingResult.Header.Unknown2 = val;
-                        _currentFieldIndex++;
-                        break;
+                    }
                 }
             }
             else if (_parseState == ParseState.Tile)
@@ -470,8 +478,6 @@ namespace Getools.Lib.Antlr
         {
             //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
         }
-
-        
 
         /// <summary>
         /// Tiles and points in the stan .c file are named according to the order

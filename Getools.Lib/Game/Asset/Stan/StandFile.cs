@@ -118,5 +118,36 @@ namespace Getools.Lib.Game.Asset.Stan
 
             Footer.AppendToBinaryStream(bw);
         }
+
+        public static StandFile ReadFromBinFile(BinaryReader br, string name)
+        {
+            var result = new StandFile();
+
+            result.Header = StandFileHeader.ReadFromBinFile(br, name);
+
+            int tileIndex = 0;
+            int safety = UInt16.MaxValue + 1;
+
+            try
+            {
+                while (tileIndex < safety)
+                {
+                    var tile = StandFileTile.ReadFromBinFile(br, tileIndex);
+                    var pointsList = StandFilePointList.ReadFromBinFile(br, tileIndex, tile.PointCount);
+
+                    result.Tiles.Add(tile);
+                    result.PointLists.Add(pointsList);
+
+                    tileIndex++;
+                }
+            }
+            catch (Error.ExpectedStreamEndException)
+            {
+            }
+
+            result.Footer = StandFileFooter.ReadFromBinFile(br);
+
+            return result;
+        }
     }
 }

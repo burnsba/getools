@@ -9,8 +9,8 @@ namespace Getools.Lib.Game.Asset.Stan
     public class StandFileHeader
     {
         public int? Unknown1 { get; set; }
-        public int? FirstTileOffset { get; set; }
-        public int? Unknown2 { get; set; }
+        public int FirstTileOffset { get; set; }
+        public List<Byte> UnknownHeaderData { get; set; } = new List<byte>();
 
         public string Name { get; set; }
 
@@ -26,7 +26,7 @@ namespace Getools.Lib.Game.Asset.Stan
             sb.AppendLine($"{prefix}{Config.Stan.HeaderCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(FirstTileOffset)},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown2)}");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCInlineByteArray(UnknownHeaderData)}");
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
@@ -34,7 +34,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
         public byte[] ToByteArray()
         {
-            var results = new byte[Config.TargetPointerSize * 3];
+            var results = new byte[4 + 4 + UnknownHeaderData.Count];
 
             int index = 0;
 
@@ -44,8 +44,8 @@ namespace Getools.Lib.Game.Asset.Stan
             BitUtility.InsertPointer32Big(results, index, FirstTileOffset);
             index += Config.TargetPointerSize;
 
-            BitUtility.InsertPointer32Big(results, index, Unknown2);
-            index += Config.TargetPointerSize;
+            Array.Copy(UnknownHeaderData.ToArray(), 0, results, index, UnknownHeaderData.Count);
+            index += UnknownHeaderData.Count;
 
             return results;
         }
@@ -54,6 +54,34 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var bytes = ToByteArray();
             stream.Write(bytes);
+        }
+
+        public static StandFileHeader ReadFromBinFile(BinaryReader br, string name)
+        {
+            var result = new StandFileHeader();
+
+            result.Unknown1 = br.ReadInt32();
+            if (result.Unknown1 == 0)
+            {
+                result.Unknown1 = null;
+            }
+
+            result.FirstTileOffset = (int)(BitUtility.Swap((uint)br.ReadInt32()));
+
+            var remaining = result.FirstTileOffset - br.BaseStream.Position;
+            if (remaining < 0)
+            {
+                throw new Exception($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
+            }
+
+            for (int i=0; i<remaining; i++)
+            {
+                result.UnknownHeaderData.Add(br.ReadByte());
+            }
+
+            result.Name = name;
+
+            return result;
         }
     }
 }

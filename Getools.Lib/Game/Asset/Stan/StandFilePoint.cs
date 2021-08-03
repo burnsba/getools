@@ -36,5 +36,26 @@ namespace Getools.Lib.Game.Asset.Stan
             var bytes = ToByteArray();
             stream.Write(bytes);
         }
+
+        public static StandFilePoint ReadFromBinFile(BinaryReader br)
+        {
+            var result = new StandFilePoint();
+
+            short s;
+
+            s = br.ReadInt16();
+            result.X = BitUtility.Swap(s);
+
+            s = br.ReadInt16();
+            result.Y = BitUtility.Swap(s);
+
+            s = br.ReadInt16();
+            result.Z = BitUtility.Swap(s);
+
+            s = br.ReadInt16();
+            result.Link = BitUtility.Swap(s);
+
+            return result;
+        }
     }
 }

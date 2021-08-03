@@ -82,5 +82,16 @@ namespace Getools.Lib
             arr[index + 1] = (byte)(value & 0xff);
             arr[index + 0] = (byte)((value >> 8) & 0xff);
         }
+
+        public static short Swap(short s)
+        {
+            return (short)(((s & 0xff) << 8) | ((s & 0xff00) >> 8));
+        }
+
+        public static UInt32 Swap(UInt32 value)
+        {
+            return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 |
+                (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24;
+        }
     }
 }
