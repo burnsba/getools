@@ -9,9 +9,13 @@ namespace Getools.Lib.Game.Asset.Stan
 {
     public class StandFileFooter
     {
+        public StandFileFooter()
+        {
+        }
+
         public int? Unknown1 { get; set; }
         public int? Unknown2 { get; set; }
-        public string C { get; set; }
+        public string C { get; set; } = "unstric";
         public int? Unknown3 { get; set; }
         public int? Unknown4 { get; set; }
         public int? Unknown5 { get; set; }
@@ -95,13 +99,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        public void AppendToBinaryStream(BinaryWriter stream)
+        internal void AppendToBinaryStream(BinaryWriter stream)
         {
             var bytes = ToByteArray((int)stream.BaseStream.Position);
             stream.Write(bytes);
         }
 
-        public static StandFileFooter ReadFromBinFile(BinaryReader br)
+        internal static StandFileFooter ReadFromBinFile(BinaryReader br)
         {
             var result = new StandFileFooter();
 
@@ -180,6 +184,12 @@ namespace Getools.Lib.Game.Asset.Stan
             result.Name = $"{Config.Stan.DefaultDeclarationName_StandFileFooter}";
 
             return result;
+        }
+
+        internal static StandFileFooter ReadFromBetaBinFile(BinaryReader br)
+        {
+            // footer is the same here.
+            return StandFileFooter.ReadFromBinFile(br);
         }
     }
 }

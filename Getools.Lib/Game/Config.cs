@@ -27,13 +27,32 @@ namespace Getools.Lib.Game
                 "stan.h",
             };
 
+            public static List<DataFormats> SupportedInputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.Json,
+                DataFormats.BetaJson,
+                DataFormats.Bin,
+                DataFormats.BetaBin,
+            };
+
+            public static List<DataFormats> SupportedOutputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.BetaC,
+                DataFormats.Json,
+                DataFormats.BetaJson,
+                DataFormats.Bin,
+                DataFormats.BetaBin,
+            };
+
             public const string HeaderCTypeName = "StandFileHeader";
             public const string TileCTypeName = "StandFileTile";
             public const string PointCTypeName = "StandFilePoint";
             public const string FooterCTypeName = "StandFileFooter";
 
-            public const string DefaultDeclarationName_StandFileTile = "tile";
-            public const string DefaultDeclarationName_StandFilePoint = "points";
+            //public const string DefaultDeclarationName_StandFileTile = "tile";
+            //public const string DefaultDeclarationName_StandFilePoint = "points";
             public const string DefaultDeclarationName_StandFileFooter = "footer";
         }
     }

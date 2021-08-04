@@ -8,6 +8,10 @@ namespace Getools.Lib.Game.Asset.Stan
 {
     public class StandFileHeader
     {
+        public StandFileHeader()
+        {
+        }
+
         public int? Unknown1 { get; set; }
         public int FirstTileOffset { get; set; }
         public List<Byte> UnknownHeaderData { get; set; } = new List<byte>();
@@ -50,13 +54,41 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        public void AppendToBinaryStream(BinaryWriter stream)
+        internal void AppendToBinaryStream(BinaryWriter stream)
         {
             var bytes = ToByteArray();
             stream.Write(bytes);
         }
 
-        public static StandFileHeader ReadFromBinFile(BinaryReader br, string name)
+        internal static StandFileHeader ReadFromBinFile(BinaryReader br, string name)
+        {
+            var result = new StandFileHeader();
+
+            result.Unknown1 = br.ReadInt32();
+            if (result.Unknown1 == 0)
+            {
+                result.Unknown1 = null;
+            }
+
+            result.FirstTileOffset = (int)(BitUtility.Swap((uint)br.ReadInt32()));
+
+            var remaining = result.FirstTileOffset - br.BaseStream.Position;
+            if (remaining < 0)
+            {
+                throw new Exception($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
+            }
+
+            for (int i=0; i<remaining; i++)
+            {
+                result.UnknownHeaderData.Add(br.ReadByte());
+            }
+
+            result.Name = name;
+
+            return result;
+        }
+
+        internal static StandFileHeader ReadFromBetaBinFile(BinaryReader br, string name)
         {
             var result = new StandFileHeader();
 

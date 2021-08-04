@@ -1,72 +1,89 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.IO;
+//using System.Linq;
+//using System.Text;
 
-namespace Getools.Lib.Game.Asset.Stan
-{
-    public class StandFilePointList
-    {
-        public List<StandFilePoint> Points { get; set; } = new List<StandFilePoint>();
+//namespace Getools.Lib.Game.Asset.Stan
+//{
+//    public class StandFilePointList
+//    {
+//        public List<StandTilePoint> Points { get; set; } = new List<StandTilePoint>();
 
-        public string Name { get; set; }
-        public int DeclaredLength { get; set; }
+//        public string Name { get; set; }
+//        public int DeclaredLength { get; set; }
 
-        public int OrderId { get; set; }
+//        public int OrderId { get; set; }
 
-        public override string ToString()
-        {
-            return Name;
-        }
+//        public override string ToString()
+//        {
+//            return Name;
+//        }
 
-        public void AppendToBinaryStream(BinaryWriter stream)
-        {
-            foreach (var p in Points)
-            {
-                p.AppendToBinaryStream(stream);
-            }
-        }
+//        public void AppendToBinaryStream(BinaryWriter stream)
+//        {
+//            foreach (var p in Points)
+//            {
+//                p.AppendToBinaryStream(stream);
+//            }
+//        }
 
-        public string ToCDeclaration(string prefix = "")
-        {
-            var sb = new StringBuilder();
-            int i;
-            int numberPoints = Points.Count();
+//        public string ToCDeclaration(string prefix = "")
+//        {
+//            var sb = new StringBuilder();
+//            int i;
+//            int numberPoints = Points.Count();
 
-            sb.AppendLine($"{prefix}{Config.Stan.PointCTypeName} {Name}[{numberPoints}] = {{");
+//            sb.AppendLine($"{prefix}{Config.Stan.PointCTypeName} {Name}[{numberPoints}] = {{");
 
-            for (i = 0; i < numberPoints - 1; i++)
-            {
-                var p = Points[i];
-                sb.AppendLine(p.ToCInlineDeclaration(Config.DefaultIndent) + ",");
-            }
+//            for (i = 0; i < numberPoints - 1; i++)
+//            {
+//                var p = Points[i];
+//                sb.AppendLine(p.ToCInlineDeclaration(Config.DefaultIndent) + ",");
+//            }
 
-            if (Points.Any())
-            {
-                sb.AppendLine(Points.Last().ToCInlineDeclaration(Config.DefaultIndent));
-            }
+//            if (Points.Any())
+//            {
+//                sb.AppendLine(Points.Last().ToCInlineDeclaration(Config.DefaultIndent));
+//            }
 
-            sb.AppendLine($"{prefix}}};");
+//            sb.AppendLine($"{prefix}}};");
 
-            return sb.ToString();
-        }
+//            return sb.ToString();
+//        }
 
-        public static StandFilePointList ReadFromBinFile(BinaryReader br, int tileIndex, int pointsCount)
-        {
-            var result = new StandFilePointList();
+//        public static StandFilePointList ReadFromBinFile(BinaryReader br, int tileIndex, int pointsCount)
+//        {
+//            var result = new StandFilePointList();
 
-            for (int i=0; i<pointsCount; i++)
-            {
-                var point = StandFilePoint.ReadFromBinFile(br);
-                result.Points.Add(point);
-            }
+//            for (int i=0; i<pointsCount; i++)
+//            {
+//                var point = StandTilePoint.ReadFromBinFile(br);
+//                result.Points.Add(point);
+//            }
 
-            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFilePoint}_{tileIndex:X}";
-            result.OrderId = tileIndex;
-            result.DeclaredLength = pointsCount;
+//            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFilePoint}_{tileIndex:X}";
+//            result.OrderId = tileIndex;
+//            result.DeclaredLength = pointsCount;
 
-            return result;
-        }
-    }
-}
+//            return result;
+//        }
+
+//        public static StandFilePointList ReadFromBetaBinFile(BinaryReader br, int tileIndex, int pointsCount)
+//        {
+//            var result = new StandFilePointList();
+
+//            for (int i=0; i<pointsCount; i++)
+//            {
+//                var point = StandTilePoint.ReadFromBetaBinFile(br);
+//                result.Points.Add(point);
+//            }
+
+//            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFilePoint}_{tileIndex:X}";
+//            result.OrderId = tileIndex;
+//            result.DeclaredLength = pointsCount;
+
+//            return result;
+//        }
+//    }
+//}
