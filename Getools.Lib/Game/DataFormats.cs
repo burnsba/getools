@@ -32,13 +32,8 @@ namespace Getools.Lib.Game
         BetaBin,
 
         /// <summary>
-        /// Text JSON file, using current struct definitions.
+        /// Text JSON file. Includes all known information.
         /// </summary>
         Json,
-
-        /// <summary>
-        /// Text JSON file, using beta struct definitions.
-        /// </summary>
-        BetaJson,
     }
 }

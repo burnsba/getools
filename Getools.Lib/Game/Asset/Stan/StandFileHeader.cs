@@ -29,11 +29,17 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sb.AppendLine($"{prefix}{Config.Stan.HeaderCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(FirstTileOffset)},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{FirstTileOffset:x8},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCInlineByteArray(UnknownHeaderData)}");
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        public string ToBetaCDeclaration(string prefix = "")
+        {
+            // no change for beta
+            return ToCDeclaration(prefix);
         }
 
         public byte[] ToByteArray()
@@ -58,6 +64,12 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var bytes = ToByteArray();
             stream.Write(bytes);
+        }
+
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            // no changes for beta
+            AppendToBinaryStream(stream);
         }
 
         internal static StandFileHeader ReadFromBinFile(BinaryReader br, string name)

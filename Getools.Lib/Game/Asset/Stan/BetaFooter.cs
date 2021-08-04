@@ -9,6 +9,9 @@ namespace Getools.Lib.Game.Asset.Stan
 {
     public class BetaFooter
     {
+        // includes terminating zero
+        public const int PointStringLength = 8;
+
         public BetaFooter()
         {
         }
@@ -18,7 +21,71 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public List<String> BetaPointList { get; set; } = new List<string>();
 
-        public static BetaFooter ReadFromBetaBinFile(BinaryReader br)
+        public string ToBetaCDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            int count = BetaPointList.Count;
+
+            if (count < 1)
+            {
+                return string.Empty;
+            }
+
+            sb.AppendLine($"{prefix}{Config.Stan.BetaFooterCTypeName} {Config.Stan.DefaultDeclarationName_BetaFooter}[{count}][{PointStringLength}] = {{");
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                var p = BetaPointList[i];
+                sb.AppendLine(Config.DefaultIndent + Formatters.IntegralTypes.StringToCInlineFixedLengthCharArray(p, PointStringLength) + ",");
+            }
+
+            if (BetaPointList.Any())
+            {
+                var p = BetaPointList.Last();
+                sb.AppendLine(Config.DefaultIndent + Formatters.IntegralTypes.StringToCInlineFixedLengthCharArray(p, PointStringLength));
+            }
+
+            sb.AppendLine($"{prefix}}};");
+
+            return sb.ToString();
+        }
+
+        public byte[] ToBetaByteArray()
+        {
+            bool appendEmpty = false;
+            var pointsCount = BetaPointList.Count();
+
+            // only have one example, so not sure if there is supposed to be a null entry at
+            // the end, or if it's supposed to pad to a multiple of 16.
+            if ((pointsCount & 0x1) > 0)
+            {
+                appendEmpty = true;
+            }
+
+            var allocCount = pointsCount + (appendEmpty ? 1 : 0);
+
+            var results = new byte[allocCount * PointStringLength];
+
+            int index = 0;
+            foreach (var p in BetaPointList)
+            {
+                string s = (p.Length >= PointStringLength) ? p.Substring(0, PointStringLength - 1) : p;
+                Array.Copy(System.Text.Encoding.ASCII.GetBytes(s), 0, results, index, s.Length);
+
+                index += PointStringLength;
+            }
+
+            return results;
+        }
+
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
+            stream.Write(bytes);
+        }
+
+        internal static BetaFooter ReadFromBetaBinFile(BinaryReader br)
         {
             var result = new BetaFooter();
 
@@ -52,6 +119,8 @@ namespace Getools.Lib.Game.Asset.Stan
                 {
                     throw new Exception($"Error reading stan, beta point name exceeded buffer length. Stream positiion: {position}");
                 }
+
+                position++;
             }
 
             if (buffer[0] > 0)

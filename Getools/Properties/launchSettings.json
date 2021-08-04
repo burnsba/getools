@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Getools": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "convert_stan --input-file=\"Tbg_depo_all_p_stanZ.bin\" --input-format=\"bin\" --output-format=\"c\" --output-file=\"out.c\""
     }
   }
 }

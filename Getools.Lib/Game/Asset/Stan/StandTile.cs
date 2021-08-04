@@ -123,9 +123,88 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        public void AppendToBinaryStream(BinaryWriter stream)
+        public string ToCInlineDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex}*/");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount & 0xf},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(HeaderC & 0xf):x1}, 0x{(HeaderD & 0xf):x1}, 0x{(HeaderE & 0xf):x1},");
+
+            // begin points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
+
+            string indent = Config.DefaultIndent + Config.DefaultIndent;
+
+            for (int i=0; i<Points.Count - 1; i++)
+            {
+                var p = Points[i];
+                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent) + ",");
+            }
+
+            if (Points.Any())
+            {
+                var p = Points.Last();
+                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent));
+            }
+
+            // close points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+
+            sb.Append($"{prefix}}}");
+
+            return sb.ToString();
+        }
+
+        public string ToBetaCInlineDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex}*/");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{HeaderC:x2}, 0x{HeaderD:x2}, 0x{HeaderE:x2},");
+
+            // begin points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
+
+            string indent = Config.DefaultIndent + Config.DefaultIndent;
+
+            for (int i = 0; i < Points.Count - 1; i++)
+            {
+                var p = Points[i];
+                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent) + ",");
+            }
+
+            if (Points.Any())
+            {
+                var p = Points.Last();
+                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent));
+            }
+
+            // close points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+
+            sb.Append($"{prefix}}}");
+
+            return sb.ToString();
+        }
+
+        internal void AppendToBinaryStream(BinaryWriter stream)
         {
             var bytes = ToByteArray();
+            stream.Write(bytes);
+        }
+
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
             stream.Write(bytes);
         }
 
@@ -200,8 +279,8 @@ namespace Getools.Lib.Game.Asset.Stan
 
             result.Room = br.ReadByte();
 
-            // "Tile beginning with room 0 is the true way the file format ends, engine does not check for unstric string"
-            if (result.Room == 0)
+            // beta has some null room references, so also check against InternalName
+            if (result.InternalName == 0 && result.Room == 0)
             {
                 br.BaseStream.Seek(-4, SeekOrigin.Current);
                 throw new Error.ExpectedStreamEndException();

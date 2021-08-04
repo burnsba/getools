@@ -31,7 +31,6 @@ namespace Getools.Lib.Game
             {
                 DataFormats.C,
                 DataFormats.Json,
-                DataFormats.BetaJson,
                 DataFormats.Bin,
                 DataFormats.BetaBin,
             };
@@ -41,19 +40,20 @@ namespace Getools.Lib.Game
                 DataFormats.C,
                 DataFormats.BetaC,
                 DataFormats.Json,
-                DataFormats.BetaJson,
                 DataFormats.Bin,
                 DataFormats.BetaBin,
             };
 
             public const string HeaderCTypeName = "StandFileHeader";
-            public const string TileCTypeName = "StandFileTile";
-            public const string PointCTypeName = "StandFilePoint";
+            public const string TileCTypeName = "StandTile";
             public const string FooterCTypeName = "StandFileFooter";
 
-            //public const string DefaultDeclarationName_StandFileTile = "tile";
-            //public const string DefaultDeclarationName_StandFilePoint = "points";
+            public const string TileBetaCTypeName = "BetaStandTile";
+            // header and footer are the same for beta
+            public const string BetaFooterCTypeName = "char";
+
             public const string DefaultDeclarationName_StandFileFooter = "footer";
+            public const string DefaultDeclarationName_BetaFooter = "beta_footer";
         }
     }
 }

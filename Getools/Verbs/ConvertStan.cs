@@ -76,7 +76,7 @@ namespace Getools.Verbs
                 opts.OutputFormat = df;
             }
 
-            if (!Getools.Lib.Game.Config.Stan.SupportedInputFormats.Contains(opts.OutputFormat))
+            if (!Getools.Lib.Game.Config.Stan.SupportedOutputFormats.Contains(opts.OutputFormat))
             {
                 Console.Error.WriteLine($"Output format not supported: {opts.OutputFormatString}");
 
@@ -137,10 +137,10 @@ namespace Getools.Verbs
                     stan = StanConverters.ReadFromBetaBinFile(opts.InputFilename, opts.DeclarationName);
                     break;
 
-                case Lib.Game.DataFormats.C:
-                    stan = StanConverters.ParseFromC(opts.InputFilename);
-                    stan.Header.Name = opts.DeclarationName;
-                    break;
+                //case Lib.Game.DataFormats.C:
+                //    stan = StanConverters.ParseFromC(opts.InputFilename);
+                //    stan.Header.Name = opts.DeclarationName;
+                //    break;
 
                 case Lib.Game.DataFormats.Json:
                     stan = StanConverters.ReadFromJson(opts.InputFilename);
@@ -156,8 +156,16 @@ namespace Getools.Verbs
                     StanConverters.WriteToBin(stan, opts.OutputFilename);
                     break;
 
+                case Lib.Game.DataFormats.BetaBin:
+                    StanConverters.WriteToBetaBin(stan, opts.OutputFilename);
+                    break;
+
                 case Lib.Game.DataFormats.C:
                     StanConverters.WriteToC(stan, opts.OutputFilename);
+                    break;
+
+                case Lib.Game.DataFormats.BetaC:
+                    StanConverters.WriteToBetaC(stan, opts.OutputFilename);
                     break;
 
                 case Lib.Game.DataFormats.Json:

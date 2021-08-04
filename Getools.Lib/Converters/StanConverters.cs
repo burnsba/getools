@@ -105,10 +105,18 @@ namespace Getools.Lib.Converters
 
         public static void WriteToC(StandFile source, string path)
         {
-            //using (var sw = new StreamWriter(path, false))
-            //{
-            //    source.WriteToCFile(sw);
-            //}
+            using (var sw = new StreamWriter(path, false))
+            {
+                source.WriteToCFile(sw);
+            }
+        }
+
+        public static void WriteToBetaC(StandFile source, string path)
+        {
+            using (var sw = new StreamWriter(path, false))
+            {
+                source.WriteToBetaCFile(sw);
+            }
         }
 
         public static void WriteToBin(StandFile source, string path)
@@ -116,6 +124,14 @@ namespace Getools.Lib.Converters
             using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
             {
                 source.WriteToBinFile(bw);
+            }
+        }
+
+        public static void WriteToBetaBin(StandFile source, string path)
+        {
+            using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
+            {
+                source.WriteToBetaBinFile(bw);
             }
         }
 

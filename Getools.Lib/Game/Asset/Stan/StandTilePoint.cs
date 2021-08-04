@@ -23,6 +23,11 @@ namespace Getools.Lib.Game.Asset.Stan
             return $"{prefix}{{{(short)X}, {(short)Y}, {(short)Z}, 0x{(short)Link:x4}}}";
         }
 
+        public string ToBetaCInlineDeclaration(string prefix = "")
+        {
+            return $"{prefix}{{{(int)X}, {(int)Y}, {(int)Z}, 0x{(int)Link:x8}}}";
+        }
+
         public byte[] ToByteArray()
         {
             var results = new byte[SizeOf];
@@ -47,13 +52,19 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        public void AppendToBinaryStream(BinaryWriter stream)
+        internal void AppendToBinaryStream(BinaryWriter stream)
         {
             var bytes = ToByteArray();
             stream.Write(bytes);
         }
 
-        public static StandTilePoint ReadFromBinFile(BinaryReader br)
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
+            stream.Write(bytes);
+        }
+
+        internal static StandTilePoint ReadFromBinFile(BinaryReader br)
         {
             var result = new StandTilePoint();
 
@@ -65,7 +76,7 @@ namespace Getools.Lib.Game.Asset.Stan
             return result;
         }
 
-        public static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
+        internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
         {
             var result = new StandTilePoint();
 

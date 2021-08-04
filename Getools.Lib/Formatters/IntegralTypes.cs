@@ -24,5 +24,27 @@ namespace Getools.Lib.Formatters
 
             return "{" + byteString + "}";
         }
+
+        public static string ByteAsCharStringOrHex(byte b)
+        {
+            if (b >= 32 && b <= 127)
+            {
+                return $"'{(char)b}'";
+            }
+            else
+            {
+                return $"0x{b:x2}";
+            }
+        }
+
+        public static string StringToCInlineFixedLengthCharArray(string s, int arrLen)
+        {
+            var bytes = System.Text.Encoding.ASCII.GetBytes(s);
+            var fixedArr = new byte[arrLen];
+            Array.Copy(bytes, fixedArr, Math.Min(arrLen, bytes.Length));
+            var charTexts = fixedArr.Select(x => ByteAsCharStringOrHex(x));
+
+            return "{" + string.Join(", ", charTexts) + "}";
+        }
     }
 }

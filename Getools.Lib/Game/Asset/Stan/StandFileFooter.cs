@@ -55,6 +55,12 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
+        public string ToBetaCDeclaration(string prefix = "")
+        {
+            // no change for beta
+            return ToCDeclaration(prefix);
+        }
+
         public byte[] ToByteArray(int currentStreamPosition)
         {
             int stringStart = currentStreamPosition + (Config.TargetPointerSize * 2);
@@ -103,6 +109,12 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var bytes = ToByteArray((int)stream.BaseStream.Position);
             stream.Write(bytes);
+        }
+
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            // no changes for beta
+            AppendToBinaryStream(stream);
         }
 
         internal static StandFileFooter ReadFromBinFile(BinaryReader br)
