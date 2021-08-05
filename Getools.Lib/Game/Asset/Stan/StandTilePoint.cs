@@ -25,7 +25,11 @@ namespace Getools.Lib.Game.Asset.Stan
 
         public string ToBetaCInlineDeclaration(string prefix = "")
         {
-            return $"{prefix}{{{(int)X}, {(int)Y}, {(int)Z}, 0x{(int)Link:x8}}}";
+            var fx = BitUtility.CastToFloat(X);
+            var fy = BitUtility.CastToFloat(Y);
+            var fz = BitUtility.CastToFloat(Z);
+
+            return $"{prefix}{{{fx}, {fy}, {fz}, 0x{(int)Link:x8}}}";
         }
 
         public byte[] ToByteArray()

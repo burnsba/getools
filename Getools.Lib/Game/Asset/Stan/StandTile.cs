@@ -17,6 +17,8 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// 24 bits.
+        /// Upper 16: Id.
+        /// Last 8: Group Id.
         /// </summary>
         public int InternalName { get; set; }
 
@@ -24,6 +26,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// 4 bits.
+        /// <see cref="StanFlags"/>.
         /// </summary>
         public byte Flags { get; set; }
 
@@ -55,18 +58,21 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// 4 bits. (beta: 8 bits)
+        /// Index of (one of) most extreme points of the tile.
         /// </summary>
-        public byte HeaderC { get; set; }
+        public byte FirstPoint { get; set; }
 
         /// <summary>
         /// 4 bits. (beta: 8 bits)
+        /// Index of (one of) most extreme points of the tile.
         /// </summary>
-        public byte HeaderD { get; set; }
+        public byte SecondPoint { get; set; }
 
         /// <summary>
         /// 4 bits. (beta: 8 bits)
+        /// Index of (one of) most extreme points of the tile.
         /// </summary>
-        public byte HeaderE { get; set; }
+        public byte ThirdPoint { get; set; }
 
         public int OrderIndex { get; set; }
 
@@ -82,8 +88,8 @@ namespace Getools.Lib.Game.Asset.Stan
 
             results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
             results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
-            results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (HeaderC & 0xf));
-            results[7] = (byte)(((HeaderD & 0xf) << 4) | (HeaderE & 0xf));
+            results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (FirstPoint & 0xf));
+            results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
 
             int index = SizeOfTileWithoutPoints;
             for (int i=0; i<Points.Count; i++)
@@ -109,9 +115,9 @@ namespace Getools.Lib.Game.Asset.Stan
             BitUtility.InsertShortBig(results, 6, UnknownBeta ?? 0);
 
             results[8] = (byte)Points.Count;
-            results[9] = HeaderC;
-            results[10] = HeaderD;
-            results[11] = HeaderE;
+            results[9] = FirstPoint;
+            results[10] = SecondPoint;
+            results[11] = ThirdPoint;
 
             int index = SizeOfBetaTileWithoutPoints;
             for (int i = 0; i < Points.Count; i++)
@@ -123,38 +129,41 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        public string ToCDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} tile_{OrderIndex} = {{");
+
+            ToCDeclarationCommon(sb, prefix);
+
+            sb.AppendLine($"{prefix}}};");
+
+            return sb.ToString();
+        }
+
         public string ToCInlineDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex}*/");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount & 0xf},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(HeaderC & 0xf):x1}, 0x{(HeaderD & 0xf):x1}, 0x{(HeaderE & 0xf):x1},");
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
 
-            // begin points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
-
-            string indent = Config.DefaultIndent + Config.DefaultIndent;
-
-            for (int i=0; i<Points.Count - 1; i++)
-            {
-                var p = Points[i];
-                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent) + ",");
-            }
-
-            if (Points.Any())
-            {
-                var p = Points.Last();
-                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent));
-            }
-
-            // close points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+            ToCDeclarationCommon(sb, prefix);
 
             sb.Append($"{prefix}}}");
+
+            return sb.ToString();
+        }
+
+        public string ToBetaCDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} tile_{OrderIndex} = {{");
+
+            ToBetaCDeclarationCommon(sb, prefix);
+
+            sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
         }
@@ -163,33 +172,9 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex}*/");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x2},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{HeaderC:x2}, 0x{HeaderD:x2}, 0x{HeaderE:x2},");
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
 
-            // begin points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
-
-            string indent = Config.DefaultIndent + Config.DefaultIndent;
-
-            for (int i = 0; i < Points.Count - 1; i++)
-            {
-                var p = Points[i];
-                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent) + ",");
-            }
-
-            if (Points.Any())
-            {
-                var p = Points.Last();
-                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent));
-            }
-
-            // close points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+            ToBetaCDeclarationCommon(sb, prefix);
 
             sb.Append($"{prefix}}}");
 
@@ -240,7 +225,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             b = br.ReadByte();
             result.PointCount = (byte)((b >> 4) & 0xf);
-            result.HeaderC = (byte)((b) & 0xf);
+            result.FirstPoint = (byte)((b) & 0xf);
 
             if (result.PointCount < 1)
             {
@@ -248,8 +233,8 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             b = br.ReadByte();
-            result.HeaderD = (byte)((b >> 4) & 0xf);
-            result.HeaderE = (byte)((b) & 0xf);
+            result.SecondPoint = (byte)((b >> 4) & 0xf);
+            result.ThirdPoint = (byte)((b) & 0xf);
 
             result.OrderIndex = tileIndex;
 
@@ -303,9 +288,9 @@ namespace Getools.Lib.Game.Asset.Stan
                 throw new Exception("Tile is defined with zero points");
             }
 
-            result.HeaderC = br.ReadByte();
-            result.HeaderD = br.ReadByte();
-            result.HeaderE = br.ReadByte();
+            result.FirstPoint = br.ReadByte();
+            result.SecondPoint = br.ReadByte();
+            result.ThirdPoint = br.ReadByte();
 
             result.OrderIndex = tileIndex;
 
@@ -318,6 +303,65 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             return result;
+        }
+
+        private void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
+        {
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount & 0xf},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(FirstPoint & 0xf):x1}, 0x{(SecondPoint & 0xf):x1}, 0x{(ThirdPoint & 0xf):x1},");
+
+            // begin points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
+
+            string indent = Config.DefaultIndent + Config.DefaultIndent;
+
+            for (int i = 0; i < Points.Count - 1; i++)
+            {
+                var p = Points[i];
+                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent) + ",");
+            }
+
+            if (Points.Any())
+            {
+                var p = Points.Last();
+                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent));
+            }
+
+            // close points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+        }
+
+        private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
+        {
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{FirstPoint:x2}, 0x{SecondPoint:x2}, 0x{ThirdPoint:x2},");
+
+            // begin points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
+
+            string indent = Config.DefaultIndent + Config.DefaultIndent;
+
+            for (int i = 0; i < Points.Count - 1; i++)
+            {
+                var p = Points[i];
+                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent) + ",");
+            }
+
+            if (Points.Any())
+            {
+                var p = Points.Last();
+                sb.AppendLine(prefix + p.ToBetaCInlineDeclaration(indent));
+            }
+
+            // close points list
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
         }
     }
 }

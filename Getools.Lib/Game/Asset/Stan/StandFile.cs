@@ -46,22 +46,12 @@ namespace Getools.Lib.Game.Asset.Stan
 
             var count = Tiles.Count();
 
-            sw.WriteLine($"{Config.Stan.TileCTypeName} tiles[{count}] = {{");
-
-            for (int i = 0; i < count - 1; i++)
+            foreach (var tile in Tiles)
             {
-                var tile = Tiles[i];
-                sw.WriteLine(tile.ToCInlineDeclaration(Config.DefaultIndent) + ",");
+                sw.Write(tile.ToCDeclaration());
                 sw.WriteLine();
             }
 
-            if (Tiles.Any())
-            {
-                var tile = Tiles.Last();
-                sw.WriteLine(tile.ToCInlineDeclaration(Config.DefaultIndent));
-            }
-
-            sw.WriteLine($"}};");
             sw.WriteLine();
 
             sw.Write(Footer.ToCDeclaration());
@@ -98,22 +88,12 @@ namespace Getools.Lib.Game.Asset.Stan
 
             var count = Tiles.Count();
 
-            sw.WriteLine($"{Config.Stan.TileBetaCTypeName} tiles[{count}] = {{");
-
-            for (int i = 0; i < count - 1; i++)
+            foreach (var tile in Tiles)
             {
-                var tile = Tiles[i];
-                sw.WriteLine(tile.ToBetaCInlineDeclaration(Config.DefaultIndent) + ",");
+                sw.Write(tile.ToBetaCDeclaration());
                 sw.WriteLine();
             }
 
-            if (Tiles.Any())
-            {
-                var tile = Tiles.Last();
-                sw.WriteLine(tile.ToBetaCInlineDeclaration(Config.DefaultIndent));
-            }
-
-            sw.WriteLine($"}};");
             sw.WriteLine();
 
             sw.Write(Footer.ToBetaCDeclaration());

@@ -32,18 +32,23 @@ namespace Getools.Lib.Game.Asset.Stan
                 return string.Empty;
             }
 
-            sb.AppendLine($"{prefix}{Config.Stan.BetaFooterCTypeName} {Config.Stan.DefaultDeclarationName_BetaFooter}[{count}][{PointStringLength}] = {{");
+            // only have one example, so not sure if there is supposed to be a null entry at
+            // the end, or if it's supposed to pad to a multiple of 16.
+
+            sb.AppendLine($"{prefix}{Config.Stan.BetaFooterCTypeName} {Config.Stan.DefaultDeclarationName_BetaFooter}[{count + 1}][{PointStringLength}] = {{");
+
+            sb.AppendLine(Config.DefaultIndent + "\"\"" + ",");
 
             for (int i = 0; i < count - 1; i++)
             {
                 var p = BetaPointList[i];
-                sb.AppendLine(Config.DefaultIndent + Formatters.IntegralTypes.StringToCInlineFixedLengthCharArray(p, PointStringLength) + ",");
+                sb.AppendLine(Config.DefaultIndent + Formatters.Strings.ToQuotedString(p, PointStringLength) + ",");
             }
 
             if (BetaPointList.Any())
             {
                 var p = BetaPointList.Last();
-                sb.AppendLine(Config.DefaultIndent + Formatters.IntegralTypes.StringToCInlineFixedLengthCharArray(p, PointStringLength));
+                sb.AppendLine(Config.DefaultIndent + Formatters.Strings.ToQuotedString(p, PointStringLength));
             }
 
             sb.AppendLine($"{prefix}}};");
@@ -107,7 +112,7 @@ namespace Getools.Lib.Game.Asset.Stan
                 {
                     if (buffer[0] > 0)
                     {
-                        var pointName = System.Text.Encoding.ASCII.GetString(buffer);
+                        var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
                         result.BetaPointList.Add(pointName);
 
                         Array.Clear(buffer, 0, 16);
@@ -125,7 +130,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (buffer[0] > 0)
             {
-                var pointName = System.Text.Encoding.ASCII.GetString(buffer);
+                var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
                 result.BetaPointList.Add(pointName);
             }
 
