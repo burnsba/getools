@@ -1,10 +1,19 @@
-# getools
-Goldeneye 007 command line tool suite for N64 hacking
+# getools suite
+Goldeneye 007 command line tool suite for N64 hacking. Built in C#, dotnet core 3.1.
 
-Current work in progress. Available actions:
+Current work in progress.
+
+# getools
+
+Command line application. Wrapper for main library.
+
+Available actions:
 
 - convert_stan: convert stan file between/from various file formats
 
+# getools.lib
+
+The core code is contained in this library project.
 
 ## convert_stan
 
