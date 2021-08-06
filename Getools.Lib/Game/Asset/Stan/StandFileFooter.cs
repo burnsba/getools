@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Error;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
@@ -154,7 +155,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
                 if (stringLength >= safety)
                 {
-                    throw new Exception("Could not find terminating character when reading stan footer string");
+                    throw new BadFileFormatException("Could not find terminating character when reading stan footer string");
                 }
             }
 

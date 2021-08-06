@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Error;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -87,7 +88,7 @@ namespace Getools.Lib.Game.Asset.Stan
             var remaining = result.FirstTileOffset - br.BaseStream.Position;
             if (remaining < 0)
             {
-                throw new Exception($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
+                throw new BadFileFormatException($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
             }
 
             for (int i=0; i<remaining; i++)
@@ -115,7 +116,7 @@ namespace Getools.Lib.Game.Asset.Stan
             var remaining = result.FirstTileOffset - br.BaseStream.Position;
             if (remaining < 0)
             {
-                throw new Exception($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
+                throw new BadFileFormatException($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
             }
 
             for (int i=0; i<remaining; i++)

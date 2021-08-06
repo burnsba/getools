@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Error;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
@@ -148,7 +149,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
                 if (bufferPosition >= 16)
                 {
-                    throw new Exception($"Error reading stan, beta point name exceeded buffer length. Stream positiion: {position}");
+                    throw new BadFileFormatException($"Error reading stan, beta point name exceeded buffer length. Stream positiion: {position}");
                 }
 
                 position++;

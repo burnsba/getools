@@ -6,6 +6,7 @@ using System.Text;
 using Antlr4.Runtime.Misc;
 using Getools.Lib;
 using Getools.Lib.Antlr.Gen;
+using Getools.Lib.Error;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Stan;
 
@@ -92,6 +93,26 @@ namespace Getools.Lib.Antlr
         {
             _workingResult.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderIndex).ToList();
 
+            string msg;
+
+            if (object.ReferenceEquals(null, _workingResult.Header))
+            {
+                msg = $"No header section found. Expected a variable with type {Config.Stan.HeaderCTypeName}";
+                throw new BadFileFormatException(msg);
+            }
+
+            if (object.ReferenceEquals(null, _workingResult.Footer))
+            {
+                msg = $"No footer section found. Expected a variable with type {Config.Stan.FooterCTypeName}";
+                throw new BadFileFormatException(msg);
+            }
+
+            if (object.ReferenceEquals(null, _workingResult.Tiles) || !_workingResult.Tiles.Any())
+            {
+                msg = $"No tiles were found. Expected variable declarations with type {Config.Stan.TileCTypeName}";
+                throw new BadFileFormatException(msg);
+            }
+
             Result = _workingResult;
         }
 
@@ -103,6 +124,14 @@ namespace Getools.Lib.Antlr
         public override void EnterDeclaration([NotNull] CParser.DeclarationContext context)
         {
             //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+
+            // the last assignment in the tile should change the parse state to a point, so
+            // if a declaration is enounctered while the parse state is a tile
+            // then something went wrong.
+            if (_parseState == ParseState.Tile)
+            {
+                throw new BadFileFormatException("Error parsing tile, missing fields before entering point declaration.");
+            }
 
             _parseState = ParseState.Unset;
             _currentFieldIndex = -1;
@@ -123,6 +152,11 @@ namespace Getools.Lib.Antlr
             {
                 if (!object.ReferenceEquals(null, _workingTile))
                 {
+                    if (!_workingTile.Points.Any())
+                    {
+                        throw new BadFileFormatException("Error, found tile without any points.");
+                    }
+
                     _workingResult.Tiles.Add(_workingTile);
                 }
 
@@ -212,7 +246,7 @@ namespace Getools.Lib.Antlr
 
                 if (!val.HasValue)
                 {
-                    throw new InvalidOperationException("Tile does not allow nulls");
+                    throw new BadFileFormatException("Tile does not allow nulls");
                 }
 
                 switch (_currentFieldIndex)
@@ -291,7 +325,7 @@ namespace Getools.Lib.Antlr
 
                 if (!val.HasValue)
                 {
-                    throw new InvalidOperationException("Point does not allow nulls");
+                    throw new BadFileFormatException("Point does not allow nulls");
                 }
 
                 switch (_currentFieldIndex)
@@ -413,6 +447,10 @@ namespace Getools.Lib.Antlr
                 {
                     _parseState = ParseState.Footer;
                 }
+            }
+            else
+            {
+                throw new BadFileFormatException("Attempted to parse type specifier while parsing another declaration.");
             }
         }
 

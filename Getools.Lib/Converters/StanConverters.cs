@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Getools.Lib.Antlr;
 using Getools.Lib.Antlr.Gen;
+using Getools.Lib.Error;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Stan;
 using Newtonsoft.Json;
@@ -115,8 +117,33 @@ namespace Getools.Lib.Converters
             var json = File.ReadAllText(path);
             var stan = JsonConvert.DeserializeObject<StandFile>(json);
 
+            if (stan.Format == TypeFormat.DefaultUnknown)
+            {
+                throw new BadFileFormatException("Type format not set in json");
+            }
+
             stan.SetFormat(stan.Format);
             stan.DeserializeFix();
+
+            if (object.ReferenceEquals(null, stan.Header))
+            {
+                throw new BadFileFormatException("Missing header in json");
+            }
+
+            if (object.ReferenceEquals(null, stan.Footer))
+            {
+                throw new BadFileFormatException("Missing footer in json");
+            }
+
+            if (object.ReferenceEquals(null, stan.Tiles) || !stan.Tiles.Any())
+            {
+                throw new BadFileFormatException("No tiles found in json");
+            }
+
+            if (stan.Tiles.Any(x => x.Points == null || !x.Points.Any()))
+            {
+                throw new BadFileFormatException("Invalid json, found tile without any points");
+            }
 
             return stan;
         }

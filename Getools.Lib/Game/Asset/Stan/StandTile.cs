@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Error;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -262,7 +263,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (result.PointCount < 1)
             {
-                throw new Exception("Tile is defined with zero points");
+                throw new BadFileFormatException("Tile is defined with zero points");
             }
 
             b = br.ReadByte();
@@ -318,7 +319,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (result.PointCount < 1)
             {
-                throw new Exception("Tile is defined with zero points");
+                throw new BadFileFormatException("Tile is defined with zero points");
             }
 
             result.FirstPoint = br.ReadByte();
