@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// Used to specifiy combined file type and data format.
+    /// </summary>
     public enum DataFormats
     {
         /// <summary>

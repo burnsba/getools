@@ -12,77 +12,47 @@ using Getools.Options;
 
 namespace Getools.Verbs
 {
-    public static class ConvertStan
+    public class ConvertStan : ConvertBase
     {
-        public static void PreOptionCheck<T>(ParserResult<T> result, ConvertStanOptions opts)
+        public void CheckRun<T>(ParserResult<T> result, ConvertStanOptions opts)
         {
-            if (!object.ReferenceEquals(null, opts.TypoCatch) && opts.TypoCatch.Any())
+            TypoCheck(result, opts);
+
+            /* begin input description */
+
+            ValidateSetInputFilename(result, opts);
+            ValidateSetInputFileType(result, opts);
+            ValidateSetInputDataFormatIsBeta(result, opts);
+            ValidateSetInputTypeFormat(result, opts);
+            ValidateSetInputDataFormat(result, opts);
+
+            if (!Getools.Lib.Game.Config.Stan.SupportedInputFormats.Contains(opts.InputDataFormat))
             {
-                if (opts.TypoCatch.Any(x => (x?.Trim()?.ToLower() ?? string.Empty) == "help"))
-                {
-                    DisplayHelp(result, null);
-                    return;
-                }
-
-                Console.Error.WriteLine($"The following options are not supported (try --help):");
-                foreach (var line in opts.TypoCatch)
-                {
-                    Console.Error.WriteLine(line);
-                }
-
-                Environment.Exit(1);
-            }
-
-            if (string.IsNullOrEmpty(opts.InputFilename))
-            {
-                Console.Error.WriteLine($"No input file specified.");
+                ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta.Value}\"");
 
                 DisplayHelp(result, null);
                 Environment.Exit(1);
             }
 
-            if (!File.Exists(opts.InputFilename))
+            /* done with input description */
+
+            /* begin output description */
+
+            ValidateSetOutputFilename(result, opts);
+            ValidateSetOutputFileType(result, opts);
+            ValidateSetOutputDataFormatIsBeta(result, opts);
+            ValidateSetOutputTypeFormat(result, opts);
+            ValidateSetOutputDataFormat(result, opts);
+
+            if (!Getools.Lib.Game.Config.Stan.SupportedOutputFormats.Contains(opts.OutputDataFormat))
             {
-                Console.Error.WriteLine($"File not found: {opts.InputFilename}");
+                ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta.Value}\"");
 
                 DisplayHelp(result, null);
                 Environment.Exit(1);
             }
 
-            if (string.IsNullOrEmpty(opts.InputFormatString))
-            {
-                Console.Error.WriteLine($"No input format specified.");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
-
-            Getools.Lib.Game.DataFormats df;
-            if (Enum.TryParse<Getools.Lib.Game.DataFormats>(opts.InputFormatString, ignoreCase:true, out df))
-            {
-                opts.InputFormat = df;
-            }
-
-            if (!Getools.Lib.Game.Config.Stan.SupportedInputFormats.Contains(opts.InputFormat))
-            {
-                Console.Error.WriteLine($"Input format not supported: {opts.InputFormatString}");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
-
-            if (Enum.TryParse<Getools.Lib.Game.DataFormats>(opts.OutputFormatString, ignoreCase: true, out df))
-            {
-                opts.OutputFormat = df;
-            }
-
-            if (!Getools.Lib.Game.Config.Stan.SupportedOutputFormats.Contains(opts.OutputFormat))
-            {
-                Console.Error.WriteLine($"Output format not supported: {opts.OutputFormatString}");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
+            /* done with output description */
 
             if (string.IsNullOrEmpty(opts.DeclarationName))
             {
@@ -92,20 +62,55 @@ namespace Getools.Verbs
             Convert(opts);
         }
 
-        public static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
+        public override void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
+            var errorLines = new List<string>();
+
+            if (result is NotParsed<T>)
+            {
+                var np = result as NotParsed<T>;
+                if (np.Errors.Any())
+                {
+                    var missingRequired = np.Errors.Where(x => x is MissingRequiredOptionError).Cast<MissingRequiredOptionError>();
+
+                    foreach (var missing in missingRequired)
+                    {
+                        errorLines.Add($"Error: missing required option: {missing.NameInfo.LongName}");
+                    }
+                }
+            }
+
+            var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
+            foreach (var uoe in unknownOptionErrors)
+            {
+                errorLines.Add($"Error: unknown option: {uoe.Token}");
+            }
+
+            foreach (var error in errorLines)
+            {
+                ConsoleColor.ConsoleWriteLineRed(error);
+            }
+
             var helpText = new HelpText(HeadingInfo.Default, CopyrightInfo.Default);
             helpText.AddDashesToOption = true;
             helpText.MaximumDisplayWidth = 100;
             helpText.AdditionalNewLineAfterOption = false;
             helpText.AutoVersion = false;
+
+            helpText.AddPreOptionsLine("EXAMPLES: ");
+            helpText.AddPreOptionsLine(string.Empty);
+            helpText.AddPreOptionsLine(HelpText.RenderUsageText(result));
+
+            helpText.AddPreOptionsLine(string.Empty);
+            helpText.AddPreOptionsLine("USAGE: ");
             helpText.AddOptions(result);
+
             helpText.AddPostOptionsLines(new List<string>()
             {
-                "The following values are supported for \"IN_FORMAT\":",
+                "The following values are supported for input \"FTYPE\":",
                 GetInFormatNames(),
                 "\n",
-                "The following values are supported for \"OUT_FORMAT\"",
+                "The following values are supported for output \"FTYPE\"",
                 GetOutFormatNames(),
             });
 
@@ -116,19 +121,23 @@ namespace Getools.Verbs
 
         private static string GetInFormatNames()
         {
-            return string.Join(", ", Getools.Lib.Game.Config.Stan.SupportedInputFormats);
+            var dataformats = Getools.Lib.Game.Config.Stan.SupportedInputFormats;
+            var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
+            return string.Join(", ", fileTypes);
         }
 
         private static string GetOutFormatNames()
         {
-            return string.Join(", ", Getools.Lib.Game.Config.Stan.SupportedInputFormats);
+            var dataformats = Getools.Lib.Game.Config.Stan.SupportedOutputFormats;
+            var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
+            return string.Join(", ", fileTypes);
         }
 
-        private static void Convert(ConvertStanOptions opts)
+        private void Convert(ConvertOptionsBase opts)
         {
             StandFile stan;
 
-            switch (opts.InputFormat)
+            switch (opts.InputDataFormat)
             {
                 case Lib.Game.DataFormats.Bin:
                     stan = StanConverters.ReadFromBinFile(opts.InputFilename, opts.DeclarationName);
@@ -153,10 +162,12 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    throw new Exception($"Input format not supported: {opts.InputFormat}");
+                    ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta.Value}\"");
+                    Environment.Exit(1);
+                    return;
             }
 
-            switch (opts.OutputFormat)
+            switch (opts.OutputDataFormat)
             {
                 case Lib.Game.DataFormats.Bin:
                     StanConverters.WriteToBin(stan, opts.OutputFilename);
@@ -179,7 +190,9 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    throw new Exception($"Output format not supported: {opts.OutputFormat}");
+                    ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta.Value}\"");
+                    Environment.Exit(1);
+                    return;
             }
         }
     }

@@ -38,7 +38,8 @@ namespace Getools
             switch (opts)
             {
                 case ConvertStanOptions cstan:
-                    Verbs.ConvertStan.PreOptionCheck(result, cstan);
+                    var verb = new Verbs.ConvertStan();
+                    verb.CheckRun(result, cstan);
                     break;
 
                 case ConvertSetupOptions csetup:
@@ -64,7 +65,8 @@ namespace Getools
 
             if (result.TypeInfo.Current == typeof(ConvertStanOptions))
             {
-                Verbs.ConvertStan.DisplayHelp(result, errs);
+                var verb = new Verbs.ConvertStan();
+                verb.DisplayHelp(result, errs);
                 return;
             }
             else if (result.TypeInfo.Current == typeof(ConvertSetupOptions))

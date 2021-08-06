@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Getools.Lib.Game
 {
-    public enum TypeFormat
+    public enum FileType
     {
         /// <summary>
         /// Unset / unknown.
@@ -12,13 +12,18 @@ namespace Getools.Lib.Game
         DefaultUnknown,
 
         /// <summary>
-        /// Release build data format.
+        /// Text .c file.
         /// </summary>
-        Normal,
+        C,
 
         /// <summary>
-        /// Beta format.
+        /// Binary file.
         /// </summary>
-        Beta,
+        Bin,
+
+        /// <summary>
+        /// Text JSON file.
+        /// </summary>
+        Json,
     }
 }

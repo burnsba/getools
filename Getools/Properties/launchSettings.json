@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "convert_stan --input-file=\"Tbg_test_all_p_stanZ.c\" --input-format=\"c\" --output-format=\"c\" --output-file=\"out.c\""
+      "commandLineArgs": "convert_stan --help"
     }
   }
 }

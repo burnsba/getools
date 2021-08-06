@@ -3,11 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <FileVersion>21.8.5.1</FileVersion>
+    <FileVersion>21.8.6.1</FileVersion>
     <Version>21.8.2.1</Version>
     <Authors>Ben Burns</Authors>
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
+    <AssemblyVersion>21.8.6.1</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
