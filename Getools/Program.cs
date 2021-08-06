@@ -10,9 +10,16 @@ using Getools.Options;
 
 namespace Getools
 {
-    class Program
+    /// <summary>
+    /// Main program.
+    /// </summary>
+    public class Program
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Program entry.
+        /// </summary>
+        /// <param name="args">Command line args.</param>
+        private static void Main(string[] args)
         {
             var parser = new CommandLine.Parser(with =>
             {
@@ -23,17 +30,27 @@ namespace Getools
             var parserResult = parser.ParseArguments(args, types);
 
             parserResult
-                .WithParsed(options => PreOptionCheck(parserResult, options))
+                .WithParsed(options => CheckRun(parserResult, options))
                 .WithNotParsed(errs => DisplayHelp(parserResult, errs));
         }
 
+        /// <summary>
+        /// Uses reflection to find options verbs available to the program.
+        /// </summary>
+        /// <returns>List of types.</returns>
         private static Type[] LoadVerbs()
         {
             return Assembly.GetExecutingAssembly().GetTypes()
                 .Where(t => t.GetCustomAttribute<VerbAttribute>() != null).ToArray();
         }
 
-        private static void PreOptionCheck<T>(ParserResult<T> result, object opts)
+        /// <summary>
+        /// Resolves to the appropriate verb, then validates according to verb and runs program.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
+        private static void CheckRun<T>(ParserResult<T> result, object opts)
         {
             switch (opts)
             {
@@ -43,18 +60,25 @@ namespace Getools
                     break;
 
                 case ConvertSetupOptions csetup:
-                    PreOptionCheck_ConvertSetup(result, csetup);
+                    /////PreOptionCheck_ConvertSetup(result, csetup);
                     break;
 
                 case MakeMapOptions mmap:
-                    PreOptionCheck_MakeMap(result, mmap);
+                    ////PreOptionCheck_MakeMap(result, mmap);
                     break;
 
                 default:
-                    throw new NotSupportedException($"Could not resolve type in {nameof(PreOptionCheck)}");
+                    throw new NotSupportedException($"Could not resolve type in {nameof(CheckRun)}");
             }
         }
 
+        /// <summary>
+        /// Top level help information. This gets called if no verb is found.
+        /// Verb specific help should be handled in its own class.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="errs">Parser errors.</param>
         private static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
             if (errs.IsVersion())
@@ -72,12 +96,12 @@ namespace Getools
             else if (result.TypeInfo.Current == typeof(ConvertSetupOptions))
             {
                 throw new NotImplementedException();
-                return;
+                ////return;
             }
             else if (result.TypeInfo.Current == typeof(MakeMapOptions))
             {
                 throw new NotImplementedException();
-                return;
+                ////return;
             }
 
             var helpText = new HelpText(HeadingInfo.Default, CopyrightInfo.Default);
@@ -89,24 +113,6 @@ namespace Getools
             var texty = helpText.ToString();
 
             Console.WriteLine(texty);
-        }
-
-        
-
-        private static void PreOptionCheck_ConvertSetup<T>(ParserResult<T> result, ConvertSetupOptions opts)
-        {
-        }
-
-        private static void DisplayHelp_ConvertSetup<T>(ParserResult<T> result, IEnumerable<Error> errs)
-        {
-        }
-
-        private static void PreOptionCheck_MakeMap<T>(ParserResult<T> result, MakeMapOptions opts)
-        {
-        }
-
-        private static void DisplayHelp_MakeMap<T>(ParserResult<T> result, IEnumerable<Error> errs)
-        {
         }
     }
 }

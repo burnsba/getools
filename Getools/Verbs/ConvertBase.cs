@@ -9,8 +9,17 @@ using Getools.Options;
 
 namespace Getools.Verbs
 {
+    /// <summary>
+    /// Common base class for convert verb.
+    /// </summary>
     public abstract class ConvertBase : VerbBase
     {
+        /// <summary>
+        /// Validates the input filename, and ensures file exists.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetInputFilename<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             if (string.IsNullOrEmpty(opts.InputFilename))
@@ -30,6 +39,13 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Validates/sets input file type. If not set, attempts to resolve
+        /// based on file extension.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetInputFileType<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             // attempt to fall back to file extension
@@ -51,6 +67,12 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Validates/sets the beta flag.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetInputDataFormatIsBeta<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             // promote null to false.
@@ -60,16 +82,34 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.InputTypeFormat"/> based on <see cref="ConvertOptionsBase.InputDataFormatIsBeta"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetInputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             opts.InputTypeFormat = (opts.InputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
         }
 
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.InputDataFormat"/> based on <see cref="ConvertOptionsBase.InputTypeFormat"/> and <see cref="ConvertOptionsBase.InputFileType"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetInputDataFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             opts.InputDataFormat = Getools.Lib.Converters.FormatConverter.GetDataFormat(opts.InputTypeFormat, opts.InputFileType);
         }
 
+        /// <summary>
+        /// Validates the output filename.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetOutputFilename<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             if (string.IsNullOrEmpty(opts.OutputFilename))
@@ -81,6 +121,13 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Validates/sets output file type. If not set, attempts to resolve
+        /// based on file extension.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetOutputFileType<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             // attempt to fall back to file extension
@@ -102,6 +149,12 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Validates/sets the beta flag.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetOutputDataFormatIsBeta<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             // promote null to false.
@@ -111,11 +164,23 @@ namespace Getools.Verbs
             }
         }
 
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.OutputTypeFormat"/> based on <see cref="ConvertOptionsBase.OutputDataFormatIsBeta"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetOutputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             opts.OutputTypeFormat = (opts.OutputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
         }
 
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.OutputDataFormat"/> based on <see cref="ConvertOptionsBase.OutputTypeFormat"/> and <see cref="ConvertOptionsBase.OutputFileType"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void ValidateSetOutputDataFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             opts.OutputDataFormat = Getools.Lib.Converters.FormatConverter.GetDataFormat(opts.OutputTypeFormat, opts.OutputFileType);

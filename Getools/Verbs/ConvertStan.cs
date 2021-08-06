@@ -9,11 +9,19 @@ using Getools.Lib.Converters;
 using Getools.Lib.Game.Asset.Stan;
 using Getools.Options;
 
-
 namespace Getools.Verbs
 {
+    /// <summary>
+    /// Program command verb convert_stan.
+    /// </summary>
     public class ConvertStan : ConvertBase
     {
+        /// <summary>
+        /// Validates the command line arguments then runs the program.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
         public void CheckRun<T>(ParserResult<T> result, ConvertStanOptions opts)
         {
             TypoCheck(result, opts);
@@ -62,6 +70,12 @@ namespace Getools.Verbs
             Convert(opts);
         }
 
+        /// <summary>
+        /// Verb specific help.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="errs">Parser errors.</param>
         public override void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
             var errorLines = new List<string>();
