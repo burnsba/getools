@@ -9,9 +9,15 @@ using Newtonsoft.Json.Serialization;
 
 namespace Getools.Lib.Converters
 {
+    /// <summary>
+    /// Stan JSON serializer helper. Determines which properties should be included
+    /// in the JSON or not.
+    /// Used to toggle release vs beta values.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:Elements should be documented", Justification = "<Justification>")]
     public class StanShouldSerializeContractResolver : DefaultContractResolver
     {
-        public new static readonly StanShouldSerializeContractResolver Instance = new StanShouldSerializeContractResolver();
+        public static readonly StanShouldSerializeContractResolver Instance = new StanShouldSerializeContractResolver();
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {

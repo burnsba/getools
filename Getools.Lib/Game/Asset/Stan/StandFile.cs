@@ -6,20 +6,45 @@ using System.Text;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
+    /// <summary>
+    /// Complete stan.
+    /// </summary>
     public class StandFile
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StandFile"/> class.
+        /// </summary>
         public StandFile()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StandFile"/> class.
+        /// </summary>
+        /// <param name="format">Stan format.</param>
         public StandFile(TypeFormat format)
         {
             Format = format;
         }
 
+        /// <summary>
+        /// Header.
+        /// </summary>
         public StandFileHeader Header { get; set; }
+
+        /// <summary>
+        /// List of tiles.
+        /// </summary>
         public List<StandTile> Tiles { get; set; } = new List<StandTile>();
+
+        /// <summary>
+        /// Footer.
+        /// </summary>
         public StandFileFooter Footer { get; set; }
+
+        /// <summary>
+        /// Optional beta footer.
+        /// </summary>
         public BetaFooter BetaFooter { get; set; } = null;
 
         /// <summary>
@@ -27,6 +52,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public TypeFormat Format { get; set; }
 
+        /// <summary>
+        /// Sets the format. Visits children and updates any format specific values.
+        /// Calling this method manually should be followed by a call to <see cref="DeserializeFix"/>.
+        /// </summary>
+        /// <param name="format">Format.</param>
         public void SetFormat(TypeFormat format)
         {
             Format = format;
@@ -37,6 +67,10 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <summary>
+        /// Should be called after deserializing. Cleans up values/properties
+        /// based on the known format.
+        /// </summary>
         public void DeserializeFix()
         {
             foreach (var tile in Tiles)
@@ -50,6 +84,10 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <summary>
+        /// Builds the entire .c file describing stan and writes to stream at the current position.
+        /// </summary>
+        /// <param name="sw">Stream to write to</param>
         internal void WriteToCFile(StreamWriter sw)
         {
             sw.WriteLine("/*");
@@ -92,6 +130,11 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine();
         }
 
+        /// <summary>
+        /// Builds the entire .c file describing stan using the beta format
+        /// and writes to stream at the current position.
+        /// </summary>
+        /// <param name="sw">Stream to write to</param>
         internal void WriteToBetaCFile(StreamWriter sw)
         {
             sw.WriteLine("/*");
@@ -137,6 +180,11 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine();
         }
 
+        /// <summary>
+        /// Converts stan to byte array as it would appear in .bin file
+        /// and writes to stream at the current position.
+        /// </summary>
+        /// <param name="bw">Stream to write to</param>
         internal void WriteToBinFile(BinaryWriter bw)
         {
             Header.AppendToBinaryStream(bw);
@@ -149,6 +197,11 @@ namespace Getools.Lib.Game.Asset.Stan
             Footer.AppendToBinaryStream(bw);
         }
 
+        /// <summary>
+        /// Converts stan to byte array as it would appear in .bin file using the beta format
+        /// and writes to stream at the current position.
+        /// </summary>
+        /// <param name="bw">Stream to write to</param>
         internal void WriteToBetaBinFile(BinaryWriter bw)
         {
             Header.BetaAppendToBinaryStream(bw);

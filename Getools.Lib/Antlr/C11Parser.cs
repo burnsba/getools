@@ -11,8 +11,16 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.Antlr
 {
-    public static class C99Parser
+    /// <summary>
+    /// C parser helper class.
+    /// </summary>
+    public static class C11Parser
     {
+        /// <summary>
+        /// Loads a text file then parsers according to C11 generated parser.
+        /// </summary>
+        /// <param name="path">File to parse.</param>
+        /// <returns>Parse tree.</returns>
         public static IParseTree ParseC(string path)
         {
             var text = System.IO.File.ReadAllText(path);

@@ -6,8 +6,16 @@ using Getools.Lib.Game;
 
 namespace Getools.Lib.Converters
 {
+    /// <summary>
+    /// Helper methods to convert format enums.
+    /// </summary>
     public static class FormatConverter
     {
+        /// <summary>
+        /// Gets <see cref="FileType"/> from combined data format.
+        /// </summary>
+        /// <param name="df">Format source.</param>
+        /// <returns>File format.</returns>
         public static FileType FileTypeFromDataFormat(DataFormats df)
         {
             switch (df)
@@ -28,6 +36,11 @@ namespace Getools.Lib.Converters
             }
         }
 
+        /// <summary>
+        /// Gets <see cref="TypeFormat"/> from combined data format.
+        /// </summary>
+        /// <param name="df">Format source.</param>
+        /// <returns>Type format.</returns>
         public static TypeFormat TypeFormatFromDataFormat(DataFormats df)
         {
             switch (df)
@@ -42,12 +55,18 @@ namespace Getools.Lib.Converters
 
                 case DataFormats.Json:
                     // not enough information for json
-
+                    // fallthrough
                 default:
                     return TypeFormat.DefaultUnknown;
             }
         }
 
+        /// <summary>
+        /// Builds combined data format from descriptors.
+        /// </summary>
+        /// <param name="type">Struct type.</param>
+        /// <param name="file">File container type.</param>
+        /// <returns>Combined data format.</returns>
         public static DataFormats GetDataFormat(TypeFormat type, FileType file)
         {
             if (file == FileType.C)
@@ -80,6 +99,11 @@ namespace Getools.Lib.Converters
             return DataFormats.DefaultUnknown;
         }
 
+        /// <summary>
+        /// Filters data formats down to a unique list of file types.
+        /// </summary>
+        /// <param name="formats">Formats to filter.</param>
+        /// <returns>File types.</returns>
         public static List<FileType> ToKnownFileTypes(List<DataFormats> formats)
         {
             return formats
@@ -89,6 +113,11 @@ namespace Getools.Lib.Converters
                 .ToList();
         }
 
+        /// <summary>
+        /// Filters data formats down to a unique list of struct types.
+        /// </summary>
+        /// <param name="formats">Formats to filter.</param>
+        /// <returns>Struct types.</returns>
         public static List<TypeFormat> ToKnownTypeFormat(List<DataFormats> formats)
         {
             return formats

@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Getools.Lib
 {
+    /// <summary>
+    /// Parsing helper methods.
+    /// </summary>
     public static class ParseHelpers
     {
         /// <summary>

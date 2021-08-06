@@ -1,18 +1,28 @@
-﻿using Getools.Lib.Error;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.Error;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
+    /// <summary>
+    /// Beta footer object declare at the end of stan; appears after regular <see cref="StandFileFooter"/>.
+    /// Subset of <see cref="StandFile"/>.
+    /// </summary>
     public class BetaFooter
     {
-        // includes terminating zero
+        /// <summary>
+        /// String length of point name listed at the end of the beta stan.
+        /// This is the exact string length including zeroes.
+        /// </summary>
         public const int PointStringLength = 8;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BetaFooter"/> class.
+        /// </summary>
         public BetaFooter()
         {
         }
@@ -33,6 +43,13 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public List<String> BetaPointList { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToBetaCDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -44,8 +61,8 @@ namespace Getools.Lib.Game.Asset.Stan
                 return string.Empty;
             }
 
-            // only have one example, so not sure if there is supposed to be a null entry at
-            // the end, or if it's supposed to pad to a multiple of 16.
+            ///// only have one example, so not sure if there is supposed to be a null entry at
+            ///// the end, or if it's supposed to pad to a multiple of 16.
 
             sb.AppendLine($"{prefix}{Config.Stan.BetaFooterCTypeName} {Config.Stan.DefaultDeclarationName_BetaFooter}[{count + 1}][{PointStringLength}] = {{");
 
@@ -70,6 +87,11 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Converts the current object to a byte array, as it would
+        /// exist in a beta binary format.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToBetaByteArray()
         {
             bool appendEmpty = false;
@@ -98,6 +120,10 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        /// <summary>
+        /// Should be called after deserializing. Cleans up values/properties
+        /// based on the known format.
+        /// </summary>
         public void DeserializeFix()
         {
             if (DeclaredLength < 1 && BetaPointList.Count > 0)
@@ -111,12 +137,12 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToBetaByteArray();
-            stream.Write(bytes);
-        }
-
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using beta structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         internal static BetaFooter ReadFromBetaBinFile(BinaryReader br)
         {
             var result = new BetaFooter();
@@ -162,6 +188,17 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Converts this object to a byte array using beta structs and writes
+        /// it to the current stream position.
+        /// </summary>
+        /// <param name="stream">Stream to write to.</param>
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
+            stream.Write(bytes);
         }
     }
 }

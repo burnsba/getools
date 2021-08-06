@@ -12,18 +12,21 @@ using Getools.Lib.Game.Asset.Stan;
 
 namespace Getools.Lib.Antlr
 {
+    /// <summary>
+    /// Parser listener. Methods are called as parsed tree is walked.
+    /// </summary>
     public class CStanListener : CBaseListener
     {
         /*
          * This class is a simple state machine to parse the current .c file definition for stan file (not beta/debug).
-         * 
+         *
          * Order of operations for a declaration:
          *     EnterStorageClassSpecifier (optional. example: extern)
          *     EnterTypeSpecifier (example: u8, float)
          *     EnterDeclarator (example: tile[4])
          *     EnterDeclaration (example: {1,1,1,3} )
          *     EnterAssignmentExpression (example: 1)
-         * 
+         *
          * When a new declaraction is entered (EnterDeclaration), the current parse state is reset.
          */
 
@@ -35,6 +38,13 @@ namespace Getools.Lib.Antlr
         private StandTilePoint _workingPoint = null;
 
         private StandFile _workingResult = null;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CStanListener"/> class.
+        /// </summary>
+        public CStanListener()
+        {
+        }
 
         private enum ParseState
         {
@@ -66,10 +76,6 @@ namespace Getools.Lib.Antlr
             Footer = 4,
         }
 
-        public CStanListener()
-        {
-        }
-
         /// <summary>
         /// Gets the result after parsing a stan C file.
         /// </summary>
@@ -78,7 +84,7 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Entry point to begin parsing.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
             Result = null;
@@ -88,7 +94,7 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Finalize current parsing.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void ExitCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
             _workingResult.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderIndex).ToList();
@@ -120,10 +126,10 @@ namespace Getools.Lib.Antlr
         /// Resets parse state to start parsing a declaration.
         /// Unsets <see cref="_currentFieldIndex"/>.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterDeclaration([NotNull] CParser.DeclarationContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             // the last assignment in the tile should change the parse state to a point, so
             // if a declaration is enounctered while the parse state is a tile
@@ -141,10 +147,10 @@ namespace Getools.Lib.Antlr
         /// Unsets the current parse state.
         /// If this is the close of a tile or point, also adds current item to the appropriate result collection.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void ExitDeclaration([NotNull] CParser.DeclarationContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             // If the tile has any points, then the parse state will be changed to Point,
             // so we need to check for either state here when exiting the declaration.
@@ -173,10 +179,10 @@ namespace Getools.Lib.Antlr
         /// Footer values are only set once, from the first footer found.
         /// Will add <see cref="_workingPoint"/> to <see cref="_workingPointsList"/> once all values are set.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterAssignmentExpression([NotNull] CParser.AssignmentExpressionContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             if (_ignoreNextAssignment)
             {
@@ -311,13 +317,12 @@ namespace Getools.Lib.Antlr
                         {
                             _currentFieldIndex++;
                         }
+
                         break;
                 }
             }
             else if (_parseState == ParseState.Point)
             {
-                // point
-
                 if (object.ReferenceEquals(null, _workingPoint))
                 {
                     _workingPoint = new StandTilePoint();
@@ -349,6 +354,7 @@ namespace Getools.Lib.Antlr
 
                     case 3:
                         _workingPoint.Link = (short)val.Value;
+
                         // This declaration is an inline array listing, so need to reset the working point
                         // for the next value in the array.
                         _currentFieldIndex = 0;
@@ -408,10 +414,10 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Only used to flag extern declarations to be ignored.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterStorageClassSpecifier([NotNull] CParser.StorageClassSpecifierContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
 
@@ -426,10 +432,10 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Type specifier determines the parse state, and how properties are set in <see cref="EnterAssignmentExpression"/>.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterTypeSpecifier([NotNull] CParser.TypeSpecifierContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
 
@@ -457,10 +463,10 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Declarator contains the name and optional array length.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterDeclarator([NotNull] CParser.DeclaratorContext context)
         {
-            //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
 
@@ -503,10 +509,10 @@ namespace Getools.Lib.Antlr
         /// Initializer and assignment are both called for assignments, but initializer
         /// is called once per struct instead of starting with the first value.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Context.</param>
         public override void EnterInitializer([NotNull] CParser.InitializerContext context)
         {
-            ////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
+            ////////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
         }
 
         /// <summary>
@@ -518,7 +524,7 @@ namespace Getools.Lib.Antlr
         /// <param name="s">Name of variable.</param>
         /// <param name="numberBase">Base to convert number as.</param>
         /// <returns>Parsed number, or -1 if unsuccessful.</returns>
-        public static int SplitToOrderId(string s, int numberBase)
+        private int SplitToOrderId(string s, int numberBase)
         {
             int result;
             var underscore = s.IndexOf('_');

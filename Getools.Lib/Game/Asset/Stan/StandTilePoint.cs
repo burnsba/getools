@@ -7,19 +7,27 @@ using System.Text;
 namespace Getools.Lib.Game.Asset.Stan
 {
     /// <summary>
-    /// 
+    /// Point used by stan.
+    /// Subset of <see cref="StandTile"/> within <see cref="StandFile"/>.
     /// </summary>
-    /// <remarks>
-    /// Only have one set of properties on the point, if it's a beta
-    /// format than the int is actually the interal bit values of the float.
-    /// In that case, call BitUtility.CastToInt32() to set,
-    /// and BitUtility.CastToFloat to get the value.
-    /// </remarks>
     public class StandTilePoint
     {
-        // in bytes
+        /// <summary>
+        /// Size of the point struct in bytes (non-beta).
+        /// </summary>
         public const int SizeOf = 8;
+
+        /// <summary>
+        /// Size of the beta point struct in bytes.
+        /// </summary>
         public const int BetaSizeOf = 16;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StandTilePoint"/> class.
+        /// </summary>
+        public StandTilePoint()
+        {
+        }
 
         /// <summary>
         /// Gets or sets point X coordinate. This property is used for "standard" points (not debug/beta).
@@ -51,18 +59,29 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public Single FloatZ { get; set; }
 
+        /// <summary>
+        /// Gets or sets "link" property of point.
+        /// </summary>
         public int Link { get; set; }
 
         /// <summary>
-        /// Gets or sets explanation for how object should be serialized to JSON.
+        /// Gets or sets explanation for how object should be serialized.
         /// </summary>
         internal TypeFormat SerializeFormat { get; set; }
 
+        /// <summary>
+        /// Sets the format used to serialize the data.
+        /// </summary>
+        /// <param name="format">Format to use.</param>
         public void SetFormat(TypeFormat format)
         {
             SerializeFormat = format;
         }
 
+        /// <summary>
+        /// Should be called after deserializing. Cleans up values/properties
+        /// based on the known format.
+        /// </summary>
         public void DeserializeFix()
         {
             if (SerializeFormat == TypeFormat.Normal)
@@ -79,16 +98,35 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToCInlineDeclaration(string prefix = "")
         {
             return $"{prefix}{{{(short)X}, {(short)Y}, {(short)Z}, 0x{(short)Link:x4}}}";
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToBetaCInlineDeclaration(string prefix = "")
         {
             return $"{prefix}{{{FloatX}, {FloatY}, {FloatZ}, 0x{(int)Link:x8}}}";
         }
 
+        /// <summary>
+        /// Converts the current object to a byte array, as it would
+        /// exist in a regular binary format.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray()
         {
             var results = new byte[SizeOf];
@@ -101,6 +139,11 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        /// <summary>
+        /// Converts the current object to a byte array, as it would
+        /// exist in a beta binary format.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToBetaByteArray()
         {
             var results = new byte[BetaSizeOf];
@@ -117,18 +160,12 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        internal void AppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToByteArray();
-            stream.Write(bytes);
-        }
-
-        internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToBetaByteArray();
-            stream.Write(bytes);
-        }
-
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using normal structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         internal static StandTilePoint ReadFromBinFile(BinaryReader br)
         {
             var result = new StandTilePoint();
@@ -146,6 +183,12 @@ namespace Getools.Lib.Game.Asset.Stan
             return result;
         }
 
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using beta structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
         {
             var result = new StandTilePoint();
@@ -165,6 +208,28 @@ namespace Getools.Lib.Game.Asset.Stan
             result.Link = BitUtility.Read32Big(br);
 
             return result;
+        }
+
+        /// <summary>
+        /// Converts this object to a byte array using normal structs and writes
+        /// it to the current stream position.
+        /// </summary>
+        /// <param name="stream">Stream to write to.</param>
+        internal void AppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToByteArray();
+            stream.Write(bytes);
+        }
+
+        /// <summary>
+        /// Converts this object to a byte array using beta structs and writes
+        /// it to the current stream position.
+        /// </summary>
+        /// <param name="stream">Stream to write to.</param>
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
+            stream.Write(bytes);
         }
     }
 }

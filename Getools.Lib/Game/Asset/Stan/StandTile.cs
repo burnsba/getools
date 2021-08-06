@@ -1,28 +1,46 @@
-﻿using Getools.Lib.Error;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.Error;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
+    /// <summary>
+    /// Single tile definition.
+    /// Subset of <see cref="StandFile"/>.
+    /// </summary>
     public class StandTile
     {
+        /// <summary>
+        /// Size of the tile struct in bytes without any points.
+        /// </summary>
         public const int SizeOfTileWithoutPoints = 8;
+
+        /// <summary>
+        /// Size of the beta tile struct in bytes without any points.
+        /// </summary>
         public const int SizeOfBetaTileWithoutPoints = 12;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StandTile"/> class.
+        /// </summary>
         public StandTile()
         {
         }
 
         /// <summary>
+        /// Tile internal name or identifier.
         /// 24 bits.
-        /// Upper 16: Id.
-        /// Last 8: Group Id.
+        /// Upper 16: Id?
+        /// Last 8: Group Id?
         /// </summary>
         public int InternalName { get; set; }
 
+        /// <summary>
+        /// Tile room.
+        /// </summary>
         public byte Room { get; set; }
 
         /// <summary>
@@ -75,6 +93,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public byte ThirdPoint { get; set; }
 
+        /// <summary>
+        /// When parsing a .c file, this will be the name of the tile after an underscore.
+        /// For example, "tile_9" -> 9.
+        /// When loading a binary file, this will be the index of the tile seen so far (0,1,2,...).
+        /// </summary>
         public int OrderIndex { get; set; }
 
         /// <summary>
@@ -83,12 +106,19 @@ namespace Getools.Lib.Game.Asset.Stan
         public string VariableName { get; set; }
 
         /// <summary>
+        /// List of points associated with the tile.
+        /// </summary>
+        public List<StandTilePoint> Points { get; set; } = new List<StandTilePoint>();
+
+        /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
         /// </summary>
         internal TypeFormat SerializeFormat { get; set; }
 
-        public List<StandTilePoint> Points { get; set; } = new List<StandTilePoint>();
-
+        /// <summary>
+        /// Sets the format of the tile. Visits children and updates any format specific values.
+        /// </summary>
+        /// <param name="format">Format to use.</param>
         public void SetFormat(TypeFormat format)
         {
             SerializeFormat = format;
@@ -99,6 +129,10 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <summary>
+        /// Should be called after deserializing. Cleans up values/properties
+        /// based on the known format.
+        /// </summary>
         public void DeserializeFix()
         {
             foreach (var point in Points)
@@ -112,7 +146,12 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        // uses Points.Count instead of PointsCount property.
+        /// <summary>
+        /// Converts the current object to a byte array, as it would
+        /// exist in a regular binary format.
+        /// Uses Points.Count instead of PointsCount property.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray()
         {
             var results = new byte[SizeOfTileWithoutPoints + (Points.Count * StandTilePoint.SizeOf)];
@@ -126,7 +165,7 @@ namespace Getools.Lib.Game.Asset.Stan
             results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
 
             int index = SizeOfTileWithoutPoints;
-            for (int i=0; i<Points.Count; i++)
+            for (int i = 0; i < Points.Count; i++)
             {
                 Array.Copy(Points[i].ToByteArray(), 0, results, index, StandTilePoint.SizeOf);
                 index += StandTilePoint.SizeOf;
@@ -135,7 +174,12 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
-        // uses Points.Count instead of PointsCount property.
+        /// <summary>
+        /// Converts the current object to a byte array, as it would
+        /// exist in a beta binary format.
+        /// Uses Points.Count instead of PointsCount property.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToBetaByteArray()
         {
             var results = new byte[SizeOfBetaTileWithoutPoints + (Points.Count * StandTilePoint.BetaSizeOf)];
@@ -163,6 +207,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToCDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -176,6 +227,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToCInlineDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -189,6 +247,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToBetaCDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -202,6 +267,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
         public string ToBetaCInlineDeclaration(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -215,18 +287,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return sb.ToString();
         }
 
-        internal void AppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToByteArray();
-            stream.Write(bytes);
-        }
-
-        internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToBetaByteArray();
-            stream.Write(bytes);
-        }
-
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using normal structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
+        /// <returns>New object.</returns>
         internal static StandTile ReadFromBinFile(BinaryReader br, int tileIndex)
         {
             var result = new StandTile();
@@ -251,15 +318,15 @@ namespace Getools.Lib.Game.Asset.Stan
 
             b = br.ReadByte();
             result.Flags = (byte)((b >> 4) & 0xf);
-            result.R = (byte)((b) & 0xf);
+            result.R = (byte)(b & 0xf);
 
             b = br.ReadByte();
             result.G = (byte)((b >> 4) & 0xf);
-            result.B = (byte)((b) & 0xf);
+            result.B = (byte)(b & 0xf);
 
             b = br.ReadByte();
             result.PointCount = (byte)((b >> 4) & 0xf);
-            result.FirstPoint = (byte)((b) & 0xf);
+            result.FirstPoint = (byte)(b & 0xf);
 
             if (result.PointCount < 1)
             {
@@ -268,12 +335,11 @@ namespace Getools.Lib.Game.Asset.Stan
 
             b = br.ReadByte();
             result.SecondPoint = (byte)((b >> 4) & 0xf);
-            result.ThirdPoint = (byte)((b) & 0xf);
+            result.ThirdPoint = (byte)(b & 0xf);
 
             result.OrderIndex = tileIndex;
 
             // Done with tile header, now read points.
-
             for (int i = 0; i < result.PointCount; i++)
             {
                 var point = StandTilePoint.ReadFromBinFile(br);
@@ -283,6 +349,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return result;
         }
 
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using beta structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
+        /// <returns>New object.</returns>
         internal static StandTile ReadFromBetaBinFile(BinaryReader br, int tileIndex)
         {
             var result = new StandTile();
@@ -307,11 +380,11 @@ namespace Getools.Lib.Game.Asset.Stan
 
             b = br.ReadByte();
             result.Flags = (byte)((b >> 4) & 0xf);
-            result.R = (byte)((b) & 0xf);
+            result.R = (byte)(b & 0xf);
 
             b = br.ReadByte();
             result.G = (byte)((b >> 4) & 0xf);
-            result.B = (byte)((b) & 0xf);
+            result.B = (byte)(b & 0xf);
 
             result.UnknownBeta = BitUtility.Read16Big(br);
 
@@ -329,7 +402,6 @@ namespace Getools.Lib.Game.Asset.Stan
             result.OrderIndex = tileIndex;
 
             // Done with tile header, now read points.
-
             for (int i = 0; i < result.PointCount; i++)
             {
                 var point = StandTilePoint.ReadFromBetaBinFile(br);
@@ -339,6 +411,29 @@ namespace Getools.Lib.Game.Asset.Stan
             return result;
         }
 
+        /// <summary>
+        /// Converts this object to a byte array using normal structs and writes
+        /// it to the current stream position.
+        /// </summary>
+        /// <param name="stream">Stream to write to.</param>
+        internal void AppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToByteArray();
+            stream.Write(bytes);
+        }
+
+        /// <summary>
+        /// Converts this object to a byte array using beta structs and writes
+        /// it to the current stream position.
+        /// </summary>
+        /// <param name="stream">Stream to write to.</param>
+        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        {
+            var bytes = ToBetaByteArray();
+            stream.Write(bytes);
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
@@ -368,6 +463,7 @@ namespace Getools.Lib.Game.Asset.Stan
             sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");

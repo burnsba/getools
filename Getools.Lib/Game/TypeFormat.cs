@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// Object/struct formats supported by the library.
+    /// </summary>
     public enum TypeFormat
     {
         /// <summary>

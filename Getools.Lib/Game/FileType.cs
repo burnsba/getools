@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// File types supported by the library.
+    /// </summary>
     public enum FileType
     {
         /// <summary>
