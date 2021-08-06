@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31424.327
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Getools", "Getools\Getools.csproj", "{61F5B392-6954-4708-8B04-48CD812ECBE9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Getools", "Getools\Getools.csproj", "{61F5B392-6954-4708-8B04-48CD812ECBE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Getools.Lib", "Getools.Lib\Getools.Lib.csproj", "{D7053F95-0790-43A3-9D19-EFC67A0A166C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Getools.Lib", "Getools.Lib\Getools.Lib.csproj", "{D7053F95-0790-43A3-9D19-EFC67A0A166C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Getools.Test", "Getools.Test\Getools.Test.csproj", "{F3E63024-F650-483F-AB61-AAD4A7BF415C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{D7053F95-0790-43A3-9D19-EFC67A0A166C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7053F95-0790-43A3-9D19-EFC67A0A166C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7053F95-0790-43A3-9D19-EFC67A0A166C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3E63024-F650-483F-AB61-AAD4A7BF415C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3E63024-F650-483F-AB61-AAD4A7BF415C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3E63024-F650-483F-AB61-AAD4A7BF415C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3E63024-F650-483F-AB61-AAD4A7BF415C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

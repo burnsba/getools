@@ -30,6 +30,7 @@ namespace Getools.Lib.Game
             public static List<DataFormats> SupportedInputFormats = new List<DataFormats>()
             {
                 DataFormats.C,
+                DataFormats.BetaC,
                 DataFormats.Json,
                 DataFormats.Bin,
                 DataFormats.BetaBin,

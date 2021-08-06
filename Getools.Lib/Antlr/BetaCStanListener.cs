@@ -11,10 +11,10 @@ using Getools.Lib.Game.Asset.Stan;
 
 namespace Getools.Lib.Antlr
 {
-    public class CStanListener : CBaseListener
+    public class BetaCStanListener : CBaseListener
     {
         /*
-         * This class is a simple state machine to parse the current .c file definition for stan file (not beta/debug).
+         * This class is a simple state machine to parse the beat .c file definition for stan file (beta/debug).
          * 
          * Order of operations for a declaration:
          *     EnterStorageClassSpecifier (optional. example: extern)
@@ -28,12 +28,14 @@ namespace Getools.Lib.Antlr
 
         private ParseState _parseState = ParseState.Unset;
         private int _currentFieldIndex = -1;
-        private bool _ignoreNextAssignment = false;
+        private int _ignoreAssignmentCount = 0;
 
         private StandTile _workingTile = null;
         private StandTilePoint _workingPoint = null;
 
         private StandFile _workingResult = null;
+
+        private bool _footerDone = false;
 
         private enum ParseState
         {
@@ -63,9 +65,14 @@ namespace Getools.Lib.Antlr
             /// Currently parsing footer.
             /// </summary>
             Footer = 4,
+
+            /// <summary>
+            /// Currently parsing beta footer list of strings.
+            /// </summary>
+            BetaFooter = 6,
         }
 
-        public CStanListener()
+        public BetaCStanListener()
         {
         }
 
@@ -81,7 +88,7 @@ namespace Getools.Lib.Antlr
         public override void EnterCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
             Result = null;
-            _workingResult = new StandFile(TypeFormat.Normal);
+            _workingResult = new StandFile(TypeFormat.Beta);
         }
 
         /// <summary>
@@ -128,6 +135,10 @@ namespace Getools.Lib.Antlr
 
                 _workingTile = null;
             }
+            else if (_parseState == ParseState.Footer)
+            {
+                _footerDone = true;
+            }
 
             _parseState = ParseState.Unset;
         }
@@ -144,9 +155,9 @@ namespace Getools.Lib.Antlr
         {
             //Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
-            if (_ignoreNextAssignment)
+            if (_ignoreAssignmentCount > 0)
             {
-                _ignoreNextAssignment = false;
+                _ignoreAssignmentCount--;
                 return;
             }
 
@@ -249,21 +260,26 @@ namespace Getools.Lib.Antlr
                         break;
 
                     case 6:
-                        _workingTile.PointCount = (byte)val.Value;
+                        _workingTile.UnknownBeta = (short)val.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 7:
-                        _workingTile.FirstPoint = (byte)val.Value;
+                        _workingTile.PointCount = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 8:
-                        _workingTile.SecondPoint = (byte)val.Value;
+                        _workingTile.FirstPoint = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 9:
+                        _workingTile.SecondPoint = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 10:
                         _workingTile.ThirdPoint = (byte)val.Value;
 
                         // after the tile properties is the array of points related to the tile.
@@ -289,9 +305,11 @@ namespace Getools.Lib.Antlr
                     _workingPoint = new StandTilePoint();
                 }
 
-                if (!val.HasValue)
+                Single? floatVal = null;
+                Single s;
+                if (Single.TryParse(text, out s))
                 {
-                    throw new InvalidOperationException("Point does not allow nulls");
+                    floatVal = s;
                 }
 
                 switch (_currentFieldIndex)
@@ -299,22 +317,40 @@ namespace Getools.Lib.Antlr
                     case -1:
                     case 0:
                         _workingPoint = new StandTilePoint();
-                        _workingPoint.X = (short)val.Value;
+
+                        if (!floatVal.HasValue)
+                        {
+                            throw new InvalidOperationException("Point does not allow nulls");
+                        }
+
+                        _workingPoint.FloatX = floatVal.Value;
                         _currentFieldIndex = 1;
                         break;
 
                     case 1:
-                        _workingPoint.Y = (short)val.Value;
+
+                        if (!floatVal.HasValue)
+                        {
+                            throw new InvalidOperationException("Point does not allow nulls");
+                        }
+
+                        _workingPoint.FloatY = floatVal.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 2:
-                        _workingPoint.Z = (short)val.Value;
+
+                        if (!floatVal.HasValue)
+                        {
+                            throw new InvalidOperationException("Point does not allow nulls");
+                        }
+
+                        _workingPoint.FloatZ = floatVal.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 3:
-                        _workingPoint.Link = (short)val.Value;
+                        _workingPoint.Link = (int)val.Value;
                         // This declaration is an inline array listing, so need to reset the working point
                         // for the next value in the array.
                         _currentFieldIndex = 0;
@@ -369,6 +405,28 @@ namespace Getools.Lib.Antlr
                         break;
                 }
             }
+            else if (_parseState == ParseState.BetaFooter)
+            {
+                if (object.ReferenceEquals(null, _workingResult.BetaFooter))
+                {
+                    _workingResult.BetaFooter = new BetaFooter();
+                }
+
+                // Should only be long array of strings, so no switch statement or anything.
+                // Note that the list may contain empty strings. However, the first empty string
+                // is actually a fake value added to get the .c file to building into a matching
+                // binary. This is inserted automatically on .c output generation, so ignore
+                // that here.
+                if (_currentFieldIndex < 1 && text == "")
+                {
+                    _currentFieldIndex = 1;
+                }
+                else
+                {
+                    _workingResult.BetaFooter.BetaPointList.Add(text);
+                    _currentFieldIndex++;
+                }
+            }
         }
 
         /// <summary>
@@ -405,13 +463,17 @@ namespace Getools.Lib.Antlr
                 {
                     _parseState = ParseState.Header;
                 }
-                else if (text == Config.Stan.TileCTypeName)
+                else if (text == Config.Stan.TileBetaCTypeName)
                 {
                     _parseState = ParseState.Tile;
                 }
                 else if (text == Config.Stan.FooterCTypeName)
                 {
                     _parseState = ParseState.Footer;
+                }
+                else if (_footerDone && text == Config.Stan.BetaFooterCTypeName)
+                {
+                    _parseState = ParseState.BetaFooter;
                 }
             }
         }
@@ -458,6 +520,43 @@ namespace Getools.Lib.Antlr
                 }
 
                 _workingResult.Footer.Name = text;
+            }
+            else if (_parseState == ParseState.BetaFooter)
+            {
+                if (object.ReferenceEquals(null, _workingResult.BetaFooter))
+                {
+                    _workingResult.BetaFooter = new BetaFooter();
+                }
+
+                // check if this is an array declaration.
+                // This should be a 2d array, but we only care about the first array length.
+                var openBracket = text.IndexOf('[');
+                var closeBracket = text.IndexOf(']');
+                int i;
+
+                if (openBracket > -1 && closeBracket > (openBracket + 1))
+                {
+                    // calculate array length first.
+                    string bracketText = text.Substring(openBracket + 1, closeBracket - openBracket - 1);
+                    if (ParseHelpers.TryParseInt(bracketText, out i))
+                    {
+                        // adjust for first empty string.
+                        _workingResult.BetaFooter.DeclaredLength = i - 1;
+
+                        if (_workingResult.BetaFooter.DeclaredLength < 0)
+                        {
+                            _workingResult.BetaFooter.DeclaredLength = 0;
+                        }
+                    }
+
+                    // Now truncate array declaration text to get just the name
+                    text = text.Substring(0, openBracket);
+
+                    // ignore this array length, and the 2nd dimension array length (should be constant anyway)
+                    _ignoreAssignmentCount = 2;
+                }
+
+                _workingResult.BetaFooter.VariableName = text;
             }
         }
 

@@ -164,5 +164,10 @@ namespace Getools.Lib
         {
             return BitConverter.ToSingle(BitConverter.GetBytes(i), 0);
         }
+
+        public static Int32 CastToInt32(Single f)
+        {
+            return BitConverter.ToInt32(BitConverter.GetBytes((Single)f), 0);
+        }
     }
 }

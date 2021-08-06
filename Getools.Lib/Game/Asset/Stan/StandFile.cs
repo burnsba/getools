@@ -12,10 +12,43 @@ namespace Getools.Lib.Game.Asset.Stan
         {
         }
 
+        public StandFile(TypeFormat format)
+        {
+            Format = format;
+        }
+
         public StandFileHeader Header { get; set; }
         public List<StandTile> Tiles { get; set; } = new List<StandTile>();
         public StandFileFooter Footer { get; set; }
         public BetaFooter BetaFooter { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets explanation for how object should be serialized to JSON.
+        /// </summary>
+        public TypeFormat Format { get; set; }
+
+        public void SetFormat(TypeFormat format)
+        {
+            Format = format;
+
+            foreach (var tile in Tiles)
+            {
+                tile.SetFormat(format);
+            }
+        }
+
+        public void DeserializeFix()
+        {
+            foreach (var tile in Tiles)
+            {
+                tile.DeserializeFix();
+            }
+
+            if (!object.ReferenceEquals(null, BetaFooter))
+            {
+                BetaFooter.DeserializeFix();
+            }
+        }
 
         internal void WriteToCFile(StreamWriter sw)
         {

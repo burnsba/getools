@@ -98,6 +98,7 @@ namespace Getools.Verbs
             helpText.AddDashesToOption = true;
             helpText.MaximumDisplayWidth = 100;
             helpText.AdditionalNewLineAfterOption = false;
+            helpText.AutoVersion = false;
             helpText.AddOptions(result);
             helpText.AddPostOptionsLines(new List<string>()
             {
@@ -137,10 +138,15 @@ namespace Getools.Verbs
                     stan = StanConverters.ReadFromBetaBinFile(opts.InputFilename, opts.DeclarationName);
                     break;
 
-                //case Lib.Game.DataFormats.C:
-                //    stan = StanConverters.ParseFromC(opts.InputFilename);
-                //    stan.Header.Name = opts.DeclarationName;
-                //    break;
+                case Lib.Game.DataFormats.C:
+                    stan = StanConverters.ParseFromC(opts.InputFilename);
+                    stan.Header.Name = opts.DeclarationName;
+                    break;
+
+                case Lib.Game.DataFormats.BetaC:
+                    stan = StanConverters.ParseFromBetaC(opts.InputFilename);
+                    stan.Header.Name = opts.DeclarationName;
+                    break;
 
                 case Lib.Game.DataFormats.Json:
                     stan = StanConverters.ReadFromJson(opts.InputFilename);

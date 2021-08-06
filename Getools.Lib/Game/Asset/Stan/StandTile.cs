@@ -76,7 +76,40 @@ namespace Getools.Lib.Game.Asset.Stan
 
         public int OrderIndex { get; set; }
 
+        /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
+        public string VariableName { get; set; }
+
+        /// <summary>
+        /// Gets or sets explanation for how object should be serialized to JSON.
+        /// </summary>
+        internal TypeFormat SerializeFormat { get; set; }
+
         public List<StandTilePoint> Points { get; set; } = new List<StandTilePoint>();
+
+        public void SetFormat(TypeFormat format)
+        {
+            SerializeFormat = format;
+
+            foreach (var point in Points)
+            {
+                point.SetFormat(format);
+            }
+        }
+
+        public void DeserializeFix()
+        {
+            foreach (var point in Points)
+            {
+                point.DeserializeFix();
+            }
+
+            if (string.IsNullOrEmpty(VariableName))
+            {
+                VariableName = $"tile_{OrderIndex}";
+            }
+        }
 
         // uses Points.Count instead of PointsCount property.
         public byte[] ToByteArray()
@@ -133,7 +166,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} tile_{OrderIndex} = {{");
+            sb.AppendLine($"{prefix}{Config.Stan.TileCTypeName} tile_{OrderIndex} = {{");
 
             ToCDeclarationCommon(sb, prefix);
 

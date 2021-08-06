@@ -17,7 +17,18 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
+        public string VariableName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of entries declared in the points array.
+        /// </summary>
+        public int DeclaredLength { get; set; }
+
+        /// <summary>
         /// Beta stan files include ASCII names of points after the above footer.
+        /// A fake empty string is inlcuded at the beginning of the list when outputing to .c.
         /// </summary>
         public List<String> BetaPointList { get; set; } = new List<string>();
 
@@ -37,6 +48,8 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sb.AppendLine($"{prefix}{Config.Stan.BetaFooterCTypeName} {Config.Stan.DefaultDeclarationName_BetaFooter}[{count + 1}][{PointStringLength}] = {{");
 
+            // Not actually a real entry, but required to get the .c file
+            // to compile to a matching binary.
             sb.AppendLine(Config.DefaultIndent + "\"\"" + ",");
 
             for (int i = 0; i < count - 1; i++)
@@ -82,6 +95,19 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             return results;
+        }
+
+        public void DeserializeFix()
+        {
+            if (DeclaredLength < 1 && BetaPointList.Count > 0)
+            {
+                DeclaredLength = BetaPointList.Count;
+            }
+
+            if (string.IsNullOrEmpty(VariableName))
+            {
+                VariableName = Config.Stan.DefaultDeclarationName_BetaFooter;
+            }
         }
 
         internal void BetaAppendToBinaryStream(BinaryWriter stream)

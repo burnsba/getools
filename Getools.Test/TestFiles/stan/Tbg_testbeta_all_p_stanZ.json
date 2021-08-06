@@ -1,0 +1,164 @@
+{
+  "Header": {
+    "Unknown1": null,
+    "FirstTileOffset": 12,
+    "UnknownHeaderData": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "Name": "Tbg_testbeta_all_p_stanZ"
+  },
+  "Tiles": [
+    {
+      "InternalName": 121,
+      "Room": 112,
+      "Flags": 0,
+      "R": 15,
+      "G": 15,
+      "B": 15,
+      "UnknownBeta": 46,
+      "PointCount": 3,
+      "FirstPoint": 0,
+      "SecondPoint": 1,
+      "ThirdPoint": 2,
+      "OrderIndex": 0,
+      "VariableName": "tile_0",
+      "Points": [
+        {
+          "FloatX": 192.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 72
+        },
+        {
+          "FloatX": -769.0,
+          "FloatY": 0.0,
+          "FloatZ": 2500.0,
+          "Link": 0
+        },
+        {
+          "FloatX": 192.0,
+          "FloatY": 0.0,
+          "FloatZ": 2500.0,
+          "Link": 4832
+        }
+      ]
+    },
+    {
+      "InternalName": 121,
+      "Room": 120,
+      "Flags": 0,
+      "R": 15,
+      "G": 15,
+      "B": 15,
+      "UnknownBeta": 46,
+      "PointCount": 7,
+      "FirstPoint": 0,
+      "SecondPoint": 5,
+      "ThirdPoint": 6,
+      "OrderIndex": 1,
+      "VariableName": "tile_1",
+      "Points": [
+        {
+          "FloatX": 192.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 0
+        },
+        {
+          "FloatX": 0.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 988
+        },
+        {
+          "FloatX": -231.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 0
+        },
+        {
+          "FloatX": -346.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 1108
+        },
+        {
+          "FloatX": -577.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 0
+        },
+        {
+          "FloatX": -769.0,
+          "FloatY": 0.0,
+          "FloatZ": 2308.0,
+          "Link": 4908
+        },
+        {
+          "FloatX": -769.0,
+          "FloatY": 0.0,
+          "FloatZ": 2500.0,
+          "Link": 12
+        }
+      ]
+    },
+    {
+      "InternalName": 121,
+      "Room": 128,
+      "Flags": 0,
+      "R": 15,
+      "G": 15,
+      "B": 15,
+      "UnknownBeta": 45,
+      "PointCount": 3,
+      "FirstPoint": 0,
+      "SecondPoint": 1,
+      "ThirdPoint": 2,
+      "OrderIndex": 2,
+      "VariableName": "tile_2",
+      "Points": [
+        {
+          "FloatX": -2308.0,
+          "FloatY": 0.0,
+          "FloatZ": 769.0,
+          "Link": 256
+        },
+        {
+          "FloatX": -2500.0,
+          "FloatY": 0.0,
+          "FloatZ": -192.0,
+          "Link": 0
+        },
+        {
+          "FloatX": -2500.0,
+          "FloatY": 0.0,
+          "FloatZ": 769.0,
+          "Link": 2024
+        }
+      ]
+    }
+  ],
+  "Footer": {
+    "Unknown1": null,
+    "Unknown2": null,
+    "C": "unstric",
+    "Unknown3": null,
+    "Unknown4": null,
+    "Unknown5": null,
+    "Unknown6": null,
+    "Name": "footer"
+  },
+  "BetaFooter": {
+    "VariableName": "beta_footer",
+    "DeclaredLength": 3,
+    "BetaPointList": [
+      "p502a2",
+      "p502a1",
+      "p486a2"
+    ]
+  },
+  "Format": 2
+}

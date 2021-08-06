@@ -20,7 +20,7 @@ namespace Getools.Options
         [Option("output-format", Required = true, HelpText = "Output format.", MetaValue = "OUT_FORMAT")]
         public string OutputFormatString { get; set; }
 
-        [Option('d', "dname", Required = false, HelpText = "Container object declaration name, used when converting to code/source.")]
+        [Option('d', "dname", Required = false, HelpText = "Container object declaration name, used when converting to code/source. Defaults to input filename without extension if not set.")]
         public string DeclarationName { get; set; }
     }
 }

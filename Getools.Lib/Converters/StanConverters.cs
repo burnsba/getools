@@ -6,6 +6,7 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Getools.Lib.Antlr;
 using Getools.Lib.Antlr.Gen;
+using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Stan;
 using Newtonsoft.Json;
 
@@ -15,24 +16,33 @@ namespace Getools.Lib.Converters
     {
         public static StandFile ParseFromC(string path)
         {
-            throw new NotImplementedException();
-            //var text = System.IO.File.ReadAllText(path);
-            //ICharStream stream = CharStreams.fromString(text);
-            //ITokenSource lexer = new CLexer(stream);
-            //ITokenStream tokens = new CommonTokenStream(lexer);
-            //CParser parser = new CParser(tokens);
-            //parser.BuildParseTree = true;
-            //IParseTree tree = parser.compilationUnit();
+            var tree = C99Parser.ParseC(path);
 
-            //CStanListener listener = new CStanListener();
-            //ParseTreeWalker.Default.Walk(listener, tree);
+            CStanListener listener = new CStanListener();
+            ParseTreeWalker.Default.Walk(listener, tree);
 
-            //return listener.Result;
+            listener.Result.SetFormat(TypeFormat.Normal);
+            listener.Result.DeserializeFix();
+
+            return listener.Result;
+        }
+
+        public static StandFile ParseFromBetaC(string path)
+        {
+            var tree = C99Parser.ParseC(path);
+
+            BetaCStanListener listener = new BetaCStanListener();
+            ParseTreeWalker.Default.Walk(listener, tree);
+
+            listener.Result.SetFormat(TypeFormat.Beta);
+            listener.Result.DeserializeFix();
+
+            return listener.Result;
         }
 
         public static StandFile ReadFromBinFile(string path, string name)
         {
-            var result = new StandFile();
+            var result = new StandFile(TypeFormat.Normal);
 
             using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
             {
@@ -60,12 +70,14 @@ namespace Getools.Lib.Converters
 
             }
 
+            result.DeserializeFix();
+
             return result;
         }
 
         public static StandFile ReadFromBetaBinFile(string path, string name)
         {
-            var result = new StandFile();
+            var result = new StandFile(TypeFormat.Beta);
 
             using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
             {
@@ -93,6 +105,8 @@ namespace Getools.Lib.Converters
                 result.BetaFooter = BetaFooter.ReadFromBetaBinFile(br);
             }
 
+            result.DeserializeFix();
+
             return result;
         }
 
@@ -100,6 +114,10 @@ namespace Getools.Lib.Converters
         {
             var json = File.ReadAllText(path);
             var stan = JsonConvert.DeserializeObject<StandFile>(json);
+
+            stan.SetFormat(stan.Format);
+            stan.DeserializeFix();
+
             return stan;
         }
 
@@ -137,7 +155,17 @@ namespace Getools.Lib.Converters
 
         public static void WriteToJson(StandFile source, string path)
         {
-            var json = JsonConvert.SerializeObject(source, Formatting.Indented);
+            // sync all child formats to base object format.
+            source.SetFormat(source.Format);
+
+            var json = JsonConvert.SerializeObject(
+                source,
+                Formatting.Indented,
+                new JsonSerializerSettings
+                {
+                    ContractResolver = new StanShouldSerializeContractResolver()
+                });
+
             File.WriteAllText(path, json);
         }
     }

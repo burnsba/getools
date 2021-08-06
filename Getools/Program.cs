@@ -56,6 +56,12 @@ namespace Getools
 
         private static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
+            if (errs.IsVersion())
+            {
+                Console.Write(HeadingInfo.Default);
+                return;
+            }
+
             if (result.TypeInfo.Current == typeof(ConvertStanOptions))
             {
                 Verbs.ConvertStan.DisplayHelp(result, errs);
@@ -73,7 +79,6 @@ namespace Getools
             }
 
             var helpText = new HelpText(HeadingInfo.Default, CopyrightInfo.Default);
-            helpText.AddDashesToOption = true;
             helpText.MaximumDisplayWidth = 100;
             helpText.AdditionalNewLineAfterOption = false;
             helpText.AddOptions(result);
