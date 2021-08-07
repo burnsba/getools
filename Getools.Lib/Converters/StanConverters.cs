@@ -95,6 +95,7 @@ namespace Getools.Lib.Converters
                 }
 
                 result.Footer = StandFileFooter.ReadFromBinFile(br);
+                result.ReadRoData(br);
             }
 
             result.DeserializeFix();
@@ -136,7 +137,7 @@ namespace Getools.Lib.Converters
                 }
 
                 result.Footer = StandFileFooter.ReadFromBetaBinFile(br);
-                result.BetaFooter = BetaFooter.ReadFromBetaBinFile(br);
+                result.BetaReadRoData(br);
             }
 
             result.DeserializeFix();
@@ -160,9 +161,6 @@ namespace Getools.Lib.Converters
                 throw new BadFileFormatException("Type format not set in json");
             }
 
-            stan.SetFormat(stan.Format);
-            stan.DeserializeFix();
-
             if (object.ReferenceEquals(null, stan.Header))
             {
                 throw new BadFileFormatException("Missing header in json");
@@ -172,6 +170,11 @@ namespace Getools.Lib.Converters
             {
                 throw new BadFileFormatException("Missing footer in json");
             }
+
+            // hmmm, does it matter where this happens? Want to check for null header and footer
+            // at least, but should this be moved after the tile checks?
+            stan.SetFormat(stan.Format);
+            stan.DeserializeFix();
 
             if (object.ReferenceEquals(null, stan.Tiles) || !stan.Tiles.Any())
             {

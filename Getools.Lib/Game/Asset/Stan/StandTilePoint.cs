@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.Error;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
@@ -27,6 +28,15 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public StandTilePoint()
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StandTilePoint"/> class.
+        /// </summary>
+        /// <param name="format">Stan format.</param>
+        public StandTilePoint(TypeFormat format)
+        {
+            Format = format;
         }
 
         /// <summary>
@@ -67,7 +77,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Gets or sets explanation for how object should be serialized.
         /// </summary>
-        internal TypeFormat SerializeFormat { get; set; }
+        internal TypeFormat Format { get; set; }
 
         /// <summary>
         /// Sets the format used to serialize the data.
@@ -75,7 +85,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="format">Format to use.</param>
         public void SetFormat(TypeFormat format)
         {
-            SerializeFormat = format;
+            Format = format;
         }
 
         /// <summary>
@@ -84,13 +94,13 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public void DeserializeFix()
         {
-            if (SerializeFormat == TypeFormat.Normal)
+            if (Format == TypeFormat.Normal)
             {
                 FloatX = (Single)X;
                 FloatY = (Single)Y;
                 FloatZ = (Single)Z;
             }
-            else if (SerializeFormat == TypeFormat.Beta)
+            else if (Format == TypeFormat.Beta)
             {
                 X = (int)FloatX;
                 Y = (int)FloatY;
@@ -161,6 +171,27 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
+        /// Returns the binary size of the object in bytes,
+        /// according to the current format.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public int GetSizeOf()
+        {
+            if (Format == TypeFormat.Normal)
+            {
+                return SizeOf;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                return BetaSizeOf;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
+        }
+
+        /// <summary>
         /// Reads from current position in stream. Loads object from
         /// stream as it would be read from a binary file using normal structs.
         /// </summary>
@@ -168,7 +199,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>New object.</returns>
         internal static StandTilePoint ReadFromBinFile(BinaryReader br)
         {
-            var result = new StandTilePoint();
+            var result = new StandTilePoint(TypeFormat.Normal);
 
             result.X = BitUtility.Read16Big(br);
             result.Y = BitUtility.Read16Big(br);
@@ -191,7 +222,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>New object.</returns>
         internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
         {
-            var result = new StandTilePoint();
+            var result = new StandTilePoint(TypeFormat.Beta);
 
             var ix = BitUtility.Read32Big(br);
             var iy = BitUtility.Read32Big(br);

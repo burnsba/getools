@@ -26,8 +26,9 @@ namespace Getools.Lib.Game.Asset.Stan
         public int? Unknown1 { get; set; }
 
         /// <summary>
-        /// Offset to first tile from start of stan. This may be a pointer resolved
-        /// at compile time.
+        /// Offset to first tile from start of stan.
+        /// This value is ignored when generating output, and actualy offset
+        /// calculation is used instead.
         /// </summary>
         public int FirstTileOffset { get; set; }
 
@@ -53,15 +54,17 @@ namespace Getools.Lib.Game.Asset.Stan
         /// as a complete declaraction in c, using normal structs. Includes type, variable
         /// name and trailing semi-colon.
         /// </summary>
+        /// <param name="filePointerDeclaration">String giving the variable name
+        /// to the first tile, as a pointer (should be prefixed with "&").</param>
         /// <param name="prefix">Prefix or indentation.</param>
         /// <returns>String of object.</returns>
-        public string ToCDeclaration(string prefix = "")
+        public string ToCDeclaration(string filePointerDeclaration, string prefix = "")
         {
             var sb = new StringBuilder();
 
             sb.AppendLine($"{prefix}{Config.Stan.HeaderCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{FirstTileOffset:x8},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{filePointerDeclaration},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCInlineByteArray(UnknownHeaderData)}");
             sb.AppendLine($"{prefix}}};");
 
@@ -73,12 +76,14 @@ namespace Getools.Lib.Game.Asset.Stan
         /// as a complete declaraction in c, using beta structs. Includes type, variable
         /// name and trailing semi-colon.
         /// </summary>
+        /// <param name="filePointerDeclaration">String giving the variable name
+        /// to the first tile, as a pointer (should be prefixed with "&").</param>
         /// <param name="prefix">Prefix or indentation.</param>
         /// <returns>String of object.</returns>
-        public string ToBetaCDeclaration(string prefix = "")
+        public string ToBetaCDeclaration(string filePointerDeclaration, string prefix = "")
         {
             // no change for beta
-            return ToCDeclaration(prefix);
+            return ToCDeclaration(filePointerDeclaration, prefix);
         }
 
         /// <summary>
@@ -102,6 +107,16 @@ namespace Getools.Lib.Game.Asset.Stan
             index += UnknownHeaderData.Count;
 
             return results;
+        }
+
+        /// <summary>
+        /// Returns the binary size of the object in bytes,
+        /// according to the current format.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public int GetDataSizeOf()
+        {
+            return (2 * Config.TargetPointerSize) + UnknownHeaderData.Count;
         }
 
         /// <summary>

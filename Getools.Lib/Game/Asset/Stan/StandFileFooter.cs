@@ -15,6 +15,12 @@ namespace Getools.Lib.Game.Asset.Stan
     public class StandFileFooter
     {
         /// <summary>
+        /// Number of bytes for the "unstric" string.
+        /// Includes terminating zeros.
+        /// </summary>
+        public const int UnstricStringLength = 8;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandFileFooter"/> class.
         /// </summary>
         public StandFileFooter()
@@ -125,15 +131,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             int stringStart = currentStreamPosition + (Config.TargetPointerSize * 2);
             int stringEnd = stringStart + C.Length - 1; // adjust for zero
-            int next16 = 0;
-            if ((stringEnd % 16) != 0)
-            {
-                next16 = ((int)(stringEnd / 16) + 1) * 16;
-            }
-            else
-            {
-                next16 = (int)(stringEnd / 16) * 16;
-            }
+            int next16 = BitUtility.Align16(stringEnd);
 
             var stringLength = next16 - stringStart;
 
@@ -163,6 +161,16 @@ namespace Getools.Lib.Game.Asset.Stan
             index += Config.TargetPointerSize;
 
             return results;
+        }
+
+        /// <summary>
+        /// Calculates the .data section size of this object,
+        /// according to the current format.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public int GetDataSizeOf()
+        {
+            return (6 * Config.TargetPointerSize) + UnstricStringLength;
         }
 
         /// <summary>

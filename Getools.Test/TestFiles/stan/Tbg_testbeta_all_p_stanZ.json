@@ -12,13 +12,13 @@
   },
   "Tiles": [
     {
-      "InternalName": 121,
-      "Room": 112,
+      "TileNameOffset": 288,
+      "TileName": "p502a2",
       "Flags": 0,
       "R": 15,
       "G": 15,
       "B": 15,
-      "PointNameOffset": 46,
+      "UnknownBeta": 46,
       "PointCount": 3,
       "FirstPoint": 0,
       "SecondPoint": 1,
@@ -47,13 +47,13 @@
       ]
     },
     {
-      "InternalName": 121,
-      "Room": 120,
+      "TileNameOffset": 296,
+      "TileName": "p502a1",
       "Flags": 0,
       "R": 15,
       "G": 15,
       "B": 15,
-      "PointNameOffset": 46,
+      "UnknownBeta": 46,
       "PointCount": 7,
       "FirstPoint": 0,
       "SecondPoint": 5,
@@ -106,13 +106,13 @@
       ]
     },
     {
-      "InternalName": 121,
-      "Room": 128,
+      "TileNameOffset": 304,
+      "TileName": "p486a2",
       "Flags": 0,
       "R": 15,
       "G": 15,
       "B": 15,
-      "PointNameOffset": 45,
+      "UnknownBeta": 45,
       "PointCount": 3,
       "FirstPoint": 0,
       "SecondPoint": 1,
@@ -150,15 +150,6 @@
     "Unknown5": null,
     "Unknown6": null,
     "Name": "footer"
-  },
-  "BetaFooter": {
-    "VariableName": "beta_footer",
-    "DeclaredLength": 3,
-    "BetaPointList": [
-      "p502a2",
-      "p502a1",
-      "p486a2"
-    ]
   },
   "Format": 2
 }

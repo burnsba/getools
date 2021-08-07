@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.Error;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
@@ -43,11 +44,6 @@ namespace Getools.Lib.Game.Asset.Stan
         public StandFileFooter Footer { get; set; }
 
         /// <summary>
-        /// Optional beta footer.
-        /// </summary>
-        public BetaFooter BetaFooter { get; set; } = null;
-
-        /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
         /// </summary>
         public TypeFormat Format { get; set; }
@@ -73,14 +69,115 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public void DeserializeFix()
         {
+            // need to set the pointer to correct value
+            Header.FirstTileOffset = Header.GetDataSizeOf();
+
+            var rodataLocation = GetDataSizeOf();
+            int offset = rodataLocation;
+
             foreach (var tile in Tiles)
             {
                 tile.DeserializeFix();
+
+                tile.TileNameOffset = offset;
+
+                offset += StandTile.TileNameStringLength;
+            }
+        }
+
+        /// <summary>
+        /// Calculates the .data section size of this file.
+        /// </summary>
+        /// <returns>Compile size, without .rodata.</returns>
+        public int GetDataSizeOf()
+        {
+            int tileSize = Tiles.Sum(x => x.GetDataSizeOf());
+
+            var dataSize = Header.GetDataSizeOf()
+                + tileSize
+                + Footer.GetDataSizeOf();
+
+            return BitUtility.Align16(dataSize);
+        }
+
+        /// <summary>
+        /// Reads the stream from the current position. Interprets as the .rodata
+        /// section of a binary file.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        internal void ReadRoData(BinaryReader br)
+        {
+            // nothing to do.
+        }
+
+        /// <summary>
+        /// Reads the stream from the current position. Interprets as the .rodata
+        /// section of a binary file.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        internal void BetaReadRoData(BinaryReader br)
+        {
+            var rostrings = new List<string>();
+            var rodataOffset = new List<long>();
+
+            var buffer = new Byte[16];
+            long position = br.BaseStream.Position;
+            Byte b;
+            int bufferPosition = 0;
+
+            // read 8 character strings until end of file
+            while (position < br.BaseStream.Length - 1)
+            {
+                b = br.ReadByte();
+                if (b > 0)
+                {
+                    buffer[bufferPosition] = b;
+
+                    // track read position to save into tile
+                    if (bufferPosition == 0)
+                    {
+                        rodataOffset.Add(br.BaseStream.Position - 1);
+                    }
+
+                    bufferPosition++;
+                }
+                else if (b == 0)
+                {
+                    if (buffer[0] > 0)
+                    {
+                        var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
+                        rostrings.Add(pointName);
+
+                        Array.Clear(buffer, 0, 16);
+                        bufferPosition = 0;
+                    }
+                }
+
+                if (bufferPosition >= 16)
+                {
+                    throw new BadFileFormatException($"Error reading stan, beta point name exceeded buffer length. Stream positiion: {position}");
+                }
+
+                position++;
             }
 
-            if (!object.ReferenceEquals(null, BetaFooter))
+            if (buffer[0] > 0)
             {
-                BetaFooter.DeserializeFix();
+                var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
+                rostrings.Add(pointName);
+            }
+
+            // reading rodata should occur after reading tiles, so if this fails, it should
+            // fail as expected:
+            if (Tiles.Count != rostrings.Count)
+            {
+                throw new BadFileFormatException($"Error reading stan: .rodata strings count (={rostrings.Count}) does not match tiles count (={Tiles.Count})");
+            }
+
+            for (int i = 0; i < Tiles.Count; i++)
+            {
+                Tiles[i].TileName = rostrings[i];
+                Tiles[i].TileNameOffset = (short)rodataOffset[i];
             }
         }
 
@@ -112,7 +209,15 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sw.WriteLine();
 
-            sw.Write(Header.ToCDeclaration());
+            string tileName = Tiles.First().VariableName;
+            string tilePointer = "&" + tileName;
+            string tileForwardDeclaration = $"{Config.Stan.TileCTypeName} {tileName};";
+
+            sw.WriteLine("// forward declarations");
+            sw.WriteLine(tileForwardDeclaration);
+            sw.WriteLine();
+
+            sw.Write(Header.ToCDeclaration(tilePointer));
             sw.WriteLine();
 
             var count = Tiles.Count();
@@ -159,7 +264,15 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sw.WriteLine();
 
-            sw.Write(Header.ToBetaCDeclaration());
+            string tileName = Tiles.First().VariableName;
+            string tilePointer = "&" + tileName;
+            string tileForwardDeclaration = $"{Config.Stan.TileBetaCTypeName} {tileName};";
+
+            sw.WriteLine("// forward declarations");
+            sw.WriteLine(tileForwardDeclaration);
+            sw.WriteLine();
+
+            sw.Write(Header.ToBetaCDeclaration(tilePointer));
             sw.WriteLine();
 
             var count = Tiles.Count();
@@ -172,10 +285,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sw.WriteLine();
 
-            sw.Write(Footer.ToBetaCDeclaration());
-            sw.WriteLine();
-
-            sw.Write(BetaFooter.ToBetaCDeclaration());
+            sw.Write(Footer.ToCDeclaration());
             sw.WriteLine();
             sw.WriteLine();
         }
@@ -195,6 +305,7 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             Footer.AppendToBinaryStream(bw);
+            AppendRodataToBinaryStream(bw);
         }
 
         /// <summary>
@@ -212,7 +323,48 @@ namespace Getools.Lib.Game.Asset.Stan
             }
 
             Footer.BetaAppendToBinaryStream(bw);
-            BetaFooter.BetaAppendToBinaryStream(bw);
+            AppendBetaRodataToBinaryStream(bw);
+        }
+
+        private void AppendRodataToBinaryStream(BinaryWriter bw)
+        {
+            // nothing to do.
+        }
+
+        private void AppendBetaRodataToBinaryStream(BinaryWriter bw)
+        {
+            var bytes = GetBetaRodataAsByteArray();
+            bw.Write(bytes);
+        }
+
+        private byte[] GetBetaRodataAsByteArray()
+        {
+            bool appendEmpty = false;
+            var pointsCount = Tiles.Count();
+
+            // only have one example, so not sure if there is supposed to be a null entry at
+            // the end, or if it's supposed to pad to a multiple of 16.
+            if ((pointsCount & 0x1) > 0)
+            {
+                appendEmpty = true;
+            }
+
+            var allocCount = pointsCount + (appendEmpty ? 1 : 0);
+
+            var results = new byte[allocCount * StandTile.TileNameStringLength];
+
+            int index = 0;
+            foreach (var tile in Tiles)
+            {
+                string s = (tile.TileName.Length >= StandTile.TileNameStringLength)
+                    ? tile.TileName.Substring(0, StandTile.TileNameStringLength - 1)
+                    : tile.TileName;
+                Array.Copy(System.Text.Encoding.ASCII.GetBytes(s), 0, results, index, s.Length);
+
+                index += StandTile.TileNameStringLength;
+            }
+
+            return results;
         }
     }
 }

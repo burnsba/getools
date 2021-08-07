@@ -12,8 +12,8 @@
   },
   "Tiles": [
     {
-      "InternalName": 121,
-      "Room": 112,
+      "InternalName": 328354,
+      "Room": 46,
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -26,8 +26,8 @@
       "VariableName": "tile_0",
     },
     {
-      "InternalName": 121,
-      "Room": 120,
+      "InternalName": 328353,
+      "Room": 46,
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -84,8 +84,8 @@
       ]
     },
     {
-      "InternalName": 121,
-      "Room": 128,
+      "InternalName": 296610,
+      "Room": 45,
       "Flags": 0,
       "R": 15,
       "G": 15,

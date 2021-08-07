@@ -24,6 +24,12 @@ namespace Getools.Lib.Game.Asset.Stan
         public const int SizeOfBetaTileWithoutPoints = 12;
 
         /// <summary>
+        /// String length of name on the beta stan.
+        /// This is the exact string length including zeroes.
+        /// </summary>
+        public const int TileNameStringLength = 8;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandTile"/> class.
         /// </summary>
         public StandTile()
@@ -31,7 +37,16 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Tile internal name or identifier.
+        /// Initializes a new instance of the <see cref="StandTile"/> class.
+        /// </summary>
+        /// <param name="format">Stan format.</param>
+        public StandTile(TypeFormat format)
+        {
+            Format = format;
+        }
+
+        /// <summary>
+        /// Tile internal name or identifier. Only used in release struct.
         /// 24 bits.
         /// Upper 16: Id?
         /// Last 8: Group Id?
@@ -39,9 +54,22 @@ namespace Getools.Lib.Game.Asset.Stan
         public int InternalName { get; set; }
 
         /// <summary>
-        /// Tile room.
+        /// Tile room.  Only used in release struct.
+        /// Assumed to correspond to <see cref="UnknownBeta"/> when converting
+        /// to beta version, but not known for sure.
         /// </summary>
         public byte Room { get; set; }
+
+        /// <summary>
+        /// Only used by beta struct.
+        /// </summary>
+        public int? TileNameOffset { get; set; } = null;
+
+        /// <summary>
+        /// Debug string giving the tile name. This may be the <see cref="InternalName"/>
+        /// but this is not known for sure.
+        /// </summary>
+        public string TileName { get; set; }
 
         /// <summary>
         /// 4 bits.
@@ -65,10 +93,11 @@ namespace Getools.Lib.Game.Asset.Stan
         public byte B { get; set; }
 
         /// <summary>
-        /// Only used by citadel stan, otherwise not present. 16 bits.
-        /// Offset within the file for the point name.
+        /// Only used by beta struct, otherwise not present. 16 bits.
+        /// Assumed to be the <see cref="Room"/> when converting between normal version,
+        /// but not known for sure.
         /// </summary>
-        public short? PointNameOffset { get; set; } = null;
+        public short? UnknownBeta { get; set; } = null;
 
         /// <summary>
         /// 4 bits. (beta: 8 bits)
@@ -114,7 +143,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
         /// </summary>
-        internal TypeFormat SerializeFormat { get; set; }
+        internal TypeFormat Format { get; set; }
 
         /// <summary>
         /// Sets the format of the tile. Visits children and updates any format specific values.
@@ -122,7 +151,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="format">Format to use.</param>
         public void SetFormat(TypeFormat format)
         {
-            SerializeFormat = format;
+            Format = format;
 
             foreach (var point in Points)
             {
@@ -144,6 +173,33 @@ namespace Getools.Lib.Game.Asset.Stan
             if (string.IsNullOrEmpty(VariableName))
             {
                 VariableName = $"tile_{OrderIndex}";
+            }
+
+            // This is just a guess at converting normal<->beta
+            // since the setup data is missing ...
+            if (Format == TypeFormat.Normal)
+            {
+                if (string.IsNullOrEmpty(TileName))
+                {
+                    TileName = "p" + InternalName.ToString("x:8").Substring(3);
+                }
+
+                if (UnknownBeta == 0 || !UnknownBeta.HasValue)
+                {
+                    UnknownBeta = Room;
+                }
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                if (!string.IsNullOrEmpty(TileName) && TileName[0] == 'p')
+                {
+                    InternalName = Convert.ToInt32(TileName.Substring(1), 16);
+                }
+
+                if (Room == 0)
+                {
+                    Room = (byte)UnknownBeta;
+                }
             }
         }
 
@@ -185,13 +241,22 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var results = new byte[SizeOfBetaTileWithoutPoints + (Points.Count * StandTilePoint.BetaSizeOf)];
 
-            BitUtility.InsertLower24Big(results, 0, InternalName);
-            results[3] = Room;
+            if (!TileNameOffset.HasValue)
+            {
+                throw new Error.InvalidStateException($"Cannot convert tile to byte array, {nameof(TileNameOffset)} not set");
+            }
+
+            BitUtility.Insert32Big(results, 0, TileNameOffset.Value);
 
             results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
             results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
 
-            BitUtility.InsertShortBig(results, 6, PointNameOffset ?? 0);
+            if (!UnknownBeta.HasValue)
+            {
+                throw new Error.InvalidStateException($"Cannot convert tile to byte array, {nameof(UnknownBeta)} not set");
+            }
+
+            BitUtility.InsertShortBig(results, 6, UnknownBeta.Value);
 
             results[8] = (byte)Points.Count;
             results[9] = FirstPoint;
@@ -219,7 +284,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.TileCTypeName} tile_{OrderIndex} = {{");
+            sb.AppendLine($"{prefix}{Config.Stan.TileCTypeName} {VariableName} = {{");
 
             ToCDeclarationCommon(sb, prefix);
 
@@ -259,7 +324,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} tile_{OrderIndex} = {{");
+            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} {VariableName} = {{");
 
             ToBetaCDeclarationCommon(sb, prefix);
 
@@ -289,6 +354,49 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
+        /// Returns the size of the object in bytes,
+        /// according to the current format.
+        /// This does not include <see cref="Points"/>.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public int GetSizeOfEmpty()
+        {
+            if (Format == TypeFormat.Normal)
+            {
+                return 4 * SizeOfTileWithoutPoints;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                return 4 * SizeOfBetaTileWithoutPoints;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
+        }
+
+        /// <summary>
+        /// Calculates the .data section size of this object.
+        /// This does include allocation for <see cref="Points"/>.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public int GetDataSizeOf()
+        {
+            if (Format == TypeFormat.Normal)
+            {
+                return SizeOfTileWithoutPoints + Points.Sum(x => x.GetSizeOf());
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                return SizeOfBetaTileWithoutPoints + Points.Sum(x => x.GetSizeOf());
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
+        }
+
+        /// <summary>
         /// Reads from current position in stream. Loads object from
         /// stream as it would be read from a binary file using normal structs.
         /// </summary>
@@ -297,7 +405,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>New object.</returns>
         internal static StandTile ReadFromBinFile(BinaryReader br, int tileIndex)
         {
-            var result = new StandTile();
+            var result = new StandTile(TypeFormat.Normal);
 
             Byte b;
 
@@ -359,21 +467,14 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>New object.</returns>
         internal static StandTile ReadFromBetaBinFile(BinaryReader br, int tileIndex)
         {
-            var result = new StandTile();
+            var result = new StandTile(TypeFormat.Beta);
 
             Byte b;
 
-            b = br.ReadByte();
-            result.InternalName = b << 16;
-            b = br.ReadByte();
-            result.InternalName |= b << 8;
-            b = br.ReadByte();
-            result.InternalName |= b;
+            result.TileNameOffset = BitUtility.Read32Big(br);
 
-            result.Room = br.ReadByte();
-
-            // beta has some null room references, so also check against InternalName
-            if (result.InternalName == 0 && result.Room == 0)
+            // this is a string, so not quite sure if this is the same check as normal struct ...
+            if (result.TileNameOffset == 0)
             {
                 br.BaseStream.Seek(-4, SeekOrigin.Current);
                 throw new Error.ExpectedStreamEndException();
@@ -387,7 +488,7 @@ namespace Getools.Lib.Game.Asset.Stan
             result.G = (byte)((b >> 4) & 0xf);
             result.B = (byte)(b & 0xf);
 
-            result.PointNameOffset = BitUtility.Read16Big(br);
+            result.UnknownBeta = BitUtility.Read16Big(br);
 
             result.PointCount = br.ReadByte();
 
@@ -401,6 +502,8 @@ namespace Getools.Lib.Game.Asset.Stan
             result.ThirdPoint = br.ReadByte();
 
             result.OrderIndex = tileIndex;
+
+            result.VariableName = $"{Config.Stan.DefaultDeclarationName_StandTile}{tileIndex}";
 
             // Done with tile header, now read points.
             for (int i = 0; i < result.PointCount; i++)
@@ -467,10 +570,10 @@ namespace Getools.Lib.Game.Asset.Stan
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}\"{TileName}\",");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{PointNameOffset:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x4},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{FirstPoint:x2}, 0x{SecondPoint:x2}, 0x{ThirdPoint:x2},");
 

@@ -8,14 +8,17 @@
 #include "ultra64.h"
 #include "stan.h"
 
+// forward declarations
+StandTile tile_0;
+
 StandFileHeader Tbg_test_all_p_stanZ = {
     NULL,
-    0x0000000c,
+    &tile_0,
     {0x00, 0x00, 0x00, 0x00}
 };
 
 StandTile tile_0 = {
-    0x000079, 0x70,
+    0x0502a2, 0x2e,
     0x0,
     3,
     0x00, 0x01, 0x02,
@@ -27,7 +30,7 @@ StandTile tile_0 = {
 };
 
 StandTile tile_1 = {
-    0x000079, 0x78,
+    0x0502a1, 0x2e,
     0x0,
     0xf, 0xf, 0xf,
     7,
@@ -44,7 +47,7 @@ StandTile tile_1 = {
 };
 
 StandTile tile_2 = {
-    0x000079, 0x80,
+    0x0486a2, 0x2d,
     0x0,
     0xf, 0xf, 0xf,
     3,

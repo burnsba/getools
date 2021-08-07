@@ -277,5 +277,26 @@ namespace Getools.Lib
         {
             return BitConverter.ToInt32(BitConverter.GetBytes((Single)f), 0);
         }
+
+        /// <summary>
+        /// Returns the value incremented to the next closest multiple of 16.
+        /// If the current value is a multiple of 16 then that is returned.
+        /// </summary>
+        /// <param name="val">Value to check.</param>
+        /// <returns>Value, or next largest multiple of 16.</returns>
+        public static int Align16(int val)
+        {
+            int next16 = 0;
+            if ((val % 16) != 0)
+            {
+                next16 = ((int)(val / 16) + 1) * 16;
+            }
+            else
+            {
+                next16 = val;
+            }
+
+            return next16;
+        }
     }
 }

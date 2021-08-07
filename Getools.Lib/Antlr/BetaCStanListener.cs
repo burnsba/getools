@@ -33,6 +33,7 @@ namespace Getools.Lib.Antlr
         private ParseState _parseState = ParseState.Unset;
         private int _currentFieldIndex = -1;
         private int _ignoreAssignmentCount = 0;
+        private Listener _lastListenerEntered = Listener.Unset;
 
         private StandTile _workingTile = null;
         private StandTilePoint _workingPoint = null;
@@ -46,6 +47,19 @@ namespace Getools.Lib.Antlr
         /// </summary>
         public BetaCStanListener()
         {
+        }
+
+        private enum Listener
+        {
+            Unset = -1,
+            DefaultUnknown = 0,
+            CompilationUnit,
+            Declaration,
+            AssignmentExpression,
+            StorageClassSpecifier,
+            TypeSpecifier,
+            Declarator,
+            Initializer,
         }
 
         private enum ParseState
@@ -94,6 +108,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
+            _lastListenerEntered = Listener.CompilationUnit;
+
             Result = null;
             _workingResult = new StandFile(TypeFormat.Beta);
         }
@@ -138,6 +154,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterDeclaration([NotNull] CParser.DeclarationContext context)
         {
+            _lastListenerEntered = Listener.Declaration;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             // the last assignment in the tile should change the parse state to a point, so
@@ -195,6 +213,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterAssignmentExpression([NotNull] CParser.AssignmentExpressionContext context)
         {
+            _lastListenerEntered = Listener.AssignmentExpression;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             if (_ignoreAssignmentCount > 0)
@@ -235,7 +255,17 @@ namespace Getools.Lib.Antlr
                 }
                 else if (_currentFieldIndex == 1)
                 {
-                    _workingResult.Header.FirstTileOffset = val.Value;
+                    if (val.HasValue)
+                    {
+                        // this is a constant, can set this now.
+                        _workingResult.Header.FirstTileOffset = val.Value;
+                    }
+                    else
+                    {
+                        // might be a pointer, it will get resolved when calling DeserializeFix
+                        _workingResult.Header.FirstTileOffset = -1;
+                    }
+
                     _currentFieldIndex++;
                 }
                 else if (_currentFieldIndex >= 2)
@@ -260,68 +290,73 @@ namespace Getools.Lib.Antlr
                 // tile
                 if (object.ReferenceEquals(null, _workingTile))
                 {
-                    _workingTile = new StandTile();
+                    _workingTile = new StandTile(TypeFormat.Beta);
                 }
 
-                if (!val.HasValue)
+                if (_currentFieldIndex < 1)
                 {
-                    throw new BadFileFormatException("Tile does not allow nulls");
+                    if (string.IsNullOrEmpty(text))
+                    {
+                        throw new BadFileFormatException($"Error reading {nameof(_workingTile.TileName)}, empty string.");
+                    }
+                }
+                else
+                {
+                    if (!val.HasValue)
+                    {
+                        throw new BadFileFormatException("Tile does not allow nulls");
+                    }
                 }
 
                 switch (_currentFieldIndex)
                 {
                     case -1:
                     case 0:
-                        _workingTile.InternalName = val.Value;
+                        _workingTile.TileName = text;
                         _currentFieldIndex = 1;
                         break;
 
                     case 1:
-                        _workingTile.Room = (byte)val.Value;
-                        _currentFieldIndex++;
-                        break;
-
-                    case 2:
                         _workingTile.Flags = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 3:
+                    case 2:
                         _workingTile.R = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 4:
+                    case 3:
                         _workingTile.G = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 5:
+                    case 4:
                         _workingTile.B = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 6:
-                        _workingTile.PointNameOffset = (short)val.Value;
+                    case 5:
+                        _workingTile.UnknownBeta = (short)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 7:
+                    case 6:
                         _workingTile.PointCount = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 8:
+                    case 7:
                         _workingTile.FirstPoint = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 9:
+                    case 8:
                         _workingTile.SecondPoint = (byte)val.Value;
                         _currentFieldIndex++;
                         break;
 
-                    case 10:
+                    case 9:
                         _workingTile.ThirdPoint = (byte)val.Value;
 
                         // after the tile properties is the array of points related to the tile.
@@ -343,7 +378,7 @@ namespace Getools.Lib.Antlr
             {
                 if (object.ReferenceEquals(null, _workingPoint))
                 {
-                    _workingPoint = new StandTilePoint();
+                    _workingPoint = new StandTilePoint(TypeFormat.Beta);
                 }
 
                 Single? floatVal = null;
@@ -357,7 +392,7 @@ namespace Getools.Lib.Antlr
                 {
                     case -1:
                     case 0:
-                        _workingPoint = new StandTilePoint();
+                        _workingPoint = new StandTilePoint(TypeFormat.Beta);
 
                         if (!floatVal.HasValue)
                         {
@@ -447,28 +482,6 @@ namespace Getools.Lib.Antlr
                         break;
                 }
             }
-            else if (_parseState == ParseState.BetaFooter)
-            {
-                if (object.ReferenceEquals(null, _workingResult.BetaFooter))
-                {
-                    _workingResult.BetaFooter = new BetaFooter();
-                }
-
-                // Should only be long array of strings, so no switch statement or anything.
-                // Note that the list may contain empty strings. However, the first empty string
-                // is actually a fake value added to get the .c file to building into a matching
-                // binary. This is inserted automatically on .c output generation, so ignore
-                // that here.
-                if (_currentFieldIndex < 1 && text == string.Empty)
-                {
-                    _currentFieldIndex = 1;
-                }
-                else
-                {
-                    _workingResult.BetaFooter.BetaPointList.Add(text);
-                    _currentFieldIndex++;
-                }
-            }
         }
 
         /// <summary>
@@ -477,6 +490,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterStorageClassSpecifier([NotNull] CParser.StorageClassSpecifierContext context)
         {
+            _lastListenerEntered = Listener.StorageClassSpecifier;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -495,6 +510,14 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterTypeSpecifier([NotNull] CParser.TypeSpecifierContext context)
         {
+            if (_lastListenerEntered == Listener.TypeSpecifier)
+            {
+                // forward declaration, ignore.
+                return;
+            }
+
+            _lastListenerEntered = Listener.TypeSpecifier;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -530,6 +553,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterDeclarator([NotNull] CParser.DeclaratorContext context)
         {
+            _lastListenerEntered = Listener.Declarator;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -547,7 +572,7 @@ namespace Getools.Lib.Antlr
             {
                 if (object.ReferenceEquals(null, _workingTile))
                 {
-                    _workingTile = new StandTile();
+                    _workingTile = new StandTile(TypeFormat.Beta);
                 }
 
                 _workingTile.VariableName = text;
@@ -567,43 +592,6 @@ namespace Getools.Lib.Antlr
 
                 _workingResult.Footer.Name = text;
             }
-            else if (_parseState == ParseState.BetaFooter)
-            {
-                if (object.ReferenceEquals(null, _workingResult.BetaFooter))
-                {
-                    _workingResult.BetaFooter = new BetaFooter();
-                }
-
-                // check if this is an array declaration.
-                // This should be a 2d array, but we only care about the first array length.
-                var openBracket = text.IndexOf('[');
-                var closeBracket = text.IndexOf(']');
-                int i;
-
-                if (openBracket > -1 && closeBracket > (openBracket + 1))
-                {
-                    // calculate array length first.
-                    string bracketText = text.Substring(openBracket + 1, closeBracket - openBracket - 1);
-                    if (ParseHelpers.TryParseInt(bracketText, out i))
-                    {
-                        // adjust for first empty string.
-                        _workingResult.BetaFooter.DeclaredLength = i - 1;
-
-                        if (_workingResult.BetaFooter.DeclaredLength < 0)
-                        {
-                            _workingResult.BetaFooter.DeclaredLength = 0;
-                        }
-                    }
-
-                    // Now truncate array declaration text to get just the name
-                    text = text.Substring(0, openBracket);
-
-                    // ignore this array length, and the 2nd dimension array length (should be constant anyway)
-                    _ignoreAssignmentCount = 2;
-                }
-
-                _workingResult.BetaFooter.VariableName = text;
-            }
         }
 
         /// <summary>
@@ -613,6 +601,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterInitializer([NotNull] CParser.InitializerContext context)
         {
+            _lastListenerEntered = Listener.Initializer;
+
             ////////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
         }
 

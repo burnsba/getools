@@ -23,22 +23,27 @@ namespace Getools.Lib.Converters
         {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
 
-            if (property.DeclaringType == typeof(StandFile) && property.PropertyName == nameof(StandFile.BetaFooter))
-            {
-                property.ShouldSerialize =
-                    instance =>
-                    {
-                        StandFile x = (StandFile)instance;
-                        return x.Format == TypeFormat.Beta;
-                    };
-            }
-            else if (property.DeclaringType == typeof(StandTile) && property.PropertyName == nameof(StandTile.PointNameOffset))
+            if (property.DeclaringType == typeof(StandTile) &&
+                (property.PropertyName == nameof(StandTile.InternalName)
+                || property.PropertyName == nameof(StandTile.Room)))
             {
                 property.ShouldSerialize =
                     instance =>
                     {
                         StandTile x = (StandTile)instance;
-                        return x.SerializeFormat == TypeFormat.Beta;
+                        return x.Format == TypeFormat.Normal;
+                    };
+            }
+            else if (property.DeclaringType == typeof(StandTile) &&
+                (property.PropertyName == nameof(StandTile.TileNameOffset)
+                || property.PropertyName == nameof(StandTile.TileName)
+                || property.PropertyName == nameof(StandTile.UnknownBeta)))
+            {
+                property.ShouldSerialize =
+                    instance =>
+                    {
+                        StandTile x = (StandTile)instance;
+                        return x.Format == TypeFormat.Beta;
                     };
             }
             else if (property.DeclaringType == typeof(StandTilePoint) &&
@@ -50,7 +55,7 @@ namespace Getools.Lib.Converters
                     instance =>
                     {
                         StandTilePoint x = (StandTilePoint)instance;
-                        return x.SerializeFormat == TypeFormat.Normal;
+                        return x.Format == TypeFormat.Normal;
                     };
             }
             else if (property.DeclaringType == typeof(StandTilePoint) &&
@@ -62,7 +67,7 @@ namespace Getools.Lib.Converters
                     instance =>
                     {
                         StandTilePoint x = (StandTilePoint)instance;
-                        return x.SerializeFormat == TypeFormat.Beta;
+                        return x.Format == TypeFormat.Beta;
                     };
             }
 

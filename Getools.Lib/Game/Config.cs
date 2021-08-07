@@ -97,14 +97,14 @@ namespace Getools.Lib.Game
             public const string BetaFooterCTypeName = "char";
 
             /// <summary>
+            /// C file, default variable declaration prefix for tiles.
+            /// </summary>
+            public const string DefaultDeclarationName_StandTile = "tile_";
+
+            /// <summary>
             /// C file, footer variable declaration name.
             /// </summary>
             public const string DefaultDeclarationName_StandFileFooter = "footer";
-
-            /// <summary>
-            /// C file, beta footer variable declaration name.
-            /// </summary>
-            public const string DefaultDeclarationName_BetaFooter = "beta_footer";
         }
     }
 }

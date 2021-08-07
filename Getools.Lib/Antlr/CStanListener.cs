@@ -33,6 +33,7 @@ namespace Getools.Lib.Antlr
         private ParseState _parseState = ParseState.Unset;
         private int _currentFieldIndex = -1;
         private bool _ignoreNextAssignment = false;
+        private Listener _lastListenerEntered = Listener.Unset;
 
         private StandTile _workingTile = null;
         private StandTilePoint _workingPoint = null;
@@ -44,6 +45,19 @@ namespace Getools.Lib.Antlr
         /// </summary>
         public CStanListener()
         {
+        }
+
+        private enum Listener
+        {
+            Unset = -1,
+            DefaultUnknown = 0,
+            CompilationUnit,
+            Declaration,
+            AssignmentExpression,
+            StorageClassSpecifier,
+            TypeSpecifier,
+            Declarator,
+            Initializer,
         }
 
         private enum ParseState
@@ -87,6 +101,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
+            _lastListenerEntered = Listener.CompilationUnit;
+
             Result = null;
             _workingResult = new StandFile(TypeFormat.Normal);
         }
@@ -129,6 +145,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterDeclaration([NotNull] CParser.DeclarationContext context)
         {
+            _lastListenerEntered = Listener.Declaration;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             // the last assignment in the tile should change the parse state to a point, so
@@ -182,6 +200,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterAssignmentExpression([NotNull] CParser.AssignmentExpressionContext context)
         {
+            _lastListenerEntered = Listener.AssignmentExpression;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             if (_ignoreNextAssignment)
@@ -222,7 +242,17 @@ namespace Getools.Lib.Antlr
                 }
                 else if (_currentFieldIndex == 1)
                 {
-                    _workingResult.Header.FirstTileOffset = val.Value;
+                    if (val.HasValue)
+                    {
+                        // this is a constant, can set this now.
+                        _workingResult.Header.FirstTileOffset = val.Value;
+                    }
+                    else
+                    {
+                        // might be a pointer, it will get resolved when calling DeserializeFix
+                        _workingResult.Header.FirstTileOffset = -1;
+                    }
+
                     _currentFieldIndex++;
                 }
                 else if (_currentFieldIndex >= 2)
@@ -247,7 +277,7 @@ namespace Getools.Lib.Antlr
                 // tile
                 if (object.ReferenceEquals(null, _workingTile))
                 {
-                    _workingTile = new StandTile();
+                    _workingTile = new StandTile(TypeFormat.Normal);
                 }
 
                 if (!val.HasValue)
@@ -325,7 +355,7 @@ namespace Getools.Lib.Antlr
             {
                 if (object.ReferenceEquals(null, _workingPoint))
                 {
-                    _workingPoint = new StandTilePoint();
+                    _workingPoint = new StandTilePoint(TypeFormat.Normal);
                 }
 
                 if (!val.HasValue)
@@ -337,7 +367,7 @@ namespace Getools.Lib.Antlr
                 {
                     case -1:
                     case 0:
-                        _workingPoint = new StandTilePoint();
+                        _workingPoint = new StandTilePoint(TypeFormat.Normal);
                         _workingPoint.X = (short)val.Value;
                         _currentFieldIndex = 1;
                         break;
@@ -417,6 +447,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterStorageClassSpecifier([NotNull] CParser.StorageClassSpecifierContext context)
         {
+            _lastListenerEntered = Listener.StorageClassSpecifier;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -435,6 +467,14 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterTypeSpecifier([NotNull] CParser.TypeSpecifierContext context)
         {
+            if (_lastListenerEntered == Listener.TypeSpecifier)
+            {
+                // forward declaration, ignore.
+                return;
+            }
+
+            _lastListenerEntered = Listener.TypeSpecifier;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -466,6 +506,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterDeclarator([NotNull] CParser.DeclaratorContext context)
         {
+            _lastListenerEntered = Listener.Declarator;
+
             //////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
 
             var text = context.GetText();
@@ -483,7 +525,7 @@ namespace Getools.Lib.Antlr
             {
                 if (object.ReferenceEquals(null, _workingTile))
                 {
-                    _workingTile = new StandTile();
+                    _workingTile = new StandTile(TypeFormat.Normal);
                 }
 
                 _workingTile.VariableName = text;
@@ -512,6 +554,8 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void EnterInitializer([NotNull] CParser.InitializerContext context)
         {
+            _lastListenerEntered = Listener.Initializer;
+
             ////////Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {context.GetText()}");
         }
 

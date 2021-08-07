@@ -8,8 +8,11 @@
 #include "ultra64.h"
 #include "stan.h"
 
+// forward declarations
+StandTile tile_0;
+
 StandTile tile_0 = {
-    0x000079, 0x70,
+    0x0502a2, 0x2e,
     0x0,
     0xf, 0xf, 0xf,
     3,
@@ -22,7 +25,7 @@ StandTile tile_0 = {
 };
 
 StandTile tile_1 = {
-    0x000079, 0x78,
+    0x0502a1, 0x2e,
     0x0,
     0xf, 0xf, 0xf,
     7,
@@ -39,7 +42,7 @@ StandTile tile_1 = {
 };
 
 StandTile tile_2 = {
-    0x000079, 0x80,
+    0x0486a2, 0x2d,
     0x0,
     0xf, 0xf, 0xf,
     3,

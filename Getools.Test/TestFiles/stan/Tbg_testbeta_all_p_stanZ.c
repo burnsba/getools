@@ -8,17 +8,20 @@
 #include "ultra64.h"
 #include "stan.h"
 
+// forward declarations
+BetaStandTile tile_0;
+
 StandFileHeader Tbg_testbeta_all_p_stanZ = {
     NULL,
-    0x0000000c,
+    &tile_0,
     {0x00, 0x00, 0x00, 0x00}
 };
 
 BetaStandTile tile_0 = {
-    0x000079, 0x70,
+    "p502a2",
     0x0,
     0xf, 0xf, 0xf,
-    0x2e,
+    0x002e,
     3,
     0x00, 0x01, 0x02,
     {
@@ -29,10 +32,10 @@ BetaStandTile tile_0 = {
 };
 
 BetaStandTile tile_1 = {
-    0x000079, 0x78,
+    "p502a1",
     0x0,
     0xf, 0xf, 0xf,
-    0x2e,
+    0x002e,
     7,
     0x00, 0x05, 0x06,
     {
@@ -47,10 +50,10 @@ BetaStandTile tile_1 = {
 };
 
 BetaStandTile tile_2 = {
-    0x000079, 0x80,
+    "p486a2",
     0x0,
     0xf, 0xf, 0xf,
-    0x2d,
+    0x002d,
     3,
     0x00, 0x01, 0x02,
     {
@@ -69,13 +72,6 @@ StandFileFooter footer = {
     NULL,
     NULL,
     NULL
-};
-
-char beta_footer[4][8] = {
-    "",
-    "p502a2",
-    "p502a1",
-    "p486a2"
 };
 
 
