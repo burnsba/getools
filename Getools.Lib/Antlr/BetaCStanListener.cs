@@ -302,7 +302,7 @@ namespace Getools.Lib.Antlr
                         break;
 
                     case 6:
-                        _workingTile.UnknownBeta = (short)val.Value;
+                        _workingTile.PointNameOffset = (short)val.Value;
                         _currentFieldIndex++;
                         break;
 

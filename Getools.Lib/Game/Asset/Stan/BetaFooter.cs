@@ -40,6 +40,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Beta stan files include ASCII names of points after the above footer.
         /// A fake empty string is inlcuded at the beginning of the list when outputing to .c.
+        /// This is actually the .rodata section.
         /// </summary>
         public List<String> BetaPointList { get; set; } = new List<string>();
 

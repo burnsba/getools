@@ -66,8 +66,9 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// Only used by citadel stan, otherwise not present. 16 bits.
+        /// Offset within the file for the point name.
         /// </summary>
-        public short? UnknownBeta { get; set; } = null;
+        public short? PointNameOffset { get; set; } = null;
 
         /// <summary>
         /// 4 bits. (beta: 8 bits)
@@ -190,7 +191,7 @@ namespace Getools.Lib.Game.Asset.Stan
             results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
             results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
 
-            BitUtility.InsertShortBig(results, 6, UnknownBeta ?? 0);
+            BitUtility.InsertShortBig(results, 6, PointNameOffset ?? 0);
 
             results[8] = (byte)Points.Count;
             results[9] = FirstPoint;
@@ -386,7 +387,7 @@ namespace Getools.Lib.Game.Asset.Stan
             result.G = (byte)((b >> 4) & 0xf);
             result.B = (byte)(b & 0xf);
 
-            result.UnknownBeta = BitUtility.Read16Big(br);
+            result.PointNameOffset = BitUtility.Read16Big(br);
 
             result.PointCount = br.ReadByte();
 
@@ -469,7 +470,7 @@ namespace Getools.Lib.Game.Asset.Stan
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(InternalName & 0xffffff):x6}, 0x{(byte)Room:x2},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x2},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{PointNameOffset:x2},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{FirstPoint:x2}, 0x{SecondPoint:x2}, 0x{ThirdPoint:x2},");
 

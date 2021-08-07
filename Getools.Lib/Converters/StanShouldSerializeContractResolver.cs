@@ -32,7 +32,7 @@ namespace Getools.Lib.Converters
                         return x.Format == TypeFormat.Beta;
                     };
             }
-            else if (property.DeclaringType == typeof(StandTile) && property.PropertyName == nameof(StandTile.UnknownBeta))
+            else if (property.DeclaringType == typeof(StandTile) && property.PropertyName == nameof(StandTile.PointNameOffset))
             {
                 property.ShouldSerialize =
                     instance =>
