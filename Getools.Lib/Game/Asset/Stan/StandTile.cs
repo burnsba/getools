@@ -30,6 +30,21 @@ namespace Getools.Lib.Game.Asset.Stan
         public const int TileNameStringLength = 8;
 
         /// <summary>
+        /// C file, default variable declaration prefix for tiles.
+        /// </summary>
+        public const string DefaultDeclarationName = "tile_";
+
+        /// <summary>
+        /// C file, tile type name, non-beta. Should match known struct type.
+        /// </summary>
+        public const string TileCTypeName = "StandTile";
+
+        /// <summary>
+        /// C file, beta tile type name. Should match known struct type.
+        /// </summary>
+        public const string TileBetaCTypeName = "BetaStandTile";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandTile"/> class.
         /// </summary>
         public StandTile()
@@ -284,7 +299,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.TileCTypeName} {VariableName} = {{");
+            sb.AppendLine($"{prefix}{StandTile.TileCTypeName} {VariableName} = {{");
 
             ToCDeclarationCommon(sb, prefix);
 
@@ -324,7 +339,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.TileBetaCTypeName} {VariableName} = {{");
+            sb.AppendLine($"{prefix}{StandTile.TileBetaCTypeName} {VariableName} = {{");
 
             ToBetaCDeclarationCommon(sb, prefix);
 
@@ -503,7 +518,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             result.OrderIndex = tileIndex;
 
-            result.VariableName = $"{Config.Stan.DefaultDeclarationName_StandTile}{tileIndex}";
+            result.VariableName = $"{DefaultDeclarationName}{tileIndex}";
 
             // Done with tile header, now read points.
             for (int i = 0; i < result.PointCount; i++)

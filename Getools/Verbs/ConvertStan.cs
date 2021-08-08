@@ -34,7 +34,7 @@ namespace Getools.Verbs
             ValidateSetInputTypeFormat(result, opts);
             ValidateSetInputDataFormat(result, opts);
 
-            if (!Getools.Lib.Game.Config.Stan.SupportedInputFormats.Contains(opts.InputDataFormat))
+            if (!StandFile.SupportedInputFormats.Contains(opts.InputDataFormat))
             {
                 ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta.Value}\"");
 
@@ -52,7 +52,7 @@ namespace Getools.Verbs
             ValidateSetOutputTypeFormat(result, opts);
             ValidateSetOutputDataFormat(result, opts);
 
-            if (!Getools.Lib.Game.Config.Stan.SupportedOutputFormats.Contains(opts.OutputDataFormat))
+            if (!StandFile.SupportedOutputFormats.Contains(opts.OutputDataFormat))
             {
                 ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta.Value}\"");
 
@@ -135,14 +135,14 @@ namespace Getools.Verbs
 
         private static string GetInFormatNames()
         {
-            var dataformats = Getools.Lib.Game.Config.Stan.SupportedInputFormats;
+            var dataformats = StandFile.SupportedInputFormats;
             var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
             return string.Join(", ", fileTypes);
         }
 
         private static string GetOutFormatNames()
         {
-            var dataformats = Getools.Lib.Game.Config.Stan.SupportedOutputFormats;
+            var dataformats = StandFile.SupportedOutputFormats;
             var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
             return string.Join(", ", fileTypes);
         }

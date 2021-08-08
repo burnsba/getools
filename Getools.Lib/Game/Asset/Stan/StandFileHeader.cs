@@ -14,6 +14,11 @@ namespace Getools.Lib.Game.Asset.Stan
     public class StandFileHeader
     {
         /// <summary>
+        /// C file, header section type name, non-beta. Should match known struct type.
+        /// </summary>
+        public const string HeaderCTypeName = "StandFileHeader";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandFileHeader"/> class.
         /// </summary>
         public StandFileHeader()
@@ -62,7 +67,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.HeaderCTypeName} {Name} = {{");
+            sb.AppendLine($"{prefix}{StandFileHeader.HeaderCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{filePointerDeclaration},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCInlineByteArray(UnknownHeaderData)}");

@@ -13,6 +13,39 @@ namespace Getools.Lib.Game.Asset.Stan
     public class StandFile
     {
         /// <summary>
+        /// C headers to #include when building .c files.
+        /// </summary>
+        public static List<string> IncludeHeaders = new List<string>()
+            {
+                "ultra64.h",
+                "stan.h",
+            };
+
+        /// <summary>
+        /// Formats available for reading in a <see cref="Stan.StandFile"/>.
+        /// </summary>
+        public static List<DataFormats> SupportedInputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.BetaC,
+                DataFormats.Json,
+                DataFormats.Bin,
+                DataFormats.BetaBin,
+            };
+
+        /// <summary>
+        /// Formats available to output a <see cref="Stan.StandFile"/>.
+        /// </summary>
+        public static List<DataFormats> SupportedOutputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.BetaC,
+                DataFormats.Json,
+                DataFormats.Bin,
+                DataFormats.BetaBin,
+            };
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandFile"/> class.
         /// </summary>
         public StandFile()
@@ -117,67 +150,19 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="br">Stream to read.</param>
         internal void BetaReadRoData(BinaryReader br)
         {
-            var rostrings = new List<string>();
-            var rodataOffset = new List<long>();
-
-            var buffer = new Byte[16];
-            long position = br.BaseStream.Position;
-            Byte b;
-            int bufferPosition = 0;
-
-            // read 8 character strings until end of file
-            while (position < br.BaseStream.Length - 1)
-            {
-                b = br.ReadByte();
-                if (b > 0)
-                {
-                    buffer[bufferPosition] = b;
-
-                    // track read position to save into tile
-                    if (bufferPosition == 0)
-                    {
-                        rodataOffset.Add(br.BaseStream.Position - 1);
-                    }
-
-                    bufferPosition++;
-                }
-                else if (b == 0)
-                {
-                    if (buffer[0] > 0)
-                    {
-                        var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
-                        rostrings.Add(pointName);
-
-                        Array.Clear(buffer, 0, 16);
-                        bufferPosition = 0;
-                    }
-                }
-
-                if (bufferPosition >= 16)
-                {
-                    throw new BadFileFormatException($"Error reading stan, beta point name exceeded buffer length. Stream positiion: {position}");
-                }
-
-                position++;
-            }
-
-            if (buffer[0] > 0)
-            {
-                var pointName = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
-                rostrings.Add(pointName);
-            }
+            var rodataStrings = BitUtility.ReadRodataStrings(br, 16);
 
             // reading rodata should occur after reading tiles, so if this fails, it should
             // fail as expected:
-            if (Tiles.Count != rostrings.Count)
+            if (Tiles.Count != rodataStrings.Count)
             {
-                throw new BadFileFormatException($"Error reading stan: .rodata strings count (={rostrings.Count}) does not match tiles count (={Tiles.Count})");
+                throw new BadFileFormatException($"Error reading stan: .rodata strings count (={rodataStrings.Count}) does not match tiles count (={Tiles.Count})");
             }
 
             for (int i = 0; i < Tiles.Count; i++)
             {
-                Tiles[i].TileName = rostrings[i];
-                Tiles[i].TileNameOffset = (short)rodataOffset[i];
+                Tiles[i].TileName = rodataStrings[i].Value;
+                Tiles[i].TileNameOffset = (short)rodataStrings[i].Offset;
             }
         }
 
@@ -202,7 +187,7 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine("*/");
             sw.WriteLine();
 
-            foreach (var filename in Config.Stan.IncludeHeaders)
+            foreach (var filename in StandFile.IncludeHeaders)
             {
                 sw.WriteLine($"#include \"{filename}\"");
             }
@@ -211,7 +196,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             string tileName = Tiles.First().VariableName;
             string tilePointer = "&" + tileName;
-            string tileForwardDeclaration = $"{Config.Stan.TileCTypeName} {tileName};";
+            string tileForwardDeclaration = $"{StandTile.TileCTypeName} {tileName};";
 
             sw.WriteLine("// forward declarations");
             sw.WriteLine(tileForwardDeclaration);
@@ -257,7 +242,7 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine("*/");
             sw.WriteLine();
 
-            foreach (var filename in Config.Stan.IncludeHeaders)
+            foreach (var filename in StandFile.IncludeHeaders)
             {
                 sw.WriteLine($"#include \"{filename}\"");
             }
@@ -266,7 +251,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             string tileName = Tiles.First().VariableName;
             string tilePointer = "&" + tileName;
-            string tileForwardDeclaration = $"{Config.Stan.TileBetaCTypeName} {tileName};";
+            string tileForwardDeclaration = $"{StandTile.TileBetaCTypeName} {tileName};";
 
             sw.WriteLine("// forward declarations");
             sw.WriteLine(tileForwardDeclaration);

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Getools.Lib.Error;
+using Getools.Lib.Game;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -297,6 +299,65 @@ namespace Getools.Lib
             }
 
             return next16;
+        }
+
+        public static List<StringPointer> ReadRodataStrings(BinaryReader stream, int maxStringLength)
+        {
+            int bufferSize = maxStringLength + 2;
+
+            var buffer = new Byte[maxStringLength];
+            long position = stream.BaseStream.Position;
+            Byte b;
+            int bufferPosition = 0;
+
+            var results = new List<StringPointer>();
+            int stringStartOffset = 0;
+
+            // read character strings until end of file
+            while (position < stream.BaseStream.Length - 1)
+            {
+                b = stream.ReadByte();
+                if (b > 0)
+                {
+                    buffer[bufferPosition] = b;
+
+                    // track read position to save into tile
+                    if (bufferPosition == 0)
+                    {
+                        stringStartOffset = (int)(stream.BaseStream.Position - 1);
+                    }
+
+                    bufferPosition++;
+                }
+                else if (b == 0)
+                {
+                    if (buffer[0] > 0)
+                    {
+                        var text = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
+
+                        results.Add(new StringPointer(stringStartOffset, text));
+
+                        Array.Clear(buffer, 0, maxStringLength);
+                        bufferPosition = 0;
+                        stringStartOffset = -1;
+                    }
+                }
+
+                if (bufferPosition >= maxStringLength)
+                {
+                    throw new BadFileFormatException($"Error reading .rodata section, string exceeded buffer length. Stream positiion: {position}");
+                }
+
+                position++;
+            }
+
+            if (buffer[0] > 0)
+            {
+                var text = System.Text.Encoding.ASCII.GetString(buffer, 0, bufferPosition);
+                results.Add(new StringPointer(stringStartOffset, text));
+            }
+
+            return results;
         }
     }
 }

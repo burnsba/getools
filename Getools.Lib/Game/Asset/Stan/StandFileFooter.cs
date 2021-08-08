@@ -21,6 +21,16 @@ namespace Getools.Lib.Game.Asset.Stan
         public const int UnstricStringLength = 8;
 
         /// <summary>
+        /// C file, footer variable declaration name.
+        /// </summary>
+        public const string DefaultDeclarationName = "footer";
+
+        /// <summary>
+        /// C file, footer section type name, non-beta. Should match known struct type.
+        /// </summary>
+        public const string FooterCTypeName = "StandFileFooter";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StandFileFooter"/> class.
         /// </summary>
         public StandFileFooter()
@@ -84,7 +94,7 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"{prefix}{Config.Stan.FooterCTypeName} {Name} = {{");
+            sb.AppendLine($"{prefix}{StandFileFooter.FooterCTypeName} {Name} = {{");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown2)},");
 
@@ -255,7 +265,7 @@ namespace Getools.Lib.Game.Asset.Stan
                 result.Unknown6 = null;
             }
 
-            result.Name = $"{Config.Stan.DefaultDeclarationName_StandFileFooter}";
+            result.Name = DefaultDeclarationName;
 
             return result;
         }

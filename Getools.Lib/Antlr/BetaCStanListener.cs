@@ -126,19 +126,19 @@ namespace Getools.Lib.Antlr
 
             if (object.ReferenceEquals(null, _workingResult.Header))
             {
-                msg = $"No header section found. Expected a variable with type {Config.Stan.HeaderCTypeName}";
+                msg = $"No header section found. Expected a variable with type {StandFileHeader.HeaderCTypeName}";
                 throw new BadFileFormatException(msg);
             }
 
             if (object.ReferenceEquals(null, _workingResult.Footer))
             {
-                msg = $"No footer section found. Expected a variable with type {Config.Stan.FooterCTypeName}";
+                msg = $"No footer section found. Expected a variable with type {StandFileFooter.FooterCTypeName}";
                 throw new BadFileFormatException(msg);
             }
 
             if (object.ReferenceEquals(null, _workingResult.Tiles) || !_workingResult.Tiles.Any())
             {
-                msg = $"No tiles were found. Expected variable declarations with type {Config.Stan.TileBetaCTypeName}";
+                msg = $"No tiles were found. Expected variable declarations with type {StandTile.TileBetaCTypeName}";
                 throw new BadFileFormatException(msg);
             }
 
@@ -524,19 +524,19 @@ namespace Getools.Lib.Antlr
 
             if (_parseState == ParseState.Unset)
             {
-                if (text == Config.Stan.HeaderCTypeName)
+                if (text == StandFileHeader.HeaderCTypeName)
                 {
                     _parseState = ParseState.Header;
                 }
-                else if (text == Config.Stan.TileBetaCTypeName)
+                else if (text == StandTile.TileBetaCTypeName)
                 {
                     _parseState = ParseState.Tile;
                 }
-                else if (text == Config.Stan.FooterCTypeName)
+                else if (text == StandFileFooter.FooterCTypeName)
                 {
                     _parseState = ParseState.Footer;
                 }
-                else if (_footerDone && text == Config.Stan.BetaFooterCTypeName)
+                else if (_footerDone && text == StandFileFooter.FooterCTypeName)
                 {
                     _parseState = ParseState.BetaFooter;
                 }

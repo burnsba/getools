@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Getools.Lib.Game.Asset.Setup
@@ -9,5 +10,39 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class Pad
     {
+        /// <summary>
+        /// Size of the point struct in bytes.
+        /// </summary>
+        public const int SizeOf = 44;
+
+        public Pad()
+        {
+        }
+
+        public Coord3df Position { get; set; }
+
+        public Coord3df Up { get; set; }
+
+        public Coord3df Look { get; set; }
+
+        public string Name { get; set; }
+
+        public int NameRodataOffset { get; set; }
+
+        public int Unknown { get; set; }
+
+        public static Pad ReadFromBinFile(BinaryReader br)
+        {
+            var result = new Pad();
+
+            result.Position = Coord3df.ReadFromBinFile(br);
+            result.Up = Coord3df.ReadFromBinFile(br);
+            result.Look = Coord3df.ReadFromBinFile(br);
+
+            result.NameRodataOffset = BitUtility.Read16Big(br);
+            result.Unknown = BitUtility.Read32Big(br);
+
+            return result;
+        }
     }
 }
