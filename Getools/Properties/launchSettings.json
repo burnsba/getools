@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "convert_stan --input-file=\"Tbg_cat_all_p_stanZ.bin\" --output-file=\"out.c\" --input-data-is-beta=true --output-data-is-beta=true"
+      "commandLineArgs": "convert_setup --input-file=\"UsetuprunZ.bin\" --output-file=\"out.c\""
     }
   }
 }

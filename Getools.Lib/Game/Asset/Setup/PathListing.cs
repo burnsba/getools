@@ -6,15 +6,15 @@ using System.Text;
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// PathTable.
+    /// PathLink.
     /// </summary>
-    public class PathTable
+    public class PathListing
     {
-        public PathTable()
+        public PathListing()
         {
         }
 
-        public PathTable(IEnumerable<uint> ids)
+        public PathListing(IEnumerable<uint> ids)
         {
             Ids = ids.ToList();
         }

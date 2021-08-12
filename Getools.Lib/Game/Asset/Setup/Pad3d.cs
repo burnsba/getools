@@ -11,6 +11,11 @@ namespace Getools.Lib.Game.Asset.Setup
     public class Pad3d : Pad
     {
         /// <summary>
+        /// C file, type name. Should match known struct type.
+        /// </summary>
+        public new const string CTypeName = "struct pad3d";
+
+        /// <summary>
         /// Size of the point struct in bytes.
         /// </summary>
         public new const int SizeOf = Pad.SizeOf + BoundingBoxf.SizeOf;

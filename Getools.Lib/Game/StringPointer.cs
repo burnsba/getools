@@ -25,6 +25,16 @@ namespace Getools.Lib.Game
 
         public string Value { get; set; }
 
+        public static implicit operator StringPointer(string value)
+        {
+            return new StringPointer(value);
+        }
+
+        public static implicit operator StringPointer(int offset)
+        {
+            return new StringPointer() { Offset = offset };
+        }
+
         public override string ToString()
         {
             return Value;

@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Kaitai\Schema\Setup.cs" />
+    <Compile Remove="Kaitai\Schema\Stan.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="test.c" />
   </ItemGroup>
 
@@ -20,6 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+    <PackageReference Include="KaitaiStruct.Runtime.CSharp" Version="0.9.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>

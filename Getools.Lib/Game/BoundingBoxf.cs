@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Formatters;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -54,6 +55,35 @@ namespace Getools.Lib.Game
             result.MaxZ = BitUtility.CastToFloat(BitUtility.Read32Big(br));
 
             return result;
+        }
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        public string ToCInlineDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(prefix);
+            sb.Append("{");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MinX));
+            sb.Append(", ");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MaxX));
+            sb.Append(", ");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MinY));
+            sb.Append(", ");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MaxY));
+            sb.Append(", ");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MinZ));
+            sb.Append(", ");
+            sb.Append(FloatingPoint.ToFloatCLiteral(MaxZ));
+            sb.Append("}");
+
+            return sb.ToString();
         }
     }
 }

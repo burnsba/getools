@@ -7,6 +7,7 @@ using CommandLine;
 using CommandLine.Text;
 using Getools.Lib.Converters;
 using Getools.Options;
+using Getools.Verbs;
 
 namespace Getools
 {
@@ -52,15 +53,18 @@ namespace Getools
         /// <param name="opts">Options verb.</param>
         private static void CheckRun<T>(ParserResult<T> result, object opts)
         {
+            VerbBase verb = null;
+
             switch (opts)
             {
                 case ConvertStanOptions cstan:
-                    var verb = new Verbs.ConvertStan();
-                    verb.CheckRun(result, cstan);
+                    verb = new Verbs.ConvertStan();
+                    ((ConvertStan)verb).CheckRun(result, cstan);
                     break;
 
                 case ConvertSetupOptions csetup:
-                    /////PreOptionCheck_ConvertSetup(result, csetup);
+                    verb = new Verbs.ConvertSetup();
+                    ((ConvertSetup)verb).CheckRun(result, csetup);
                     break;
 
                 case MakeMapOptions mmap:
@@ -95,8 +99,9 @@ namespace Getools
             }
             else if (result.TypeInfo.Current == typeof(ConvertSetupOptions))
             {
-                throw new NotImplementedException();
-                ////return;
+                var verb = new Verbs.ConvertSetup();
+                verb.DisplayHelp(result, errs);
+                return;
             }
             else if (result.TypeInfo.Current == typeof(MakeMapOptions))
             {

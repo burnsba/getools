@@ -156,3 +156,4 @@ ClientBin/
 orleans.codegen.cs
 
 workbin/
+Getools.Lib/Kaitai/Schema/*.cs

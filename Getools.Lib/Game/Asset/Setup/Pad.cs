@@ -11,6 +11,11 @@ namespace Getools.Lib.Game.Asset.Setup
     public class Pad
     {
         /// <summary>
+        /// C file, type name. Should match known struct type.
+        /// </summary>
+        public const string CTypeName = "struct pad";
+
+        /// <summary>
         /// Size of the point struct in bytes.
         /// </summary>
         public const int SizeOf = 44;
@@ -25,7 +30,7 @@ namespace Getools.Lib.Game.Asset.Setup
 
         public Coord3df Look { get; set; }
 
-        public string Name { get; set; }
+        public StringPointer Name { get; set; }
 
         public int NameRodataOffset { get; set; }
 

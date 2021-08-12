@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.Formatters;
 
 namespace Getools.Lib.Game
 {
@@ -50,7 +51,7 @@ namespace Getools.Lib.Game
         /// <returns>String of object.</returns>
         public string ToCInlineDeclaration(string prefix = "")
         {
-            return $"{prefix}{{{X}, {Y}, {Z}}}";
+            return $"{prefix}{{{FloatingPoint.ToFloatCLiteral(X)}, {FloatingPoint.ToFloatCLiteral(Y)}, {FloatingPoint.ToFloatCLiteral(Z)}}}";
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace Getools.Lib.Game
 
             sb.AppendLine($"{prefix}{CTypeName} {VariableName} = {{");
 
-            sb.AppendLine($"{prefix}{X}, {Y}, {Z}");
+            sb.AppendLine($"{prefix}{FloatingPoint.ToFloatCLiteral(X)}, {FloatingPoint.ToFloatCLiteral(Y)}, {FloatingPoint.ToFloatCLiteral(Z)}");
 
             sb.AppendLine($"{prefix}}};");
 
