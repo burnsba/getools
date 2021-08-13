@@ -26,7 +26,7 @@ namespace Getools.Lib.Game.Asset.Setup
 
         public BoundingBoxf BoundingBox { get; set; }
 
-        public static Pad3d ReadFromBinFile(BinaryReader br)
+        public new static Pad3d ReadFromBinFile(BinaryReader br)
         {
             var result = new Pad3d();
 
@@ -40,6 +40,13 @@ namespace Getools.Lib.Game.Asset.Setup
             result.BoundingBox = BoundingBoxf.ReadFromBinFile(br);
 
             return result;
+        }
+
+        protected override void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
+        {
+            base.ToCDeclarationCommon(sb, prefix);
+            sb.Append(", ");
+            sb.Append(BoundingBox.ToCInlineDeclaration(string.Empty));
         }
     }
 }

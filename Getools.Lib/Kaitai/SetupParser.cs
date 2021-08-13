@@ -91,6 +91,59 @@ namespace Getools.Lib.Kaitai
                 }
             }
 
+            if (ssf.AiLists.Any())
+            {
+                var aidataOffset = ssf.AiLists.First().EntryPointer;
+
+                var aidataBlock = fillerBlocks.FirstOrDefault(x => x.StartPos == aidataOffset);
+
+                if (object.ReferenceEquals(null, aidataBlock))
+                {
+                    throw new InvalidOperationException("AI Functions were listed in setup binary, but could not resolve associated function data");
+                }
+
+                var aidataBlockData = aidataBlock.Data.SelectMany(x => x).ToArray();
+
+                int blockIndex = 0;
+                int remainingLength = aidataBlock.Len;
+
+                var sortedByPointer = ssf.AiLists.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).ToList();
+                int numberFunctions = sortedByPointer.Count;
+
+                for (int i = 0; i < numberFunctions; i++)
+                {
+                    blockIndex = (int)sortedByPointer[i].EntryPointer - (int)aidataOffset;
+
+                    if (blockIndex < 0)
+                    {
+                        throw new ArgumentException($"Calculated invalid AI function entry point: {blockIndex} relative to 0x{aidataOffset:x4}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
+                    }
+
+                    int functionSize = 0;
+
+                    if (i < numberFunctions - 1)
+                    {
+                        functionSize = (int)sortedByPointer[i + 1].EntryPointer - (int)sortedByPointer[i].EntryPointer;
+                    }
+                    else
+                    {
+                        functionSize = ssf.AiListOffset - (int)sortedByPointer[i].EntryPointer;
+                    }
+
+                    if (functionSize < 0)
+                    {
+                        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
+                    }
+
+                    sortedByPointer[i].Function = new AiFunction()
+                    {
+                        Data = new byte[functionSize],
+                    };
+
+                    Array.Copy(aidataBlockData, blockIndex, sortedByPointer[i].Function.Data, 0, functionSize);
+                }
+            }
+
             return ssf;
         }
 
@@ -184,7 +237,7 @@ namespace Getools.Lib.Kaitai
             spte.Unknown_08 = kaitaiObject.Unknown08;
             spte.Unknown_0C = kaitaiObject.Unknown0c;
 
-            spte.Entry = new PathTable(kaitaiObject.Data.Select(x => x.Value));
+            spte.Entry = new PathTable(kaitaiObject.Data.Select(x => (int)x.Value));
 
             return spte;
         }
@@ -196,8 +249,8 @@ namespace Getools.Lib.Kaitai
             sple.NeighborsPointer = (int)kaitaiObject.PadNeighborOffset;
             sple.IndexPointer = (int)kaitaiObject.PadIndexOffset;
 
-            sple.Neighbors = new PathListing(kaitaiObject.PadNeighborIds.Select(x => x.Value));
-            sple.Indeces = new PathListing(kaitaiObject.PadIndexIds.Select(x => x.Value));
+            sple.Neighbors = new PathListing(kaitaiObject.PadNeighborIds.Select(x => (int)x.Value));
+            sple.Indeces = new PathListing(kaitaiObject.PadIndexIds.Select(x => (int)x.Value));
 
             if (kaitaiObject.Empty != SetupPathLinkEntry.RecordDelimiter)
             {
@@ -299,11 +352,11 @@ namespace Getools.Lib.Kaitai
             intro.X = kaitaiObject.X;
             intro.Y = kaitaiObject.Y;
             intro.Z = kaitaiObject.Z;
-            intro.Unknown_0c = kaitaiObject.Unknown0c;
-            intro.Unknown_10 = kaitaiObject.Unknown10;
-            intro.Unknown_14 = kaitaiObject.Unknown14;
-            intro.Unknown_18 = kaitaiObject.Unknown18;
-            intro.Unknown_1c = kaitaiObject.Unknown1c;
+            intro.LatRot = kaitaiObject.LatRot;
+            intro.VertRot = kaitaiObject.VertRot;
+            intro.Preset = kaitaiObject.Preset;
+            intro.TextId = kaitaiObject.TextId;
+            intro.Text2Id = kaitaiObject.Text2Id;
             intro.Unknown_20 = kaitaiObject.Unknown20;
 
             return intro;
@@ -350,9 +403,9 @@ namespace Getools.Lib.Kaitai
             intro.Y = kaitaiObject.Y;
             intro.Z = kaitaiObject.Z;
             intro.Z = kaitaiObject.Z;
-            intro.Left = kaitaiObject.Left;
-            intro.Right = kaitaiObject.Right;
-            intro.Unknown_18 = kaitaiObject.Unknown18;
+            intro.SplineScale = kaitaiObject.SplineScale;
+            intro.Duration = kaitaiObject.Duration;
+            intro.Flags = kaitaiObject.Flags;
 
             return intro;
         }
@@ -511,18 +564,31 @@ namespace Getools.Lib.Kaitai
 
             CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
 
+            objectDef.Unused_00 = kaitaiObject.Unused00;
             objectDef.Ammo9mm = kaitaiObject.Ammo9mm;
+            objectDef.Unused_04 = kaitaiObject.Unused04;
             objectDef.Ammo9mm2 = kaitaiObject.Ammo9mm2;
+            objectDef.Unused_08 = kaitaiObject.Unused08;
             objectDef.AmmoRifle = kaitaiObject.AmmoRifle;
+            objectDef.Unused_0c = kaitaiObject.Unused0c;
             objectDef.AmmoShotgun = kaitaiObject.AmmoShotgun;
+            objectDef.Unused_10 = kaitaiObject.Unused10;
             objectDef.AmmoHgrenade = kaitaiObject.AmmoHgrenade;
+            objectDef.Unused_14 = kaitaiObject.Unused14;
             objectDef.AmmoRockets = kaitaiObject.AmmoRockets;
-            objectDef.AmmoRemote = kaitaiObject.AmmoRemote;
-            objectDef.AmmoProx = kaitaiObject.AmmoProx;
-            objectDef.AmmoTimed = kaitaiObject.AmmoTimed;
+            objectDef.Unused_18 = kaitaiObject.Unused18;
+            objectDef.AmmoRemoteMine = kaitaiObject.AmmoRemoteMine;
+            objectDef.Unused_1c = kaitaiObject.Unused1c;
+            objectDef.AmmoProximityMine = kaitaiObject.AmmoProximityMine;
+            objectDef.Unused_20 = kaitaiObject.Unused20;
+            objectDef.AmmoTimedMine = kaitaiObject.AmmoTimedMine;
+            objectDef.Unused_24 = kaitaiObject.Unused24;
             objectDef.AmmoThrowing = kaitaiObject.AmmoThrowing;
-            objectDef.AmmoGlaunch = kaitaiObject.AmmoGlaunch;
+            objectDef.Unused_28 = kaitaiObject.Unused28;
+            objectDef.AmmoGrenadeLauncher = kaitaiObject.AmmoGrenadeLauncher;
+            objectDef.Unused_2c = kaitaiObject.Unused2c;
             objectDef.AmmoMagnum = kaitaiObject.AmmoMagnum;
+            objectDef.Unused_30 = kaitaiObject.Unused30;
             objectDef.AmmoGolden = kaitaiObject.AmmoGolden;
 
             return objectDef;
@@ -889,7 +955,7 @@ namespace Getools.Lib.Kaitai
             spse.EntryPointer = kaitaiObject.Pointer;
             spse.Unknown_04 = kaitaiObject.Unknown04;
 
-            spse.Entry = new PathSet(kaitaiObject.Data.Select(x => x.Value));
+            spse.Entry = new PathSet(kaitaiObject.Data.Select(x => (int)x.Value));
 
             return spse;
         }

@@ -11,5 +11,7 @@ namespace Getools.Lib.Game
         byte Hidden2Raw { get; set; }
 
         byte TypeRaw { get; set; }
+
+        string ToCInlineS32Array(string prefix = "");
     }
 }

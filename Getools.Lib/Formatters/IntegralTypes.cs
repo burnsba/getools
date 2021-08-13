@@ -81,5 +81,30 @@ namespace Getools.Lib.Formatters
 
             return "{" + string.Join(", ", charTexts) + "}";
         }
+
+        public static string ToHex2(Byte b)
+        {
+            return $"0x{b:x2}";
+        }
+
+        public static string ToHex4(UInt16 i)
+        {
+            return $"0x{i:x4}";
+        }
+
+        public static string ToHex4(Int16 i)
+        {
+            return $"0x{i:x4}";
+        }
+
+        public static string ToHex8(UInt32 i)
+        {
+            return $"0x{i:x8}";
+        }
+
+        public static string ToHex8(Int32 i)
+        {
+            return $"0x{i:x8}";
+        }
     }
 }

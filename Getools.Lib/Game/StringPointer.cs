@@ -39,5 +39,15 @@ namespace Getools.Lib.Game
         {
             return Value;
         }
+
+        public string ToCValue()
+        {
+            if (string.IsNullOrEmpty(Value))
+            {
+                return "NULL";
+            }
+
+            return Formatters.Strings.ToQuotedString(Value);
+        }
     }
 }

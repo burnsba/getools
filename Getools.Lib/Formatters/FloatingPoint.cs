@@ -8,6 +8,11 @@ namespace Getools.Lib.Formatters
     {
         public static string ToFloatString(Single val)
         {
+            if (Single.IsNaN(val))
+            {
+                return "NaN";
+            }
+
             var s = val.ToString().ToLower();
 
             if (s.IndexOf('e') >= 0)
@@ -40,6 +45,11 @@ namespace Getools.Lib.Formatters
 
         public static string ToFloatCLiteral(Single val)
         {
+            if (Single.IsNaN(val))
+            {
+                return "NAN";
+            }
+
             var s = val.ToString().ToLower();
 
             if (s.IndexOf('e') >= 0)

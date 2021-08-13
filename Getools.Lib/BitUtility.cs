@@ -210,6 +210,29 @@ namespace Getools.Lib
             return i;
         }
 
+        public static Int32 Read32Big(byte[] arr, int index)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentException("Array index must be non-negative integer");
+            }
+
+            if (index + 4 > arr.Length)
+            {
+                throw new EndOfStreamException("Reading 4 bytes from array exceeds array length");
+            }
+
+            Int32 i = arr[index];
+            i <<= 8;
+            i |= arr[index + 1];
+            i <<= 8;
+            i |= arr[index + 2];
+            i <<= 8;
+            i |= arr[index + 3];
+
+            return i;
+        }
+
         /// <summary>
         /// Reads four bytes from the stream as LSB.
         /// </summary>

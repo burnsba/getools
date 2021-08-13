@@ -78,12 +78,21 @@ namespace Getools.Lib.Game.Asset.Setup
 
         public byte[] RodataPrequelFiller { get; set; }
 
+        public void DeserializeFix()
+        {
+            foreach (var entry in PathLinkEntries)
+            {
+                entry.Indeces.first
+            }
+        }
+
         /// <summary>
         /// Builds the entire .c file describing setup and writes to stream at the current position.
         /// </summary>
         /// <param name="sw">Stream to write to</param>
         internal void WriteToCFile(StreamWriter sw)
         {
+            int index = 0;
             sw.WriteLine("/*");
 
             foreach (var prefix in Config.COutputPrefix)
@@ -105,6 +114,181 @@ namespace Getools.Lib.Game.Asset.Setup
             }
 
             sw.WriteLine();
+
+            /*
+             * standard section order:
+             *
+             * - pad list
+             * - pad3d list
+             * - object list
+             * - intro definitions
+             * - path links
+             * - pad3d names
+             * - path tables
+             * - pad names
+             * - path sets
+             * - ai lists
+             */
+
+            /******************************************************************************************
+             * Begin pad list
+             */
+
+            sw.WriteLine($"{Pad.CTypeName} padlist[] = {{");
+
+            for (int i = 0; i < PadList.Count - 1; i++)
+            {
+                sw.WriteLine(PadList[i].ToCInlineDeclaration(Config.DefaultIndent) + ",");
+            }
+
+            if (PadList.Any())
+            {
+                sw.WriteLine(PadList.Last().ToCInlineDeclaration(Config.DefaultIndent));
+            }
+
+            sw.WriteLine("};");
+
+            /*
+             * End pad list
+             */
+
+            sw.WriteLine();
+            sw.WriteLine();
+
+            /******************************************************************************************
+             * Begin pad3d list
+             */
+
+            sw.WriteLine($"{Pad3d.CTypeName} pad3dlist[] = {{");
+
+            for (int i = 0; i < Pad3dList.Count - 1; i++)
+            {
+                sw.WriteLine(Pad3dList[i].ToCInlineDeclaration(Config.DefaultIndent) + ",");
+            }
+
+            if (Pad3dList.Any())
+            {
+                sw.WriteLine(Pad3dList.Last().ToCInlineDeclaration(Config.DefaultIndent));
+            }
+
+            sw.WriteLine("};");
+
+            /*
+             * End pad3d list
+             */
+
+            sw.WriteLine();
+            sw.WriteLine();
+
+            /******************************************************************************************
+             * Begin object list
+             */
+
+            sw.WriteLine($"s32 objlist[] = {{");
+
+            index = 0;
+            for (int i = 0; i < Objects.Count - 1; i++, index++)
+            {
+                sw.WriteLine($"{Config.DefaultIndent}/* {nameof(ISetupObject.Type)} = {Objects[i].Type}; index = {index} */");
+                sw.WriteLine(Objects[i].ToCInlineS32Array(Config.DefaultIndent) + ",");
+            }
+
+            if (Objects.Any())
+            {
+                sw.WriteLine($"{Config.DefaultIndent}/* {nameof(ISetupObject.Type)} = {Objects.Last().Type}; index = {index} */");
+                sw.WriteLine(Objects.Last().ToCInlineS32Array(Config.DefaultIndent));
+            }
+
+            sw.WriteLine("};");
+
+            /*
+             * End object list
+             */
+
+            /******************************************************************************************
+             * Begin intro definitions
+             */
+
+            sw.WriteLine($"s32 intro[] = {{");
+
+            index = 0;
+            for (int i = 0; i < Intros.Count - 1; i++, index++)
+            {
+                sw.WriteLine($"{Config.DefaultIndent}/* {nameof(IIntro.Type)} = {Intros[i].Type}; index = {index} */");
+                sw.WriteLine(Intros[i].ToCInlineS32Array(Config.DefaultIndent) + ",");
+            }
+
+            if (Intros.Any())
+            {
+                sw.WriteLine($"{Config.DefaultIndent}/* {nameof(IIntro.Type)} = {Intros.Last().Type}; index = {index} */");
+                sw.WriteLine(Intros.Last().ToCInlineS32Array(Config.DefaultIndent));
+            }
+
+            sw.WriteLine("};");
+
+            /*
+             * End intro definitions
+             */
+
+            /******************************************************************************************
+             * Begin path links
+             */
+
+            ////// code
+
+            /*
+             * End path links
+             */
+
+            /******************************************************************************************
+             * Begin pad3d names
+             */
+
+            ////// code
+
+            /*
+             * End pad3d names
+             */
+
+            /******************************************************************************************
+             * Begin path tables
+             */
+
+            ////// code
+
+            /*
+             * End path tables
+             */
+
+            /******************************************************************************************
+             * Begin pad names
+             */
+
+            ////// code
+
+            /*
+             * End pad names
+             */
+
+            /******************************************************************************************
+             * Begin path sets
+             */
+
+            ////// code
+
+            /*
+             * End path sets
+             */
+
+            /******************************************************************************************
+             * Begin ai lists
+             */
+
+            ////// code
+
+            /*
+             * End ai lists
+             */
         }
     }
 }

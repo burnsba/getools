@@ -40,11 +40,13 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Unknown 32 bit field (1). Seems to always be zero.
         /// </summary>
+        [Obsolete("Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section")]
         public int? Unknown1 { get; set; }
 
         /// <summary>
         /// Unknown 32 bit field (2). Seems to always be zero.
         /// </summary>
+        [Obsolete("Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section")]
         public int? Unknown2 { get; set; }
 
         /// <summary>

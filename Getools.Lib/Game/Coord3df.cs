@@ -19,6 +19,9 @@ namespace Getools.Lib.Game
 
         public Single Z { get; set; }
 
+        /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
         public string VariableName { get; set; }
 
         public Coord3df()
@@ -72,6 +75,11 @@ namespace Getools.Lib.Game
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return $"{FloatingPoint.ToFloatString(X)}, {FloatingPoint.ToFloatString(Y)}, {FloatingPoint.ToFloatString(Z)}";
         }
     }
 }

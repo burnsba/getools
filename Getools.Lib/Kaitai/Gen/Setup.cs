@@ -143,26 +143,26 @@ namespace Getools.Lib.Kaitai.Gen
                 _x = m_io.ReadU4be();
                 _y = m_io.ReadU4be();
                 _z = m_io.ReadU4be();
-                _left = m_io.ReadU4be();
-                _right = m_io.ReadU4be();
-                _unknown18 = m_io.ReadU4be();
+                _splineScale = m_io.ReadU4be();
+                _duration = m_io.ReadU4be();
+                _flags = m_io.ReadU4be();
             }
             private uint _unknown00;
             private uint _x;
             private uint _y;
             private uint _z;
-            private uint _left;
-            private uint _right;
-            private uint _unknown18;
+            private uint _splineScale;
+            private uint _duration;
+            private uint _flags;
             private Setup m_root;
             private Setup.SetupIntroRecord m_parent;
             public uint Unknown00 { get { return _unknown00; } }
             public uint X { get { return _x; } }
             public uint Y { get { return _y; } }
             public uint Z { get { return _z; } }
-            public uint Left { get { return _left; } }
-            public uint Right { get { return _right; } }
-            public uint Unknown18 { get { return _unknown18; } }
+            public uint SplineScale { get { return _splineScale; } }
+            public uint Duration { get { return _duration; } }
+            public uint Flags { get { return _flags; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
         }
@@ -567,11 +567,11 @@ namespace Getools.Lib.Kaitai.Gen
             {
                 _objectBase = new SetupGenericObject(m_io, this, m_root);
                 _linkedDoorOffset = m_io.ReadU4be();
-                _maxFrac = m_io.ReadF4be();
-                _perimFrac = m_io.ReadF4be();
-                _accel = m_io.ReadF4be();
-                _decel = m_io.ReadF4be();
-                _maxSpeed = m_io.ReadF4be();
+                _maxFrac = m_io.ReadU4be();
+                _perimFrac = m_io.ReadU4be();
+                _accel = m_io.ReadU4be();
+                _decel = m_io.ReadU4be();
+                _maxSpeed = m_io.ReadU4be();
                 _doorFlags = m_io.ReadU2be();
                 _doorType = m_io.ReadU2be();
                 _keyFlags = m_io.ReadU4be();
@@ -608,11 +608,11 @@ namespace Getools.Lib.Kaitai.Gen
             }
             private SetupGenericObject _objectBase;
             private uint _linkedDoorOffset;
-            private float _maxFrac;
-            private float _perimFrac;
-            private float _accel;
-            private float _decel;
-            private float _maxSpeed;
+            private uint _maxFrac;
+            private uint _perimFrac;
+            private uint _accel;
+            private uint _decel;
+            private uint _maxSpeed;
             private ushort _doorFlags;
             private ushort _doorType;
             private uint _keyFlags;
@@ -650,11 +650,11 @@ namespace Getools.Lib.Kaitai.Gen
             private Setup.SetupObjectRecord m_parent;
             public SetupGenericObject ObjectBase { get { return _objectBase; } }
             public uint LinkedDoorOffset { get { return _linkedDoorOffset; } }
-            public float MaxFrac { get { return _maxFrac; } }
-            public float PerimFrac { get { return _perimFrac; } }
-            public float Accel { get { return _accel; } }
-            public float Decel { get { return _decel; } }
-            public float MaxSpeed { get { return _maxSpeed; } }
+            public uint MaxFrac { get { return _maxFrac; } }
+            public uint PerimFrac { get { return _perimFrac; } }
+            public uint Accel { get { return _accel; } }
+            public uint Decel { get { return _decel; } }
+            public uint MaxSpeed { get { return _maxSpeed; } }
             public ushort DoorFlags { get { return _doorFlags; } }
             public ushort DoorType { get { return _doorType; } }
             public uint KeyFlags { get { return _keyFlags; } }
@@ -973,50 +973,89 @@ namespace Getools.Lib.Kaitai.Gen
             private void _read()
             {
                 _objectBase = new SetupGenericObject(m_io, this, m_root);
-                _ammo9mm = m_io.ReadS4be();
-                _ammo9mm2 = m_io.ReadS4be();
-                _ammoRifle = m_io.ReadS4be();
-                _ammoShotgun = m_io.ReadS4be();
-                _ammoHgrenade = m_io.ReadS4be();
-                _ammoRockets = m_io.ReadS4be();
-                _ammoRemote = m_io.ReadS4be();
-                _ammoProx = m_io.ReadS4be();
-                _ammoTimed = m_io.ReadS4be();
-                _ammoThrowing = m_io.ReadS4be();
-                _ammoGlaunch = m_io.ReadS4be();
-                _ammoMagnum = m_io.ReadS4be();
-                _ammoGolden = m_io.ReadS4be();
+                _unused00 = m_io.ReadU2be();
+                _ammo9mm = m_io.ReadS2be();
+                _unused04 = m_io.ReadU2be();
+                _ammo9mm2 = m_io.ReadS2be();
+                _unused08 = m_io.ReadU2be();
+                _ammoRifle = m_io.ReadS2be();
+                _unused0c = m_io.ReadU2be();
+                _ammoShotgun = m_io.ReadS2be();
+                _unused10 = m_io.ReadU2be();
+                _ammoHgrenade = m_io.ReadS2be();
+                _unused14 = m_io.ReadU2be();
+                _ammoRockets = m_io.ReadS2be();
+                _unused18 = m_io.ReadU2be();
+                _ammoRemoteMine = m_io.ReadS2be();
+                _unused1c = m_io.ReadU2be();
+                _ammoProximityMine = m_io.ReadS2be();
+                _unused20 = m_io.ReadU2be();
+                _ammoTimedMine = m_io.ReadS2be();
+                _unused24 = m_io.ReadU2be();
+                _ammoThrowing = m_io.ReadS2be();
+                _unused28 = m_io.ReadU2be();
+                _ammoGrenadeLauncher = m_io.ReadS2be();
+                _unused2c = m_io.ReadU2be();
+                _ammoMagnum = m_io.ReadS2be();
+                _unused30 = m_io.ReadU2be();
+                _ammoGolden = m_io.ReadS2be();
             }
             private SetupGenericObject _objectBase;
-            private int _ammo9mm;
-            private int _ammo9mm2;
-            private int _ammoRifle;
-            private int _ammoShotgun;
-            private int _ammoHgrenade;
-            private int _ammoRockets;
-            private int _ammoRemote;
-            private int _ammoProx;
-            private int _ammoTimed;
-            private int _ammoThrowing;
-            private int _ammoGlaunch;
-            private int _ammoMagnum;
-            private int _ammoGolden;
+            private ushort _unused00;
+            private short _ammo9mm;
+            private ushort _unused04;
+            private short _ammo9mm2;
+            private ushort _unused08;
+            private short _ammoRifle;
+            private ushort _unused0c;
+            private short _ammoShotgun;
+            private ushort _unused10;
+            private short _ammoHgrenade;
+            private ushort _unused14;
+            private short _ammoRockets;
+            private ushort _unused18;
+            private short _ammoRemoteMine;
+            private ushort _unused1c;
+            private short _ammoProximityMine;
+            private ushort _unused20;
+            private short _ammoTimedMine;
+            private ushort _unused24;
+            private short _ammoThrowing;
+            private ushort _unused28;
+            private short _ammoGrenadeLauncher;
+            private ushort _unused2c;
+            private short _ammoMagnum;
+            private ushort _unused30;
+            private short _ammoGolden;
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
             public SetupGenericObject ObjectBase { get { return _objectBase; } }
-            public int Ammo9mm { get { return _ammo9mm; } }
-            public int Ammo9mm2 { get { return _ammo9mm2; } }
-            public int AmmoRifle { get { return _ammoRifle; } }
-            public int AmmoShotgun { get { return _ammoShotgun; } }
-            public int AmmoHgrenade { get { return _ammoHgrenade; } }
-            public int AmmoRockets { get { return _ammoRockets; } }
-            public int AmmoRemote { get { return _ammoRemote; } }
-            public int AmmoProx { get { return _ammoProx; } }
-            public int AmmoTimed { get { return _ammoTimed; } }
-            public int AmmoThrowing { get { return _ammoThrowing; } }
-            public int AmmoGlaunch { get { return _ammoGlaunch; } }
-            public int AmmoMagnum { get { return _ammoMagnum; } }
-            public int AmmoGolden { get { return _ammoGolden; } }
+            public ushort Unused00 { get { return _unused00; } }
+            public short Ammo9mm { get { return _ammo9mm; } }
+            public ushort Unused04 { get { return _unused04; } }
+            public short Ammo9mm2 { get { return _ammo9mm2; } }
+            public ushort Unused08 { get { return _unused08; } }
+            public short AmmoRifle { get { return _ammoRifle; } }
+            public ushort Unused0c { get { return _unused0c; } }
+            public short AmmoShotgun { get { return _ammoShotgun; } }
+            public ushort Unused10 { get { return _unused10; } }
+            public short AmmoHgrenade { get { return _ammoHgrenade; } }
+            public ushort Unused14 { get { return _unused14; } }
+            public short AmmoRockets { get { return _ammoRockets; } }
+            public ushort Unused18 { get { return _unused18; } }
+            public short AmmoRemoteMine { get { return _ammoRemoteMine; } }
+            public ushort Unused1c { get { return _unused1c; } }
+            public short AmmoProximityMine { get { return _ammoProximityMine; } }
+            public ushort Unused20 { get { return _unused20; } }
+            public short AmmoTimedMine { get { return _ammoTimedMine; } }
+            public ushort Unused24 { get { return _unused24; } }
+            public short AmmoThrowing { get { return _ammoThrowing; } }
+            public ushort Unused28 { get { return _unused28; } }
+            public short AmmoGrenadeLauncher { get { return _ammoGrenadeLauncher; } }
+            public ushort Unused2c { get { return _unused2c; } }
+            public short AmmoMagnum { get { return _ammoMagnum; } }
+            public ushort Unused30 { get { return _unused30; } }
+            public short AmmoGolden { get { return _ammoGolden; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
@@ -2041,17 +2080,17 @@ namespace Getools.Lib.Kaitai.Gen
             }
             private void _read()
             {
-                _right = m_io.ReadU4be();
-                _left = m_io.ReadU4be();
+                _right = m_io.ReadS4be();
+                _left = m_io.ReadS4be();
                 _setNum = m_io.ReadU4be();
             }
-            private uint _right;
-            private uint _left;
+            private int _right;
+            private int _left;
             private uint _setNum;
             private Setup m_root;
             private Setup.SetupIntroRecord m_parent;
-            public uint Right { get { return _right; } }
-            public uint Left { get { return _left; } }
+            public int Right { get { return _right; } }
+            public int Left { get { return _left; } }
             public uint SetNum { get { return _setNum; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
@@ -2315,32 +2354,32 @@ namespace Getools.Lib.Kaitai.Gen
                 _x = m_io.ReadU4be();
                 _y = m_io.ReadU4be();
                 _z = m_io.ReadU4be();
-                _unknown0c = m_io.ReadU4be();
-                _unknown10 = m_io.ReadU4be();
-                _unknown14 = m_io.ReadU4be();
-                _unknown18 = m_io.ReadU4be();
-                _unknown1c = m_io.ReadU4be();
+                _latRot = m_io.ReadU4be();
+                _vertRot = m_io.ReadU4be();
+                _preset = m_io.ReadU4be();
+                _textId = m_io.ReadU4be();
+                _text2Id = m_io.ReadU4be();
                 _unknown20 = m_io.ReadU4be();
             }
             private uint _x;
             private uint _y;
             private uint _z;
-            private uint _unknown0c;
-            private uint _unknown10;
-            private uint _unknown14;
-            private uint _unknown18;
-            private uint _unknown1c;
+            private uint _latRot;
+            private uint _vertRot;
+            private uint _preset;
+            private uint _textId;
+            private uint _text2Id;
             private uint _unknown20;
             private Setup m_root;
             private Setup.SetupIntroRecord m_parent;
             public uint X { get { return _x; } }
             public uint Y { get { return _y; } }
             public uint Z { get { return _z; } }
-            public uint Unknown0c { get { return _unknown0c; } }
-            public uint Unknown10 { get { return _unknown10; } }
-            public uint Unknown14 { get { return _unknown14; } }
-            public uint Unknown18 { get { return _unknown18; } }
-            public uint Unknown1c { get { return _unknown1c; } }
+            public uint LatRot { get { return _latRot; } }
+            public uint VertRot { get { return _vertRot; } }
+            public uint Preset { get { return _preset; } }
+            public uint TextId { get { return _textId; } }
+            public uint Text2Id { get { return _text2Id; } }
             public uint Unknown20 { get { return _unknown20; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }

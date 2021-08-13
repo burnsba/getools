@@ -14,13 +14,18 @@ namespace Getools.Lib.Game.Asset.Setup
         {
         }
 
-        public PathTable(IEnumerable<uint> ids)
+        public PathTable(IEnumerable<int> ids)
         {
             Ids = ids.ToList();
         }
 
         public int Offset { get; set; }
 
-        public List<uint> Ids { get; set; } = new List<uint>();
+        /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
+        public string VariableName { get; set; }
+
+        public List<int> Ids { get; set; } = new List<int>();
     }
 }

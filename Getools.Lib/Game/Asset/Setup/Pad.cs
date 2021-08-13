@@ -36,6 +36,11 @@ namespace Getools.Lib.Game.Asset.Setup
 
         public int Unknown { get; set; }
 
+        /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
+        public string VariableName { get; set; }
+
         public static Pad ReadFromBinFile(BinaryReader br)
         {
             var result = new Pad();
@@ -48,6 +53,60 @@ namespace Getools.Lib.Game.Asset.Setup
             result.Unknown = BitUtility.Read32Big(br);
 
             return result;
+        }
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        public string ToCDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{CTypeName} {VariableName} = {{");
+
+            ToCDeclarationCommon(sb, prefix);
+
+            sb.AppendLine($"{prefix}}};");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        public string ToCInlineDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.Append($"{prefix}{{");
+
+            ToCDeclarationCommon(sb, prefix);
+
+            sb.Append("}");
+
+            return sb.ToString();
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
+        protected virtual void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
+        {
+            sb.Append(Position.ToCInlineDeclaration(string.Empty));
+            sb.Append(", ");
+            sb.Append(Up.ToCInlineDeclaration(string.Empty));
+            sb.Append(", ");
+            sb.Append(Look.ToCInlineDeclaration(string.Empty));
+            sb.Append(", ");
+            sb.Append(Name.ToCValue());
+            sb.Append(", ");
+            sb.Append(Unknown);
         }
     }
 }

@@ -292,15 +292,15 @@ types:
       - id: linked_door_offset
         type: u4
       - id: max_frac
-        type: f4
+        type: u4
       - id: perim_frac
-        type: f4
+        type: u4
       - id: accel
-        type: f4
+        type: u4
       - id: decel
-        type: f4
+        type: u4
       - id: max_speed
-        type: f4
+        type: u4
       - id: door_flags
         type: u2
       - id: door_type
@@ -533,32 +533,58 @@ types:
     seq:
       - id: object_base
         type: setup_generic_object
+      - id: unused_00
+        type: u2
       - id: ammo_9mm
-        type: s4
+        type: s2
+      - id: unused_04
+        type: u2
       - id: ammo_9mm_2
-        type: s4
+        type: s2
+      - id: unused_08
+        type: u2
       - id: ammo_rifle
-        type: s4
+        type: s2
+      - id: unused_0c
+        type: u2
       - id: ammo_shotgun
-        type: s4
+        type: s2
+      - id: unused_10
+        type: u2
       - id: ammo_hgrenade
-        type: s4
+        type: s2
+      - id: unused_14
+        type: u2
       - id: ammo_rockets
-        type: s4
-      - id: ammo_remote
-        type: s4
-      - id: ammo_prox
-        type: s4
-      - id: ammo_timed
-        type: s4
+        type: s2
+      - id: unused_18
+        type: u2
+      - id: ammo_remote_mine
+        type: s2
+      - id: unused_1c
+        type: u2
+      - id: ammo_proximity_mine
+        type: s2
+      - id: unused_20
+        type: u2
+      - id: ammo_timed_mine
+        type: s2
+      - id: unused_24
+        type: u2
       - id: ammo_throwing
-        type: s4
-      - id: ammo_glaunch
-        type: s4
+        type: s2
+      - id: unused_28
+        type: u2
+      - id: ammo_grenade_launcher
+        type: s2
+      - id: unused_2c
+        type: u2
       - id: ammo_magnum
-        type: s4
+        type: s2
+      - id: unused_30
+        type: u2
       - id: ammo_golden
-        type: s4
+        type: s2
   # type = 0x16
   setup_object_tag_body:
     seq:
@@ -720,9 +746,9 @@ types:
   setup_intro_start_weapon_body:
     seq:
       - id: right
-        type: u4
+        type: s4
       - id: left
-        type: u4
+        type: s4
       - id: set_num
         type: u4
   # type = 0x2
@@ -745,11 +771,11 @@ types:
         type: u4
       - id: z
         type: u4
-      - id: left
+      - id: spline_scale
         type: u4
-      - id: right
+      - id: duration
         type: u4
-      - id: unknown_18
+      - id: flags
         type: u4
   # type = 0x4
   setup_intro_intro_cam_body:
@@ -770,15 +796,15 @@ types:
         type: u4
       - id: z
         type: u4
-      - id: unknown_0c
+      - id: lat_rot
         type: u4
-      - id: unknown_10
+      - id: vert_rot
         type: u4
-      - id: unknown_14
+      - id: preset
         type: u4
-      - id: unknown_18
+      - id: text_id
         type: u4
-      - id: unknown_1c
+      - id: text2_id
         type: u4
       - id: unknown_20
         type: u4
