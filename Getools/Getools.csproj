@@ -8,7 +8,7 @@
     <Authors>Ben Burns</Authors>
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
-    <AssemblyVersion>21.8.7.1</AssemblyVersion>
+    <AssemblyVersion>21.8.14.1</AssemblyVersion>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>

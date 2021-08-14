@@ -1,27 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
 {
+    /// <summary>
+    /// Setup object list guard definition.
+    /// </summary>
     public class SetupObjectGuard : SetupObjectBase, ISetupObject
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SetupObjectGuard"/> class.
+        /// </summary>
         public SetupObjectGuard()
-            : base(Propdef.Guard)
+            : base(PropDef.Guard)
         {
         }
 
+        /// <summary>
+        /// Gets or sets object id / guard id.
+        /// </summary>
         public ushort ObjectId { get; set; }
+
+        /// <summary>
+        /// Gets or sets preset id.
+        /// </summary>
         public ushort Preset { get; set; }
+
+        /// <summary>
+        /// Gets or sets guard body.
+        /// </summary>
         public ushort BodyId { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public ushort ActionPathAssignment { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public uint PresetToTrigger { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public ushort Unknown10 { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public ushort Health { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public ushort ReactionTime { get; set; }
+
+        /// <summary>
+        /// Id of head to use with guard.
+        /// </summary>
         public ushort Head { get; set; }
+
+        /// <summary>
+        /// TODO: Unknown.
+        /// </summary>
         public uint PointerRuntimeData { get; set; }
 
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -32,6 +79,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
             return sb.ToString();
         }
 
+        /// <inheritdoc />
         protected override void AppendToCInlineS32Array(StringBuilder sb)
         {
             base.AppendToCInlineS32Array(sb);

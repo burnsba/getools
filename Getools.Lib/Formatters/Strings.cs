@@ -30,6 +30,14 @@ namespace Getools.Lib.Formatters
             return $"\"{s}\"";
         }
 
+        /// <summary>
+        /// Accepts a string as if it were a variable to be used
+        /// in a c declaration. If the string has a value, it is
+        /// returned with an "&" prefix. Otherwise the c macro NULL
+        /// is returned.
+        /// </summary>
+        /// <param name="s">Variable name.</param>
+        /// <returns>Address of variable, or c macro NULL.</returns>
         public static string ToCPointerOrNull(string s)
         {
             if (string.IsNullOrEmpty(s))

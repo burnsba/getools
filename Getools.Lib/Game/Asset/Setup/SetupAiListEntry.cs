@@ -14,11 +14,28 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "struct ailist";
 
+        /// <summary>
+        /// Gets or sets address of function being pointed to.
+        /// Struct offset 0x0.
+        /// </summary>
         public UInt32 EntryPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets ai script id.
+        /// Struct offset 0x4.
+        /// </summary>
         public UInt32 Id { get; set; }
 
+        /// <summary>
+        /// AI Script associated with this entry.
+        /// </summary>
         public AiFunction Function { get; set; }
 
+        /// <summary>
+        /// Gets or sets the index of how this entry is sorted
+        /// in the <see cref="StageSetupFile"/> AI Script section.
+        /// This should coorespond to sorting by <see cref="Id"/>.
+        /// </summary>
         public int OrderIndex { get; set; } = 0;
 
         /// <summary>

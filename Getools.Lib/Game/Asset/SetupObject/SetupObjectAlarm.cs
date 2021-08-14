@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
 {
+    /// <summary>
+    /// Setup object list / prop definition for alarm.
+    /// </summary>
     public class SetupObjectAlarm : SetupObjectGenericBase
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SetupObjectAlarm"/> class.
+        /// </summary>
         public SetupObjectAlarm()
-            : base(Propdef.Alarm)
+            : base(PropDef.Alarm)
         {
         }
     }

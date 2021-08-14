@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
+    /// <summary>
+    /// Single ai script function.
+    /// </summary>
     public class AiFunction
     {
         /// <summary>

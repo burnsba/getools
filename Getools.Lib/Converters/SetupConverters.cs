@@ -24,19 +24,10 @@ namespace Getools.Lib.Converters
         /// Loads file content and parses as binary file.
         /// </summary>
         /// <param name="path">Path of file to read.</param>
-        /// <param name="name">Name of header variable.</param>
         /// <returns>Parsed setup.</returns>
         public static StageSetupFile ReadFromBinFile(string path)
         {
             return Kaitai.SetupParser.ParseBin(path);
-            //StageSetupFile result = null;
-
-            //using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
-            //{
-            //    result = StageSetupFile.ReadFromBinFile(br);
-            //}
-
-            //return result;
         }
 
         /// <summary>

@@ -6,17 +6,37 @@ using Getools.Lib.Formatters;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// 3d float point.
+    /// Cooresponds to `struct coord3d`.
+    /// </summary>
     public class Coord3df
     {
         /// <summary>
         /// C file type name.
         /// </summary>
-        public const string CTypeName = "coord3d";
+        public const string CTypeName = "struct coord3d";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Coord3df"/> class.
+        /// </summary>
+        public Coord3df()
+        {
+        }
+
+        /// <summary>
+        /// Gets or sets x position.
+        /// </summary>
         public Single X { get; set; }
 
+        /// <summary>
+        /// Gets or sets y position.
+        /// </summary>
         public Single Y { get; set; }
 
+        /// <summary>
+        /// Gets or sets z position.
+        /// </summary>
         public Single Z { get; set; }
 
         /// <summary>
@@ -24,16 +44,12 @@ namespace Getools.Lib.Game
         /// </summary>
         public string VariableName { get; set; }
 
-        public Coord3df()
-        { }
-
-        public Coord3df(Single x, Single y, Single z)
-        {
-            X = x;
-            Y = y;
-            Z = z;
-        }
-
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using normal structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         public static Coord3df ReadFromBinFile(BinaryReader br)
         {
             var result = new Coord3df();
@@ -77,6 +93,7 @@ namespace Getools.Lib.Game
             return sb.ToString();
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"{FloatingPoint.ToFloatString(X)}, {FloatingPoint.ToFloatString(Y)}, {FloatingPoint.ToFloatString(Z)}";

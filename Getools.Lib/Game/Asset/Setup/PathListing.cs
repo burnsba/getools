@@ -6,7 +6,7 @@ using System.Text;
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// PathLink.
+    /// Path Link, points to a list of ids.
     /// </summary>
     public class PathListing
     {
@@ -15,15 +15,25 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "s32";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PathListing"/> class.
+        /// </summary>
         public PathListing()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PathListing"/> class.
+        /// </summary>
+        /// <param name="ids">Collection of ids to initialize listing with.</param>
         public PathListing(IEnumerable<int> ids)
         {
             Ids = ids.ToList();
         }
 
+        /// <summary>
+        /// Gets or sets the offset this entry was read from.
+        /// </summary>
         public int Offset { get; set; }
 
         /// <summary>
@@ -31,6 +41,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public string VariableName { get; set; }
 
+        /// <summary>
+        /// Gets or sets ids of this listing.
+        /// </summary>
         public List<int> Ids { get; set; } = new List<int>();
 
         /// <summary>

@@ -823,7 +823,7 @@ namespace Getools.Lib.Kaitai
             objectDef.Text3 = kaitaiObject.Text3;
             objectDef.Text4 = kaitaiObject.Text4;
             objectDef.Text5 = kaitaiObject.Text5;
-            objectDef.Unknown24 = kaitaiObject.Unknown24;
+            objectDef.Unknown20 = kaitaiObject.Unknown24;
 
             return objectDef;
         }
@@ -1048,8 +1048,6 @@ namespace Getools.Lib.Kaitai
             pad.Name = Convert(kaitaiObject.Plink);
             pad.Unknown = (int)kaitaiObject.Unknown;
 
-            pad.NameRodataOffset = (int)pad.Name.Offset;
-
             return pad;
         }
 
@@ -1064,8 +1062,6 @@ namespace Getools.Lib.Kaitai
             pad.Unknown = (int)kaitaiObject.Unknown;
 
             pad.BoundingBox = Convert(kaitaiObject.Bbox);
-
-            pad.NameRodataOffset = (int)pad.Name.Offset;
 
             return pad;
         }

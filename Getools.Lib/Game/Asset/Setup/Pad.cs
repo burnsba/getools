@@ -6,7 +6,7 @@ using System.Text;
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// Pad.
+    /// Pad. Each room in the game is composed of one or more pads.
     /// </summary>
     public class Pad
     {
@@ -20,20 +20,42 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const int SizeOf = 44;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Pad"/> class.
+        /// </summary>
         public Pad()
         {
         }
 
+        /// <summary>
+        /// Gets or sets position coordinate.
+        /// Struct offset 0x0.
+        /// </summary>
         public Coord3df Position { get; set; }
 
+        /// <summary>
+        /// Gets or sets "up" coordinate.
+        /// Struct offset 0xc.
+        /// </summary>
         public Coord3df Up { get; set; }
 
+        /// <summary>
+        /// Gets or sets "look" coordinate.
+        /// Struct offset 0x18.
+        /// </summary>
         public Coord3df Look { get; set; }
 
+        /// <summary>
+        /// Gets or sets name string/pointer.
+        /// Struct offset 0x24.
+        /// </summary>
         public StringPointer Name { get; set; }
 
-        public int NameRodataOffset { get; set; }
-
+        /// <summary>
+        /// TODO: Unknown fields.
+        /// Struct offset 0x28.
+        /// Seems to always be zero, to indicate end of pad in setup.
+        /// </summary>
         public int Unknown { get; set; }
 
         /// <summary>
@@ -41,6 +63,12 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public string VariableName { get; set; }
 
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using normal structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         public static Pad ReadFromBinFile(BinaryReader br)
         {
             var result = new Pad();
@@ -49,7 +77,7 @@ namespace Getools.Lib.Game.Asset.Setup
             result.Up = Coord3df.ReadFromBinFile(br);
             result.Look = Coord3df.ReadFromBinFile(br);
 
-            result.NameRodataOffset = BitUtility.Read16Big(br);
+            result.Name = BitUtility.Read16Big(br);
             result.Unknown = BitUtility.Read32Big(br);
 
             return result;
@@ -95,7 +123,12 @@ namespace Getools.Lib.Game.Asset.Setup
             return sb.ToString();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
+        /// <summary>
+        /// Common implementation, returns comma seperated string of struct contents.
+        /// Does not include brackets or semi-colon.
+        /// </summary>
+        /// <param name="sb">String builder to append to.</param>
+        /// <param name="prefix">Optional prefix to prepend.</param>
         protected virtual void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
             sb.Append(Position.ToCInlineDeclaration(string.Empty));

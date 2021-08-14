@@ -1,20 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
 {
+    /// <summary>
+    /// Setup object list / prop definition for drone/autogun.
+    /// </summary>
     public class SetupObjectDrone : SetupObjectGenericBase
     {
         private const int _dataSize = 104;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SetupObjectDrone"/> class.
+        /// </summary>
         public SetupObjectDrone()
-            : base(Propdef.Drone)
+            : base(PropDef.Drone)
         {
         }
 
+        /// <summary>
+        /// Object data.
+        /// TODO: determine real properties.
+        /// </summary>
         public byte[] Data { get; set; } = new byte[_dataSize];
 
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -25,6 +37,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
             return sb.ToString();
         }
 
+        /// <inheritdoc />
         protected override void AppendToCInlineS32Array(StringBuilder sb)
         {
             base.AppendToCInlineS32Array(sb);

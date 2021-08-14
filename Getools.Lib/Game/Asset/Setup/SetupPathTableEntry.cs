@@ -14,13 +14,44 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "struct s_pathTbl";
 
+        /// <summary>
+        /// Gets or sets the offset this entry was read from.
+        /// </summary>
         public int Offset { get; set; }
 
+        /// <summary>
+        /// TODO: unknown.
+        /// Struct offset 0x0.
+        /// </summary>
         public UInt16 Unknown_00 { get; set; }
+
+        /// <summary>
+        /// TODO: unknown.
+        /// Struct offset 0x2.
+        /// </summary>
         public UInt16 Unknown_02 { get; set; }
+
+        /// <summary>
+        /// Pointer address of <see cref="Entry"/>.
+        /// Struct offset 0x4.
+        /// </summary>
         public int EntryPointer { get; set; }
+
+        /// <summary>
+        /// Value pointed to from <see cref="EntryPointer"/>.
+        /// </summary>
         public PathTable Entry { get; set; }
+
+        /// <summary>
+        /// TODO: unknown.
+        /// Struct offset 0x8.
+        /// </summary>
         public UInt32 Unknown_08 { get; set; }
+
+        /// <summary>
+        /// TODO: unknown.
+        /// Struct offset 0xc.
+        /// </summary>
         public UInt32 Unknown_0C { get; set; }
 
         /// <summary>

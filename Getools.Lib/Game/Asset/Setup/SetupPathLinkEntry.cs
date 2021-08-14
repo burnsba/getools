@@ -12,6 +12,9 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </remarks>
     public class SetupPathLinkEntry
     {
+        /// <summary>
+        /// Each entry ends with this value.
+        /// </summary>
         public const UInt32 RecordDelimiter = 0;
 
         /// <summary>
@@ -19,12 +22,31 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "struct s_pathLink";
 
+        /// <summary>
+        /// Gets or sets the offset this entry was read from.
+        /// </summary>
         public int Offset { get; set; }
 
+        /// <summary>
+        /// Gets or sets address of the <see cref="Neighbors"/> list being pointed to.
+        /// Struct offset 0x0.
+        /// </summary>
         public int NeighborsPointer { get; set; }
+
+        /// <summary>
+        /// List of ids pointed to from <see cref="NeighborsPointer"/>.
+        /// </summary>
         public PathListing Neighbors { get; set; }
 
+        /// <summary>
+        /// Gets or sets address of the <see cref="Indeces"/> list being pointed to.
+        /// Struct offset 0x4.
+        /// </summary>
         public int IndexPointer { get; set; }
+
+        /// <summary>
+        /// List of ids pointed to from <see cref="IndexPointer"/>.
+        /// </summary>
         public PathListing Indeces { get; set; }
 
         /// <summary>
