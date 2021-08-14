@@ -40,14 +40,24 @@ namespace Getools.Lib.Game
             return Value;
         }
 
-        public string ToCValue()
+        public string ToCValue(string prefix = "")
         {
             if (string.IsNullOrEmpty(Value))
             {
-                return "NULL";
+                return prefix + Formatters.Strings.ToQuotedString(string.Empty);
             }
 
-            return Formatters.Strings.ToQuotedString(Value);
+            return prefix + Formatters.Strings.ToQuotedString(Value);
+        }
+
+        public string ToCValueOrNull(string prefix = "")
+        {
+            if (string.IsNullOrEmpty(Value))
+            {
+                return $"{prefix}NULL";
+            }
+
+            return prefix + Formatters.Strings.ToQuotedString(Value);
         }
     }
 }

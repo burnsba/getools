@@ -11,8 +11,8 @@ namespace Getools.Lib.Game.Asset.Intro
         {
         }
 
-        public Int32 Left { get; set; }
         public Int32 Right { get; set; }
+        public Int32 Left { get; set; }
         public UInt32 SetNum { get; set; }
 
         public override string ToCInlineS32Array(string prefix = "")
@@ -30,9 +30,9 @@ namespace Getools.Lib.Game.Asset.Intro
             base.AppendToCInlineS32Array(sb);
 
             sb.Append(", ");
-            sb.Append(Left);
-            sb.Append(", ");
             sb.Append(Right);
+            sb.Append(", ");
+            sb.Append(Left);
             sb.Append(", ");
             sb.Append(SetNum);
         }

@@ -404,12 +404,16 @@ namespace Getools.Lib.Antlr
                 {
                     case -1:
                     case 0:
+#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
                         _workingResult.Footer.Unknown1 = val;
+#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
                         _currentFieldIndex = 1;
                         break;
 
                     case 1:
+#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
                         _workingResult.Footer.Unknown2 = val;
+#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
                         _currentFieldIndex++;
                         break;
 

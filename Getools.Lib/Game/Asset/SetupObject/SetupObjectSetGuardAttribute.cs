@@ -7,7 +7,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
     public class SetupObjectSetGuardAttribute : SetupObjectBase, ISetupObject
     {
         public SetupObjectSetGuardAttribute()
-            : base(Propdef.Guard)
+            : base(Propdef.SetGuardAttribute)
         {
         }
 

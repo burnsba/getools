@@ -93,10 +93,13 @@ namespace Getools.Verbs
                 }
             }
 
-            var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
-            foreach (var uoe in unknownOptionErrors)
+            if (!object.ReferenceEquals(null, errs))
             {
-                errorLines.Add($"Error: unknown option: {uoe.Token}");
+                var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
+                foreach (var uoe in unknownOptionErrors)
+                {
+                    errorLines.Add($"Error: unknown option: {uoe.Token}");
+                }
             }
 
             foreach (var error in errorLines)

@@ -21,5 +21,48 @@ namespace Getools.Lib
 
             return $"{assemblyName}: {version}";
         }
+
+        public static void ApplyCommaList<T>(Action<string> writepart, List<T> collection, Func<T, string> makepart)
+        {
+            int index = 0;
+            for (int i = 0; i < collection.Count - 1; i++, index++)
+            {
+                writepart(makepart(collection[i]) + ",");
+            }
+
+            if (collection.Count > 0)
+            {
+                writepart(makepart(collection[collection.Count - 1]));
+            }
+        }
+
+        public static void ApplyCommaList<T>(Action<string> writepart, List<T> collection, Func<T, int, string> makepart)
+        {
+            int index = 0;
+            for (int i = 0; i < collection.Count - 1; i++)
+            {
+                writepart(makepart(collection[i], index) + ",");
+                index++;
+            }
+
+            if (collection.Count > 0)
+            {
+                writepart(makepart(collection[collection.Count - 1], index));
+            }
+        }
+
+        public static void AllButLast<T>(List<T> collection, Action<T> allButLastAction, Action<T> lastAction)
+        {
+            int index = 0;
+            for (int i = 0; i < collection.Count - 1; i++, index++)
+            {
+                allButLastAction(collection[i]);
+            }
+
+            if (collection.Count > 0)
+            {
+                lastAction(collection[collection.Count - 1]);
+            }
+        }
     }
 }

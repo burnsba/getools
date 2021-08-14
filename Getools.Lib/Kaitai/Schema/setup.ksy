@@ -135,12 +135,14 @@ types:
         type: u4
     instances:
       pad_neighbor_ids:
+        if: pad_neighbor_offset > 0
         io: _root._io
         pos: pad_neighbor_offset
         type: ff_list_item
         repeat: until
         repeat-until: _.value == 0xffffffff
       pad_index_ids:
+        if: pad_index_offset > 0
         io: _root._io
         pos: pad_index_offset
         type: ff_list_item
@@ -160,6 +162,7 @@ types:
         type: u4
     instances:
       data:
+        if: unknown_pointer > 0
         io: _root._io
         pos: unknown_pointer
         type: ff_list_item
@@ -173,6 +176,7 @@ types:
         type: u4
     instances:
       data:
+        if: pointer > 0
         io: _root._io
         pos: pointer
         type: ff_list_item

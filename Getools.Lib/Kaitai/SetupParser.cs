@@ -17,6 +17,8 @@ namespace Getools.Lib.Kaitai
 
             var setup = Convert(kaitaiObject);
 
+            setup.DeserializeFix();
+
             return setup;
         }
 
@@ -105,43 +107,84 @@ namespace Getools.Lib.Kaitai
                 var aidataBlockData = aidataBlock.Data.SelectMany(x => x).ToArray();
 
                 int blockIndex = 0;
-                int remainingLength = aidataBlock.Len;
+                var sortedPointers = ssf.AiLists.Where(x => x.EntryPointer > 0).Select(x => x.EntryPointer).OrderBy(x => x).ToList();
+                var numberSortedPointers = sortedPointers.Count;
 
-                var sortedByPointer = ssf.AiLists.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).ToList();
-                int numberFunctions = sortedByPointer.Count;
-
-                for (int i = 0; i < numberFunctions; i++)
+                foreach (var entry in ssf.AiLists.Where(x => x.EntryPointer > 0))
                 {
-                    blockIndex = (int)sortedByPointer[i].EntryPointer - (int)aidataOffset;
-
-                    if (blockIndex < 0)
-                    {
-                        throw new ArgumentException($"Calculated invalid AI function entry point: {blockIndex} relative to 0x{aidataOffset:x4}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
-                    }
-
                     int functionSize = 0;
+                    int currentEntrySortedIndex = sortedPointers.IndexOf(entry.EntryPointer);
 
-                    if (i < numberFunctions - 1)
+                    if (currentEntrySortedIndex < numberSortedPointers - 1)
                     {
-                        functionSize = (int)sortedByPointer[i + 1].EntryPointer - (int)sortedByPointer[i].EntryPointer;
+                        functionSize = (int)sortedPointers[currentEntrySortedIndex + 1] - (int)entry.EntryPointer;
                     }
                     else
                     {
-                        functionSize = ssf.AiListOffset - (int)sortedByPointer[i].EntryPointer;
+                        functionSize = ssf.AiListOffset - (int)entry.EntryPointer;
                     }
 
                     if (functionSize < 0)
                     {
-                        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
+                        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{entry.EntryPointer:x4}");
                     }
 
-                    sortedByPointer[i].Function = new AiFunction()
+                    blockIndex = (int)entry.EntryPointer - (int)aidataOffset;
+
+                    if (blockIndex < 0)
+                    {
+                        throw new ArgumentException($"Calculated invalid AI function entry point: {blockIndex} relative to 0x{aidataOffset:x4}, function entry: 0x{entry.EntryPointer:x4}");
+                    }
+
+                    entry.Function = new AiFunction()
                     {
                         Data = new byte[functionSize],
+                        Offset = (int)entry.EntryPointer,
                     };
 
-                    Array.Copy(aidataBlockData, blockIndex, sortedByPointer[i].Function.Data, 0, functionSize);
+                    Array.Copy(aidataBlockData, blockIndex, entry.Function.Data, 0, functionSize);
                 }
+
+                /////
+
+                
+                //int remainingLength = aidataBlock.Len;
+
+                //var sortedByPointer = ssf.AiLists.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).ToList();
+                //int numberFunctions = sortedByPointer.Count;
+
+                //for (int i = 0; i < numberFunctions; i++)
+                //{
+                //    blockIndex = (int)sortedByPointer[i].EntryPointer - (int)aidataOffset;
+
+                //    if (blockIndex < 0)
+                //    {
+                //        throw new ArgumentException($"Calculated invalid AI function entry point: {blockIndex} relative to 0x{aidataOffset:x4}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
+                //    }
+
+                //    int functionSize = 0;
+
+                //    if (i < numberFunctions - 1)
+                //    {
+                //        functionSize = (int)sortedByPointer[i + 1].EntryPointer - (int)sortedByPointer[i].EntryPointer;
+                //    }
+                //    else
+                //    {
+                //        functionSize = ssf.AiListOffset - (int)sortedByPointer[i].EntryPointer;
+                //    }
+
+                //    if (functionSize < 0)
+                //    {
+                //        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
+                //    }
+
+                //    sortedByPointer[i].Function = new AiFunction()
+                //    {
+                //        Data = new byte[functionSize],
+                //    };
+
+                //    Array.Copy(aidataBlockData, blockIndex, sortedByPointer[i].Function.Data, 0, functionSize);
+                //}
             }
 
             return ssf;
@@ -237,7 +280,10 @@ namespace Getools.Lib.Kaitai
             spte.Unknown_08 = kaitaiObject.Unknown08;
             spte.Unknown_0C = kaitaiObject.Unknown0c;
 
-            spte.Entry = new PathTable(kaitaiObject.Data.Select(x => (int)x.Value));
+            if (!object.ReferenceEquals(null, kaitaiObject.Data))
+            {
+                spte.Entry = new PathTable(kaitaiObject.Data.Select(x => (int)x.Value));
+            }
 
             return spte;
         }
@@ -249,8 +295,15 @@ namespace Getools.Lib.Kaitai
             sple.NeighborsPointer = (int)kaitaiObject.PadNeighborOffset;
             sple.IndexPointer = (int)kaitaiObject.PadIndexOffset;
 
-            sple.Neighbors = new PathListing(kaitaiObject.PadNeighborIds.Select(x => (int)x.Value));
-            sple.Indeces = new PathListing(kaitaiObject.PadIndexIds.Select(x => (int)x.Value));
+            if (!object.ReferenceEquals(null, kaitaiObject.PadNeighborIds))
+            {
+                sple.Neighbors = new PathListing(kaitaiObject.PadNeighborIds.Select(x => (int)x.Value));
+            }
+
+            if (!object.ReferenceEquals(null, kaitaiObject.PadIndexIds))
+            {
+                sple.Indeces = new PathListing(kaitaiObject.PadIndexIds.Select(x => (int)x.Value));
+            }
 
             if (kaitaiObject.Empty != SetupPathLinkEntry.RecordDelimiter)
             {
@@ -544,7 +597,7 @@ namespace Getools.Lib.Kaitai
                 throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectAircraft)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
             }
 
-            Array.Copy(objectDef.Data, kaitaiObject.Bytes, kaitaiObject.Bytes.Length);
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
 
             return objectDef;
         }
@@ -686,7 +739,7 @@ namespace Getools.Lib.Kaitai
                 throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectDrone)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
             }
 
-            Array.Copy(objectDef.Data, kaitaiObject.Bytes, kaitaiObject.Bytes.Length);
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
 
             return objectDef;
         }
@@ -892,7 +945,7 @@ namespace Getools.Lib.Kaitai
                 throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectVehicle)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
             }
 
-            Array.Copy(objectDef.Data, kaitaiObject.Bytes, kaitaiObject.Bytes.Length);
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
 
             return objectDef;
         }
@@ -955,7 +1008,10 @@ namespace Getools.Lib.Kaitai
             spse.EntryPointer = kaitaiObject.Pointer;
             spse.Unknown_04 = kaitaiObject.Unknown04;
 
-            spse.Entry = new PathSet(kaitaiObject.Data.Select(x => (int)x.Value));
+            if (!object.ReferenceEquals(null, kaitaiObject.Data))
+            {
+                spse.Entry = new PathSet(kaitaiObject.Data.Select(x => (int)x.Value));
+            }
 
             return spse;
         }

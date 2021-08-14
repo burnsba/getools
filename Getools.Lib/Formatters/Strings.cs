@@ -29,5 +29,15 @@ namespace Getools.Lib.Formatters
 
             return $"\"{s}\"";
         }
+
+        public static string ToCPointerOrNull(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return "NULL";
+            }
+
+            return $"&{s}";
+        }
     }
 }

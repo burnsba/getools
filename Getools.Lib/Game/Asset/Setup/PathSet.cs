@@ -10,6 +10,11 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class PathSet
     {
+        /// <summary>
+        /// C file, type name. Should match known struct type.
+        /// </summary>
+        public const string CTypeName = "s32";
+
         public PathSet()
         {
         }
@@ -27,5 +32,25 @@ namespace Getools.Lib.Game.Asset.Setup
         public string VariableName { get; set; }
 
         public List<int> Ids { get; set; } = new List<int>();
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        public string ToCDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.Append($"{prefix}{CTypeName} {VariableName}[] = {{ ");
+
+            sb.Append(string.Join(", ", Ids));
+
+            sb.AppendLine(" };");
+
+            return sb.ToString();
+        }
     }
 }

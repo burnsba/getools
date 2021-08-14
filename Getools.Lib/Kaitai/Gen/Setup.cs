@@ -720,22 +720,25 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     if (f_padNeighborIds)
                         return _padNeighborIds;
-                    KaitaiStream io = M_Root.M_Io;
-                    long _pos = io.Pos;
-                    io.Seek(PadNeighborOffset);
-                    _padNeighborIds = new List<FfListItem>();
+                    if (PadNeighborOffset > 0)
                     {
-                        var i = 0;
-                        FfListItem M_;
-                        do
+                        KaitaiStream io = M_Root.M_Io;
+                        long _pos = io.Pos;
+                        io.Seek(PadNeighborOffset);
+                        _padNeighborIds = new List<FfListItem>();
                         {
-                            M_ = new FfListItem(io, this, m_root);
-                            _padNeighborIds.Add(M_);
-                            i++;
-                        } while (!(M_.Value == 4294967295));
+                            var i = 0;
+                            FfListItem M_;
+                            do
+                            {
+                                M_ = new FfListItem(io, this, m_root);
+                                _padNeighborIds.Add(M_);
+                                i++;
+                            } while (!(M_.Value == 4294967295));
+                        }
+                        io.Seek(_pos);
+                        f_padNeighborIds = true;
                     }
-                    io.Seek(_pos);
-                    f_padNeighborIds = true;
                     return _padNeighborIds;
                 }
             }
@@ -747,22 +750,25 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     if (f_padIndexIds)
                         return _padIndexIds;
-                    KaitaiStream io = M_Root.M_Io;
-                    long _pos = io.Pos;
-                    io.Seek(PadIndexOffset);
-                    _padIndexIds = new List<FfListItem>();
+                    if (PadIndexOffset > 0)
                     {
-                        var i = 0;
-                        FfListItem M_;
-                        do
+                        KaitaiStream io = M_Root.M_Io;
+                        long _pos = io.Pos;
+                        io.Seek(PadIndexOffset);
+                        _padIndexIds = new List<FfListItem>();
                         {
-                            M_ = new FfListItem(io, this, m_root);
-                            _padIndexIds.Add(M_);
-                            i++;
-                        } while (!(M_.Value == 4294967295));
+                            var i = 0;
+                            FfListItem M_;
+                            do
+                            {
+                                M_ = new FfListItem(io, this, m_root);
+                                _padIndexIds.Add(M_);
+                                i++;
+                            } while (!(M_.Value == 4294967295));
+                        }
+                        io.Seek(_pos);
+                        f_padIndexIds = true;
                     }
-                    io.Seek(_pos);
-                    f_padIndexIds = true;
                     return _padIndexIds;
                 }
             }
@@ -2278,22 +2284,25 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     if (f_data)
                         return _data;
-                    KaitaiStream io = M_Root.M_Io;
-                    long _pos = io.Pos;
-                    io.Seek(Pointer);
-                    _data = new List<FfListItem>();
+                    if (Pointer > 0)
                     {
-                        var i = 0;
-                        FfListItem M_;
-                        do
+                        KaitaiStream io = M_Root.M_Io;
+                        long _pos = io.Pos;
+                        io.Seek(Pointer);
+                        _data = new List<FfListItem>();
                         {
-                            M_ = new FfListItem(io, this, m_root);
-                            _data.Add(M_);
-                            i++;
-                        } while (!(M_.Value == 4294967295));
+                            var i = 0;
+                            FfListItem M_;
+                            do
+                            {
+                                M_ = new FfListItem(io, this, m_root);
+                                _data.Add(M_);
+                                i++;
+                            } while (!(M_.Value == 4294967295));
+                        }
+                        io.Seek(_pos);
+                        f_data = true;
                     }
-                    io.Seek(_pos);
-                    f_data = true;
                     return _data;
                 }
             }
@@ -2711,22 +2720,25 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     if (f_data)
                         return _data;
-                    KaitaiStream io = M_Root.M_Io;
-                    long _pos = io.Pos;
-                    io.Seek(UnknownPointer);
-                    _data = new List<FfListItem>();
+                    if (UnknownPointer > 0)
                     {
-                        var i = 0;
-                        FfListItem M_;
-                        do
+                        KaitaiStream io = M_Root.M_Io;
+                        long _pos = io.Pos;
+                        io.Seek(UnknownPointer);
+                        _data = new List<FfListItem>();
                         {
-                            M_ = new FfListItem(io, this, m_root);
-                            _data.Add(M_);
-                            i++;
-                        } while (!(M_.Value == 4294967295));
+                            var i = 0;
+                            FfListItem M_;
+                            do
+                            {
+                                M_ = new FfListItem(io, this, m_root);
+                                _data.Add(M_);
+                                i++;
+                            } while (!(M_.Value == 4294967295));
+                        }
+                        io.Seek(_pos);
+                        f_data = true;
                     }
-                    io.Seek(_pos);
-                    f_data = true;
                     return _data;
                 }
             }

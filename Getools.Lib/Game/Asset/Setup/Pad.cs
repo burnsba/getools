@@ -86,11 +86,11 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             var sb = new StringBuilder();
 
-            sb.Append($"{prefix}{{");
+            sb.Append($"{prefix}{{ ");
 
             ToCDeclarationCommon(sb, prefix);
 
-            sb.Append("}");
+            sb.Append(" }");
 
             return sb.ToString();
         }
@@ -104,7 +104,7 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(", ");
             sb.Append(Look.ToCInlineDeclaration(string.Empty));
             sb.Append(", ");
-            sb.Append(Name.ToCValue());
+            sb.Append(Name.ToCValueOrNull());
             sb.Append(", ");
             sb.Append(Unknown);
         }
