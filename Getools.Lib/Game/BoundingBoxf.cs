@@ -1,48 +1,75 @@
-﻿using Getools.Lib.Formatters;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.Formatters;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// bondtypes.h struct bbox.
+    /// </summary>
     public class BoundingBoxf
     {
         /// <summary>
         /// C file type name.
         /// </summary>
-        public const string CTypeName = "bbox";
+        public const string CTypeName = "struct bbox";
 
         /// <summary>
         /// Size of the <see cref="BoundingBoxf"/> struct in bytes.
         /// </summary>
         public const int SizeOf = 24;
 
-        public Single MinX { get; set; }
-
-        public Single MaxX { get; set; }
-
-        public Single MinY { get; set; }
-
-        public Single MaxY { get; set; }
-
-        public Single MinZ { get; set; }
-
-        public Single MaxZ { get; set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BoundingBoxf"/> class.
+        /// </summary>
         public BoundingBoxf()
-        { }
-
-        public BoundingBoxf(Single minx, Single maxx, Single miny, Single maxy, Single minz, Single maxz)
         {
-            MinX = minx;
-            MaxX = maxx;
-            MinY = miny;
-            MaxY = maxy;
-            MinZ = minz;
-            MaxZ = maxz;
         }
 
+        /// <summary>
+        /// Gets or sets min x coordinate of bounding box.
+        /// Game struct property, offset 0x0.
+        /// </summary>
+        public Single MinX { get; set; }
+
+        /// <summary>
+        /// Gets or sets max x coordinate of bounding box.
+        /// Game struct property, offset 0x4.
+        /// </summary>
+        public Single MaxX { get; set; }
+
+        /// <summary>
+        /// Gets or sets min y coordinate of bounding box.
+        /// Game struct property, offset 0x8.
+        /// </summary>
+        public Single MinY { get; set; }
+
+        /// <summary>
+        /// Gets or sets max y coordinate of bounding box.
+        /// Game struct property, offset 0xc.
+        /// </summary>
+        public Single MaxY { get; set; }
+
+        /// <summary>
+        /// Gets or sets min z coordinate of bounding box.
+        /// Game struct property, offset 0x10.
+        /// </summary>
+        public Single MinZ { get; set; }
+
+        /// <summary>
+        /// Gets or sets max z coordinate of bounding box.
+        /// Game struct property, offset 0x4.
+        /// </summary>
+        public Single MaxZ { get; set; }
+
+        /// <summary>
+        /// Reads from current position in stream. Loads object from
+        /// stream as it would be read from a binary file using normal structs.
+        /// </summary>
+        /// <param name="br">Stream to read.</param>
+        /// <returns>New object.</returns>
         public static BoundingBoxf ReadFromBinFile(BinaryReader br)
         {
             var result = new BoundingBoxf();

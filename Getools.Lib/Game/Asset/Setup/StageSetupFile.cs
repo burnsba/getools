@@ -9,6 +9,9 @@ using Getools.Lib.Game.Asset.SetupObject;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
+    /// <summary>
+    /// This object cooresponds to an entire setup file.
+    /// </summary>
     public class StageSetupFile
     {
         /// <summary>
@@ -25,84 +28,217 @@ namespace Getools.Lib.Game.Asset.Setup
             "bondtypes.h",
         };
 
-        public int PathTableDataOffset { get; set; }
-
-        public List<PathTable> PathTableData { get; set; } = new List<PathTable>();
-
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="PathTablesVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int PathTablesOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the path tables data.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<SetupPathTableEntry> PathTables { get; set; } = new List<SetupPathTableEntry>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string PathTablesVariableName { get; set; } = "pathtbl";
 
-        public int PathLinkDataOffset { get; set; }
-
-        public List<PathListing> PathLinkData { get; set; } = new List<PathListing>();
-
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="PathListVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int PathLinksOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the path link data.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<SetupPathLinkEntry> PathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string PathListVariableName { get; set; } = "pathlist";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="IntroListVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int IntrosOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the intro data.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<IIntro> Intros { get; set; } = new List<IIntro>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string IntroListVariableName { get; set; } = "intro";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="ObjectListVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int ObjectsOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the object prop declaration data.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<ISetupObject> Objects { get; set; } = new List<ISetupObject>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string ObjectListVariableName { get; set; } = "objlist";
 
-        public int PathSetsDataOffset { get; set; }
-
-        public List<PathSet> PathSetsData { get; set; } = new List<PathSet>();
-
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="PathSetsVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int PathSetsOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the path sets data.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<SetupPathSetEntry> PathSets { get; set; } = new List<SetupPathSetEntry>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string PathSetsVariableName { get; set; } = "paths";
 
-        public int AiDataOffset { get; set; }
-
-        public byte[] AiData { get; set; }
-
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="AiListsVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int AiListOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the ai script listings.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<SetupAiListEntry> AiLists { get; set; } = new List<SetupAiListEntry>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string AiListsVariableName { get; set; } = "ailists";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="PadListVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int PadListOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the pad listing.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<Pad> PadList { get; set; } = new List<Pad>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string PadListVariableName { get; set; } = "padlist";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="Pad3dListVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int Pad3dListOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the pad3d listing.
+        /// Each entry should contain any necessary "prequel" data that
+        /// would be listed before this main entry.
+        /// </summary>
         public List<Pad3d> Pad3dList { get; set; } = new List<Pad3d>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string Pad3dListVariableName { get; set; } = "pad3dlist";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="PadNamesVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int PadNamesOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the pad names list.
+        /// </summary>
         public List<StringPointer> PadNames { get; set; } = new List<StringPointer>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string PadNamesVariableName { get; set; } = "padnames";
 
+        /// <summary>
+        /// Gets or sets the file offset that the main <see cref="Pad3dNamesVariableName"/>
+        /// declaration is located at.
+        /// </summary>
         public int Pad3dNamesOffset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the pad3d names list.
+        /// </summary>
         public List<StringPointer> Pad3dNames { get; set; } = new List<StringPointer>();
 
+        /// <summary>
+        /// Gets or sets the variable name for this section.
+        /// This will be used as a pointer in the main setup struct declaration,
+        /// then used later in the file for the associated data declaration
+        /// (the data being pointed to).
+        /// </summary>
         public string Pad3dNamesVariableName { get; set; } = "pad3dnames";
 
-        public byte[] RodataPrequelFiller { get; set; }
-
+        /// <summary>
+        /// Iterates over the collection after it has been deserialized
+        /// and sets any remaining unset indeces or offsets.
+        /// Updates variable names based on the indeces.
+        /// </summary>
         public void DeserializeFix()
         {
             int index;
@@ -171,6 +307,8 @@ namespace Getools.Lib.Game.Asset.Setup
 
         /// <summary>
         /// Builds the entire .c file describing setup and writes to stream at the current position.
+        /// Assumes that the setup has already been organized/sorted (i.e., <see cref="DeserializeFix"/>
+        /// has already been called).
         /// </summary>
         /// <param name="sw">Stream to write to</param>
         internal void WriteToCFile(StreamWriter sw)

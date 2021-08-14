@@ -22,6 +22,17 @@ namespace Getools.Lib
             return $"{assemblyName}: {version}";
         }
 
+        /// <summary>
+        /// Iterates a collection of objects. For each object, a Func is applied to convert
+        /// to a string. For every item in the collection except for the last, a comma is
+        /// appended to the string. This is then sent to the <paramref name="writepart"/>
+        /// Action.
+        /// </summary>
+        /// <typeparam name="T">Type of collection to iterate.</typeparam>
+        /// <param name="writepart">Action that accepts a string and does something with it,
+        /// like send to output.</param>
+        /// <param name="collection">Collection to iterate.</param>
+        /// <param name="makepart">Accepts a collection item and creates a string from it.</param>
         public static void ApplyCommaList<T>(Action<string> writepart, List<T> collection, Func<T, string> makepart)
         {
             int index = 0;
@@ -36,6 +47,18 @@ namespace Getools.Lib
             }
         }
 
+        /// <summary>
+        /// Iterates a collection of objects. For each object, a Func is applied to convert
+        /// to a string. For every item in the collection except for the last, a comma is
+        /// appended to the string. This is then sent to the <paramref name="writepart"/>
+        /// Action.
+        /// </summary>
+        /// <typeparam name="T">Type of collection to iterate.</typeparam>
+        /// <param name="writepart">Action that accepts a string and does something with it,
+        /// like send to output.</param>
+        /// <param name="collection">Collection to iterate.</param>
+        /// <param name="makepart">Accepts a collection item and creates a string from it. The int
+        /// parameter is the index of the collection.</param>
         public static void ApplyCommaList<T>(Action<string> writepart, List<T> collection, Func<T, int, string> makepart)
         {
             int index = 0;
@@ -51,6 +74,19 @@ namespace Getools.Lib
             }
         }
 
+        /// <summary>
+        /// Iterates a collection of objects. Each item except for the last is
+        /// sent through <paramref name="allButLastAction"/>. The very last item in
+        /// the collection is sent to <paramref name="lastAction"/> (or if there
+        /// is only one item).
+        /// Action.
+        /// </summary>
+        /// <typeparam name="T">Type of collection to iterate.</typeparam>
+        /// <param name="collection">Collection to iterate.</param>
+        /// <param name="allButLastAction">Accepts a collection item (all except the last item) and does
+        /// something with it. If there is only one item in the collection this
+        /// action is not used.</param>
+        /// <param name="lastAction">Accepts the last collection item and does something with it.</param>
         public static void AllButLast<T>(List<T> collection, Action<T> allButLastAction, Action<T> lastAction)
         {
             int index = 0;

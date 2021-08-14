@@ -4,16 +4,30 @@ using System.Text;
 
 namespace Getools.Lib.Game.Asset.Intro
 {
+    /// <summary>
+    /// Intro definition to set the watch time.
+    /// </summary>
     public class IntroWatchTime : IntroBase
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IntroWatchTime"/> class.
+        /// </summary>
         public IntroWatchTime()
             : base(IntroType.WatchTime)
         {
         }
 
+        /// <summary>
+        /// Gets or sets intro watch starting hour.
+        /// </summary>
         public UInt32 Hour { get; set; }
+
+        /// <summary>
+        /// Gets or sets intro watch starting minute.
+        /// </summary>
         public UInt32 Minute { get; set; }
 
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -24,6 +38,7 @@ namespace Getools.Lib.Game.Asset.Intro
             return sb.ToString();
         }
 
+        /// <inheritdoc />
         protected override void AppendToCInlineS32Array(StringBuilder sb)
         {
             base.AppendToCInlineS32Array(sb);

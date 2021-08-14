@@ -9,8 +9,20 @@ using Getools.Lib.Game.Asset.SetupObject;
 
 namespace Getools.Lib.Kaitai
 {
+    /// <summary>
+    /// Wrapper for Kaitai parser generated code.
+    /// </summary>
     public static class SetupParser
     {
+        /// <summary>
+        /// Reads a .bin file from disk and parses it using the Kaitai definition.
+        /// </summary>
+        /// <param name="path">Path to file to parse.</param>
+        /// <returns>Newly created file.</returns>
+        /// <remarks>
+        /// All Kaitai struct objects are cleaned up / translated into
+        /// cooresponding project objects.
+        /// </remarks>
         public static StageSetupFile ParseBin(string path)
         {
             var kaitaiObject = Gen.Setup.FromFile(path);
@@ -22,6 +34,11 @@ namespace Getools.Lib.Kaitai
             return setup;
         }
 
+        /// <summary>
+        /// Converts Kaitai struct setup object to library setup object.
+        /// </summary>
+        /// <param name="kaitaiObject">Kaitai struct object.</param>
+        /// <returns>Library object.</returns>
         private static StageSetupFile Convert(Gen.Setup kaitaiObject)
         {
             var ssf = new StageSetupFile();
@@ -144,47 +161,6 @@ namespace Getools.Lib.Kaitai
 
                     Array.Copy(aidataBlockData, blockIndex, entry.Function.Data, 0, functionSize);
                 }
-
-                /////
-
-                
-                //int remainingLength = aidataBlock.Len;
-
-                //var sortedByPointer = ssf.AiLists.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).ToList();
-                //int numberFunctions = sortedByPointer.Count;
-
-                //for (int i = 0; i < numberFunctions; i++)
-                //{
-                //    blockIndex = (int)sortedByPointer[i].EntryPointer - (int)aidataOffset;
-
-                //    if (blockIndex < 0)
-                //    {
-                //        throw new ArgumentException($"Calculated invalid AI function entry point: {blockIndex} relative to 0x{aidataOffset:x4}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
-                //    }
-
-                //    int functionSize = 0;
-
-                //    if (i < numberFunctions - 1)
-                //    {
-                //        functionSize = (int)sortedByPointer[i + 1].EntryPointer - (int)sortedByPointer[i].EntryPointer;
-                //    }
-                //    else
-                //    {
-                //        functionSize = ssf.AiListOffset - (int)sortedByPointer[i].EntryPointer;
-                //    }
-
-                //    if (functionSize < 0)
-                //    {
-                //        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{sortedByPointer[i].EntryPointer:x4}");
-                //    }
-
-                //    sortedByPointer[i].Function = new AiFunction()
-                //    {
-                //        Data = new byte[functionSize],
-                //    };
-
-                //    Array.Copy(aidataBlockData, blockIndex, sortedByPointer[i].Function.Data, 0, functionSize);
-                //}
             }
 
             return ssf;

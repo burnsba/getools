@@ -11,12 +11,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "u32";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiFunction"/> class.
+        /// </summary>
         public AiFunction()
         {
         }
 
+        /// <summary>
+        /// Gets or sets the offset this ai script was read from.
+        /// </summary>
         public int Offset { get; set; }
 
+        /// <summary>
+        /// Gets or sets the ai script definition.
+        /// Eventually this will be replaced with strongly typed data.
+        /// </summary>
         public byte[] Data { get; set; }
 
         /// <summary>
@@ -24,6 +34,10 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public string VariableName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the index of this ai script, in the list of ai scripts
+        /// defined in the setup file.
+        /// </summary>
         public int OrderIndex { get; set; } = 0;
 
         /// <summary>

@@ -1,10 +1,10 @@
-﻿using Getools.Lib.Error;
-using Getools.Lib.Game;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.Error;
+using Getools.Lib.Game;
 
 namespace Getools.Lib
 {
@@ -210,6 +210,12 @@ namespace Getools.Lib
             return i;
         }
 
+        /// <summary>
+        /// Reads 4 bytes from a byte array as big endian 32-bit int.
+        /// </summary>
+        /// <param name="arr">Array to read.</param>
+        /// <param name="index">Starting index in array.</param>
+        /// <returns>Int.</returns>
         public static Int32 Read32Big(byte[] arr, int index)
         {
             if (index < 0)
@@ -324,6 +330,14 @@ namespace Getools.Lib
             return next16;
         }
 
+        /// <summary>
+        /// Reads a binary stream until stream end.
+        /// It is assumed this is reading a .rodata section, and strings are packed
+        /// according to some kind of alignment, specified by <paramref name="maxStringLength"/>.
+        /// </summary>
+        /// <param name="stream">Stream to read.</param>
+        /// <param name="maxStringLength">Standard/max string length.</param>
+        /// <returns>List of strings read, and their offsets.</returns>
         public static List<StringPointer> ReadRodataStrings(BinaryReader stream, int maxStringLength)
         {
             int bufferSize = maxStringLength + 2;
