@@ -178,7 +178,11 @@ namespace Getools.Lib.Antlr
                 {
                     if (!_workingTile.Points.Any())
                     {
-                        throw new BadFileFormatException("Error, found tile without any points.");
+                        // the last tile before the footer is empty, so this will only be an error if the pointcount is greater than zero.
+                        if (_workingTile.PointCount > 0)
+                        {
+                            throw new BadFileFormatException($"Error, {nameof(_workingTile.PointCount)} > 0, but there are no points");
+                        }
                     }
 
                     _workingResult.Tiles.Add(_workingTile);
@@ -404,40 +408,26 @@ namespace Getools.Lib.Antlr
                 {
                     case -1:
                     case 0:
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-                        _workingResult.Footer.Unknown1 = val;
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
+                        _workingResult.Footer.C = text;
                         _currentFieldIndex = 1;
                         break;
 
                     case 1:
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-                        _workingResult.Footer.Unknown2 = val;
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-                        _currentFieldIndex++;
-                        break;
-
-                    case 2:
-                        _workingResult.Footer.C = text;
-                        _currentFieldIndex++;
-                        break;
-
-                    case 3:
                         _workingResult.Footer.Unknown3 = val;
                         _currentFieldIndex++;
                         break;
 
-                    case 4:
+                    case 2:
                         _workingResult.Footer.Unknown4 = val;
                         _currentFieldIndex++;
                         break;
 
-                    case 5:
+                    case 3:
                         _workingResult.Footer.Unknown5 = val;
                         _currentFieldIndex++;
                         break;
 
-                    case 6:
+                    case 4:
                         _workingResult.Footer.Unknown5 = val;
                         _currentFieldIndex++;
                         break;

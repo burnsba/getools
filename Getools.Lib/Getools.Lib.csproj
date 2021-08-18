@@ -8,6 +8,11 @@
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
     <AssemblyVersion>21.8.14.1</AssemblyVersion>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>

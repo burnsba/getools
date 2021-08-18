@@ -128,7 +128,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             var dataSize = Header.GetDataSizeOf()
                 + tileSize
-                + Footer.GetDataSizeOf();
+                + StandFileFooter.GetDataSizeOf();
 
             return BitUtility.Align16(dataSize);
         }

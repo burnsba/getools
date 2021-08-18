@@ -12,7 +12,6 @@ namespace Getools.Test.AssetTests
     {
         private const string _filename_bin_bad_offset = "Tbg_bad_offset_stanZ.bin";
         private const string _filename_bin_no_footer = "Tbg_no_footer_stanZ.bin";
-        private const string _filename_bin_no_points = "Tbg_no_points_stanZ.bin";
         private const string _filename_c_no_footer = "Tbg_no_footer_stanZ.c";
         private const string _filename_c_no_header = "Tbg_no_header_stanZ.c";
         private const string _filename_c_no_points = "Tbg_no_points_stanZ.c";
@@ -24,7 +23,7 @@ namespace Getools.Test.AssetTests
         [Fact]
         public void bin_bad_offset()
         {
-            Assert.Throws<BadFileFormatException>(() =>
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
             {
                 var path = Path.Combine(_testFileDirectory, _filename_bin_bad_offset);
                 var stan = StanConverters.ReadFromBinFile(path, Path.GetFileNameWithoutExtension(_filename_bin_bad_offset));
@@ -37,16 +36,6 @@ namespace Getools.Test.AssetTests
             Assert.Throws<EndOfStreamException>(() =>
             {
                 var path = Path.Combine(_testFileDirectory, _filename_bin_no_footer);
-                var stan = StanConverters.ReadFromBinFile(path, Path.GetFileNameWithoutExtension(_filename_bin_bad_offset));
-            });
-        }
-
-        [Fact]
-        public void bin_no_points()
-        {
-            Assert.Throws<BadFileFormatException>(() =>
-            {
-                var path = Path.Combine(_testFileDirectory, _filename_bin_no_points);
                 var stan = StanConverters.ReadFromBinFile(path, Path.GetFileNameWithoutExtension(_filename_bin_bad_offset));
             });
         }

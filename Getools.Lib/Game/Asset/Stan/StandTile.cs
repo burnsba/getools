@@ -411,67 +411,67 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using normal structs.
-        /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
-        /// <returns>New object.</returns>
-        internal static StandTile ReadFromBinFile(BinaryReader br, int tileIndex)
-        {
-            var result = new StandTile(TypeFormat.Normal);
+        ///// <summary>
+        ///// Reads from current position in stream. Loads object from
+        ///// stream as it would be read from a binary file using normal structs.
+        ///// </summary>
+        ///// <param name="br">Stream to read.</param>
+        ///// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
+        ///// <returns>New object.</returns>
+        //internal static StandTile ReadFromBinFile(BinaryReader br, int tileIndex)
+        //{
+        //    var result = new StandTile(TypeFormat.Normal);
 
-            Byte b;
+        //    Byte b;
 
-            b = br.ReadByte();
-            result.InternalName = b << 16;
-            b = br.ReadByte();
-            result.InternalName |= b << 8;
-            b = br.ReadByte();
-            result.InternalName |= b;
+        //    b = br.ReadByte();
+        //    result.InternalName = b << 16;
+        //    b = br.ReadByte();
+        //    result.InternalName |= b << 8;
+        //    b = br.ReadByte();
+        //    result.InternalName |= b;
 
-            result.Room = br.ReadByte();
+        //    result.Room = br.ReadByte();
 
-            // "Tile beginning with room 0 is the true way the file format ends, engine does not check for unstric string"
-            if (result.Room == 0)
-            {
-                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                throw new Error.ExpectedStreamEndException();
-            }
+        //    // "Tile beginning with room 0 is the true way the file format ends, engine does not check for unstric string"
+        //    if (result.Room == 0)
+        //    {
+        //        br.BaseStream.Seek(-4, SeekOrigin.Current);
+        //        throw new Error.ExpectedStreamEndException();
+        //    }
 
-            b = br.ReadByte();
-            result.Flags = (byte)((b >> 4) & 0xf);
-            result.R = (byte)(b & 0xf);
+        //    b = br.ReadByte();
+        //    result.Flags = (byte)((b >> 4) & 0xf);
+        //    result.R = (byte)(b & 0xf);
 
-            b = br.ReadByte();
-            result.G = (byte)((b >> 4) & 0xf);
-            result.B = (byte)(b & 0xf);
+        //    b = br.ReadByte();
+        //    result.G = (byte)((b >> 4) & 0xf);
+        //    result.B = (byte)(b & 0xf);
 
-            b = br.ReadByte();
-            result.PointCount = (byte)((b >> 4) & 0xf);
-            result.FirstPoint = (byte)(b & 0xf);
+        //    b = br.ReadByte();
+        //    result.PointCount = (byte)((b >> 4) & 0xf);
+        //    result.FirstPoint = (byte)(b & 0xf);
 
-            if (result.PointCount < 1)
-            {
-                throw new BadFileFormatException("Tile is defined with zero points");
-            }
+        //    if (result.PointCount < 1)
+        //    {
+        //        throw new BadFileFormatException("Tile is defined with zero points");
+        //    }
 
-            b = br.ReadByte();
-            result.SecondPoint = (byte)((b >> 4) & 0xf);
-            result.ThirdPoint = (byte)(b & 0xf);
+        //    b = br.ReadByte();
+        //    result.SecondPoint = (byte)((b >> 4) & 0xf);
+        //    result.ThirdPoint = (byte)(b & 0xf);
 
-            result.OrderIndex = tileIndex;
+        //    result.OrderIndex = tileIndex;
 
-            // Done with tile header, now read points.
-            for (int i = 0; i < result.PointCount; i++)
-            {
-                var point = StandTilePoint.ReadFromBinFile(br);
-                result.Points.Add(point);
-            }
+        //    // Done with tile header, now read points.
+        //    for (int i = 0; i < result.PointCount; i++)
+        //    {
+        //        var point = StandTilePoint.ReadFromBinFile(br);
+        //        result.Points.Add(point);
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         /// <summary>
         /// Reads from current position in stream. Loads object from
@@ -559,27 +559,37 @@ namespace Getools.Lib.Game.Asset.Stan
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{PointCount & 0xf},");
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(FirstPoint & 0xf):x1}, 0x{(SecondPoint & 0xf):x1}, 0x{(ThirdPoint & 0xf):x1},");
-
-            // begin points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
-
-            string indent = Config.DefaultIndent + Config.DefaultIndent;
-
-            for (int i = 0; i < Points.Count - 1; i++)
-            {
-                var p = Points[i];
-                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent) + ",");
-            }
+            sb.Append($"{prefix}{Config.DefaultIndent}0x{(FirstPoint & 0xf):x1}, 0x{(SecondPoint & 0xf):x1}, 0x{(ThirdPoint & 0xf):x1}");
 
             if (Points.Any())
             {
-                var p = Points.Last();
-                sb.AppendLine(prefix + p.ToCInlineDeclaration(indent));
-            }
+                sb.AppendLine(",");
 
-            // close points list
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+                // begin points list
+                sb.AppendLine($"{prefix}{Config.DefaultIndent}{{");
+
+                string indent = Config.DefaultIndent + Config.DefaultIndent;
+
+                for (int i = 0; i < Points.Count - 1; i++)
+                {
+                    var p = Points[i];
+                    sb.AppendLine(prefix + p.ToCInlineDeclaration(indent) + ",");
+                }
+
+                if (Points.Any())
+                {
+                    var p = Points.Last();
+                    sb.AppendLine(prefix + p.ToCInlineDeclaration(indent));
+                }
+
+                // close points list
+                sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
+            }
+            else
+            {
+                // end the last line
+                sb.AppendLine(string.Empty);
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]

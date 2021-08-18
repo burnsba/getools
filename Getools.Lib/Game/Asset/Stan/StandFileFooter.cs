@@ -30,24 +30,14 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public const string FooterCTypeName = "StandFileFooter";
 
+        private const int _numberWordsProperties = 4;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StandFileFooter"/> class.
         /// </summary>
         public StandFileFooter()
         {
         }
-
-        /// <summary>
-        /// Unknown 32 bit field (1). Seems to always be zero.
-        /// </summary>
-        [Obsolete("Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section")]
-        public int? Unknown1 { get; set; }
-
-        /// <summary>
-        /// Unknown 32 bit field (2). Seems to always be zero.
-        /// </summary>
-        [Obsolete("Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section")]
-        public int? Unknown2 { get; set; }
 
         /// <summary>
         /// Seems to always be an 8 byte string consisting of "unstric".
@@ -77,7 +67,17 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Name of the footer object (c declaration variable name).
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = DefaultDeclarationName;
+
+        /// <summary>
+        /// Calculates the .data section size of this object,
+        /// according to the current format.
+        /// </summary>
+        /// <returns>Size in bytes.</returns>
+        public static int GetDataSizeOf()
+        {
+            return (_numberWordsProperties * Config.TargetPointerSize) + UnstricStringLength;
+        }
 
         /// <inheritdoc />
         public override string ToString()
@@ -97,12 +97,6 @@ namespace Getools.Lib.Game.Asset.Stan
             var sb = new StringBuilder();
 
             sb.AppendLine($"{prefix}{StandFileFooter.FooterCTypeName} {Name} = {{");
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown1)},");
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.IntegralTypes.ToCPointerString(Unknown2)},");
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
 
             if (!string.IsNullOrEmpty(C))
             {
@@ -145,25 +139,18 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray(int currentStreamPosition)
         {
-            int stringStart = currentStreamPosition + (Config.TargetPointerSize * 2);
+            int stringStart = currentStreamPosition;
             int stringEnd = stringStart + C.Length - 1; // adjust for zero
-            int next16 = BitUtility.Align16(stringEnd);
+            int next8 = BitUtility.Align8(stringEnd);
 
-            var stringLength = next16 - stringStart;
+            var stringLength = next8 - stringStart;
 
-            var results = new byte[stringLength + (Config.TargetPointerSize * 6)];
+            var endPosition = BitUtility.Align16(currentStreamPosition + stringLength + (Config.TargetPointerSize * _numberWordsProperties));
+            var footerSize = endPosition - currentStreamPosition;
+
+            var results = new byte[footerSize];
 
             int index = 0;
-
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            BitUtility.InsertPointer32Big(results, index, Unknown1);
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            index += Config.TargetPointerSize;
-
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            BitUtility.InsertPointer32Big(results, index, Unknown2);
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            index += Config.TargetPointerSize;
 
             BitUtility.InsertString(results, index, C, stringLength);
             index += stringLength;
@@ -184,16 +171,6 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Calculates the .data section size of this object,
-        /// according to the current format.
-        /// </summary>
-        /// <returns>Size in bytes.</returns>
-        public int GetDataSizeOf()
-        {
-            return (6 * Config.TargetPointerSize) + UnstricStringLength;
-        }
-
-        /// <summary>
         /// Reads from current position in stream. Loads object from
         /// stream as it would be read from a binary file using normal structs.
         /// </summary>
@@ -202,30 +179,6 @@ namespace Getools.Lib.Game.Asset.Stan
         internal static StandFileFooter ReadFromBinFile(BinaryReader br)
         {
             var result = new StandFileFooter();
-
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            result.Unknown1 = br.ReadInt32();
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            if (result.Unknown1 == 0)
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            {
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-                result.Unknown1 = null;
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown1' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            }
-
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            result.Unknown2 = br.ReadInt32();
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            if (result.Unknown2 == 0)
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            {
-#pragma warning disable CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-                result.Unknown2 = null;
-#pragma warning restore CS0618 // 'StandFileFooter.Unknown2' is obsolete: 'Leftover due to misunderstanding how to parse binary data. Field should be removed, empty Tile needs to be added at end of Tiles list in stan file section'
-            }
 
             int stringStart = (int)br.BaseStream.Position;
 

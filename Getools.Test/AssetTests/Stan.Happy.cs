@@ -512,5 +512,11 @@ namespace Getools.Test.AssetTests
 
             File.Delete(outfile);
         }
+
+        [Fact]
+        public void CheckFooterSize()
+        {
+            Assert.Equal(24, Getools.Lib.Game.Asset.Stan.StandFileFooter.GetDataSizeOf());
+        }
     }
 }

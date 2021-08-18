@@ -6,7 +6,7 @@ using Getools.Lib.Game.Enums;
 namespace Getools.Lib.Game.Asset.SetupObject
 {
     /// <summary>
-    /// Setup object list / prop definition for cutscene.
+    /// Setup object list / prop definition for cutscene (end of level).
     /// </summary>
     public class SetupObjectCutscene : SetupObjectBase, ISetupObject
     {

@@ -19,7 +19,7 @@ namespace Getools.Lib.Formatters
         /// <returns>Value as hex or "NULL".</returns>
         public static string ToCPointerString(int? i)
         {
-            if (i.HasValue)
+            if (i.HasValue && i > 0)
             {
                 var ui = (UInt32)i;
                 return $"0x{i:x8}";

@@ -191,28 +191,28 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using normal structs.
-        /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <returns>New object.</returns>
-        internal static StandTilePoint ReadFromBinFile(BinaryReader br)
-        {
-            var result = new StandTilePoint(TypeFormat.Normal);
+        ///// <summary>
+        ///// Reads from current position in stream. Loads object from
+        ///// stream as it would be read from a binary file using normal structs.
+        ///// </summary>
+        ///// <param name="br">Stream to read.</param>
+        ///// <returns>New object.</returns>
+        //internal static StandTilePoint ReadFromBinFile(BinaryReader br)
+        //{
+        //    var result = new StandTilePoint(TypeFormat.Normal);
 
-            result.X = BitUtility.Read16Big(br);
-            result.Y = BitUtility.Read16Big(br);
-            result.Z = BitUtility.Read16Big(br);
+        //    result.X = BitUtility.Read16Big(br);
+        //    result.Y = BitUtility.Read16Big(br);
+        //    result.Z = BitUtility.Read16Big(br);
 
-            result.FloatX = (Single)result.X;
-            result.FloatY = (Single)result.Y;
-            result.FloatZ = (Single)result.Z;
+        //    result.FloatX = (Single)result.X;
+        //    result.FloatY = (Single)result.Y;
+        //    result.FloatZ = (Single)result.Z;
 
-            result.Link = BitUtility.Read16Big(br);
+        //    result.Link = BitUtility.Read16Big(br);
 
-            return result;
-        }
+        //    return result;
+        //}
 
         /// <summary>
         /// Reads from current position in stream. Loads object from

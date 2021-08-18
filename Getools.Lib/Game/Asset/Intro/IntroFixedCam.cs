@@ -5,7 +5,7 @@ using System.Text;
 namespace Getools.Lib.Game.Asset.Intro
 {
     /// <summary>
-    /// Intro -- end of level fixed cam definition.
+    /// Intro cam (first cinema).
     /// </summary>
     public class IntroFixedCam : IntroBase
     {

@@ -331,6 +331,27 @@ namespace Getools.Lib
         }
 
         /// <summary>
+        /// Returns the value incremented to the next closest multiple of 8.
+        /// If the current value is a multiple of 8 then that is returned.
+        /// </summary>
+        /// <param name="val">Value to check.</param>
+        /// <returns>Value, or next largest multiple of 8.</returns>
+        public static int Align8(int val)
+        {
+            int next8 = 0;
+            if ((val % 8) != 0)
+            {
+                next8 = ((int)(val / 8) + 1) * 8;
+            }
+            else
+            {
+                next8 = val;
+            }
+
+            return next8;
+        }
+
+        /// <summary>
         /// Reads a binary stream until stream end.
         /// It is assumed this is reading a .rodata section, and strings are packed
         /// according to some kind of alignment, specified by <paramref name="maxStringLength"/>.

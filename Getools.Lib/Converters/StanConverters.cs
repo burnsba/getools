@@ -68,39 +68,52 @@ namespace Getools.Lib.Converters
         /// <param name="path">Path of file to read.</param>
         /// <param name="name">Name of header variable.</param>
         /// <returns>Parsed stan.</returns>
+        //public static StandFile ReadFromBinFile(string path, string name)
+        //{
+        //    var result = new StandFile(TypeFormat.Normal);
+
+        //    using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
+        //    {
+        //        result.Header = StandFileHeader.ReadFromBinFile(br, name);
+
+        //        int tileIndex = 0;
+        //        int safety = UInt16.MaxValue + 1;
+
+        //        try
+        //        {
+        //            while (tileIndex < safety)
+        //            {
+        //                var tile = StandTile.ReadFromBinFile(br, tileIndex);
+
+        //                result.Tiles.Add(tile);
+
+        //                tileIndex++;
+        //            }
+        //        }
+        //        catch (Error.ExpectedStreamEndException)
+        //        {
+        //        }
+
+        //        result.Footer = StandFileFooter.ReadFromBinFile(br);
+        //        result.ReadRoData(br);
+        //    }
+
+        //    result.DeserializeFix();
+
+        //    return result;
+        //}
+
+        /// <summary>
+        /// Loads file content and parses as binary file.
+        /// </summary>
+        /// <param name="path">Path of file to read.</param>
+        /// <returns>Parsed setup.</returns>
         public static StandFile ReadFromBinFile(string path, string name)
         {
-            var result = new StandFile(TypeFormat.Normal);
+            var stan = Kaitai.StanParser.ParseBin(path);
+            stan.Header.Name = name;
 
-            using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
-            {
-                result.Header = StandFileHeader.ReadFromBinFile(br, name);
-
-                int tileIndex = 0;
-                int safety = UInt16.MaxValue + 1;
-
-                try
-                {
-                    while (tileIndex < safety)
-                    {
-                        var tile = StandTile.ReadFromBinFile(br, tileIndex);
-
-                        result.Tiles.Add(tile);
-
-                        tileIndex++;
-                    }
-                }
-                catch (Error.ExpectedStreamEndException)
-                {
-                }
-
-                result.Footer = StandFileFooter.ReadFromBinFile(br);
-                result.ReadRoData(br);
-            }
-
-            result.DeserializeFix();
-
-            return result;
+            return stan;
         }
 
         /// <summary>
@@ -181,9 +194,19 @@ namespace Getools.Lib.Converters
                 throw new BadFileFormatException("No tiles found in json");
             }
 
-            if (stan.Tiles.Any(x => x.Points == null || !x.Points.Any()))
+            foreach (var tile in stan.Tiles)
             {
-                throw new BadFileFormatException("Invalid json, found tile without any points");
+                if (tile.PointCount > 0 && (tile.Points == null || tile.Points.Count != tile.PointCount))
+                {
+                    if (tile.Points == null)
+                    {
+                        throw new BadFileFormatException($"Invalid tile. Declared point count={tile.PointCount}, but tile.{nameof(tile.Points)} is null");
+                    }
+                    else
+                    {
+                        throw new BadFileFormatException($"Invalid tile. Declared point count={tile.PointCount}, there are {tile.Points.Count} point(s)");
+                    }
+                }
             }
 
             return stan;

@@ -63,10 +63,16 @@ BetaStandTile tile_2 = {
     }
 };
 
+StandTile tile_3 = {
+    0x000000, 0x00,
+    0x0,
+    0x0, 0x0, 0x0,
+    0,
+    0x0, 0x0, 0x0
+};
+
 
 StandFileFooter footer = {
-    NULL,
-    NULL,
     "unstric",
     NULL,
     NULL,

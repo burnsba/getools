@@ -136,6 +136,21 @@
           "Link": 2024
         }
       ]
+    },
+    {
+      "InternalName": 0,
+      "Room": 0,
+      "Flags": 0,
+      "R": 0,
+      "G": 0,
+      "B": 0,
+      "PointCount": 0,
+      "FirstPoint": 0,
+      "SecondPoint": 0,
+      "ThirdPoint": 0,
+      "OrderIndex": 3,
+      "VariableName": "tile_3",
+      "Points": []
     }
   ],
   "Format": 1

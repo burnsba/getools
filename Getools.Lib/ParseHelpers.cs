@@ -48,5 +48,53 @@ namespace Getools.Lib
 
             return false;
         }
+
+        /// <summary>
+        /// Helper method, to treat a value as a pointer. If the value is zero,
+        /// it is interpreted as a null pointer.
+        /// </summary>
+        /// <param name="val">Val to convert.</param>
+        /// <returns>Value, if greater than zero, otherwise null.</returns>
+        public static int? ToCPointer(uint val)
+        {
+            if (val > 0)
+            {
+                return (int)val;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Helper method, to treat a value as a pointer. If the value is zero,
+        /// it is interpreted as a null pointer.
+        /// </summary>
+        /// <param name="val">Val to convert.</param>
+        /// <returns>Value, if greater than zero, otherwise null.</returns>
+        public static int? ToCPointer(int val)
+        {
+            if (val > 0)
+            {
+                return (int)val;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Helper method, to treat a value as a pointer. If the value is zero,
+        /// it is interpreted as a null pointer.
+        /// </summary>
+        /// <param name="val">Val to convert.</param>
+        /// <returns>Value, if greater than zero, otherwise null.</returns>
+        public static int? ToCPointer(int? val)
+        {
+            if (val > 0)
+            {
+                return (int)val;
+            }
+
+            return null;
+        }
     }
 }
