@@ -79,7 +79,7 @@ namespace Getools.Lib.Antlr
             /// <summary>
             /// Currently parsing a tile.
             /// </summary>
-            Tile = 2,
+            BetaTile = 2,
 
             /// <summary>
             /// Currently parsing a point.
@@ -95,6 +95,12 @@ namespace Getools.Lib.Antlr
             /// Currently parsing beta footer list of strings.
             /// </summary>
             BetaFooter = 6,
+
+            /// <summary>
+            /// There is only one normal tile, it is the empty tile (8 bytes) that ends the
+            /// sequence of beta tiles. A beta tile is 12 bytes.
+            /// </summary>
+            Tile = 7,
         }
 
         /// <summary>
@@ -161,7 +167,7 @@ namespace Getools.Lib.Antlr
             // the last assignment in the tile should change the parse state to a point, so
             // if a declaration is enounctered while the parse state is a tile
             // then something went wrong.
-            if (_parseState == ParseState.Tile)
+            if (_parseState == ParseState.BetaTile)
             {
                 throw new BadFileFormatException("Error parsing tile, missing fields before entering point declaration.");
             }
@@ -181,7 +187,7 @@ namespace Getools.Lib.Antlr
 
             // If the tile has any points, then the parse state will be changed to Point,
             // so we need to check for either state here when exiting the declaration.
-            if (_parseState == ParseState.Tile || _parseState == ParseState.Point)
+            if (_parseState == ParseState.BetaTile || _parseState == ParseState.Tile || _parseState == ParseState.Point)
             {
                 if (!object.ReferenceEquals(null, _workingTile))
                 {
@@ -289,7 +295,7 @@ namespace Getools.Lib.Antlr
                     }
                 }
             }
-            else if (_parseState == ParseState.Tile)
+            else if (_parseState == ParseState.BetaTile)
             {
                 // tile
                 if (object.ReferenceEquals(null, _workingTile))
@@ -299,10 +305,7 @@ namespace Getools.Lib.Antlr
 
                 if (_currentFieldIndex < 1)
                 {
-                    if (string.IsNullOrEmpty(text))
-                    {
-                        throw new BadFileFormatException($"Error reading {nameof(_workingTile.TileName)}, empty string.");
-                    }
+                    // not an error, name wll just be empty string
                 }
                 else
                 {
@@ -316,7 +319,7 @@ namespace Getools.Lib.Antlr
                 {
                     case -1:
                     case 0:
-                        _workingTile.TileName = text;
+                        _workingTile.DebugName = text;
                         _currentFieldIndex = 1;
                         break;
 
@@ -374,6 +377,87 @@ namespace Getools.Lib.Antlr
                         {
                             _currentFieldIndex++;
                         }
+
+                        break;
+                }
+            }
+            else if (_parseState == ParseState.Tile)
+            {
+                /*
+                 * Regular tile is only included because the tile list will end
+                 * with an empty normal tile (8 bytes of zero; the beta tile is 12 bytes).
+                 * Otherwise, a regular tile should not be encountered.
+                 *
+                 * This code is copied from the CStanListener, except for the last
+                 * entry in the state machine, as there should be no points.
+                 */
+                if (object.ReferenceEquals(null, _workingTile))
+                {
+                    _workingTile = new StandTile(TypeFormat.Normal);
+                }
+
+                if (!val.HasValue)
+                {
+                    throw new BadFileFormatException("Tile does not allow nulls");
+                }
+
+                switch (_currentFieldIndex)
+                {
+                    case -1:
+                    case 0:
+                        _workingTile.InternalName = val.Value;
+                        _currentFieldIndex = 1;
+                        break;
+
+                    case 1:
+                        _workingTile.Room = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 2:
+                        _workingTile.Flags = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 3:
+                        _workingTile.R = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 4:
+                        _workingTile.G = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 5:
+                        _workingTile.B = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 6:
+                        _workingTile.PointCount = (byte)val.Value;
+
+                        if (_workingTile.PointCount > 0)
+                        {
+                            throw new BadFileFormatException($"Error parsing beta stan file definition, found a tile with [{nameof(_workingTile.PointCount)}={_workingTile.PointCount}] points. There should only be one normal tile, which is the empty tile to end the sequence of beta tiles.");
+                        }
+
+                        _currentFieldIndex++;
+                        break;
+
+                    case 7:
+                        _workingTile.FirstPoint = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 8:
+                        _workingTile.SecondPoint = (byte)val.Value;
+                        _currentFieldIndex++;
+                        break;
+
+                    case 9:
+                        _workingTile.ThirdPoint = (byte)val.Value;
+                        _currentFieldIndex++;
 
                         break;
                 }
@@ -524,6 +608,10 @@ namespace Getools.Lib.Antlr
                 }
                 else if (text == StandTile.TileBetaCTypeName)
                 {
+                    _parseState = ParseState.BetaTile;
+                }
+                else if (text == StandTile.TileCTypeName)
+                {
                     _parseState = ParseState.Tile;
                 }
                 else if (text == StandFileFooter.FooterCTypeName)
@@ -562,11 +650,26 @@ namespace Getools.Lib.Antlr
 
                 _workingResult.Header.Name = text;
             }
-            else if (_parseState == ParseState.Tile)
+            else if (_parseState == ParseState.BetaTile)
             {
                 if (object.ReferenceEquals(null, _workingTile))
                 {
                     _workingTile = new StandTile(TypeFormat.Beta);
+                }
+
+                _workingTile.VariableName = text;
+
+                int i = SplitToOrderId(text, 10);
+                if (i > -1)
+                {
+                    _workingTile.OrderIndex = i;
+                }
+            }
+            else if (_parseState == ParseState.Tile)
+            {
+                if (object.ReferenceEquals(null, _workingTile))
+                {
+                    _workingTile = new StandTile(TypeFormat.Normal);
                 }
 
                 _workingTile.VariableName = text;

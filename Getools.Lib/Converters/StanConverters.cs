@@ -63,50 +63,9 @@ namespace Getools.Lib.Converters
 
         /// <summary>
         /// Loads file content and parses as binary file.
-        /// This uses the regular struct definitions.
         /// </summary>
         /// <param name="path">Path of file to read.</param>
-        /// <param name="name">Name of header variable.</param>
-        /// <returns>Parsed stan.</returns>
-        //public static StandFile ReadFromBinFile(string path, string name)
-        //{
-        //    var result = new StandFile(TypeFormat.Normal);
-
-        //    using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
-        //    {
-        //        result.Header = StandFileHeader.ReadFromBinFile(br, name);
-
-        //        int tileIndex = 0;
-        //        int safety = UInt16.MaxValue + 1;
-
-        //        try
-        //        {
-        //            while (tileIndex < safety)
-        //            {
-        //                var tile = StandTile.ReadFromBinFile(br, tileIndex);
-
-        //                result.Tiles.Add(tile);
-
-        //                tileIndex++;
-        //            }
-        //        }
-        //        catch (Error.ExpectedStreamEndException)
-        //        {
-        //        }
-
-        //        result.Footer = StandFileFooter.ReadFromBinFile(br);
-        //        result.ReadRoData(br);
-        //    }
-
-        //    result.DeserializeFix();
-
-        //    return result;
-        //}
-
-        /// <summary>
-        /// Loads file content and parses as binary file.
-        /// </summary>
-        /// <param name="path">Path of file to read.</param>
+        /// <param name="name">Header variable name.</param>
         /// <returns>Parsed setup.</returns>
         public static StandFile ReadFromBinFile(string path, string name)
         {
@@ -118,44 +77,16 @@ namespace Getools.Lib.Converters
 
         /// <summary>
         /// Loads file content and parses as binary file.
-        /// This uses the beta struct definitions.
         /// </summary>
         /// <param name="path">Path of file to read.</param>
-        /// <param name="name">Name of header variable.</param>
-        /// <returns>Parsed stan.</returns>
+        /// <param name="name">Header variable name.</param>
+        /// <returns>Parsed setup.</returns>
         public static StandFile ReadFromBetaBinFile(string path, string name)
         {
-            var result = new StandFile(TypeFormat.Beta);
+            var stan = Kaitai.BetaStanParser.ParseBin(path);
+            stan.Header.Name = name;
 
-            using (var br = new BinaryReader(new FileStream(path, FileMode.Open)))
-            {
-                result.Header = StandFileHeader.ReadFromBetaBinFile(br, name);
-
-                int tileIndex = 0;
-                int safety = UInt16.MaxValue + 1;
-
-                try
-                {
-                    while (tileIndex < safety)
-                    {
-                        var tile = StandTile.ReadFromBetaBinFile(br, tileIndex);
-
-                        result.Tiles.Add(tile);
-
-                        tileIndex++;
-                    }
-                }
-                catch (Error.ExpectedStreamEndException)
-                {
-                }
-
-                result.Footer = StandFileFooter.ReadFromBetaBinFile(br);
-                result.BetaReadRoData(br);
-            }
-
-            result.DeserializeFix();
-
-            return result;
+            return stan;
         }
 
         /// <summary>
@@ -223,48 +154,6 @@ namespace Getools.Lib.Converters
             using (var sw = new StreamWriter(path, false))
             {
                 source.WriteToCFile(sw);
-            }
-        }
-
-        /// <summary>
-        /// Converts stan to complete .c text source file.
-        /// This uses the beta data structs.
-        /// </summary>
-        /// <param name="source">Object to convert.</param>
-        /// <param name="path">Path of file to write to.</param>
-        public static void WriteToBetaC(StandFile source, string path)
-        {
-            using (var sw = new StreamWriter(path, false))
-            {
-                source.WriteToBetaCFile(sw);
-            }
-        }
-
-        /// <summary>
-        /// Converts stan to binary format.
-        /// This uses the regular data structs.
-        /// </summary>
-        /// <param name="source">Object to convert.</param>
-        /// <param name="path">Path of file to write to.</param>
-        public static void WriteToBin(StandFile source, string path)
-        {
-            using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
-            {
-                source.WriteToBinFile(bw);
-            }
-        }
-
-        /// <summary>
-        /// Converts stan to binary format.
-        /// This uses the beta data structs.
-        /// </summary>
-        /// <param name="source">Object to convert.</param>
-        /// <param name="path">Path of file to write to.</param>
-        public static void WriteToBetaBin(StandFile source, string path)
-        {
-            using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
-            {
-                source.WriteToBetaBinFile(bw);
             }
         }
 

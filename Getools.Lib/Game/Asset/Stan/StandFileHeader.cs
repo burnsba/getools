@@ -77,21 +77,6 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Builds a string to describe the current object
-        /// as a complete declaraction in c, using beta structs. Includes type, variable
-        /// name and trailing semi-colon.
-        /// </summary>
-        /// <param name="filePointerDeclaration">String giving the variable name
-        /// to the first tile, as a pointer (should be prefixed with "&").</param>
-        /// <param name="prefix">Prefix or indentation.</param>
-        /// <returns>String of object.</returns>
-        public string ToBetaCDeclaration(string filePointerDeclaration, string prefix = "")
-        {
-            // no change for beta
-            return ToCDeclaration(filePointerDeclaration, prefix);
-        }
-
-        /// <summary>
         /// Converts the current object to a byte array, as it would
         /// exist in a regular binary format.
         /// </summary>
@@ -123,41 +108,6 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             return (2 * Config.TargetPointerSize) + UnknownHeaderData.Count;
         }
-
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using normal structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <param name="name">Sets the header <see cref="Name"/>.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandFileHeader ReadFromBinFile(BinaryReader br, string name)
-        //{
-        //    var result = new StandFileHeader();
-
-        //    result.Unknown1 = br.ReadInt32();
-        //    if (result.Unknown1 == 0)
-        //    {
-        //        result.Unknown1 = null;
-        //    }
-
-        //    result.FirstTileOffset = (int)BitUtility.Swap((uint)br.ReadInt32());
-
-        //    var remaining = result.FirstTileOffset - br.BaseStream.Position;
-        //    if (remaining < 0)
-        //    {
-        //        throw new BadFileFormatException($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
-        //    }
-
-        //    for (int i = 0; i < remaining; i++)
-        //    {
-        //        result.UnknownHeaderData.Add(br.ReadByte());
-        //    }
-
-        //    result.Name = name;
-
-        //    return result;
-        //}
 
         /// <summary>
         /// Reads from current position in stream. Loads object from

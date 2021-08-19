@@ -41,7 +41,7 @@ Command line help output:
     C, Json, Bin
     
     The following values are supported for output "FTYPE"
-    C, Json, Bin
+    C, Json
 
 Example powershell script to convert all .bin stans to .c files:
 

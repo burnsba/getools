@@ -59,11 +59,12 @@ namespace Getools.Lib.Kaitai.Gen
             {
                 var i = 0;
                 StandTile M_;
-                do {
+                do
+                {
                     M_ = new StandTile(m_io, this, m_root);
                     _tiles.Add(M_);
                     i++;
-                } while (!(M_.InternalName == 0));
+                } while (!(((M_.InternalName == 0) && (M_.PointCount == 0))));
             }
             _footer = new StandTileFooter(m_io, this, m_root);
         }
@@ -157,7 +158,7 @@ namespace Getools.Lib.Kaitai.Gen
                 _secondPoint = m_io.ReadBitsIntBe(4);
                 _thirdPoint = m_io.ReadBitsIntBe(4);
                 m_io.AlignToByte();
-                _points = new List<StandTilePoint>((int) (PointCount));
+                _points = new List<StandTilePoint>((int)(PointCount));
                 for (var i = 0; i < (int)PointCount; i++)
                 {
                     _points.Add(new StandTilePoint(m_io, this, m_root));

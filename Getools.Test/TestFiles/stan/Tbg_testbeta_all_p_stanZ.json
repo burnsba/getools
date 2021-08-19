@@ -12,8 +12,10 @@
   },
   "Tiles": [
     {
-      "TileNameOffset": 288,
-      "TileName": "p502a2",
+      "DebugName": {
+        "Offset": 288,
+        "Value": "p502a2"
+      },
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -47,8 +49,10 @@
       ]
     },
     {
-      "TileNameOffset": 296,
-      "TileName": "p502a1",
+      "DebugName": {
+        "Offset": 296,
+        "Value": "p502a1"
+      },
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -106,8 +110,10 @@
       ]
     },
     {
-      "TileNameOffset": 304,
-      "TileName": "p486a2",
+      "DebugName": {
+        "Offset": 304,
+        "Value": "p486a2"
+      },
       "Flags": 0,
       "R": 15,
       "G": 15,

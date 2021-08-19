@@ -104,5 +104,22 @@ namespace Getools.Lib.Game
 
             return prefix + Formatters.Strings.ToQuotedString(Value);
         }
+
+        /// <summary>
+        /// Converts the string to a quoted c literal.
+        /// If the <see cref="Value"/> is null, the c macro NULL
+        /// is returned (without quotes). Otherwise, a quoted string is returned (this may be <see cref="string.Empty"/>).
+        /// </summary>
+        /// <param name="prefix">Optional prefix before string.</param>
+        /// <returns>Quoted value.</returns>
+        public string ToCValueOrNullEmpty(string prefix = "")
+        {
+            if (object.ReferenceEquals(null, Value))
+            {
+                return $"{prefix}NULL";
+            }
+
+            return prefix + Formatters.Strings.ToQuotedString(Value);
+        }
     }
 }

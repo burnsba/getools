@@ -29,6 +29,27 @@ namespace Getools.Lib.Game.Asset.Setup
         };
 
         /// <summary>
+        /// Formats available for reading in a <see cref="StageSetupFile"/>.
+        /// </summary>
+        public static List<DataFormats> SupportedInputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.Json,
+                DataFormats.Bin,
+            };
+
+        /// <summary>
+        /// Formats available to output a <see cref="StageSetupFile"/>.
+        /// </summary>
+        public static List<DataFormats> SupportedOutputFormats = new List<DataFormats>()
+            {
+                DataFormats.C,
+                DataFormats.Json,
+                //DataFormats.Bin,
+                //DataFormats.BetaBin,
+            };
+
+        /// <summary>
         /// Gets or sets the file offset that the main <see cref="PathTablesVariableName"/>
         /// declaration is located at.
         /// </summary>

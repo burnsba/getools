@@ -35,8 +35,7 @@ namespace Getools.Lib.Converters
                     };
             }
             else if (property.DeclaringType == typeof(StandTile) &&
-                (property.PropertyName == nameof(StandTile.TileNameOffset)
-                || property.PropertyName == nameof(StandTile.TileName)
+                (property.PropertyName == nameof(StandTile.DebugName)
                 || property.PropertyName == nameof(StandTile.UnknownBeta)))
             {
                 property.ShouldSerialize =

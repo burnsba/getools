@@ -77,14 +77,10 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// Only used by beta struct.
-        /// </summary>
-        public int? TileNameOffset { get; set; } = null;
-
-        /// <summary>
         /// Debug string giving the tile name. This may be the <see cref="InternalName"/>
         /// but this is not known for sure.
         /// </summary>
-        public string TileName { get; set; }
+        public StringPointer DebugName { get; set; }
 
         /// <summary>
         /// 4 bits.
@@ -161,6 +157,26 @@ namespace Getools.Lib.Game.Asset.Stan
         internal TypeFormat Format { get; set; }
 
         /// <summary>
+        /// Gets the c type name based on the current format.
+        /// </summary>
+        /// <returns>Type name.</returns>
+        public string GetCTypeName()
+        {
+            if (Format == TypeFormat.Normal)
+            {
+                return TileCTypeName;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                return TileBetaCTypeName;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
+        }
+
+        /// <summary>
         /// Sets the format of the tile. Visits children and updates any format specific values.
         /// </summary>
         /// <param name="format">Format to use.</param>
@@ -194,9 +210,9 @@ namespace Getools.Lib.Game.Asset.Stan
             // since the setup data is missing ...
             if (Format == TypeFormat.Normal)
             {
-                if (string.IsNullOrEmpty(TileName))
+                if (object.ReferenceEquals(null, DebugName) || string.IsNullOrEmpty(DebugName.Value))
                 {
-                    TileName = "p" + InternalName.ToString("x:8").Substring(3);
+                    DebugName = "p" + InternalName.ToString("x:8").Substring(3);
                 }
 
                 if (UnknownBeta == 0 || !UnknownBeta.HasValue)
@@ -206,14 +222,17 @@ namespace Getools.Lib.Game.Asset.Stan
             }
             else if (Format == TypeFormat.Beta)
             {
-                if (!string.IsNullOrEmpty(TileName) && TileName[0] == 'p')
+                if (!object.ReferenceEquals(null, DebugName) && !string.IsNullOrEmpty(DebugName.Value) && DebugName.Value[0] == 'p')
                 {
-                    InternalName = Convert.ToInt32(TileName.Substring(1), 16);
+                    InternalName = Convert.ToInt32(DebugName.Value.Substring(1), 16);
                 }
 
                 if (Room == 0)
                 {
-                    Room = (byte)UnknownBeta;
+                    // this is all a guess anyway, but it should be that the only time
+                    // UnknownBeta is null is for the final regular tile that ends the
+                    // sequence of beta tiles. In that case, it's alright to default to zero.
+                    Room = (byte)(UnknownBeta ?? 0);
                 }
             }
         }
@@ -247,125 +266,57 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Converts the current object to a byte array, as it would
-        /// exist in a beta binary format.
-        /// Uses Points.Count instead of PointsCount property.
+        /// Converts tile to c declaration.
         /// </summary>
-        /// <returns>Byte array of object.</returns>
-        public byte[] ToBetaByteArray()
+        /// <param name="prefix">Optional prefix to begin lines with.</param>
+        /// <param name="overrideFormat">If set, will use this format to convert tile to c. Otherwise uses the tile's current <see cref="Format"/>.</param>
+        /// <returns>C declaration including variable name, brackets, and closing semi-colon.</returns>
+        public string ToCDeclaration(string prefix = "", TypeFormat overrideFormat = TypeFormat.DefaultUnknown)
         {
-            var results = new byte[SizeOfBetaTileWithoutPoints + (Points.Count * StandTilePoint.BetaSizeOf)];
-
-            if (!TileNameOffset.HasValue)
+            if (Format == TypeFormat.DefaultUnknown)
             {
-                throw new Error.InvalidStateException($"Cannot convert tile to byte array, {nameof(TileNameOffset)} not set");
+                throw new InvalidStateException($"{nameof(ToCDeclaration)}: Format not set.");
             }
 
-            BitUtility.Insert32Big(results, 0, TileNameOffset.Value);
-
-            results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
-            results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
-
-            if (!UnknownBeta.HasValue)
+            if (overrideFormat == TypeFormat.Normal || Format == TypeFormat.Normal)
             {
-                throw new Error.InvalidStateException($"Cannot convert tile to byte array, {nameof(UnknownBeta)} not set");
+                return ToNormalCDeclaration(prefix);
+            }
+            else if (overrideFormat == TypeFormat.Beta || Format == TypeFormat.Beta)
+            {
+                return ToBetaCDeclaration(prefix);
+            }
+            else
+            {
+                throw new NotSupportedException($"{nameof(ToCDeclaration)}: Type not supported: {overrideFormat}");
+            }
+        }
+
+        /// <summary>
+        /// Converts tile to inline c declaration.
+        /// </summary>
+        /// <param name="prefix">Optional prefix to begin lines with.</param>
+        /// <param name="overrideFormat">If set, will use this format to convert tile to c. Otherwise uses the tile's current <see cref="Format"/>.</param>
+        /// <returns>C inline declaration including brackets, but excluding variable name and closing semi-colon.</returns>
+        public string ToCInlineDeclaration(string prefix = "", TypeFormat overrideFormat = TypeFormat.DefaultUnknown)
+        {
+            if (Format == TypeFormat.DefaultUnknown)
+            {
+                throw new InvalidStateException($"{nameof(ToCInlineDeclaration)}: Format not set.");
             }
 
-            BitUtility.InsertShortBig(results, 6, UnknownBeta.Value);
-
-            results[8] = (byte)Points.Count;
-            results[9] = FirstPoint;
-            results[10] = SecondPoint;
-            results[11] = ThirdPoint;
-
-            int index = SizeOfBetaTileWithoutPoints;
-            for (int i = 0; i < Points.Count; i++)
+            if (overrideFormat == TypeFormat.Normal || Format == TypeFormat.Normal)
             {
-                Array.Copy(Points[i].ToBetaByteArray(), 0, results, index, StandTilePoint.BetaSizeOf);
-                index += StandTilePoint.BetaSizeOf;
+                return ToNormalCInlineDeclaration(prefix);
             }
-
-            return results;
-        }
-
-        /// <summary>
-        /// Builds a string to describe the current object
-        /// as a complete declaraction in c, using normal structs. Includes type, variable
-        /// name and trailing semi-colon.
-        /// </summary>
-        /// <param name="prefix">Prefix or indentation.</param>
-        /// <returns>String of object.</returns>
-        public string ToCDeclaration(string prefix = "")
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"{prefix}{StandTile.TileCTypeName} {VariableName} = {{");
-
-            ToCDeclarationCommon(sb, prefix);
-
-            sb.AppendLine($"{prefix}}};");
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Builds a string to describe the current object
-        /// as a complete declaraction in c, using normal structs.
-        /// Does not include type, variable name, or trailing semi-colon.
-        /// </summary>
-        /// <param name="prefix">Prefix or indentation.</param>
-        /// <returns>String of object.</returns>
-        public string ToCInlineDeclaration(string prefix = "")
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
-
-            ToCDeclarationCommon(sb, prefix);
-
-            sb.Append($"{prefix}}}");
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Builds a string to describe the current object
-        /// as a complete declaraction in c, using beta structs. Includes type, variable
-        /// name and trailing semi-colon.
-        /// </summary>
-        /// <param name="prefix">Prefix or indentation.</param>
-        /// <returns>String of object.</returns>
-        public string ToBetaCDeclaration(string prefix = "")
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"{prefix}{StandTile.TileBetaCTypeName} {VariableName} = {{");
-
-            ToBetaCDeclarationCommon(sb, prefix);
-
-            sb.AppendLine($"{prefix}}};");
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Builds a string to describe the current object
-        /// as a complete declaraction in c, using beta structs.
-        /// Does not include type, variable name, or trailing semi-colon.
-        /// </summary>
-        /// <param name="prefix">Prefix or indentation.</param>
-        /// <returns>String of object.</returns>
-        public string ToBetaCInlineDeclaration(string prefix = "")
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
-
-            ToBetaCDeclarationCommon(sb, prefix);
-
-            sb.Append($"{prefix}}}");
-
-            return sb.ToString();
+            else if (overrideFormat == TypeFormat.Beta || Format == TypeFormat.Beta)
+            {
+                return ToBetaCInlineDeclaration(prefix);
+            }
+            else
+            {
+                throw new NotSupportedException($"{nameof(ToCInlineDeclaration)}: Type not supported: {overrideFormat}");
+            }
         }
 
         /// <summary>
@@ -411,145 +362,84 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using normal structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandTile ReadFromBinFile(BinaryReader br, int tileIndex)
-        //{
-        //    var result = new StandTile(TypeFormat.Normal);
-
-        //    Byte b;
-
-        //    b = br.ReadByte();
-        //    result.InternalName = b << 16;
-        //    b = br.ReadByte();
-        //    result.InternalName |= b << 8;
-        //    b = br.ReadByte();
-        //    result.InternalName |= b;
-
-        //    result.Room = br.ReadByte();
-
-        //    // "Tile beginning with room 0 is the true way the file format ends, engine does not check for unstric string"
-        //    if (result.Room == 0)
-        //    {
-        //        br.BaseStream.Seek(-4, SeekOrigin.Current);
-        //        throw new Error.ExpectedStreamEndException();
-        //    }
-
-        //    b = br.ReadByte();
-        //    result.Flags = (byte)((b >> 4) & 0xf);
-        //    result.R = (byte)(b & 0xf);
-
-        //    b = br.ReadByte();
-        //    result.G = (byte)((b >> 4) & 0xf);
-        //    result.B = (byte)(b & 0xf);
-
-        //    b = br.ReadByte();
-        //    result.PointCount = (byte)((b >> 4) & 0xf);
-        //    result.FirstPoint = (byte)(b & 0xf);
-
-        //    if (result.PointCount < 1)
-        //    {
-        //        throw new BadFileFormatException("Tile is defined with zero points");
-        //    }
-
-        //    b = br.ReadByte();
-        //    result.SecondPoint = (byte)((b >> 4) & 0xf);
-        //    result.ThirdPoint = (byte)(b & 0xf);
-
-        //    result.OrderIndex = tileIndex;
-
-        //    // Done with tile header, now read points.
-        //    for (int i = 0; i < result.PointCount; i++)
-        //    {
-        //        var point = StandTilePoint.ReadFromBinFile(br);
-        //        result.Points.Add(point);
-        //    }
-
-        //    return result;
-        //}
-
         /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using beta structs.
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs. Includes type, variable
+        /// name and trailing semi-colon.
         /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <param name="tileIndex">Sets the <see cref="OrderIndex"/> and used to build the standard <see cref="VariableName"/>.</param>
-        /// <returns>New object.</returns>
-        internal static StandTile ReadFromBetaBinFile(BinaryReader br, int tileIndex)
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        private string ToNormalCDeclaration(string prefix = "")
         {
-            var result = new StandTile(TypeFormat.Beta);
+            var sb = new StringBuilder();
 
-            Byte b;
+            sb.AppendLine($"{prefix}{StandTile.TileCTypeName} {VariableName} = {{");
 
-            result.TileNameOffset = BitUtility.Read32Big(br);
+            ToCDeclarationCommon(sb, prefix);
 
-            // this is a string, so not quite sure if this is the same check as normal struct ...
-            if (result.TileNameOffset == 0)
-            {
-                br.BaseStream.Seek(-4, SeekOrigin.Current);
-                throw new Error.ExpectedStreamEndException();
-            }
+            sb.AppendLine($"{prefix}}};");
 
-            b = br.ReadByte();
-            result.Flags = (byte)((b >> 4) & 0xf);
-            result.R = (byte)(b & 0xf);
-
-            b = br.ReadByte();
-            result.G = (byte)((b >> 4) & 0xf);
-            result.B = (byte)(b & 0xf);
-
-            result.UnknownBeta = BitUtility.Read16Big(br);
-
-            result.PointCount = br.ReadByte();
-
-            if (result.PointCount < 1)
-            {
-                throw new BadFileFormatException("Tile is defined with zero points");
-            }
-
-            result.FirstPoint = br.ReadByte();
-            result.SecondPoint = br.ReadByte();
-            result.ThirdPoint = br.ReadByte();
-
-            result.OrderIndex = tileIndex;
-
-            result.VariableName = $"{DefaultDeclarationName}{tileIndex}";
-
-            // Done with tile header, now read points.
-            for (int i = 0; i < result.PointCount; i++)
-            {
-                var point = StandTilePoint.ReadFromBetaBinFile(br);
-                result.Points.Add(point);
-            }
-
-            return result;
+            return sb.ToString();
         }
 
         /// <summary>
-        /// Converts this object to a byte array using normal structs and writes
-        /// it to the current stream position.
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs.
+        /// Does not include type, variable name, or trailing semi-colon.
         /// </summary>
-        /// <param name="stream">Stream to write to.</param>
-        internal void AppendToBinaryStream(BinaryWriter stream)
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        private string ToNormalCInlineDeclaration(string prefix = "")
         {
-            var bytes = ToByteArray();
-            stream.Write(bytes);
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
+
+            ToCDeclarationCommon(sb, prefix);
+
+            sb.Append($"{prefix}}}");
+
+            return sb.ToString();
         }
 
         /// <summary>
-        /// Converts this object to a byte array using beta structs and writes
-        /// it to the current stream position.
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs. Includes type, variable
+        /// name and trailing semi-colon.
         /// </summary>
-        /// <param name="stream">Stream to write to.</param>
-        internal void BetaAppendToBinaryStream(BinaryWriter stream)
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        private string ToBetaCDeclaration(string prefix = "")
         {
-            var bytes = ToBetaByteArray();
-            stream.Write(bytes);
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{StandTile.TileBetaCTypeName} {VariableName} = {{");
+
+            ToBetaCDeclarationCommon(sb, prefix);
+
+            sb.AppendLine($"{prefix}}};");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using beta structs.
+        /// Does not include type, variable name, or trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        private string ToBetaCInlineDeclaration(string prefix = "")
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{{ /* tile index {OrderIndex} */");
+
+            ToBetaCDeclarationCommon(sb, prefix);
+
+            sb.Append($"{prefix}}}");
+
+            return sb.ToString();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
@@ -595,7 +485,7 @@ namespace Getools.Lib.Game.Asset.Stan
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}\"{TileName}\",");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{DebugName.ToCValueOrNullEmpty()},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x4},");

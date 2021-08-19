@@ -1,5 +1,3 @@
-# Goldeneye 007 proof of concept setup parser
-
 meta:
   id: setup
   file-extension: bin

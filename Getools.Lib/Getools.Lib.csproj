@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <FileVersion>21.8.14.1</FileVersion>
+    <FileVersion>21.8.18.1</FileVersion>
     <Version>21.8.2.1</Version>
     <Authors>Ben Burns</Authors>
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
-    <AssemblyVersion>21.8.14.1</AssemblyVersion>
+    <AssemblyVersion>21.8.18.1</AssemblyVersion>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Remove="Kaitai\Schema\Setup.cs" />
     <Compile Remove="Kaitai\Schema\Stan.cs" />
+    <Compile Remove="Kaitai\Schema\StanBeta.cs" />
   </ItemGroup>
 
   <ItemGroup>
