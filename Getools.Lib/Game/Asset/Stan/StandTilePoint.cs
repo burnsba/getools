@@ -133,41 +133,41 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Converts the current object to a byte array, as it would
-        /// exist in a regular binary format.
+        /// Converts the current object to a byte array. The size will vary based on <see cref="Format"/>.
         /// </summary>
         /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray()
         {
-            var results = new byte[SizeOf];
+            if (Format == TypeFormat.Normal)
+            {
+                var results = new byte[SizeOf];
 
-            BitUtility.InsertShortBig(results, 0, (short)X);
-            BitUtility.InsertShortBig(results, 2, (short)Y);
-            BitUtility.InsertShortBig(results, 4, (short)Z);
-            BitUtility.InsertShortBig(results, 6, (short)Link);
+                BitUtility.InsertShortBig(results, 0, (short)X);
+                BitUtility.InsertShortBig(results, 2, (short)Y);
+                BitUtility.InsertShortBig(results, 4, (short)Z);
+                BitUtility.InsertShortBig(results, 6, (short)Link);
 
-            return results;
-        }
+                return results;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                var results = new byte[BetaSizeOf];
 
-        /// <summary>
-        /// Converts the current object to a byte array, as it would
-        /// exist in a beta binary format.
-        /// </summary>
-        /// <returns>Byte array of object.</returns>
-        public byte[] ToBetaByteArray()
-        {
-            var results = new byte[BetaSizeOf];
+                var fx = BitUtility.CastToInt32(FloatX);
+                var fy = BitUtility.CastToInt32(FloatY);
+                var fz = BitUtility.CastToInt32(FloatZ);
 
-            var fx = BitUtility.CastToInt32(FloatX);
-            var fy = BitUtility.CastToInt32(FloatY);
-            var fz = BitUtility.CastToInt32(FloatZ);
+                BitUtility.Insert32Big(results, 0, (int)fx);
+                BitUtility.Insert32Big(results, 4, (int)fy);
+                BitUtility.Insert32Big(results, 8, (int)fz);
+                BitUtility.Insert32Big(results, 12, (int)Link);
 
-            BitUtility.Insert32Big(results, 0, (int)fx);
-            BitUtility.Insert32Big(results, 4, (int)fy);
-            BitUtility.Insert32Big(results, 8, (int)fz);
-            BitUtility.Insert32Big(results, 12, (int)Link);
-
-            return results;
+                return results;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
         }
 
         /// <summary>
@@ -216,28 +216,6 @@ namespace Getools.Lib.Game.Asset.Stan
             result.Link = BitUtility.Read32Big(br);
 
             return result;
-        }
-
-        /// <summary>
-        /// Converts this object to a byte array using normal structs and writes
-        /// it to the current stream position.
-        /// </summary>
-        /// <param name="stream">Stream to write to.</param>
-        internal void AppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToByteArray();
-            stream.Write(bytes);
-        }
-
-        /// <summary>
-        /// Converts this object to a byte array using beta structs and writes
-        /// it to the current stream position.
-        /// </summary>
-        /// <param name="stream">Stream to write to.</param>
-        internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        {
-            var bytes = ToBetaByteArray();
-            stream.Write(bytes);
         }
     }
 }

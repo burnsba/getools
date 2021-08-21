@@ -145,7 +145,7 @@ namespace Getools.Lib.Converters
 
         /// <summary>
         /// Converts stan to complete .c text source file.
-        /// This uses the regular data structs.
+        /// The <see cref="StandFile.Format"/> is used to determine which data structs to write.
         /// </summary>
         /// <param name="source">Object to convert.</param>
         /// <param name="path">Path of file to write to.</param>
@@ -160,7 +160,7 @@ namespace Getools.Lib.Converters
         /// <summary>
         /// Converts stan to JSON text source file.
         /// Requires <see cref="StandFile.Format"/> to be set to know
-        /// which data structs to use..
+        /// which data structs to use.
         /// </summary>
         /// <param name="source">Object to convert.</param>
         /// <param name="path">Path of file to write to.</param>
@@ -186,6 +186,20 @@ namespace Getools.Lib.Converters
                 });
 
             File.WriteAllText(path, json);
+        }
+
+        /// <summary>
+        /// Assembles and links stan file the same way the N64 version does and writes as uncompressed bytes.
+        /// The <see cref="StandFile.Format"/> is used to determine which data structs to write.
+        /// </summary>
+        /// <param name="source">Object to convert.</param>
+        /// <param name="path">Path of file to write to.</param>
+        public static void WriteToBin(StandFile source, string path)
+        {
+            using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
+            {
+                source.WriteToBinFile(bw);
+            }
         }
     }
 }

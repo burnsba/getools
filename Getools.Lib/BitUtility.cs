@@ -313,18 +313,18 @@ namespace Getools.Lib
         /// Returns the value incremented to the next closest multiple of 16.
         /// If the current value is a multiple of 16 then that is returned.
         /// </summary>
-        /// <param name="val">Value to check.</param>
-        /// <returns>Value, or next largest multiple of 16.</returns>
-        public static int Align16(int val)
+        /// <param name="address">Address to check.</param>
+        /// <returns>Address, or next largest multiple of 16.</returns>
+        public static int Align16(int address)
         {
             int next16 = 0;
-            if ((val % 16) != 0)
+            if ((address % 16) != 0)
             {
-                next16 = ((int)(val / 16) + 1) * 16;
+                next16 = ((int)(address / 16) + 1) * 16;
             }
             else
             {
-                next16 = val;
+                next16 = address;
             }
 
             return next16;
@@ -334,21 +334,76 @@ namespace Getools.Lib
         /// Returns the value incremented to the next closest multiple of 8.
         /// If the current value is a multiple of 8 then that is returned.
         /// </summary>
-        /// <param name="val">Value to check.</param>
-        /// <returns>Value, or next largest multiple of 8.</returns>
-        public static int Align8(int val)
+        /// <param name="address">Address to check.</param>
+        /// <returns>Address, or next largest multiple of 8.</returns>
+        /// <remarks>
+        /// AKA AlignDWord
+        /// </remarks>
+        public static int Align8(int address)
         {
             int next8 = 0;
-            if ((val % 8) != 0)
+            if ((address % 8) != 0)
             {
-                next8 = ((int)(val / 8) + 1) * 8;
+                next8 = ((int)(address / 8) + 1) * 8;
             }
             else
             {
-                next8 = val;
+                next8 = address;
             }
 
             return next8;
+        }
+
+        /// <summary>
+        /// Returns the value incremented to the next closest multiple of 4.
+        /// If the current value is a multiple of 4 then that is returned.
+        /// </summary>
+        /// <param name="address">Address to check.</param>
+        /// <returns>Address, or next largest multiple of 4.</returns>
+        /// <remarks>
+        /// AKA AlignWord
+        /// </remarks>
+        public static int Align4(int address)
+        {
+            int next4 = 0;
+            if ((address % 4) != 0)
+            {
+                next4 = ((int)(address / 4) + 1) * 4;
+            }
+            else
+            {
+                next4 = address;
+            }
+
+            return next4;
+        }
+
+        /// <summary>
+        /// Parameterized byte alignment.
+        /// </summary>
+        /// <param name="address">Address to align to the nearest width.</param>
+        /// <param name="width">Size in bytes of alignment. Size of 0 or 1 will both return the <paramref name="address"/>.</param>
+        /// <returns>Address, or next nearest multiple, or throws <see cref="NotSupportedException"/>.</returns>
+        public static int AlignToWidth(int address, int width)
+        {
+            switch (width)
+            {
+                case 0:
+                case 1:
+                    return address;
+
+                case 4:
+                    return Align4(address);
+
+                case 8:
+                    return Align8(address);
+
+                case 16:
+                    return Align16(address);
+
+                default:
+                    throw new NotSupportedException($"Cannot align address={address} to width={width} bytes");
+            }
         }
 
         /// <summary>

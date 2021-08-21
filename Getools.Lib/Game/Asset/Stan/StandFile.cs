@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Error;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
     /// <summary>
     /// Complete stan.
+    /// Make sure to call <see cref="SetFormat"/> when converting between beta and normal formats.
     /// </summary>
     public class StandFile
     {
@@ -41,8 +43,8 @@ namespace Getools.Lib.Game.Asset.Stan
                 DataFormats.C,
                 DataFormats.BetaC,
                 DataFormats.Json,
-                //DataFormats.Bin,
-                //DataFormats.BetaBin,
+                DataFormats.Bin,
+                DataFormats.BetaBin,
             };
 
         /// <summary>
@@ -78,12 +80,14 @@ namespace Getools.Lib.Game.Asset.Stan
 
         /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
+        /// Make sure to call <see cref="SetFormat"/> when converting between beta and normal formats.
         /// </summary>
         public TypeFormat Format { get; set; }
 
         /// <summary>
         /// Sets the format. Visits children and updates any format specific values.
         /// Calling this method manually should be followed by a call to <see cref="DeserializeFix"/>.
+        /// Make sure to call this when converting between beta and normal formats.
         /// </summary>
         /// <param name="format">Format.</param>
         public void SetFormat(TypeFormat format)
@@ -192,6 +196,53 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.Write(Footer.ToCDeclaration());
             sw.WriteLine();
             sw.WriteLine();
+        }
+
+        /// <summary>
+        /// This is a mini-compiler to build up the .data and .rodata sections to send them to <see cref="AssembledFile"/>.
+        /// </summary>
+        /// <returns>Assembled file. Call <see cref="AssembledFile.GetLinkedFile"/> to get fully linked file.</returns>
+        internal AssembledFile GetAssembledBinFile()
+        {
+            var file = new AssembledFile();
+            var dataSectionOffset = 0;
+
+            var headerBytes = Header.ToByteArray();
+            file.AppendData(headerBytes);
+            dataSectionOffset += headerBytes.Length;
+
+            foreach (var tile in Tiles)
+            {
+                var tileBytes = tile.ToByteArray();
+
+                file.AppendData(tileBytes);
+
+                if (tile.Format == TypeFormat.Beta)
+                {
+                    tile.DebugName.Offset = dataSectionOffset;
+                    var pr = new PointerRodata(tile.DebugName, PointerRodata.SizeOfRodataPointer);
+
+                    file.RodataPointers.Add(pr);
+                }
+
+                dataSectionOffset += tileBytes.Length;
+            }
+
+            file.AppendData(Footer.ToByteArray(dataSectionOffset));
+
+            return file;
+        }
+
+        /// <summary>
+        /// Builds the entire .bin file describing stan and writes to stream at the current position.
+        /// </summary>
+        /// <param name="bw">Binary stream to write to.</param>
+        internal void WriteToBinFile(BinaryWriter bw)
+        {
+            var file = GetAssembledBinFile();
+            var fileContents = file.GetLinkedFile();
+
+            bw.Write(fileContents);
         }
     }
 }

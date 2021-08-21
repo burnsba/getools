@@ -30,7 +30,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper = testOutputHelper;
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_c_to_bin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_c);
@@ -42,8 +42,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -98,7 +97,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_bin_to_bin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_bin);
@@ -110,8 +109,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -166,7 +164,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_json_to_bin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_json);
@@ -178,8 +176,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -234,7 +231,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_betac_to_betabin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_betac);
@@ -246,8 +243,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBetaBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -328,7 +324,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_betabin_to_betabin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_betabin);
@@ -340,8 +336,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBetaBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -397,7 +392,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_betajson_to_betabin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_betajson);
@@ -409,8 +404,7 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBetaBin(stan, outfile);
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);
@@ -498,7 +492,7 @@ namespace Getools.Test.AssetTests
             File.Delete(outfile);
         }
 
-        //[Fact]
+        [Fact]
         public void Convert_betabin_to_bin()
         {
             var path = Path.Combine(_testFileDirectory, _filename_betabin);
@@ -510,8 +504,9 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            // TODO: fix bin compile
-            //StanConverters.WriteToBin(stan, outfile);
+            stan.SetFormat(Lib.Game.TypeFormat.Normal);
+
+            StanConverters.WriteToBin(stan, outfile);
 
             string actualHash = Utility.SHA256CheckSum(outfile);
             string expectedHash = Utility.SHA256CheckSum(referenceFilePath);

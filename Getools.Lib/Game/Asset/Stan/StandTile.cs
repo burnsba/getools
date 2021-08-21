@@ -238,31 +238,64 @@ namespace Getools.Lib.Game.Asset.Stan
         }
 
         /// <summary>
-        /// Converts the current object to a byte array, as it would
-        /// exist in a regular binary format.
+        /// Converts the current object to a byte array.
+        /// The size will vary based on <see cref="Format"/>.
         /// Uses Points.Count instead of PointsCount property.
         /// </summary>
         /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray()
         {
-            var results = new byte[SizeOfTileWithoutPoints + (Points.Count * StandTilePoint.SizeOf)];
-
-            BitUtility.InsertLower24Big(results, 0, InternalName);
-            results[3] = Room;
-
-            results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
-            results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
-            results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (FirstPoint & 0xf));
-            results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
-
-            int index = SizeOfTileWithoutPoints;
-            for (int i = 0; i < Points.Count; i++)
+            if (Format == TypeFormat.Normal)
             {
-                Array.Copy(Points[i].ToByteArray(), 0, results, index, StandTilePoint.SizeOf);
-                index += StandTilePoint.SizeOf;
-            }
+                var results = new byte[SizeOfTileWithoutPoints + (Points.Count * StandTilePoint.SizeOf)];
 
-            return results;
+                BitUtility.InsertLower24Big(results, 0, InternalName);
+                results[3] = Room;
+
+                results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
+                results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
+                results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (FirstPoint & 0xf));
+                results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
+
+                int index = SizeOfTileWithoutPoints;
+                for (int i = 0; i < Points.Count; i++)
+                {
+                    Array.Copy(Points[i].ToByteArray(), 0, results, index, StandTilePoint.SizeOf);
+                    index += StandTilePoint.SizeOf;
+                }
+
+                return results;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                var results = new byte[SizeOfBetaTileWithoutPoints + (Points.Count * StandTilePoint.BetaSizeOf)];
+
+                // .rodata pointer address is unknown at this time.
+                BitUtility.Insert32Big(results, 0, (short)0);
+
+                results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
+                results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
+
+                BitUtility.InsertShortBig(results, 6, UnknownBeta ?? 0);
+
+                results[8] = (byte)Points.Count;
+                results[9] = (byte)FirstPoint;
+                results[10] = (byte)SecondPoint;
+                results[11] = (byte)ThirdPoint;
+
+                int index = SizeOfBetaTileWithoutPoints;
+                for (int i = 0; i < Points.Count; i++)
+                {
+                    Array.Copy(Points[i].ToByteArray(), 0, results, index, StandTilePoint.BetaSizeOf);
+                    index += StandTilePoint.BetaSizeOf;
+                }
+
+                return results;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
         }
 
         /// <summary>
