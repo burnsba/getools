@@ -455,6 +455,8 @@ namespace Getools.Lib.Kaitai
 
             switch (kaitaiObject.Body)
             {
+                /* Alphabetical by type name, sort of */
+
                 case Gen.Setup.SetupObjectAircraftBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -464,6 +466,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectAmmoBoxBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectCctvBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -487,11 +493,27 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectBodyArmorBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectEndObjectiveBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectEndProps kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectGlassBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectGuardBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectHangingMonitorBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -503,11 +525,15 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
-                case Gen.Setup.SetupObjectObjectiveCompleteConditionBody kaitaiObjectDef:
+                case Gen.Setup.SetupObjectMissionObjectiveBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
-                case Gen.Setup.SetupObjectEndObjectiveBody kaitaiObjectDef:
+                case Gen.Setup.SetupObjectMultiMonitorBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectObjectiveCompleteConditionBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -515,11 +541,11 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
-                case Gen.Setup.SetupObjectMissionObjectiveBody kaitaiObjectDef:
+                case Gen.Setup.SetupObjectiveCopyItemBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
-                case Gen.Setup.SetupObjectWatchMenuObjectiveBody kaitaiObjectDef:
+                case Gen.Setup.SetupObjectivePhotographItemBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -547,12 +573,16 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectWatchMenuObjectiveBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectWeaponBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Error parsing setup binary file. Unknown {nameof(Gen.Setup.SetupIntroRecord)} of type \"{kaitaiObject.Body.GetType().Name}\"");
+                    throw new InvalidOperationException($"Error parsing setup binary file. Unknown propdef of type \"{kaitaiObject.Body.GetType().Name}\"");
             }
 
             objectDef.Scale = kaitaiObject.Header.ExtraScale;
@@ -936,6 +966,90 @@ namespace Getools.Lib.Kaitai
             objectDef.LinkedItem = kaitaiObject.LinkedItem;
             objectDef.Timer = kaitaiObject.Timer;
             objectDef.PointerLinkedItem = kaitaiObject.PointerLinkedItem;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectCctvBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectCctv();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            if (kaitaiObject.Bytes.Length != objectDef.Data.Length)
+            {
+                throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectCctv)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
+            }
+
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectMultiMonitorBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectMultiMonitor();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            if (kaitaiObject.Bytes.Length != objectDef.Data.Length)
+            {
+                throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectMultiMonitor)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
+            }
+
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectBodyArmorBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectBodyArmor();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            objectDef.ArmorStrength = kaitaiObject.ArmorStrength;
+            objectDef.ArmorPercent = kaitaiObject.ArmorPercent;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectGlassBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectGlass();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectHangingMonitorBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectHangingMonitor();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectivePhotographItemBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectivePhotographItem();
+
+            objectDef.TagId = kaitaiObject.ObjectTagId;
+            objectDef.Unknown_04 = kaitaiObject.Unknown04;
+            objectDef.Unknown_08 = kaitaiObject.Unknown08;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectiveCopyItemBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectiveCopyItem();
+
+            objectDef.TagId = kaitaiObject.ObjectTagId;
+            objectDef.Unknown_04 = kaitaiObject.Unknown04;
+            objectDef.Unknown_06 = kaitaiObject.Unknown06;
 
             return objectDef;
         }

@@ -29,13 +29,17 @@ enums:
     0x03: standard
     0x04: key
     0x05: alarm
+    0x06: cctv
     0x08: weapon
     0x09: guard
     0x0a: single_monitor
+    0x0b: multi_monitor
+    0x0c: hanging_monitor
     0x0d: autogun
     0x11: hat
     0x12: set_guard_attribute
     0x14: ammo_box
+    0x15: body_armor
     0x16: tag
     0x17: objective_start
     0x18: end_objective
@@ -43,9 +47,12 @@ enums:
     0x1a: objective_complete_condition
     0x1b: objective_fail_condition
     0x1c: collect_object
+    0x1e: objective_photograph_item
+    0x22: objective_copy_item
     0x23: watch_menu_objective_text
     0x25: rename
     0x28: aircraft
+    0x2a: glass
     0x2d: tank
     0x2e: cutscene
     0x30: end_props
@@ -386,6 +393,13 @@ types:
     seq:
       - id: object_base
         type: setup_generic_object
+  # type = 0x06
+  setup_object_cctv_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
+      - id: bytes
+        size: 108
   # type = 0x08
   setup_object_weapon_body:
     seq:
@@ -509,6 +523,18 @@ types:
         type: u4
       - id: animation_num
         type: u4
+  # type = 0x0b
+  setup_object_multi_monitor_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
+      - id: bytes
+        size: 468
+  # type = 0x0c
+  setup_object_hanging_monitor_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
   # type = 0x0d
   setup_object_autogun_body:
     seq:
@@ -587,6 +613,15 @@ types:
         type: u2
       - id: ammo_golden
         type: s2
+  # type = 0x15
+  setup_object_body_armor_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
+      - id: armor_strength
+        type: s4
+      - id: armor_percent
+        type: s4
   # type = 0x16
   setup_object_tag_body:
     seq:
@@ -632,6 +667,24 @@ types:
     seq:
       - id: testval
         type: u4
+  # type = 0x1e
+  setup_objective_photograph_item_body:
+    seq:
+      - id: object_tag_id
+        type: u4
+      - id: unknown_04
+        type: u4
+      - id: unknown_08
+        type: u4
+  # type = 0x22
+  setup_objective_copy_item_body:
+    seq:
+      - id: object_tag_id
+        type: u4
+      - id: unknown_04
+        type: u2
+      - id: unknown_06
+        type: u2
   # type = 0x23
   setup_object_watch_menu_objective_body:
     seq:
@@ -669,6 +722,11 @@ types:
         type: setup_generic_object
       - id: bytes
         size: 52
+  # type = 0x2a
+  setup_object_glass_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
   # type = 0x2d
   setup_object_tank_body:
     seq:
@@ -696,6 +754,21 @@ types:
     seq:
       - id: no_value
         size: 0
+  not_supported:
+    params:
+      - id: type
+        type: u1
+        enum: propdef
+    seq:
+      - id: pos
+        type: u4
+        valid:
+          eq: _io.pos
+      - id: end
+        type: u1
+        enum: propdef
+        valid:
+          eq: type
   setup_object_record:
     seq:
       - id: header
@@ -708,26 +781,34 @@ types:
             'propdef::standard': setup_object_standard_body
             'propdef::key': setup_object_key_body
             'propdef::alarm': setup_object_alarm_body
+            'propdef::cctv': setup_object_cctv_body
             'propdef::weapon': setup_object_weapon_body
             'propdef::guard': setup_object_guard_body
             'propdef::single_monitor': setup_object_single_monitor_body
+            'propdef::multi_monitor': setup_object_multi_monitor_body
+            'propdef::hanging_monitor': setup_object_hanging_monitor_body
             'propdef::autogun': setup_object_autogun_body
             'propdef::hat': setup_object_hat_body
             'propdef::set_guard_attribute': setup_object_set_guard_attribute_body
             'propdef::ammo_box': setup_object_ammo_box_body
+            'propdef::body_armor': setup_object_body_armor_body
             'propdef::tag': setup_object_tag_body
             'propdef::objective_start': setup_object_mission_objective_body
             'propdef::end_objective': setup_object_end_objective_body
             'propdef::destroy_object': setup_object_destroy_object_body
             'propdef::objective_complete_condition': setup_object_objective_complete_condition_body
             'propdef::objective_fail_condition': setup_object_objective_fail_condition_body
+            'propdef::objective_photograph_item': setup_objective_photograph_item_body
+            'propdef::objective_copy_item': setup_objective_copy_item_body
             'propdef::collect_object': setup_object_collect_object_body
             'propdef::watch_menu_objective_text': setup_object_watch_menu_objective_body
             'propdef::rename': setup_object_rename_body
             'propdef::aircraft': setup_object_aircraft_body
+            'propdef::glass': setup_object_glass_body
             'propdef::tank': setup_object_tank_body
             'propdef::cutscene': setup_object_cutscene_body
             'propdef::end_props': setup_object_end_props
+            _ : not_supported(header.type)
   setup_intro_header_data:
     seq:
       - id: extra_scale

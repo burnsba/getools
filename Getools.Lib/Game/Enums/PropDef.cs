@@ -17,13 +17,22 @@ namespace Getools.Lib.Game.Enums
         StandardProp = 3,
         Key = 4,
         Alarm = 5,
+
+        /// <summary>
+        /// AKA Surveillance camera.
+        /// </summary>
         Cctv = 6,
         Magazine = 7,
         Collectable = 8,
         Guard = 9,
         SingleMonitor = 10,
         MultiMonitor = 11,
-        Rack = 12,
+
+        HangingMonitor = 12,
+
+        /// <summary>
+        /// AKA Autogun.
+        /// </summary>
         Drone = 13,
         Link = 14,
         Unk15 = 15,
@@ -32,6 +41,10 @@ namespace Getools.Lib.Game.Enums
         SetGuardAttribute = 18,
         Switch = 19,
         AmmoBox = 20,
+
+        /// <summary>
+        /// AKA Body armor.
+        /// </summary>
         Armour = 21,
         Tag = 22,
         ObjectiveStart = 23,
