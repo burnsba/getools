@@ -10,7 +10,8 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectDrone : SetupObjectGenericBase
     {
-        private const int _dataSize = 104;
+        // I got runway setup to match when this was 104, but Egypt wants this to be 88 ....
+        private const int _dataSize = 88;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectDrone"/> class.

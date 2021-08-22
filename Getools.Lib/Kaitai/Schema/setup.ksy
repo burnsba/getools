@@ -53,6 +53,7 @@ enums:
     0x25: rename
     0x28: aircraft
     0x2a: glass
+    0x2b: safe
     0x2d: tank
     0x2e: cutscene
     0x30: end_props
@@ -541,7 +542,8 @@ types:
       - id: object_base
         type: setup_generic_object
       - id: bytes
-        size: 104
+        # size: 104 # original = 104
+        size: 88
       #- id: bytes
       #  size: 48
   # type = 0x11
@@ -727,6 +729,11 @@ types:
     seq:
       - id: object_base
         type: setup_generic_object
+  # type = 0x2b
+  setup_object_safe_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
   # type = 0x2d
   setup_object_tank_body:
     seq:
@@ -760,15 +767,15 @@ types:
         type: u1
         enum: propdef
     seq:
+      #- id: end
+      #  type: u1
+      #  enum: propdef
+      #  valid:
+      #    eq: type
       - id: pos
         type: u4
         valid:
           eq: _io.pos
-      - id: end
-        type: u1
-        enum: propdef
-        valid:
-          eq: type
   setup_object_record:
     seq:
       - id: header
@@ -805,6 +812,7 @@ types:
             'propdef::rename': setup_object_rename_body
             'propdef::aircraft': setup_object_aircraft_body
             'propdef::glass': setup_object_glass_body
+            'propdef::safe': setup_object_safe_body
             'propdef::tank': setup_object_tank_body
             'propdef::cutscene': setup_object_cutscene_body
             'propdef::end_props': setup_object_end_props

@@ -472,5 +472,53 @@ namespace Getools.Lib
 
             return results;
         }
+
+        /// <summary>
+        /// Reads from array one character at a time until reading '\0'.
+        /// Returns the string, without terminating zero.
+        /// Reads up to array length or <paramref name="maxStringLength"/>.
+        /// If the first character read is '\0' then <see cref="string.Empty"/> is returned.
+        /// </summary>
+        /// <param name="arr">Array to read.</param>
+        /// <param name="index">Starting index to read from.</param>
+        /// <param name="maxStringLength">Max string length to read.</param>
+        /// <returns>String or string.empty.</returns>
+        public static string ReadString(byte[] arr, int index, int maxStringLength)
+        {
+            if (maxStringLength <= 0)
+            {
+                throw new ArgumentException(nameof(maxStringLength));
+            }
+
+            if (index < 0)
+            {
+                throw new ArgumentException(nameof(index));
+            }
+
+            if (index > arr.Length)
+            {
+                throw new ArgumentException($"{nameof(index)} exceeds array length");
+            }
+
+            int endPos = Math.Min(index + maxStringLength, arr.Length - 1);
+
+            var sb = new StringBuilder();
+
+            while (index < endPos)
+            {
+                if (arr[index] > 0)
+                {
+                    sb.Append((char)arr[index]);
+                }
+                else
+                {
+                    break;
+                }
+
+                index++;
+            }
+
+            return sb.ToString();
+        }
     }
 }

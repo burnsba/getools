@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "convert_setup --input-file=\"UsetupsevbunkerZ_good.bin\" --output-file=\"out.c\""
+      "commandLineArgs": "convert_setup --input-file=\"UsetupcrypZ_good.bin\" --output-file=\"out.c\""
     }
   }
 }

@@ -163,6 +163,98 @@ namespace Getools.Lib.Kaitai
                 }
             }
 
+            var rodataFillerBlock = fillerBlocks.OrderByDescending(x => x.StartPos).First();
+            var rodataOffset = (int)rodataFillerBlock.StartPos;
+            var rodataBytes = rodataFillerBlock.Data.SelectMany(x => x).ToArray();
+
+            // For most levels, the padnames pointer in the setup header is NULL, but there's still
+            // an array of padnames with pointers to .rodata (pointing to empty strings).
+            // Since the section offset is null, it isn't dereferenced, so try to look that up manually.
+            // file order is
+            //      struct s_pathTbl pathtbl[]
+            //      padnames
+            //      struct s_pathSet paths[]
+            if (ssf.PadNamesOffset == 0)
+            {
+                // Look for a filler block after path tables and before path sets
+                var padNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathTablesOffset && x.StartPos < ssf.PathSetsOffset);
+                if (!object.ReferenceEquals(null, padNamesData))
+                {
+                    var padnamesBytesLength = (int)(ssf.PathSetsOffset - padNamesData.StartPos);
+
+                    var fillerBlockBytes = padNamesData.Data.SelectMany(x => x).Take((int)padnamesBytesLength).ToArray();
+
+                    if ((fillerBlockBytes.Length % Config.TargetPointerSize) != 0)
+                    {
+                        throw new InvalidOperationException($"Error trying to read padnames. {nameof(ssf.PadNamesOffset)} is null, so attempting to find padnames section based on starting address of filler block, but the closest match length is not word aligned.");
+                    }
+
+                    var pointerCount = fillerBlockBytes.Length / Config.TargetPointerSize;
+                    var pointers = new List<int>();
+                    int fillerBlockIndex = 0;
+                    for (int i = 0; i < pointerCount; i++)
+                    {
+                        int pointer = BitUtility.Read32Big(fillerBlockBytes, fillerBlockIndex);
+
+                        if (pointer > 0)
+                        {
+                            var stringValue = BitUtility.ReadString(rodataBytes, pointer - rodataOffset, 50);
+                            ssf.PadNames.Add(new StringPointer((int)padNamesData.StartPos + fillerBlockIndex, stringValue));
+                        }
+                        else
+                        {
+                            ssf.PadNames.Add(new StringPointer(null));
+                        }
+
+                        fillerBlockIndex += Config.TargetPointerSize;
+                    }
+                }
+            }
+
+            // now everything that just happened for padnames, do it again but for pad3dnames.
+            // file order is
+            //      struct s_pathLink pathlist[]
+            //      pad3dnames
+            //      path_table filler
+            if (ssf.Pad3dNamesOffset == 0)
+            {
+                var firstPathTableFiller = ssf.PathTables.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+
+                // Look for a filler block after path links and before path tables (path tables filler entry)
+                var pad3dNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathLinksOffset && x.StartPos < firstPathTableFiller.EntryPointer);
+                if (!object.ReferenceEquals(null, pad3dNamesData))
+                {
+                    var pad3dnamesBytesLength = (int)(firstPathTableFiller.EntryPointer - pad3dNamesData.StartPos);
+
+                    var fillerBlockBytes = pad3dNamesData.Data.SelectMany(x => x).Take((int)pad3dnamesBytesLength).ToArray();
+
+                    if ((fillerBlockBytes.Length % Config.TargetPointerSize) != 0)
+                    {
+                        throw new InvalidOperationException($"Error trying to read pad3dnames. {nameof(ssf.Pad3dNamesOffset)} is null, so attempting to find pad3dnames section based on starting address of filler block, but the closest match length is not word aligned.");
+                    }
+
+                    var pointerCount = fillerBlockBytes.Length / Config.TargetPointerSize;
+                    var pointers = new List<int>();
+                    int fillerBlockIndex = 0;
+                    for (int i = 0; i < pointerCount; i++)
+                    {
+                        int pointer = BitUtility.Read32Big(fillerBlockBytes, fillerBlockIndex);
+
+                        if (pointer > 0)
+                        {
+                            var stringValue = BitUtility.ReadString(rodataBytes, pointer - rodataOffset, 50);
+                            ssf.Pad3dNames.Add(new StringPointer((int)pad3dNamesData.StartPos + fillerBlockIndex, stringValue));
+                        }
+                        else
+                        {
+                            ssf.Pad3dNames.Add(new StringPointer(null));
+                        }
+
+                        fillerBlockIndex += Config.TargetPointerSize;
+                    }
+                }
+            }
+
             return ssf;
         }
 
@@ -550,6 +642,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectRenameBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectSafeBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -1050,6 +1146,15 @@ namespace Getools.Lib.Kaitai
             objectDef.TagId = kaitaiObject.ObjectTagId;
             objectDef.Unknown_04 = kaitaiObject.Unknown04;
             objectDef.Unknown_06 = kaitaiObject.Unknown06;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectSafeBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectSafe();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
 
             return objectDef;
         }

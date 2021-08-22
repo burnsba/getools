@@ -95,6 +95,7 @@ namespace Getools.Lib.Kaitai.Gen
             Rename = 37,
             Aircraft = 40,
             Glass = 42,
+            Safe = 43,
             Tank = 45,
             Cutscene = 46,
             EndProps = 48,
@@ -587,6 +588,30 @@ namespace Getools.Lib.Kaitai.Gen
             public uint Set { get { return _set; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectSafeBody : KaitaiStruct
+        {
+            public static SetupObjectSafeBody FromFile(string fileName)
+            {
+                return new SetupObjectSafeBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectSafeBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _objectBase = new SetupGenericObject(m_io, this, m_root);
+            }
+            private SetupGenericObject _objectBase;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
         public partial class SetupObjectDoorBody : KaitaiStruct
         {
@@ -1816,6 +1841,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectWatchMenuObjectiveBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.Safe:
+                        {
+                            _body = new SetupObjectSafeBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.ObjectiveStart:
                         {
                             _body = new SetupObjectMissionObjectiveBody(m_io, this, m_root);
@@ -2402,7 +2432,7 @@ namespace Getools.Lib.Kaitai.Gen
             private void _read()
             {
                 _objectBase = new SetupGenericObject(m_io, this, m_root);
-                _bytes = m_io.ReadBytes(104);
+                _bytes = m_io.ReadBytes(88);
             }
             private SetupGenericObject _objectBase;
             private byte[] _bytes;
@@ -2459,19 +2489,12 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     throw new ValidationNotEqualError(M_Io.Pos, Pos, M_Io, "/types/not_supported/seq/0");
                 }
-                _end = ((Setup.Propdef)m_io.ReadU1());
-                if (!(End == Type))
-                {
-                    throw new ValidationNotEqualError(Type, End, M_Io, "/types/not_supported/seq/1");
-                }
             }
             private uint _pos;
-            private Propdef _end;
             private Propdef _type;
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
             public uint Pos { get { return _pos; } }
-            public Propdef End { get { return _end; } }
             public Propdef Type { get { return _type; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }

@@ -362,9 +362,27 @@ namespace Getools.Lib.Game.Asset.Setup
             sw.WriteLine($"s32 {ObjectListVariableName}[];");
             sw.WriteLine($"s32 {IntroListVariableName}[];");
             sw.WriteLine($"{SetupPathLinkEntry.CTypeName} {PathListVariableName}[];");
-            sw.WriteLine($"char *{Pad3dNamesVariableName}[];");
+
+            if (Pad3dNames.Any())
+            {
+                sw.WriteLine($"char *{Pad3dNamesVariableName}[];");
+            }
+            else
+            {
+                sw.WriteLine("/* no pad3dnames */");
+            }
+
             sw.WriteLine($"{SetupPathTableEntry.CTypeName} {PathTablesVariableName}[];");
-            sw.WriteLine($"char *{PadNamesVariableName}[];");
+
+            if (PadNames.Any())
+            {
+                sw.WriteLine($"char *{PadNamesVariableName}[];");
+            }
+            else
+            {
+                sw.WriteLine("/* no padnames */");
+            }
+
             sw.WriteLine($"{SetupPathSetEntry.CTypeName} {PathSetsVariableName}[];");
             sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[];");
 
@@ -379,8 +397,25 @@ namespace Getools.Lib.Game.Asset.Setup
             sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(AiListsVariableName)},");
             sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadListVariableName)},");
             sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dListVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadNamesVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dNamesVariableName)}");
+
+            if (PadNamesOffset > 0 && PadNames.Any())
+            {
+                sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadNamesVariableName)},");
+            }
+            else
+            {
+                sw.WriteLine($"{Config.DefaultIndent}NULL,");
+            }
+
+            if (Pad3dNamesOffset > 0 && Pad3dNames.Any())
+            {
+                sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dNamesVariableName)}");
+            }
+            else
+            {
+                sw.WriteLine($"{Config.DefaultIndent}NULL,");
+            }
+
             sw.WriteLine("};");
 
             sw.WriteLine();
@@ -538,14 +573,21 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin pad3d names
              */
 
-            sw.WriteLine($"char *{Pad3dNamesVariableName}[] = {{");
+            if (Pad3dNames.Any())
+            {
+                sw.WriteLine($"char *{Pad3dNamesVariableName}[] = {{");
 
-            Utility.AllButLast(
-                Pad3dNames,
-                x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
-                x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
+                Utility.AllButLast(
+                    Pad3dNames,
+                    x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
+                    x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
 
-            sw.WriteLine("};");
+                sw.WriteLine("};");
+            }
+            else
+            {
+                sw.WriteLine("/* no pad3dnames */");
+            }
 
             sw.WriteLine();
             sw.WriteLine();
@@ -588,14 +630,21 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin pad names
              */
 
-            sw.WriteLine($"char *{PadNamesVariableName}[] = {{");
+            if (PadNames.Any())
+            {
+                sw.WriteLine($"char *{PadNamesVariableName}[] = {{");
 
-            Utility.AllButLast(
-                PadNames,
-                x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
-                x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
+                Utility.AllButLast(
+                    PadNames,
+                    x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
+                    x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
 
-            sw.WriteLine("};");
+                sw.WriteLine("};");
+            }
+            else
+            {
+                sw.WriteLine("/* no padnames */");
+            }
 
             sw.WriteLine();
             sw.WriteLine();
