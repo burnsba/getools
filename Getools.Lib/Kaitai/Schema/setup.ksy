@@ -30,6 +30,7 @@ enums:
     0x04: key
     0x05: alarm
     0x06: cctv
+    0x07: ammo_mag
     0x08: weapon
     0x09: guard
     0x0a: single_monitor
@@ -54,6 +55,7 @@ enums:
     0x28: aircraft
     0x2a: glass
     0x2b: safe
+    0x2c: safe_item
     0x2d: tank
     0x2e: cutscene
     0x30: end_props
@@ -401,6 +403,13 @@ types:
         type: setup_generic_object
       - id: bytes
         size: 108
+  # type = 0x07
+  setup_object_ammo_mag_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
+      - id: ammo_type
+        type: s4
   # type = 0x08
   setup_object_weapon_body:
     seq:
@@ -734,6 +743,17 @@ types:
     seq:
       - id: object_base
         type: setup_generic_object
+  # type = 0x2c
+  setup_object_safe_item_body:
+    seq:
+      - id: item
+        type: s4
+      - id: safe
+        type: s4
+      - id: door
+        type: s4
+      - id: empty
+        type: u4
   # type = 0x2d
   setup_object_tank_body:
     seq:
@@ -789,6 +809,7 @@ types:
             'propdef::key': setup_object_key_body
             'propdef::alarm': setup_object_alarm_body
             'propdef::cctv': setup_object_cctv_body
+            'propdef::ammo_mag': setup_object_ammo_mag_body
             'propdef::weapon': setup_object_weapon_body
             'propdef::guard': setup_object_guard_body
             'propdef::single_monitor': setup_object_single_monitor_body
@@ -813,6 +834,7 @@ types:
             'propdef::aircraft': setup_object_aircraft_body
             'propdef::glass': setup_object_glass_body
             'propdef::safe': setup_object_safe_body
+            'propdef::safe_item': setup_object_safe_item_body
             'propdef::tank': setup_object_tank_body
             'propdef::cutscene': setup_object_cutscene_body
             'propdef::end_props': setup_object_end_props

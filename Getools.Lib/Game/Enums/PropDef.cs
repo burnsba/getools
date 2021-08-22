@@ -22,7 +22,11 @@ namespace Getools.Lib.Game.Enums
         /// AKA Surveillance camera.
         /// </summary>
         Cctv = 6,
-        Magazine = 7,
+
+        /// <summary>
+        /// AKA Magazine.
+        /// </summary>
+        AmmoMag = 7,
         Collectable = 8,
         Guard = 9,
         SingleMonitor = 10,

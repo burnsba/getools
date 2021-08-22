@@ -561,6 +561,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectAmmoMagBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectCctvBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -646,6 +650,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectSafeBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectSafeItemBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -1155,6 +1163,29 @@ namespace Getools.Lib.Kaitai
             var objectDef = new SetupObjectSafe();
 
             CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectSafeItemBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectSafeItem();
+
+            objectDef.Item = kaitaiObject.Item;
+            objectDef.Safe = kaitaiObject.Safe;
+            objectDef.Door = kaitaiObject.Door;
+            objectDef.Empty = (int)kaitaiObject.Empty;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectAmmoMagBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectAmmoMag();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            objectDef.AmmoType = kaitaiObject.AmmoType;
 
             return objectDef;
         }

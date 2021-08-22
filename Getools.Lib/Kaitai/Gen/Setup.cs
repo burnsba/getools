@@ -72,6 +72,7 @@ namespace Getools.Lib.Kaitai.Gen
             Key = 4,
             Alarm = 5,
             Cctv = 6,
+            AmmoMag = 7,
             Weapon = 8,
             Guard = 9,
             SingleMonitor = 10,
@@ -96,6 +97,7 @@ namespace Getools.Lib.Kaitai.Gen
             Aircraft = 40,
             Glass = 42,
             Safe = 43,
+            SafeItem = 44,
             Tank = 45,
             Cutscene = 46,
             EndProps = 48,
@@ -390,6 +392,33 @@ namespace Getools.Lib.Kaitai.Gen
             public KaitaiStruct Body { get { return _body; } }
             public Setup M_Root { get { return m_root; } }
             public Setup M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectAmmoMagBody : KaitaiStruct
+        {
+            public static SetupObjectAmmoMagBody FromFile(string fileName)
+            {
+                return new SetupObjectAmmoMagBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectAmmoMagBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _objectBase = new SetupGenericObject(m_io, this, m_root);
+                _ammoType = m_io.ReadS4be();
+            }
+            private SetupGenericObject _objectBase;
+            private int _ammoType;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public int AmmoType { get { return _ammoType; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
         public partial class SetupObjectSetGuardAttributeBody : KaitaiStruct
         {
@@ -1861,6 +1890,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectObjectiveCompleteConditionBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.SafeItem:
+                        {
+                            _body = new SetupObjectSafeItemBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.Alarm:
                         {
                             _body = new SetupObjectAlarmBody(m_io, this, m_root);
@@ -1914,6 +1948,11 @@ namespace Getools.Lib.Kaitai.Gen
                     case Setup.Propdef.SingleMonitor:
                         {
                             _body = new SetupObjectSingleMonitorBody(m_io, this, m_root);
+                            break;
+                        }
+                    case Setup.Propdef.AmmoMag:
+                        {
+                            _body = new SetupObjectAmmoMagBody(m_io, this, m_root);
                             break;
                         }
                     case Setup.Propdef.Hat:
@@ -3155,6 +3194,39 @@ namespace Getools.Lib.Kaitai.Gen
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
             public uint Testval { get { return _testval; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectSafeItemBody : KaitaiStruct
+        {
+            public static SetupObjectSafeItemBody FromFile(string fileName)
+            {
+                return new SetupObjectSafeItemBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectSafeItemBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _item = m_io.ReadS4be();
+                _safe = m_io.ReadS4be();
+                _door = m_io.ReadS4be();
+                _empty = m_io.ReadU4be();
+            }
+            private int _item;
+            private int _safe;
+            private int _door;
+            private uint _empty;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Item { get { return _item; } }
+            public int Safe { get { return _safe; } }
+            public int Door { get { return _door; } }
+            public uint Empty { get { return _empty; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
