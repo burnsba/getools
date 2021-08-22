@@ -173,14 +173,29 @@ namespace Getools.Lib.Kaitai
             // file order is
             //      struct s_pathTbl pathtbl[]
             //      padnames
-            //      struct s_pathSet paths[]
+            //      struct s_pathSet paths[] (first path set entry)
             if (ssf.PadNamesOffset == 0)
             {
+                int nextSectionAddress = ssf.PathSetsOffset;
+                if (ssf.PathSets.Any())
+                {
+                    var firstPathSetEntryAddress = ssf.PathSets
+                        .Where(x => x.EntryPointer > 0)
+                        .OrderBy(x => x.EntryPointer)
+                        .Select(x => x.EntryPointer)
+                        .First();
+
+                    if (firstPathSetEntryAddress < nextSectionAddress)
+                    {
+                        nextSectionAddress = (int)firstPathSetEntryAddress;
+                    }
+                }
+
                 // Look for a filler block after path tables and before path sets
-                var padNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathTablesOffset && x.StartPos < ssf.PathSetsOffset);
+                var padNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathTablesOffset && x.StartPos < nextSectionAddress);
                 if (!object.ReferenceEquals(null, padNamesData))
                 {
-                    var padnamesBytesLength = (int)(ssf.PathSetsOffset - padNamesData.StartPos);
+                    var padnamesBytesLength = (int)(nextSectionAddress - padNamesData.StartPos);
 
                     var fillerBlockBytes = padNamesData.Data.SelectMany(x => x).Take((int)padnamesBytesLength).ToArray();
 
@@ -681,6 +696,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectVehicleBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectWeaponBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -1046,13 +1065,13 @@ namespace Getools.Lib.Kaitai
 
         private static ISetupObject Convert(Gen.Setup.SetupObjectTankBody kaitaiObject)
         {
-            var objectDef = new SetupObjectVehicle();
+            var objectDef = new SetupObjectTank();
 
             CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
 
             if (kaitaiObject.Bytes.Length != objectDef.Data.Length)
             {
-                throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectVehicle)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
+                throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectTank)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
             }
 
             Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
@@ -1186,6 +1205,22 @@ namespace Getools.Lib.Kaitai
             CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
 
             objectDef.AmmoType = kaitaiObject.AmmoType;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectVehicleBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectVehicle();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            if (kaitaiObject.Bytes.Length != objectDef.Data.Length)
+            {
+                throw new InvalidOperationException($"Error parsing setup binary file when constructing \"{nameof(SetupObjectVehicle)}\". Parsed data length ({objectDef.Data.Length}) does not match expected value ({kaitaiObject.Bytes.Length})");
+            }
+
+            Array.Copy(kaitaiObject.Bytes, objectDef.Data, kaitaiObject.Bytes.Length);
 
             return objectDef;
         }

@@ -94,6 +94,7 @@ namespace Getools.Lib.Kaitai.Gen
             ObjectiveCopyItem = 34,
             WatchMenuObjectiveText = 35,
             Rename = 37,
+            Vehicle = 39,
             Aircraft = 40,
             Glass = 42,
             Safe = 43,
@@ -246,6 +247,33 @@ namespace Getools.Lib.Kaitai.Gen
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
             public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectVehicleBody : KaitaiStruct
+        {
+            public static SetupObjectVehicleBody FromFile(string fileName)
+            {
+                return new SetupObjectVehicleBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectVehicleBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _objectBase = new SetupGenericObject(m_io, this, m_root);
+                _bytes = m_io.ReadBytes(48);
+            }
+            private SetupGenericObject _objectBase;
+            private byte[] _bytes;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public byte[] Bytes { get { return _bytes; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
@@ -1173,7 +1201,7 @@ namespace Getools.Lib.Kaitai.Gen
             private void _read()
             {
                 _objectBase = new SetupGenericObject(m_io, this, m_root);
-                _bytes = m_io.ReadBytes(136);
+                _bytes = m_io.ReadBytes(96);
             }
             private SetupGenericObject _objectBase;
             private byte[] _bytes;
@@ -1908,6 +1936,11 @@ namespace Getools.Lib.Kaitai.Gen
                     case Setup.Propdef.Tag:
                         {
                             _body = new SetupObjectTagBody(m_io, this, m_root);
+                            break;
+                        }
+                    case Setup.Propdef.Vehicle:
+                        {
+                            _body = new SetupObjectVehicleBody(m_io, this, m_root);
                             break;
                         }
                     case Setup.Propdef.Door:

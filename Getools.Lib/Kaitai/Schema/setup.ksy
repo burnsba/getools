@@ -52,6 +52,7 @@ enums:
     0x22: objective_copy_item
     0x23: watch_menu_objective_text
     0x25: rename
+    0x27: vehicle
     0x28: aircraft
     0x2a: glass
     0x2b: safe
@@ -726,6 +727,13 @@ types:
         type: u4
       - id: unknown_24
         type: u4
+  # type = 0x27
+  setup_object_vehicle_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
+      - id: bytes
+        size: 48
   # type = 0x28
   setup_object_aircraft_body:
     seq:
@@ -760,7 +768,7 @@ types:
       - id: object_base
         type: setup_generic_object
       - id: bytes
-        size: 136
+        size: 96
   # type = 0x2e
   setup_object_cutscene_body:
     seq:
@@ -831,6 +839,7 @@ types:
             'propdef::collect_object': setup_object_collect_object_body
             'propdef::watch_menu_objective_text': setup_object_watch_menu_objective_body
             'propdef::rename': setup_object_rename_body
+            'propdef::vehicle': setup_object_vehicle_body
             'propdef::aircraft': setup_object_aircraft_body
             'propdef::glass': setup_object_glass_body
             'propdef::safe': setup_object_safe_body

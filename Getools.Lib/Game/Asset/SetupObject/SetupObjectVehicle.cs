@@ -10,7 +10,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectVehicle : SetupObjectGenericBase
     {
-        private const int _dataSize = 136;
+        private const int _dataSize = 48;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectVehicle"/> class.
