@@ -660,6 +660,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectiveEnterRoomBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectObjectiveFailConditionBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -1259,6 +1263,17 @@ namespace Getools.Lib.Kaitai
             objectDef.Door = kaitaiObject.Door;
             objectDef.Lock = kaitaiObject.Lock;
             objectDef.Empty = kaitaiObject.Empty;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectiveEnterRoomBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectObjectiveEnterRoom();
+
+            objectDef.Room = kaitaiObject.Room;
+            objectDef.Unknown04 = kaitaiObject.Unknown04;
+            objectDef.Unknown08 = kaitaiObject.Unknown08;
 
             return objectDef;
         }

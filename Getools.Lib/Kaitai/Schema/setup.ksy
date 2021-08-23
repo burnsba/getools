@@ -49,6 +49,7 @@ enums:
     0x1b: objective_fail_condition
     0x1c: collect_object
     0x1e: objective_photograph_item
+    0x20: objective_enter_room
     0x22: objective_copy_item
     0x23: watch_menu_objective_text
     0x25: rename
@@ -690,6 +691,15 @@ types:
         type: u4
       - id: unknown_08
         type: u4
+  # type = 0x20
+  setup_objective_enter_room_body:
+    seq:
+      - id: room
+        type: s4
+      - id: unknown_04
+        type: s4
+      - id: unknown_08
+        type: s4
   # type = 0x22
   setup_objective_copy_item_body:
     seq:
@@ -861,6 +871,7 @@ types:
             'propdef::objective_complete_condition': setup_object_objective_complete_condition_body
             'propdef::objective_fail_condition': setup_object_objective_fail_condition_body
             'propdef::objective_photograph_item': setup_objective_photograph_item_body
+            'propdef::objective_enter_room': setup_objective_enter_room_body
             'propdef::objective_copy_item': setup_objective_copy_item_body
             'propdef::collect_object': setup_object_collect_object_body
             'propdef::watch_menu_objective_text': setup_object_watch_menu_objective_body

@@ -91,6 +91,7 @@ namespace Getools.Lib.Kaitai.Gen
             ObjectiveFailCondition = 27,
             CollectObject = 28,
             ObjectivePhotographItem = 30,
+            ObjectiveEnterRoom = 32,
             ObjectiveCopyItem = 34,
             WatchMenuObjectiveText = 35,
             Rename = 37,
@@ -1052,6 +1053,36 @@ namespace Getools.Lib.Kaitai.Gen
             public int Door { get { return _door; } }
             public int Lock { get { return _lock; } }
             public int Empty { get { return _empty; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectiveEnterRoomBody : KaitaiStruct
+        {
+            public static SetupObjectiveEnterRoomBody FromFile(string fileName)
+            {
+                return new SetupObjectiveEnterRoomBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectiveEnterRoomBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _room = m_io.ReadS4be();
+                _unknown04 = m_io.ReadS4be();
+                _unknown08 = m_io.ReadS4be();
+            }
+            private int _room;
+            private int _unknown04;
+            private int _unknown08;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Room { get { return _room; } }
+            public int Unknown04 { get { return _unknown04; } }
+            public int Unknown08 { get { return _unknown08; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
@@ -2047,6 +2078,11 @@ namespace Getools.Lib.Kaitai.Gen
                     case Setup.Propdef.Weapon:
                         {
                             _body = new SetupObjectWeaponBody(m_io, this, m_root);
+                            break;
+                        }
+                    case Setup.Propdef.ObjectiveEnterRoom:
+                        {
+                            _body = new SetupObjectiveEnterRoomBody(m_io, this, m_root);
                             break;
                         }
                     case Setup.Propdef.SingleMonitor:
