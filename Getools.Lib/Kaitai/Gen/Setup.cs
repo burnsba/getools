@@ -94,6 +94,7 @@ namespace Getools.Lib.Kaitai.Gen
             ObjectiveCopyItem = 34,
             WatchMenuObjectiveText = 35,
             Rename = 37,
+            Lock = 38,
             Vehicle = 39,
             Aircraft = 40,
             Glass = 42,
@@ -101,6 +102,7 @@ namespace Getools.Lib.Kaitai.Gen
             SafeItem = 44,
             Tank = 45,
             Cutscene = 46,
+            GlassTinted = 47,
             EndProps = 48,
         }
 
@@ -1023,6 +1025,36 @@ namespace Getools.Lib.Kaitai.Gen
             public Setup M_Root { get { return m_root; } }
             public KaitaiStruct M_Parent { get { return m_parent; } }
         }
+        public partial class SetupObjectLockBody : KaitaiStruct
+        {
+            public static SetupObjectLockBody FromFile(string fileName)
+            {
+                return new SetupObjectLockBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectLockBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _door = m_io.ReadS4be();
+                _lock = m_io.ReadS4be();
+                _empty = m_io.ReadS4be();
+            }
+            private int _door;
+            private int _lock;
+            private int _empty;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Door { get { return _door; } }
+            public int Lock { get { return _lock; } }
+            public int Empty { get { return _empty; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
         public partial class SetupIntroEndIntroBody : KaitaiStruct
         {
             public static SetupIntroEndIntroBody FromFile(string fileName)
@@ -1347,6 +1379,45 @@ namespace Getools.Lib.Kaitai.Gen
             public uint LatRot { get { return _latRot; } }
             public uint VertRot { get { return _vertRot; } }
             public uint IllumPreset { get { return _illumPreset; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectGlassTintedBody : KaitaiStruct
+        {
+            public static SetupObjectGlassTintedBody FromFile(string fileName)
+            {
+                return new SetupObjectGlassTintedBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectGlassTintedBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _objectBase = new SetupGenericObject(m_io, this, m_root);
+                _unknown04 = m_io.ReadS4be();
+                _unknown08 = m_io.ReadS4be();
+                _unknown0c = m_io.ReadS4be();
+                _unknown10 = m_io.ReadS4be();
+                _unknown14 = m_io.ReadS4be();
+            }
+            private SetupGenericObject _objectBase;
+            private int _unknown04;
+            private int _unknown08;
+            private int _unknown0c;
+            private int _unknown10;
+            private int _unknown14;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public int Unknown04 { get { return _unknown04; } }
+            public int Unknown08 { get { return _unknown08; } }
+            public int Unknown0c { get { return _unknown0c; } }
+            public int Unknown10 { get { return _unknown10; } }
+            public int Unknown14 { get { return _unknown14; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
@@ -1988,6 +2059,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectAmmoMagBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.GlassTinted:
+                        {
+                            _body = new SetupObjectGlassTintedBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.Hat:
                         {
                             _body = new SetupObjectHatBody(m_io, this, m_root);
@@ -2026,6 +2102,11 @@ namespace Getools.Lib.Kaitai.Gen
                     case Setup.Propdef.DestroyObject:
                         {
                             _body = new SetupObjectDestroyObjectBody(m_io, this, m_root);
+                            break;
+                        }
+                    case Setup.Propdef.Lock:
+                        {
+                            _body = new SetupObjectLockBody(m_io, this, m_root);
                             break;
                         }
                     case Setup.Propdef.Cutscene:

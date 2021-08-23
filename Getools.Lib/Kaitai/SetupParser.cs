@@ -112,7 +112,11 @@ namespace Getools.Lib.Kaitai
 
             if (ssf.AiLists.Any())
             {
-                var aidataOffset = ssf.AiLists.First().EntryPointer;
+                var aidataOffset = ssf.AiLists
+                    .Where(x => x.EntryPointer > 0)
+                    .OrderBy(x => x.EntryPointer)
+                    .Select(x => x.EntryPointer)
+                    .First();
 
                 var aidataBlock = fillerBlocks.FirstOrDefault(x => x.StartPos == aidataOffset);
 
@@ -620,6 +624,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectGlassTintedBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectGuardBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -633,6 +641,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectKeyBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectLockBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -1225,6 +1237,32 @@ namespace Getools.Lib.Kaitai
             return objectDef;
         }
 
+        private static ISetupObject Convert(Gen.Setup.SetupObjectGlassTintedBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectGlassTinted();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            objectDef.Unknown04 = kaitaiObject.Unknown04;
+            objectDef.Unknown08 = kaitaiObject.Unknown08;
+            objectDef.Unknown0c = kaitaiObject.Unknown0c;
+            objectDef.Unknown10 = kaitaiObject.Unknown10;
+            objectDef.Unknown14 = kaitaiObject.Unknown14;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectLockBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectLock();
+
+            objectDef.Door = kaitaiObject.Door;
+            objectDef.Lock = kaitaiObject.Lock;
+            objectDef.Empty = kaitaiObject.Empty;
+
+            return objectDef;
+        }
+
         private static void CopyGenericObjectBaseProperties(SetupObjectGenericBase dest, Gen.Setup.SetupGenericObject kaitaiObject)
         {
             dest.ObjectId = kaitaiObject.ObjectId;
@@ -1314,11 +1352,18 @@ namespace Getools.Lib.Kaitai
 
         private static StringPointer Convert(Gen.Setup.StringPointer kaitaiObject)
         {
-            var sp = new StringPointer()
+            var sp = new StringPointer();
+
+            if (kaitaiObject.Offset == 0)
             {
-                Offset = (int)kaitaiObject.Offset,
-                Value = kaitaiObject.Deref,
-            };
+                sp.Offset = 0;
+                sp.Value = null;
+            }
+            else
+            {
+                sp.Offset = (int)kaitaiObject.Offset;
+                sp.Value = kaitaiObject.Deref;
+            }
 
             return sp;
         }

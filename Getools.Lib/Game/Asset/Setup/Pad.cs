@@ -137,7 +137,7 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(", ");
             sb.Append(Look.ToCInlineDeclaration(string.Empty));
             sb.Append(", ");
-            sb.Append(Name.ToCValueOrNull());
+            sb.Append(Name.ToCValueOrNullEmpty());
             sb.Append(", ");
             sb.Append(Unknown);
         }
