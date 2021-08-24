@@ -68,6 +68,7 @@ namespace Getools.Lib.Kaitai.Gen
         {
             Nothing = 0,
             Door = 1,
+            DoorScale = 2,
             Standard = 3,
             Key = 4,
             Alarm = 5,
@@ -2188,6 +2189,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectObjectiveFailConditionBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.DoorScale:
+                        {
+                            _body = new SetupObjectDoorScaleBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.SetGuardAttribute:
                         {
                             _body = new SetupObjectSetGuardAttributeBody(m_io, this, m_root);
@@ -2230,6 +2236,30 @@ namespace Getools.Lib.Kaitai.Gen
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
             public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectDoorScaleBody : KaitaiStruct
+        {
+            public static SetupObjectDoorScaleBody FromFile(string fileName)
+            {
+                return new SetupObjectDoorScaleBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectDoorScaleBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _modifier = m_io.ReadS4be();
+            }
+            private int _modifier;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Modifier { get { return _modifier; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }

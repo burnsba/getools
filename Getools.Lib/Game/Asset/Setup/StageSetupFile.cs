@@ -56,6 +56,13 @@ namespace Getools.Lib.Game.Asset.Setup
         public int PathTablesOffset { get; set; }
 
         /// <summary>
+        /// For multiplayer maps, the <see cref="PathTables"/> will only contain
+        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        /// before that section. Those items are listed here.
+        /// </summary>
+        public List<SetupPathTableEntry> UnreferencedPathTables { get; set; } = new List<SetupPathTableEntry>();
+
+        /// <summary>
         /// Gets or sets the path tables data.
         /// Each entry should contain any necessary "prequel" data that
         /// would be listed before this main entry.
@@ -75,6 +82,13 @@ namespace Getools.Lib.Game.Asset.Setup
         /// declaration is located at.
         /// </summary>
         public int PathLinksOffset { get; set; }
+
+        /// <summary>
+        /// For multiplayer maps, the <see cref="PathLinkEntries"/> will only contain
+        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        /// before that section. Those items are listed here.
+        /// </summary>
+        public List<SetupPathLinkEntry> UnreferencedPathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
 
         /// <summary>
         /// Gets or sets the path link data.
@@ -265,6 +279,22 @@ namespace Getools.Lib.Game.Asset.Setup
             int index;
 
             index = 0;
+            foreach (var entry in UnreferencedPathLinkEntries)
+            {
+                if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
+                {
+                    entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
+                }
+
+                if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
+                {
+                    entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
+                }
+
+                index++;
+            }
+
+            // don't reset index here.
             foreach (var entry in PathLinkEntries)
             {
                 if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
@@ -292,6 +322,17 @@ namespace Getools.Lib.Game.Asset.Setup
             }
 
             index = 0;
+            foreach (var entry in UnreferencedPathTables)
+            {
+                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+                {
+                    entry.Entry.VariableName = $"path_table_not_used_{index}";
+                }
+
+                index++;
+            }
+
+            // don't reset index here.
             foreach (var entry in PathTables)
             {
                 if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
@@ -536,20 +577,47 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin path links
              */
 
+            // declare arrays contained in bin but unreferenced in main table
+            foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Neighbors != null))
+            {
+                sw.Write(entry.Neighbors.ToCDeclaration());
+            }
+
+            if (UnreferencedPathLinkEntries.Where(x => x.Neighbors != null).Any())
+            {
+                sw.WriteLine();
+            }
+
+            foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Indeces != null))
+            {
+                sw.Write(entry.Indeces.ToCDeclaration());
+            }
+
+            if (UnreferencedPathLinkEntries.Where(x => x.Indeces != null).Any())
+            {
+                sw.WriteLine();
+            }
+
             // declare arrays used in path listings
             foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null))
             {
                 sw.Write(entry.Neighbors.ToCDeclaration());
             }
 
-            sw.WriteLine();
+            if (PathLinkEntries.Where(x => x.Neighbors != null).Any())
+            {
+                sw.WriteLine();
+            }
 
             foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null))
             {
                 sw.Write(entry.Indeces.ToCDeclaration());
             }
 
-            sw.WriteLine();
+            if (PathLinkEntries.Where(x => x.Indeces != null).Any())
+            {
+                sw.WriteLine();
+            }
 
             ///// done with data, onto setup struct data
 
@@ -600,13 +668,27 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin path tables
              */
 
+            // declare arrays contained in bin but unreferenced in main table
+            foreach (var entry in UnreferencedPathTables.Where(x => x.Entry != null))
+            {
+                sw.Write(entry.Entry.ToCDeclaration());
+            }
+
+            if (UnreferencedPathTables.Where(x => x.Entry != null).Any())
+            {
+                sw.WriteLine();
+            }
+
             // declare arrays used in path tables
             foreach (var entry in PathTables.Where(x => x.Entry != null))
             {
                 sw.Write(entry.Entry.ToCDeclaration());
             }
 
-            sw.WriteLine();
+            if (PathTables.Where(x => x.Entry != null).Any())
+            {
+                sw.WriteLine();
+            }
 
             ///// done with data, onto setup struct data
 

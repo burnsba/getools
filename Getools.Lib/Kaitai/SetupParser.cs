@@ -110,7 +110,8 @@ namespace Getools.Lib.Kaitai
                 }
             }
 
-            if (ssf.AiLists.Any())
+            // Parse AI List functions
+            if (ssf.AiLists.Where(x => x.EntryPointer > 0).Any())
             {
                 var aidataOffset = ssf.AiLists
                     .Where(x => x.EntryPointer > 0)
@@ -194,7 +195,7 @@ namespace Getools.Lib.Kaitai
             if (ssf.PadNamesOffset == 0)
             {
                 int nextSectionAddress = ssf.PathSetsOffset;
-                if (ssf.PathSets.Any())
+                if (ssf.PathSets.Where(x => x.EntryPointer > 0).Any())
                 {
                     var firstPathSetEntryAddress = ssf.PathSets
                         .Where(x => x.EntryPointer > 0)
@@ -250,13 +251,28 @@ namespace Getools.Lib.Kaitai
             //      path_table filler
             if (ssf.Pad3dNamesOffset == 0)
             {
-                var firstPathTableFiller = ssf.PathTables.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+                int nextSectionAddress = ssf.PathTablesOffset;
+
+                if (ssf.PathTables.Where(x => x.EntryPointer > 0).Any())
+                {
+                    var firstPathTableFillerAddress = ssf.PathTables
+                        .Where(x => x.EntryPointer > 0)
+                        .OrderBy(x => x.EntryPointer)
+                        .Select(x => x.EntryPointer)
+                        .First();
+
+                    if (firstPathTableFillerAddress < nextSectionAddress)
+                    {
+                        nextSectionAddress = (int)firstPathTableFillerAddress;
+                    }
+                }
 
                 // Look for a filler block after path links and before path tables (path tables filler entry)
-                var pad3dNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathLinksOffset && x.StartPos < firstPathTableFiller.EntryPointer);
+                var pad3dNamesData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.PathLinksOffset && x.StartPos < nextSectionAddress);
+
                 if (!object.ReferenceEquals(null, pad3dNamesData))
                 {
-                    var pad3dnamesBytesLength = (int)(firstPathTableFiller.EntryPointer - pad3dNamesData.StartPos);
+                    var pad3dnamesBytesLength = (int)(nextSectionAddress - pad3dNamesData.StartPos);
 
                     var fillerBlockBytes = pad3dNamesData.Data.SelectMany(x => x).Take((int)pad3dnamesBytesLength).ToArray();
 
@@ -284,6 +300,73 @@ namespace Getools.Lib.Kaitai
 
                         fillerBlockIndex += Config.TargetPointerSize;
                     }
+                }
+            }
+
+            // It's possible the path list and path table entries are empty (multiplayer maps).
+            // But it seems there's still a "not-used" entry of sorts included in the bin file.
+            // Check for "not used" struct s_pathLink pathlist[] (s32 path_neighbors... and s32 path_indeces) here.
+            // The path table entries (s32 path_table...) will be checked next.
+            if (!ssf.PathLinkEntries.Any() || ssf.PathLinkEntries.Count <= 1)
+            {
+                // looking for filler section data between Intro section and struct s_pathLink pathlist section.
+                var pathListData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.IntrosOffset && x.StartPos < ssf.PathLinksOffset);
+                if (!object.ReferenceEquals(null, pathListData))
+                {
+                    // Alright, there's a number of theoretical scenarios, but going to keep this practical for now.
+                    // It's known there aren't any ssf.PathLinkEntries (except the NULL entry), so assume
+                    // that the only item here is a { -1 } and { -1 } neighbors and indeces arrays. Throw an exception
+                    // if that's not the case and figure out what to do at that time.
+                    if (pathListData.Len != 8)
+                    {
+                        throw new NotSupportedException($"Error parsing setup. The path list array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there are two [ -1 ] entries, but that assumption is not correct.");
+                    }
+
+                    var bytes = pathListData.Data.SelectMany(x => x).ToArray();
+                    var neighborVal = BitUtility.Read32Big(bytes, 0);
+                    var indecesVal = BitUtility.Read32Big(bytes, 4);
+
+                    var entry = new SetupPathLinkEntry()
+                    {
+                        Neighbors = new PathListing()
+                        {
+                            Ids = new List<int>() { neighborVal },
+                        },
+                        Indeces = new PathListing()
+                        {
+                            Ids = new List<int>() { indecesVal },
+                        },
+                    };
+
+                    ssf.UnreferencedPathLinkEntries.Add(entry);
+                }
+            }
+
+            // Now do the same thing for path table entries (s32 path_table...).
+            if (!ssf.PathTables.Any() || ssf.PathTables.Count <= 1)
+            {
+                // looking for filler section data between pad3dnames section and struct s_pathTbl pathtbl section.
+                var pathTableData = fillerBlocks.FirstOrDefault(x => x.StartPos > ssf.Pad3dNamesOffset && x.StartPos < ssf.PathTablesOffset);
+                if (!object.ReferenceEquals(null, pathTableData))
+                {
+                    // See notes in the other section above.
+                    if (pathTableData.Len != 4)
+                    {
+                        throw new NotSupportedException($"Error parsing setup. The path table array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one [ -1 ] entry, but that assumption is not correct.");
+                    }
+
+                    var bytes = pathTableData.Data.SelectMany(x => x).ToArray();
+                    var pathTableVal = BitUtility.Read32Big(bytes, 0);
+
+                    var entry = new SetupPathTableEntry()
+                    {
+                        Entry = new PathTable()
+                        {
+                            Ids = new List<int>() { pathTableVal },
+                        },
+                    };
+
+                    ssf.UnreferencedPathTables.Add(entry);
                 }
             }
 
@@ -614,6 +697,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectDoorBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectDoorScaleBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -1329,6 +1416,15 @@ namespace Getools.Lib.Kaitai
             var objectDef = new SetupObjectGasProp();
 
             CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectDoorScaleBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectDoorScale();
+
+            objectDef.Modifier = kaitaiObject.Modifier;
 
             return objectDef;
         }

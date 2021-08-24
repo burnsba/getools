@@ -26,6 +26,7 @@ enums:
   propdef:
     0: nothing
     0x01: door
+    0x02: door_scale
     0x03: standard
     0x04: key
     0x05: alarm
@@ -386,6 +387,11 @@ types:
         type: u4
       - id: timer
         type: u4
+  # type = 0x02
+  setup_object_door_scale_body:
+    seq:
+      - id: modifier
+        type: s4
   # type = 0x03
   setup_object_standard_body:
     seq:
@@ -870,6 +876,7 @@ types:
           switch-on: header.type
           cases:
             'propdef::door': setup_object_door_body
+            'propdef::door_scale': setup_object_door_scale_body
             'propdef::standard': setup_object_standard_body
             'propdef::key': setup_object_key_body
             'propdef::alarm': setup_object_alarm_body
