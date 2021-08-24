@@ -37,6 +37,7 @@ enums:
     0x0b: multi_monitor
     0x0c: hanging_monitor
     0x0d: autogun
+    0x0e: link_items
     0x11: hat
     0x12: set_guard_attribute
     0x14: ammo_box
@@ -557,8 +558,13 @@ types:
       - id: bytes
         # size: 104 # original = 104
         size: 88
-      #- id: bytes
-      #  size: 48
+  # type = 0x0e
+  setup_object_link_items_body:
+    seq:
+      - id: offset_1
+        type: s4
+      - id: offset_2
+        type: s4
   # type = 0x11
   setup_object_hat_body:
     seq:
@@ -860,6 +866,7 @@ types:
             'propdef::multi_monitor': setup_object_multi_monitor_body
             'propdef::hanging_monitor': setup_object_hanging_monitor_body
             'propdef::autogun': setup_object_autogun_body
+            'propdef::link_items': setup_object_link_items_body
             'propdef::hat': setup_object_hat_body
             'propdef::set_guard_attribute': setup_object_set_guard_attribute_body
             'propdef::ammo_box': setup_object_ammo_box_body

@@ -38,7 +38,11 @@ namespace Getools.Lib.Game.Enums
         /// AKA Autogun.
         /// </summary>
         Drone = 13,
-        Link = 14,
+
+        /// <summary>
+        /// Link two guns together, which allows them to be dual wielded once both have been collected.
+        /// </summary>
+        LinkItems = 14,
         Unk15 = 15,
         Unk16 = 16,
         Hat = 17,

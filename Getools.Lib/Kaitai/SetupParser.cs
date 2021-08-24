@@ -644,6 +644,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectLinkItemsBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectLockBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -1274,6 +1278,16 @@ namespace Getools.Lib.Kaitai
             objectDef.Room = kaitaiObject.Room;
             objectDef.Unknown04 = kaitaiObject.Unknown04;
             objectDef.Unknown08 = kaitaiObject.Unknown08;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectLinkItemsBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectLinkItems();
+
+            objectDef.Offset1 = kaitaiObject.Offset1;
+            objectDef.Offset2 = kaitaiObject.Offset2;
 
             return objectDef;
         }

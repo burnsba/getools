@@ -79,6 +79,7 @@ namespace Getools.Lib.Kaitai.Gen
             MultiMonitor = 11,
             HangingMonitor = 12,
             Autogun = 13,
+            LinkItems = 14,
             Hat = 17,
             SetGuardAttribute = 18,
             AmmoBox = 20,
@@ -2030,6 +2031,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectAlarmBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.LinkItems:
+                        {
+                            _body = new SetupObjectLinkItemsBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.Standard:
                         {
                             _body = new SetupObjectStandardBody(m_io, this, m_root);
@@ -3250,6 +3256,33 @@ namespace Getools.Lib.Kaitai.Gen
             public Bbox Bbox { get { return _bbox; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.Pad3dList M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectLinkItemsBody : KaitaiStruct
+        {
+            public static SetupObjectLinkItemsBody FromFile(string fileName)
+            {
+                return new SetupObjectLinkItemsBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectLinkItemsBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _offset1 = m_io.ReadS4be();
+                _offset2 = m_io.ReadS4be();
+            }
+            private int _offset1;
+            private int _offset2;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Offset1 { get { return _offset1; } }
+            public int Offset2 { get { return _offset2; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
         public partial class PadList : KaitaiStruct
         {
