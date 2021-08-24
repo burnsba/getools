@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <FileVersion>21.8.22.1</FileVersion>
-    <Version>21.8.22.1</Version>
+    <FileVersion>21.8.23.1</FileVersion>
+    <Version>21.8.23.1</Version>
     <Authors>Ben Burns</Authors>
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
-    <AssemblyVersion>21.8.22.1</AssemblyVersion>
+    <AssemblyVersion>21.8.23.1</AssemblyVersion>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
 

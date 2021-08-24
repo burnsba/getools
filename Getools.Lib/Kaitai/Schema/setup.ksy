@@ -40,6 +40,7 @@ enums:
     0x0e: link_items
     0x11: hat
     0x12: set_guard_attribute
+    0x13: link_props
     0x14: ammo_box
     0x15: body_armor
     0x16: tag
@@ -53,6 +54,7 @@ enums:
     0x20: objective_enter_room
     0x22: objective_copy_item
     0x23: watch_menu_objective_text
+    0x24: gas_prop
     0x25: rename
     0x26: lock
     0x27: vehicle
@@ -577,6 +579,15 @@ types:
         type: u4
       - id: attribute
         type: u4
+  # type = 0x13
+  setup_object_link_props_body:
+    seq:
+      - id: offset_1
+        type: s4
+      - id: offset_2
+        type: s4
+      - id: unknown_08
+        type: s4
   # type = 0x14
   setup_object_ammo_box_body:
     seq:
@@ -724,6 +735,10 @@ types:
         type: u4
       - id: end
         type: u4
+  setup_object_gas_prop_body:
+    seq:
+      - id: object_base
+        type: setup_generic_object
   # type = 0x25
   setup_object_rename_body:
     seq:
@@ -869,6 +884,7 @@ types:
             'propdef::link_items': setup_object_link_items_body
             'propdef::hat': setup_object_hat_body
             'propdef::set_guard_attribute': setup_object_set_guard_attribute_body
+            'propdef::link_props': setup_object_link_props_body
             'propdef::ammo_box': setup_object_ammo_box_body
             'propdef::body_armor': setup_object_body_armor_body
             'propdef::tag': setup_object_tag_body
@@ -882,6 +898,7 @@ types:
             'propdef::objective_copy_item': setup_objective_copy_item_body
             'propdef::collect_object': setup_object_collect_object_body
             'propdef::watch_menu_objective_text': setup_object_watch_menu_objective_body
+            'propdef::gas_prop': setup_object_gas_prop_body
             'propdef::rename': setup_object_rename_body
             'propdef::lock': setup_object_lock_body
             'propdef::vehicle': setup_object_vehicle_body

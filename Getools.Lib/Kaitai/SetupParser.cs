@@ -128,11 +128,22 @@ namespace Getools.Lib.Kaitai
                 var aidataBlockData = aidataBlock.Data.SelectMany(x => x).ToArray();
 
                 int blockIndex = 0;
-                var sortedPointers = ssf.AiLists.Where(x => x.EntryPointer > 0).Select(x => x.EntryPointer).OrderBy(x => x).ToList();
+
+                // Facility has a duplicate ailist entry, so note the .Distinct here.
+                var sortedPointers = ssf.AiLists.Where(x => x.EntryPointer > 0).Select(x => x.EntryPointer).OrderBy(x => x).Distinct().ToList();
                 var numberSortedPointers = sortedPointers.Count;
+
+                var aimap = new Dictionary<int, AiFunction>();
 
                 foreach (var entry in ssf.AiLists.Where(x => x.EntryPointer > 0))
                 {
+                    // if this is a duplicate entry link the existing function and continue.
+                    if (aimap.ContainsKey((int)entry.EntryPointer))
+                    {
+                        entry.Function = aimap[(int)entry.EntryPointer];
+                        continue;
+                    }
+
                     int functionSize = 0;
                     int currentEntrySortedIndex = sortedPointers.IndexOf(entry.EntryPointer);
 
@@ -162,6 +173,8 @@ namespace Getools.Lib.Kaitai
                         Data = new byte[functionSize],
                         Offset = (int)entry.EntryPointer,
                     };
+
+                    aimap.Add((int)entry.EntryPointer, entry.Function);
 
                     Array.Copy(aidataBlockData, blockIndex, entry.Function.Data, 0, functionSize);
                 }
@@ -620,6 +633,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectGasPropBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectGlassBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -645,6 +662,10 @@ namespace Getools.Lib.Kaitai
                     break;
 
                 case Gen.Setup.SetupObjectLinkItemsBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
+                case Gen.Setup.SetupObjectLinkPropsBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
@@ -1288,6 +1309,26 @@ namespace Getools.Lib.Kaitai
 
             objectDef.Offset1 = kaitaiObject.Offset1;
             objectDef.Offset2 = kaitaiObject.Offset2;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectLinkPropsBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectLinkProps();
+
+            objectDef.Offset1 = kaitaiObject.Offset1;
+            objectDef.Offset2 = kaitaiObject.Offset2;
+            objectDef.Unknown08 = kaitaiObject.Unknown08;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectGasPropBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectGasProp();
+
+            CopyGenericObjectBaseProperties(objectDef, kaitaiObject.ObjectBase);
 
             return objectDef;
         }

@@ -47,7 +47,9 @@ namespace Getools.Lib.Game.Enums
         Unk16 = 16,
         Hat = 17,
         SetGuardAttribute = 18,
-        Switch = 19,
+
+        LinkProps = 19,
+
         AmmoBox = 20,
 
         /// <summary>
@@ -68,7 +70,12 @@ namespace Getools.Lib.Game.Enums
         ObjectiveDepositObjectInRoom = 33,
         ObjectiveCopy_Item = 34,
         WatchMenuObjectiveText = 35,
-        GasReleasing = 36,
+
+        /// <summary>
+        /// Releases gas (facility).
+        /// </summary>
+        GasProp = 36,
+
         Rename = 37,
         LockDoor = 38,
         Vehicle = 39,

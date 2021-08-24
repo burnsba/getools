@@ -687,33 +687,45 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin ai lists
              */
 
-            // declare arrays used in ai script data
-            // data needs to be sorted by address the ai script appears
-            foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
+            // scope
             {
-                sw.Write(entry.Function.ToCDeclaration());
-            }
+                // Facility has a duplicate ailist entry (to the function), so check for duplicates
+                // on the ai function data before declaration.
+                var declared = new HashSet<string>();
 
-            sw.WriteLine();
-
-            sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[] = {{");
-
-            // ai variables need to appear in the "natural" order
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                AiLists.OrderBy(x => x.OrderIndex).ToList(),
-                (x, index) =>
+                // declare arrays used in ai script data
+                // data needs to be sorted by address the ai script appears
+                foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
                 {
-                    var s = $"{Config.DefaultIndent}/* index = {index} */";
-                    s += Environment.NewLine;
-                    s += x.ToCInlineDeclaration(Config.DefaultIndent);
-                    return s;
-                });
+                    if (!declared.Contains(entry.Function.VariableName))
+                    {
+                        sw.Write(entry.Function.ToCDeclaration());
+                    }
 
-            sw.WriteLine("};");
+                    declared.Add(entry.Function.VariableName);
+                }
 
-            sw.WriteLine();
-            sw.WriteLine();
+                sw.WriteLine();
+
+                sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[] = {{");
+
+                // ai variables need to appear in the "natural" order
+                Utility.ApplyCommaList(
+                    sw.WriteLine,
+                    AiLists.OrderBy(x => x.OrderIndex).ToList(),
+                    (x, index) =>
+                    {
+                        var s = $"{Config.DefaultIndent}/* index = {index} */";
+                        s += Environment.NewLine;
+                        s += x.ToCInlineDeclaration(Config.DefaultIndent);
+                        return s;
+                    });
+
+                sw.WriteLine("};");
+
+                sw.WriteLine();
+                sw.WriteLine();
+            }
 
             /*
              * End ai lists

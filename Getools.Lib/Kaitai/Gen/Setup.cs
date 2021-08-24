@@ -82,6 +82,7 @@ namespace Getools.Lib.Kaitai.Gen
             LinkItems = 14,
             Hat = 17,
             SetGuardAttribute = 18,
+            LinkProps = 19,
             AmmoBox = 20,
             BodyArmor = 21,
             Tag = 22,
@@ -95,6 +96,7 @@ namespace Getools.Lib.Kaitai.Gen
             ObjectiveEnterRoom = 32,
             ObjectiveCopyItem = 34,
             WatchMenuObjectiveText = 35,
+            GasProp = 36,
             Rename = 37,
             Lock = 38,
             Vehicle = 39,
@@ -2076,6 +2078,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectCctvBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.GasProp:
+                        {
+                            _body = new SetupObjectGasPropBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.AmmoBox:
                         {
                             _body = new SetupObjectAmmoBoxBody(m_io, this, m_root);
@@ -2094,6 +2101,11 @@ namespace Getools.Lib.Kaitai.Gen
                     case Setup.Propdef.SingleMonitor:
                         {
                             _body = new SetupObjectSingleMonitorBody(m_io, this, m_root);
+                            break;
+                        }
+                    case Setup.Propdef.LinkProps:
+                        {
+                            _body = new SetupObjectLinkPropsBody(m_io, this, m_root);
                             break;
                         }
                     case Setup.Propdef.AmmoMag:
@@ -2196,6 +2208,30 @@ namespace Getools.Lib.Kaitai.Gen
             public KaitaiStruct Body { get { return _body; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.ObjectList M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectGasPropBody : KaitaiStruct
+        {
+            public static SetupObjectGasPropBody FromFile(string fileName)
+            {
+                return new SetupObjectGasPropBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectGasPropBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _objectBase = new SetupGenericObject(m_io, this, m_root);
+            }
+            private SetupGenericObject _objectBase;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public SetupGenericObject ObjectBase { get { return _objectBase; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
         public partial class SetupObjectMultiMonitorBody : KaitaiStruct
         {
@@ -2307,6 +2343,36 @@ namespace Getools.Lib.Kaitai.Gen
             public uint Unknown04 { get { return _unknown04; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
+        }
+        public partial class SetupObjectLinkPropsBody : KaitaiStruct
+        {
+            public static SetupObjectLinkPropsBody FromFile(string fileName)
+            {
+                return new SetupObjectLinkPropsBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectLinkPropsBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _offset1 = m_io.ReadS4be();
+                _offset2 = m_io.ReadS4be();
+                _unknown08 = m_io.ReadS4be();
+            }
+            private int _offset1;
+            private int _offset2;
+            private int _unknown08;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int Offset1 { get { return _offset1; } }
+            public int Offset2 { get { return _offset2; } }
+            public int Unknown08 { get { return _unknown08; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
         }
         public partial class PathSetsSection : KaitaiStruct
         {
