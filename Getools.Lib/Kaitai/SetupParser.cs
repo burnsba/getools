@@ -400,12 +400,13 @@ namespace Getools.Lib.Kaitai
                     .OrderByDescending(x => x.StartPos)
                     .FirstOrDefault();
 
-                if (!object.ReferenceEquals(null, pathTableData))
+                if (!object.ReferenceEquals(null, pathTableData)
+                    && (pathTableData.Len - (fillerBlockPathTableCount * Config.TargetWordSize) != 0))
                 {
                     var expectedWords = 1;
 
                     // See notes in the other section above.
-                    if (pathTableData.Len != (expectedWords * Config.TargetWordSize))
+                    if (pathTableData.Len - (fillerBlockPathTableCount * Config.TargetWordSize) != (expectedWords * Config.TargetWordSize))
                     {
                         throw new NotSupportedException($"Error parsing setup. The path table array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one [ -1 ] entry, but that assumption is not correct.");
                     }
@@ -425,7 +426,7 @@ namespace Getools.Lib.Kaitai
                         }
                     }
 
-                    var bytes = pathTableData.Data.SelectMany(x => x).ToArray();
+                    var bytes = pathTableData.Data.SelectMany(x => x).Skip(fillerBlockPathTableCount * Config.TargetWordSize).ToArray();
                     var pathTableVal = BitUtility.Read32Big(bytes, 0);
 
                     var entry = new SetupPathTableEntry()
@@ -454,12 +455,13 @@ break_PathTables:
                     .OrderByDescending(x => x.StartPos)
                     .FirstOrDefault();
 
-                if (!object.ReferenceEquals(null, pathSetsData))
+                if (!object.ReferenceEquals(null, pathSetsData)
+                    && (pathSetsData.Len - (fillerBlockPathSetCount * Config.TargetWordSize) != 0))
                 {
                     var expectedWords = 1;
 
                     // See notes in the other section above.
-                    if (pathSetsData.Len != (expectedWords * Config.TargetWordSize))
+                    if (pathSetsData.Len - (fillerBlockPathSetCount * Config.TargetWordSize) != (expectedWords * Config.TargetWordSize))
                     {
                         throw new NotSupportedException($"Error parsing setup. The path sets array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one [ -1 ] entry, but that assumption is not correct.");
                     }
@@ -479,7 +481,7 @@ break_PathTables:
                         }
                     }
 
-                    var bytes = pathSetsData.Data.SelectMany(x => x).ToArray();
+                    var bytes = pathSetsData.Data.SelectMany(x => x).Skip(fillerBlockPathSetCount * Config.TargetWordSize).ToArray();
                     var pathTableVal = BitUtility.Read32Big(bytes, 0);
 
                     var entry = new SetupPathSetEntry()
