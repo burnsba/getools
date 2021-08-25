@@ -154,6 +154,13 @@ namespace Getools.Lib.Game.Asset.Setup
         public int PathSetsOffset { get; set; }
 
         /// <summary>
+        /// For multiplayer maps, the <see cref="PathSets"/> will only contain
+        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        /// before that section. Those items are listed here.
+        /// </summary>
+        public List<SetupPathSetEntry> UnreferencedPathSets { get; set; } = new List<SetupPathSetEntry>();
+
+        /// <summary>
         /// Gets or sets the path sets data.
         /// Each entry should contain any necessary "prequel" data that
         /// would be listed before this main entry.
@@ -173,6 +180,13 @@ namespace Getools.Lib.Game.Asset.Setup
         /// declaration is located at.
         /// </summary>
         public int AiListOffset { get; set; }
+
+        /// <summary>
+        /// For multiplayer maps, the <see cref="AiLists"/> will only contain
+        /// the default "end of list" entry, but there is still an unreferenced "not used (0x04...)" entry
+        /// before that section. Those items are listed here.
+        /// </summary>
+        public List<SetupAiListEntry> UnreferencedAiLists { get; set; } = new List<SetupAiListEntry>();
 
         /// <summary>
         /// Gets or sets the ai script listings.
@@ -278,6 +292,7 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             int index;
 
+            // start with unreferenced path link entries.
             index = 0;
             foreach (var entry in UnreferencedPathLinkEntries)
             {
@@ -294,7 +309,8 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
-            // don't reset index here.
+            // Now update referenced path link entries.
+            // Don't reset index here.
             foreach (var entry in PathLinkEntries)
             {
                 if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
@@ -310,7 +326,20 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
+            // start with unreferenced path link entries.
             index = 0;
+            foreach (var entry in UnreferencedPathSets)
+            {
+                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+                {
+                    entry.Entry.VariableName = $"path_set_not_used_{index}";
+                }
+
+                index++;
+            }
+
+            // Now update referenced path link entries.
+            // Don't reset index here.
             foreach (var entry in PathSets)
             {
                 if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
@@ -321,6 +350,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
+            // start with unreferenced path table entries.
             index = 0;
             foreach (var entry in UnreferencedPathTables)
             {
@@ -332,7 +362,8 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
-            // don't reset index here.
+            // Now update referenced path table entries.
+            // Don't reset index here.
             foreach (var entry in PathTables)
             {
                 if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
@@ -343,14 +374,41 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
+            // Start with unreferenced AI List entries.
             index = 0;
+            foreach (var entry in UnreferencedAiLists)
+            {
+                entry.OrderIndex = index;
+                index++;
+            }
+
+            // Now update referenced AI List entries.
+            // Don't reset index here.
             foreach (var entry in AiLists)
             {
                 entry.OrderIndex = index;
                 index++;
             }
 
+            // Start with unreferenced AI List entries.
             index = 0;
+            foreach (var entry in UnreferencedAiLists /* unknown order */)
+            {
+                if (!object.ReferenceEquals(null, entry.Function))
+                {
+                    entry.Function.OrderIndex = index;
+
+                    if (string.IsNullOrEmpty(entry.Function.VariableName))
+                    {
+                        entry.Function.VariableName = $"ai_not_used_{entry.Function.OrderIndex}";
+                    }
+
+                    index++;
+                }
+            }
+
+            // Now update referenced AI List entries.
+            // Don't reset index here.
             foreach (var entry in AiLists.OrderBy(x => x.EntryPointer))
             {
                 if (!object.ReferenceEquals(null, entry.Function))
@@ -739,13 +797,27 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin path sets
              */
 
+            // declare arrays contained in bin but unreferenced in main table
+            foreach (var entry in UnreferencedPathSets.Where(x => x.Entry != null))
+            {
+                sw.Write(entry.Entry.ToCDeclaration());
+            }
+
+            if (UnreferencedPathSets.Where(x => x.Entry != null).Any())
+            {
+                sw.WriteLine();
+            }
+
             // declare arrays used in path sets
             foreach (var entry in PathSets.Where(x => x.Entry != null))
             {
                 sw.Write(entry.Entry.ToCDeclaration());
             }
 
-            sw.WriteLine();
+            if (PathSets.Where(x => x.Entry != null).Any())
+            {
+                sw.WriteLine();
+            }
 
             ///// done with data, onto setup struct data
 
@@ -775,8 +847,18 @@ namespace Getools.Lib.Game.Asset.Setup
                 // on the ai function data before declaration.
                 var declared = new HashSet<string>();
 
-                // declare arrays used in ai script data
-                // data needs to be sorted by address the ai script appears
+                // Declare arrays used in ai script data.
+                // Data needs to be sorted by address the ai script appears (for referenced AI functions).
+                foreach (var entry in UnreferencedAiLists.Where(x => x.Function != null))
+                {
+                    if (!declared.Contains(entry.Function.VariableName))
+                    {
+                        sw.Write(entry.Function.ToCDeclaration());
+                    }
+
+                    declared.Add(entry.Function.VariableName);
+                }
+
                 foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
                 {
                     if (!declared.Contains(entry.Function.VariableName))

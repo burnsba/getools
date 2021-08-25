@@ -23,6 +23,11 @@ namespace Getools.Lib.Game
         public const int TargetPointerSize = 4;
 
         /// <summary>
+        /// Size of word in bytes on N64 MIPS hardware.
+        /// </summary>
+        public const int TargetWordSize = 4;
+
+        /// <summary>
         /// C macro name, used to build a 32-bit word from two 16-bit values.
         /// </summary>
         public const string CMacro_WordFromShorts = "_mkword";
