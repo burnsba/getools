@@ -11,6 +11,11 @@ namespace Getools.Lib.Game.Asset.SetupObject
     public abstract class SetupObjectBase : GameObjectHeaderBase, ISetupObject
     {
         /// <summary>
+        /// C file, type name. Should match known struct type.
+        /// </summary>
+        public const string CTypeName = "s32";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectBase"/> class.
         /// </summary>
         /// <param name="type">Type of object.</param>

@@ -14,6 +14,29 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class StageSetupFile
     {
+        private static List<SetupSectionId> _defaultDataOrder = new List<SetupSectionId>()
+        {
+            SetupSectionId.Header,
+            SetupSectionId.SectionPadList,
+            SetupSectionId.SectionPad3dList,
+            SetupSectionId.CreditsData,
+            SetupSectionId.SectionObjects,
+            SetupSectionId.SectionIntro,
+            SetupSectionId.UnreferencedPathLinkPointer,
+            SetupSectionId.UnreferencedPathLinkEntry,
+            SetupSectionId.PathLinkEntries,
+            SetupSectionId.SectionPathLink,
+            SetupSectionId.SectionPad3dNames,
+            SetupSectionId.PathTableEntries,
+            SetupSectionId.SectionPathTable,
+            SetupSectionId.SectionPadNames,
+            SetupSectionId.PathSetEntries,
+            SetupSectionId.SectionPathSets,
+            SetupSectionId.UnreferencedAiFunctions,
+            SetupSectionId.AiFunctionEntries,
+            SetupSectionId.SectionAiList,
+        };
+
         /// <summary>
         /// C file, type name. Should match known struct type.
         /// </summary>
@@ -49,239 +72,367 @@ namespace Getools.Lib.Game.Asset.Setup
                 //DataFormats.BetaBin,
             };
 
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="PathTablesVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int PathTablesOffset { get; set; }
+        private StageSetupFile()
+        { }
+
+        public static StageSetupFile NewEmpty()
+        {
+            return new StageSetupFile();
+        }
+
+        public static StageSetupFile NewDefault()
+        {
+            var ssf = new StageSetupFile();
+
+            ssf.Sections.Add(new DataSectionPadList());
+            ssf.Sections.Add(new DataSectionPad3dList());
+            // credits data
+            ssf.Sections.Add(new DataSectionObjects());
+            ssf.Sections.Add(new DataSectionIntros());
+            // path link null, neighbors, indeces
+            ssf.Sections.Add(new DataSectionPathList());
+            ssf.Sections.Add(new DataSectionPad3dNames());
+            ssf.Sections.Add(new DataSectionPathTable());
+            ssf.Sections.Add(new DataSectionPadNames());
+            ssf.Sections.Add(new DataSectionPathSets());
+            ssf.Sections.Add(new DataSectionAiList());
+
+            return ssf;
+        }
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="PathTablesVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int PathTablesOffset { get; set; }
+
+        ///// <summary>
+        ///// For multiplayer maps, the <see cref="PathTables"/> will only contain
+        ///// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        ///// before that section. Those items are listed here.
+        ///// </summary>
+        //public List<SetupPathTableEntry> UnreferencedPathTables { get; set; } = new List<SetupPathTableEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the path tables data.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<SetupPathTableEntry> PathTables { get; set; } = new List<SetupPathTableEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string PathTablesVariableName { get; set; } = "pathtbl";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="PathListVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int PathLinksOffset { get; set; }
+
+        ///// <summary>
+        ///// For multiplayer maps, the <see cref="PathLinkEntries"/> will only contain
+        ///// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        ///// before that section. Those items are listed here.
+        ///// </summary>
+        //public List<SetupPathLinkEntry> UnreferencedPathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the path link data.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<SetupPathLinkEntry> PathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string PathListVariableName { get; set; } = "pathlist";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="IntroListVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int IntrosOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the intro data.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<IIntro> Intros { get; set; } = new List<IIntro>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string IntroListVariableName { get; set; } = "intro";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="ObjectListVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int ObjectsOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the object prop declaration data.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<ISetupObject> Objects { get; set; } = new List<ISetupObject>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string ObjectListVariableName { get; set; } = "objlist";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="PathSetsVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int PathSetsOffset { get; set; }
+
+        ///// <summary>
+        ///// For multiplayer maps, the <see cref="PathSets"/> will only contain
+        ///// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
+        ///// before that section. Those items are listed here.
+        ///// </summary>
+        //public List<SetupPathSetEntry> UnreferencedPathSets { get; set; } = new List<SetupPathSetEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the path sets data.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<SetupPathSetEntry> PathSets { get; set; } = new List<SetupPathSetEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string PathSetsVariableName { get; set; } = "paths";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="AiListsVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int AiListOffset { get; set; }
+
+        ///// <summary>
+        ///// For multiplayer maps, the <see cref="AiLists"/> will only contain
+        ///// the default "end of list" entry, but there is still an unreferenced "not used (0x04...)" entry
+        ///// before that section. Those items are listed here.
+        ///// </summary>
+        //public List<SetupAiListEntry> UnreferencedAiLists { get; set; } = new List<SetupAiListEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the ai script listings.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<SetupAiListEntry> AiLists { get; set; } = new List<SetupAiListEntry>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string AiListsVariableName { get; set; } = "ailists";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="PadListVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int PadListOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the pad listing.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<Pad> PadList { get; set; } = new List<Pad>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string PadListVariableName { get; set; } = "padlist";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="Pad3dListVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int Pad3dListOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the pad3d listing.
+        ///// Each entry should contain any necessary "prequel" data that
+        ///// would be listed before this main entry.
+        ///// </summary>
+        //public List<Pad3d> Pad3dList { get; set; } = new List<Pad3d>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string Pad3dListVariableName { get; set; } = "pad3dlist";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="PadNamesVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int PadNamesOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the pad names list.
+        ///// </summary>
+        //public List<StringPointer> PadNames { get; set; } = new List<StringPointer>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string PadNamesVariableName { get; set; } = "padnames";
+
+        ///// <summary>
+        ///// Gets or sets the file offset that the main <see cref="Pad3dNamesVariableName"/>
+        ///// declaration is located at.
+        ///// </summary>
+        //public int Pad3dNamesOffset { get; set; }
+
+        ///// <summary>
+        ///// Gets or sets the pad3d names list.
+        ///// </summary>
+        //public List<StringPointer> Pad3dNames { get; set; } = new List<StringPointer>();
+
+        ///// <summary>
+        ///// Gets or sets the variable name for this section.
+        ///// This will be used as a pointer in the main setup struct declaration,
+        ///// then used later in the file for the associated data declaration
+        ///// (the data being pointed to).
+        ///// </summary>
+        //public string Pad3dNamesVariableName { get; set; } = "pad3dnames";
 
         /// <summary>
-        /// For multiplayer maps, the <see cref="PathTables"/> will only contain
-        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
-        /// before that section. Those items are listed here.
+        /// How the data sections and filler sections are organized.
+        /// Should be set when reading a .bin file.
+        /// Otherwise use the "default" order.
         /// </summary>
-        public List<SetupPathTableEntry> UnreferencedPathTables { get; set; } = new List<SetupPathTableEntry>();
+        //internal List<SetupSectionId> DataOrder { get; set; } = _defaultDataOrder;
 
-        /// <summary>
-        /// Gets or sets the path tables data.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<SetupPathTableEntry> PathTables { get; set; } = new List<SetupPathTableEntry>();
+        public List<SetupDataSection> Sections { get; set; } = new List<SetupDataSection>();
 
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string PathTablesVariableName { get; set; } = "pathtbl";
+        public DataSectionAiList SectionAiLists => Sections.OfType<DataSectionAiList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionIntros SectionIntros => Sections.OfType<DataSectionIntros>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionObjects SectionObjects => Sections.OfType<DataSectionObjects>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPad3dList SectionPad3dList => Sections.OfType<DataSectionPad3dList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPad3dNames SectionPad3dNames => Sections.OfType<DataSectionPad3dNames>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPadList SectionPadList => Sections.OfType<DataSectionPadList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPadNames SectionPadNames => Sections.OfType<DataSectionPadNames>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPathList SectionPathList => Sections.OfType<DataSectionPathList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPathSets SectionPathSets => Sections.OfType<DataSectionPathSets>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public DataSectionPathTable SectionPathTables => Sections.OfType<DataSectionPathTable>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="PathListVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int PathLinksOffset { get; set; }
+        public void AddSectionBefore(SetupDataSection section, SetupSectionId type)
+        {
+            if (type == SetupSectionId.DefaultUnknown)
+            {
+                Sections.Insert(0, section);
+            }
+            else
+            {
+                int index = Sections.FindIndex(0, x => x.TypeId == type);
 
-        /// <summary>
-        /// For multiplayer maps, the <see cref="PathLinkEntries"/> will only contain
-        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
-        /// before that section. Those items are listed here.
-        /// </summary>
-        public List<SetupPathLinkEntry> UnreferencedPathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
+                if (index >= 0)
+                {
+                    Sections.Insert(index, section);
+                }
+                else
+                {
+                    throw new KeyNotFoundException($"Could not find section with type={type}");
+                }
+            }
+        }
 
-        /// <summary>
-        /// Gets or sets the path link data.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<SetupPathLinkEntry> PathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
+        public void AddSectionBefore(SetupDataSection section, SetupSectionId type, int offset)
+        {
+            if (type == SetupSectionId.DefaultUnknown)
+            {
+                Sections.Insert(0, section);
+            }
+            else
+            {
+                int index = Sections.FindIndex(0, x => x.TypeId == type && x.Offset == offset);
 
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string PathListVariableName { get; set; } = "pathlist";
+                if (index >= 0)
+                {
+                    Sections.Insert(index, section);
+                }
+                else
+                {
+                    throw new KeyNotFoundException($"Could not find section with type={type} and offset={offset}");
+                }
+            }
+        }
 
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="IntroListVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int IntrosOffset { get; set; }
+        public int PreviousSectionOffset(int offset)
+        {
+            var section = Sections
+                .Where(x =>
+                    x.IsMainSection == true
+                    && x.IsUnreferenced == false
+                    && x.Offset < offset)
+                .OrderByDescending(x => x.Offset)
+                .FirstOrDefault();
 
-        /// <summary>
-        /// Gets or sets the intro data.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<IIntro> Intros { get; set; } = new List<IIntro>();
+            if (object.ReferenceEquals(null, section))
+            {
+                throw new NullReferenceException($"Could not find main section prior to offset={offset}");
+            }
 
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string IntroListVariableName { get; set; } = "intro";
+            return section.Offset;
+        }
 
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="ObjectListVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int ObjectsOffset { get; set; }
+        public int BytesToNextAnySection(int offset, int currentSectionSize)
+        {
+            var nextSection = Sections
+                .Where(x => x.Offset > offset)
+                .OrderBy(x => x.Offset)
+                .FirstOrDefault();
 
-        /// <summary>
-        /// Gets or sets the object prop declaration data.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<ISetupObject> Objects { get; set; } = new List<ISetupObject>();
+            if (object.ReferenceEquals(null, nextSection))
+            {
+                return currentSectionSize;
+            }
 
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string ObjectListVariableName { get; set; } = "objlist";
+            return nextSection.Offset - offset;
+        }
 
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="PathSetsVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int PathSetsOffset { get; set; }
-
-        /// <summary>
-        /// For multiplayer maps, the <see cref="PathSets"/> will only contain
-        /// the default "end of list" entry, but there is still an unreferenced "not used (-1)" entry
-        /// before that section. Those items are listed here.
-        /// </summary>
-        public List<SetupPathSetEntry> UnreferencedPathSets { get; set; } = new List<SetupPathSetEntry>();
-
-        /// <summary>
-        /// Gets or sets the path sets data.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<SetupPathSetEntry> PathSets { get; set; } = new List<SetupPathSetEntry>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string PathSetsVariableName { get; set; } = "paths";
-
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="AiListsVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int AiListOffset { get; set; }
-
-        /// <summary>
-        /// For multiplayer maps, the <see cref="AiLists"/> will only contain
-        /// the default "end of list" entry, but there is still an unreferenced "not used (0x04...)" entry
-        /// before that section. Those items are listed here.
-        /// </summary>
-        public List<SetupAiListEntry> UnreferencedAiLists { get; set; } = new List<SetupAiListEntry>();
-
-        /// <summary>
-        /// Gets or sets the ai script listings.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<SetupAiListEntry> AiLists { get; set; } = new List<SetupAiListEntry>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string AiListsVariableName { get; set; } = "ailists";
-
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="PadListVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int PadListOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the pad listing.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<Pad> PadList { get; set; } = new List<Pad>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string PadListVariableName { get; set; } = "padlist";
-
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="Pad3dListVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int Pad3dListOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the pad3d listing.
-        /// Each entry should contain any necessary "prequel" data that
-        /// would be listed before this main entry.
-        /// </summary>
-        public List<Pad3d> Pad3dList { get; set; } = new List<Pad3d>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string Pad3dListVariableName { get; set; } = "pad3dlist";
-
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="PadNamesVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int PadNamesOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the pad names list.
-        /// </summary>
-        public List<StringPointer> PadNames { get; set; } = new List<StringPointer>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string PadNamesVariableName { get; set; } = "padnames";
-
-        /// <summary>
-        /// Gets or sets the file offset that the main <see cref="Pad3dNamesVariableName"/>
-        /// declaration is located at.
-        /// </summary>
-        public int Pad3dNamesOffset { get; set; }
-
-        /// <summary>
-        /// Gets or sets the pad3d names list.
-        /// </summary>
-        public List<StringPointer> Pad3dNames { get; set; } = new List<StringPointer>();
-
-        /// <summary>
-        /// Gets or sets the variable name for this section.
-        /// This will be used as a pointer in the main setup struct declaration,
-        /// then used later in the file for the associated data declaration
-        /// (the data being pointed to).
-        /// </summary>
-        public string Pad3dNamesVariableName { get; set; } = "pad3dnames";
+        public void SortSectionsByOffset()
+        {
+            Sections = Sections.OrderBy(x => x.Offset).ToList();
+        }
 
         /// <summary>
         /// Iterates over the collection after it has been deserialized
@@ -292,137 +443,289 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             int index;
 
-            // start with unreferenced path link entries.
+            IEnumerable<SetupDataSection> sectionsByType = null;
+            var seen = new HashSet<Guid>();
+
+            // Need to look at similar kinds of sections. Want the unreferenced items to start at index 0,
+            // and then referenced items to continue incrementing the index from there. That means
+            // handling most of this grouping manually. Sections that don't contain unreferenced data (e.g., Intros)
+            // can be handled automatically at the end.
+
+            /* ************************************************************************************************** */
+            /* AI functions */
+            /* ************************************************************************************************** */
+
             index = 0;
-            foreach (var entry in UnreferencedPathLinkEntries)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedAiFunctions);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
-                {
-                    entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
-                {
-                    entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
-                }
-
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // Now update referenced path link entries.
-            // Don't reset index here.
-            foreach (var entry in PathLinkEntries)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.SectionAiList);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
-                {
-                    entry.Neighbors.VariableName = $"path_neighbors_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
-                {
-                    entry.Indeces.VariableName = $"path_indeces_{index}";
-                }
-
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // start with unreferenced path link entries.
+            /* ************************************************************************************************** */
+            /* path link / path list */
+            /* ************************************************************************************************** */
+
             index = 0;
-            foreach (var entry in UnreferencedPathSets)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedPathLinkPointer);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
-                {
-                    entry.Entry.VariableName = $"path_set_not_used_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // Now update referenced path link entries.
-            // Don't reset index here.
-            foreach (var entry in PathSets)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedPathLinkEntry);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
-                {
-                    entry.Entry.VariableName = $"path_set_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // start with unreferenced path table entries.
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.PathLinkEntries);
+            foreach (var section in sectionsByType)
+            {
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
+
+                seen.Add(section.MetaId);
+            }
+
+            /* ************************************************************************************************** */
+            /* path sets */
+            /* ************************************************************************************************** */
+
             index = 0;
-            foreach (var entry in UnreferencedPathTables)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedPathSetEntries);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
-                {
-                    entry.Entry.VariableName = $"path_table_not_used_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // Now update referenced path table entries.
-            // Don't reset index here.
-            foreach (var entry in PathTables)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.SectionPathSets);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
-                {
-                    entry.Entry.VariableName = $"path_table_{index}";
-                }
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                index++;
+                seen.Add(section.MetaId);
             }
 
-            // Start with unreferenced AI List entries.
+            /* ************************************************************************************************** */
+            /* path tables */
+            /* ************************************************************************************************** */
+
             index = 0;
-            foreach (var entry in UnreferencedAiLists)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedPathTableEntries);
+            foreach (var section in sectionsByType)
             {
-                entry.OrderIndex = index;
-                index++;
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
+
+                seen.Add(section.MetaId);
             }
 
-            // Now update referenced AI List entries.
-            // Don't reset index here.
-            foreach (var entry in AiLists)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.SectionPathTable);
+            foreach (var section in sectionsByType)
             {
-                entry.OrderIndex = index;
-                index++;
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
+
+                seen.Add(section.MetaId);
             }
 
-            // Start with unreferenced AI List entries.
+            /* ************************************************************************************************** */
+            /* unreferenced / unknown */
+            /* ************************************************************************************************** */
+
             index = 0;
-            foreach (var entry in UnreferencedAiLists /* unknown order */)
+            sectionsByType = Sections.Where(x => x.TypeId == SetupSectionId.UnreferencedUnknown);
+            foreach (var section in sectionsByType)
             {
-                if (!object.ReferenceEquals(null, entry.Function))
-                {
-                    entry.Function.OrderIndex = index;
+                section.DeserializeFix(index);
+                index += section.GetEntriesCount();
 
-                    if (string.IsNullOrEmpty(entry.Function.VariableName))
-                    {
-                        entry.Function.VariableName = $"ai_not_used_{entry.Function.OrderIndex}";
-                    }
-
-                    index++;
-                }
+                seen.Add(section.MetaId);
             }
 
-            // Now update referenced AI List entries.
-            // Don't reset index here.
-            foreach (var entry in AiLists.OrderBy(x => x.EntryPointer))
+            /* ************************************************************************************************** */
+            /* Everything else */
+            /* ************************************************************************************************** */
+
+            var remainingSections = Sections.Where(x => !seen.Contains(x.MetaId));
+            foreach (var section in remainingSections)
             {
-                if (!object.ReferenceEquals(null, entry.Function))
-                {
-                    entry.Function.OrderIndex = index;
-
-                    if (string.IsNullOrEmpty(entry.Function.VariableName))
-                    {
-                        entry.Function.VariableName = $"ai_{entry.Function.OrderIndex}";
-                    }
-
-                    index++;
-                }
+                section.DeserializeFix();
             }
+
+            //int index;
+
+            //// start with unreferenced path link entries.
+            //index = 0;
+            //foreach (var entry in UnreferencedPathLinkEntries)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
+            //    {
+            //        entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
+            //    }
+
+            //    if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
+            //    {
+            //        entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
+            //    }
+
+            //    if (object.ReferenceEquals(null, entry.Neighbors) && object.ReferenceEquals(null, entry.Indeces) && entry.IsNull)
+            //    {
+            //        entry.VariableName = $"path_not_used_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// Now update referenced path link entries.
+            //// Don't reset index here.
+            //foreach (var entry in PathLinkEntries)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
+            //    {
+            //        entry.Neighbors.VariableName = $"path_neighbors_{index}";
+            //    }
+
+            //    if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
+            //    {
+            //        entry.Indeces.VariableName = $"path_indeces_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// start with unreferenced path link entries.
+            //index = 0;
+            //foreach (var entry in UnreferencedPathSets)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+            //    {
+            //        entry.Entry.VariableName = $"path_set_not_used_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// Now update referenced path link entries.
+            //// Don't reset index here.
+            //foreach (var entry in PathSets)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+            //    {
+            //        entry.Entry.VariableName = $"path_set_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// start with unreferenced path table entries.
+            //index = 0;
+            //foreach (var entry in UnreferencedPathTables)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+            //    {
+            //        entry.Entry.VariableName = $"path_table_not_used_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// Now update referenced path table entries.
+            //// Don't reset index here.
+            //foreach (var entry in PathTables)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+            //    {
+            //        entry.Entry.VariableName = $"path_table_{index}";
+            //    }
+
+            //    index++;
+            //}
+
+            //// Start with unreferenced AI List entries.
+            //index = 0;
+            //foreach (var entry in UnreferencedAiLists)
+            //{
+            //    entry.OrderIndex = index;
+            //    index++;
+            //}
+
+            //// Now update referenced AI List entries.
+            //// Don't reset index here.
+            //foreach (var entry in AiLists)
+            //{
+            //    entry.OrderIndex = index;
+            //    index++;
+            //}
+
+            //// Start with unreferenced AI List entries.
+            //index = 0;
+            //foreach (var entry in UnreferencedAiLists /* unknown order */)
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Function))
+            //    {
+            //        entry.Function.OrderIndex = index;
+
+            //        if (string.IsNullOrEmpty(entry.Function.VariableName))
+            //        {
+            //            entry.Function.VariableName = $"ai_not_used_{entry.Function.OrderIndex}";
+            //        }
+
+            //        index++;
+            //    }
+            //}
+
+            //// Now update referenced AI List entries.
+            //// Don't reset index here.
+            //foreach (var entry in AiLists.OrderBy(x => x.EntryPointer))
+            //{
+            //    if (!object.ReferenceEquals(null, entry.Function))
+            //    {
+            //        entry.Function.OrderIndex = index;
+
+            //        if (string.IsNullOrEmpty(entry.Function.VariableName))
+            //        {
+            //            entry.Function.VariableName = $"ai_{entry.Function.OrderIndex}";
+            //        }
+
+            //        index++;
+            //    }
+            //}
+
+            //// give any credits containers a variable name
+            //index = 0;
+            //foreach (var entry in Intros.OfType<IntroCredits>().Where(x => x.Credits != null))
+            //{
+            //    if (string.IsNullOrEmpty(entry.Credits.VariableName))
+            //    {
+            //        entry.Credits.VariableName = $"credits_data_{index}";
+            //    }
+
+            //    index++;
+            //}
         }
 
         /// <summary>
@@ -456,68 +759,95 @@ namespace Getools.Lib.Game.Asset.Setup
             sw.WriteLine();
 
             sw.WriteLine("// forward declarations");
-            sw.WriteLine($"{Pad.CTypeName} {PadListVariableName}[];");
-            sw.WriteLine($"{Pad3d.CTypeName} {Pad3dListVariableName}[];");
-            sw.WriteLine($"s32 {ObjectListVariableName}[];");
-            sw.WriteLine($"s32 {IntroListVariableName}[];");
-            sw.WriteLine($"{SetupPathLinkEntry.CTypeName} {PathListVariableName}[];");
+            
+            //sw.WriteLine($"{Pad.CTypeName} {PadListVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPadList);
 
-            if (Pad3dNames.Any())
-            {
-                sw.WriteLine($"char *{Pad3dNamesVariableName}[];");
-            }
-            else
-            {
-                sw.WriteLine("/* no pad3dnames */");
-            }
+            //sw.WriteLine($"{Pad3d.CTypeName} {Pad3dListVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPad3dList);
+            
+            //sw.WriteLine($"s32 {ObjectListVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionObjects);
 
-            sw.WriteLine($"{SetupPathTableEntry.CTypeName} {PathTablesVariableName}[];");
+            //sw.WriteLine($"s32 {IntroListVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionIntro);
 
-            if (PadNames.Any())
-            {
-                sw.WriteLine($"char *{PadNamesVariableName}[];");
-            }
-            else
-            {
-                sw.WriteLine("/* no padnames */");
-            }
+            //sw.WriteLine($"{SetupPathLinkEntry.CTypeName} {PathListVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPathLink);
 
-            sw.WriteLine($"{SetupPathSetEntry.CTypeName} {PathSetsVariableName}[];");
-            sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[];");
+            //if (Pad3dNames.Any())
+            //{
+            //    sw.WriteLine($"char *{Pad3dNamesVariableName}[];");
+            //}
+            //else
+            //{
+            //    sw.WriteLine("/* no pad3dnames */");
+            //}
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPad3dNames);
+
+            //sw.WriteLine($"{SetupPathTableEntry.CTypeName} {PathTablesVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPathTable);
+
+            //if (PadNames.Any())
+            //{
+            //    sw.WriteLine($"char *{PadNamesVariableName}[];");
+            //}
+            //else
+            //{
+            //    sw.WriteLine("/* no padnames */");
+            //}
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPadNames);
+
+            //sw.WriteLine($"{SetupPathSetEntry.CTypeName} {PathSetsVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionPathSets);
+
+            //sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[];");
+            WriteForwardDeclaration(sw, SetupSectionId.SectionAiList);
 
             sw.WriteLine();
 
             sw.WriteLine($"{CTypeName} setup = {{");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PathTablesVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PathListVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(IntroListVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(ObjectListVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PathSetsVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(AiListsVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadListVariableName)},");
-            sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dListVariableName)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPathTable)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPathLink)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionIntro)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionObjects)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPathSets)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionAiList)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPadList)},");
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPad3dList)},");
 
-            if (PadNamesOffset > 0 && PadNames.Any())
-            {
-                sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadNamesVariableName)},");
-            }
-            else
-            {
-                sw.WriteLine($"{Config.DefaultIndent}NULL,");
-            }
+            //if (PadNamesOffset > 0 && PadNames.Any())
+            //{
+            //    sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(PadNamesVariableName)},");
+            //}
+            //else
+            //{
+            //    sw.WriteLine($"{Config.DefaultIndent}NULL,");
+            //}
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPadNames)},");
 
-            if (Pad3dNamesOffset > 0 && Pad3dNames.Any())
-            {
-                sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dNamesVariableName)}");
-            }
-            else
-            {
-                sw.WriteLine($"{Config.DefaultIndent}NULL,");
-            }
+            //if (Pad3dNamesOffset > 0 && Pad3dNames.Any())
+            //{
+            //    sw.WriteLine($"{Config.DefaultIndent}{Formatters.Strings.ToCPointerOrNull(Pad3dNamesVariableName)}");
+            //}
+            //else
+            //{
+            //    sw.WriteLine($"{Config.DefaultIndent}NULL,");
+            //}
+            sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPad3dNames)}");
 
             sw.WriteLine("};");
 
             sw.WriteLine();
+
+            foreach (var section in Sections)
+            {
+                section.WritePrequelData(sw);
+                section.WriteSectionData(sw);
+
+                sw.WriteLine();
+                sw.WriteLine();
+            }
 
             /*
              * standard section order:
@@ -538,65 +868,79 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin pad list
              */
 
-            sw.WriteLine($"{Pad.CTypeName} {PadListVariableName}[] = {{");
+            //sw.WriteLine($"{Pad.CTypeName} {PadListVariableName}[] = {{");
 
-            for (int i = 0; i < PadList.Count - 1; i++)
-            {
-                sw.WriteLine(PadList[i].ToCInlineDeclaration(Config.DefaultIndent) + ",");
-            }
+            //for (int i = 0; i < PadList.Count - 1; i++)
+            //{
+            //    sw.WriteLine(PadList[i].ToCInlineDeclaration(Config.DefaultIndent) + ",");
+            //}
 
-            if (PadList.Any())
-            {
-                sw.WriteLine(PadList.Last().ToCInlineDeclaration(Config.DefaultIndent));
-            }
+            //if (PadList.Any())
+            //{
+            //    sw.WriteLine(PadList.Last().ToCInlineDeclaration(Config.DefaultIndent));
+            //}
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
-            /*
-             * End pad list
-             */
+            ///*
+            // * End pad list
+            // */
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /******************************************************************************************
              * Begin pad3d list
              */
 
-            sw.WriteLine($"{Pad3d.CTypeName} {Pad3dListVariableName}[] = {{");
+            //sw.WriteLine($"{Pad3d.CTypeName} {Pad3dListVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                Pad3dList,
-                x => x.ToCInlineDeclaration(Config.DefaultIndent));
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    Pad3dList,
+            //    x => x.ToCInlineDeclaration(Config.DefaultIndent));
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
-            /*
-             * End pad3d list
+            ///*
+            // * End pad3d list
+            // */
+
+            //sw.WriteLine();
+            //sw.WriteLine();
+
+            /******************************************************************************************
+             * Optional data section: credits data block
              */
+            //if (Intros.OfType<IntroCredits>().Where(x => x.Credits != null).Any())
+            //{
+            //    foreach (var entry in Intros.OfType<IntroCredits>().Where(x => x.Credits != null))
+            //    {
+            //        sw.WriteLine(entry.Credits.ToCDeclaration());
+            //    }
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //    sw.WriteLine();
+            //    sw.WriteLine();
+            //}
 
             /******************************************************************************************
              * Begin object list
              */
 
-            sw.WriteLine($"s32 {ObjectListVariableName}[] = {{");
+            //sw.WriteLine($"s32 {ObjectListVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                Objects,
-                (x, index) =>
-                {
-                    var s = $"{Config.DefaultIndent}/* {nameof(ISetupObject.Type)} = {x.Type}; index = {index} */";
-                    s += Environment.NewLine;
-                    s += x.ToCInlineS32Array(Config.DefaultIndent);
-                    return s;
-                });
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    Objects,
+            //    (x, index) =>
+            //    {
+            //        var s = $"{Config.DefaultIndent}/* {nameof(ISetupObject.Type)} = {x.Type}; index = {index} */";
+            //        s += Environment.NewLine;
+            //        s += x.ToCInlineS32Array(Config.DefaultIndent);
+            //        return s;
+            //    });
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
             sw.WriteLine();
             sw.WriteLine();
@@ -609,23 +953,23 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin intro definitions
              */
 
-            sw.WriteLine($"s32 {IntroListVariableName}[] = {{");
+            //sw.WriteLine($"s32 {IntroListVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                Intros,
-                (x, index) =>
-                {
-                    var s = $"{Config.DefaultIndent}/* {nameof(IIntro.Type)} = {x.Type}; index = {index} */";
-                    s += Environment.NewLine;
-                    s += x.ToCInlineS32Array(Config.DefaultIndent);
-                    return s;
-                });
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    Intros,
+            //    (x, index) =>
+            //    {
+            //        var s = $"{Config.DefaultIndent}/* {nameof(IIntro.Type)} = {x.Type}; index = {index} */";
+            //        s += Environment.NewLine;
+            //        s += x.ToCInlineS32Array(Config.DefaultIndent);
+            //        return s;
+            //    });
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /*
              * End intro definitions
@@ -636,60 +980,76 @@ namespace Getools.Lib.Game.Asset.Setup
              */
 
             // declare arrays contained in bin but unreferenced in main table
-            foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Neighbors != null))
-            {
-                sw.Write(entry.Neighbors.ToCDeclaration());
-            }
+            //foreach (var entry in UnreferencedPathLinkEntries.Where(x =>
+            //    object.ReferenceEquals(null, x.Neighbors)
+            //    && object.ReferenceEquals(null, x.Indeces)
+            //    && x.IsNull))
+            //{
+            //    sw.WriteLine(entry.ToCDeclaration());
+            //}
 
-            if (UnreferencedPathLinkEntries.Where(x => x.Neighbors != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (UnreferencedPathLinkEntries.Any(x =>
+            //    object.ReferenceEquals(null, x.Neighbors)
+            //    && object.ReferenceEquals(null, x.Indeces)
+            //    && x.IsNull))
+            //{
+            //    sw.WriteLine();
+            //}
 
-            foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Indeces != null))
-            {
-                sw.Write(entry.Indeces.ToCDeclaration());
-            }
+            //foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Neighbors != null))
+            //{
+            //    sw.Write(entry.Neighbors.ToCDeclaration());
+            //}
 
-            if (UnreferencedPathLinkEntries.Where(x => x.Indeces != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (UnreferencedPathLinkEntries.Where(x => x.Neighbors != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
-            // declare arrays used in path listings
-            foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null))
-            {
-                sw.Write(entry.Neighbors.ToCDeclaration());
-            }
+            //foreach (var entry in UnreferencedPathLinkEntries.Where(x => x.Indeces != null))
+            //{
+            //    sw.Write(entry.Indeces.ToCDeclaration());
+            //}
 
-            if (PathLinkEntries.Where(x => x.Neighbors != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (UnreferencedPathLinkEntries.Where(x => x.Indeces != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
-            foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null))
-            {
-                sw.Write(entry.Indeces.ToCDeclaration());
-            }
+            //// declare arrays used in path listings
+            //foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null))
+            //{
+            //    sw.Write(entry.Neighbors.ToCDeclaration());
+            //}
 
-            if (PathLinkEntries.Where(x => x.Indeces != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (PathLinkEntries.Where(x => x.Neighbors != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
+
+            //foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null))
+            //{
+            //    sw.Write(entry.Indeces.ToCDeclaration());
+            //}
+
+            //if (PathLinkEntries.Where(x => x.Indeces != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
             ///// done with data, onto setup struct data
 
-            sw.WriteLine($"{SetupPathLinkEntry.CTypeName} {PathListVariableName}[] = {{");
+            //sw.WriteLine($"{SetupPathLinkEntry.CTypeName} {PathListVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                PathLinkEntries,
-                x => x.ToCInlineDeclaration(Config.DefaultIndent));
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    PathLinkEntries,
+            //    x => x.ToCInlineDeclaration(Config.DefaultIndent));
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /*
              * End path links
@@ -699,24 +1059,24 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin pad3d names
              */
 
-            if (Pad3dNames.Any())
-            {
-                sw.WriteLine($"char *{Pad3dNamesVariableName}[] = {{");
+            //if (Pad3dNames.Any())
+            //{
+            //    sw.WriteLine($"char *{Pad3dNamesVariableName}[] = {{");
 
-                Utility.AllButLast(
-                    Pad3dNames,
-                    x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
-                    x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
+            //    Utility.AllButLast(
+            //        Pad3dNames,
+            //        x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
+            //        x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
 
-                sw.WriteLine("};");
-            }
-            else
-            {
-                sw.WriteLine("/* no pad3dnames */");
-            }
+            //    sw.WriteLine("};");
+            //}
+            //else
+            //{
+            //    sw.WriteLine("/* no pad3dnames */");
+            //}
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /*
              * End pad3d names
@@ -726,38 +1086,38 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin path tables
              */
 
-            // declare arrays contained in bin but unreferenced in main table
-            foreach (var entry in UnreferencedPathTables.Where(x => x.Entry != null))
-            {
-                sw.Write(entry.Entry.ToCDeclaration());
-            }
+            //// declare arrays contained in bin but unreferenced in main table
+            //foreach (var entry in UnreferencedPathTables.Where(x => x.Entry != null))
+            //{
+            //    sw.Write(entry.Entry.ToCDeclaration());
+            //}
 
-            if (UnreferencedPathTables.Where(x => x.Entry != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (UnreferencedPathTables.Where(x => x.Entry != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
-            // declare arrays used in path tables
-            foreach (var entry in PathTables.Where(x => x.Entry != null))
-            {
-                sw.Write(entry.Entry.ToCDeclaration());
-            }
+            //// declare arrays used in path tables
+            //foreach (var entry in PathTables.Where(x => x.Entry != null))
+            //{
+            //    sw.Write(entry.Entry.ToCDeclaration());
+            //}
 
-            if (PathTables.Where(x => x.Entry != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (PathTables.Where(x => x.Entry != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
-            ///// done with data, onto setup struct data
+            /////// done with data, onto setup struct data
 
-            sw.WriteLine($"{SetupPathTableEntry.CTypeName} {PathTablesVariableName}[] = {{");
+            //sw.WriteLine($"{SetupPathTableEntry.CTypeName} {PathTablesVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                PathTables,
-                x => x.ToCInlineDeclaration(Config.DefaultIndent));
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    PathTables,
+            //    x => x.ToCInlineDeclaration(Config.DefaultIndent));
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
             sw.WriteLine();
             sw.WriteLine();
@@ -770,24 +1130,24 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin pad names
              */
 
-            if (PadNames.Any())
-            {
-                sw.WriteLine($"char *{PadNamesVariableName}[] = {{");
+            //if (PadNames.Any())
+            //{
+            //    sw.WriteLine($"char *{PadNamesVariableName}[] = {{");
 
-                Utility.AllButLast(
-                    PadNames,
-                    x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
-                    x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
+            //    Utility.AllButLast(
+            //        PadNames,
+            //        x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
+            //        x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
 
-                sw.WriteLine("};");
-            }
-            else
-            {
-                sw.WriteLine("/* no padnames */");
-            }
+            //    sw.WriteLine("};");
+            //}
+            //else
+            //{
+            //    sw.WriteLine("/* no padnames */");
+            //}
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /*
              * End pad names
@@ -797,41 +1157,41 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin path sets
              */
 
-            // declare arrays contained in bin but unreferenced in main table
-            foreach (var entry in UnreferencedPathSets.Where(x => x.Entry != null))
-            {
-                sw.Write(entry.Entry.ToCDeclaration());
-            }
+            //// declare arrays contained in bin but unreferenced in main table
+            //foreach (var entry in UnreferencedPathSets.Where(x => x.Entry != null))
+            //{
+            //    sw.Write(entry.Entry.ToCDeclaration());
+            //}
 
-            if (UnreferencedPathSets.Where(x => x.Entry != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (UnreferencedPathSets.Where(x => x.Entry != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
-            // declare arrays used in path sets
-            foreach (var entry in PathSets.Where(x => x.Entry != null))
-            {
-                sw.Write(entry.Entry.ToCDeclaration());
-            }
+            //// declare arrays used in path sets
+            //foreach (var entry in PathSets.Where(x => x.Entry != null))
+            //{
+            //    sw.Write(entry.Entry.ToCDeclaration());
+            //}
 
-            if (PathSets.Where(x => x.Entry != null).Any())
-            {
-                sw.WriteLine();
-            }
+            //if (PathSets.Where(x => x.Entry != null).Any())
+            //{
+            //    sw.WriteLine();
+            //}
 
             ///// done with data, onto setup struct data
 
-            sw.WriteLine($"{SetupPathSetEntry.CTypeName} {PathSetsVariableName}[] = {{");
+            //sw.WriteLine($"{SetupPathSetEntry.CTypeName} {PathSetsVariableName}[] = {{");
 
-            Utility.ApplyCommaList(
-                sw.WriteLine,
-                PathSets,
-                x => x.ToCInlineDeclaration(Config.DefaultIndent));
+            //Utility.ApplyCommaList(
+            //    sw.WriteLine,
+            //    PathSets,
+            //    x => x.ToCInlineDeclaration(Config.DefaultIndent));
 
-            sw.WriteLine("};");
+            //sw.WriteLine("};");
 
-            sw.WriteLine();
-            sw.WriteLine();
+            //sw.WriteLine();
+            //sw.WriteLine();
 
             /*
              * End path sets
@@ -841,59 +1201,84 @@ namespace Getools.Lib.Game.Asset.Setup
              * Begin ai lists
              */
 
-            // scope
-            {
-                // Facility has a duplicate ailist entry (to the function), so check for duplicates
-                // on the ai function data before declaration.
-                var declared = new HashSet<string>();
+            //// scope
+            //{
+            //    // Facility has a duplicate ailist entry (to the function), so check for duplicates
+            //    // on the ai function data before declaration.
+            //    var declared = new HashSet<string>();
 
-                // Declare arrays used in ai script data.
-                // Data needs to be sorted by address the ai script appears (for referenced AI functions).
-                foreach (var entry in UnreferencedAiLists.Where(x => x.Function != null))
-                {
-                    if (!declared.Contains(entry.Function.VariableName))
-                    {
-                        sw.Write(entry.Function.ToCDeclaration());
-                    }
+            //    // Declare arrays used in ai script data.
+            //    // Data needs to be sorted by address the ai script appears (for referenced AI functions).
+            //    foreach (var entry in UnreferencedAiLists.Where(x => x.Function != null))
+            //    {
+            //        if (!declared.Contains(entry.Function.VariableName))
+            //        {
+            //            sw.Write(entry.Function.ToCDeclaration());
+            //        }
 
-                    declared.Add(entry.Function.VariableName);
-                }
+            //        declared.Add(entry.Function.VariableName);
+            //    }
 
-                foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
-                {
-                    if (!declared.Contains(entry.Function.VariableName))
-                    {
-                        sw.Write(entry.Function.ToCDeclaration());
-                    }
+            //    foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
+            //    {
+            //        if (!declared.Contains(entry.Function.VariableName))
+            //        {
+            //            sw.Write(entry.Function.ToCDeclaration());
+            //        }
 
-                    declared.Add(entry.Function.VariableName);
-                }
+            //        declared.Add(entry.Function.VariableName);
+            //    }
 
-                sw.WriteLine();
+            //    sw.WriteLine();
 
-                sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[] = {{");
+            //    sw.WriteLine($"{SetupAiListEntry.CTypeName} {AiListsVariableName}[] = {{");
 
-                // ai variables need to appear in the "natural" order
-                Utility.ApplyCommaList(
-                    sw.WriteLine,
-                    AiLists.OrderBy(x => x.OrderIndex).ToList(),
-                    (x, index) =>
-                    {
-                        var s = $"{Config.DefaultIndent}/* index = {index} */";
-                        s += Environment.NewLine;
-                        s += x.ToCInlineDeclaration(Config.DefaultIndent);
-                        return s;
-                    });
+            //    // ai variables need to appear in the "natural" order
+            //    Utility.ApplyCommaList(
+            //        sw.WriteLine,
+            //        AiLists.OrderBy(x => x.OrderIndex).ToList(),
+            //        (x, index) =>
+            //        {
+            //            var s = $"{Config.DefaultIndent}/* index = {index} */";
+            //            s += Environment.NewLine;
+            //            s += x.ToCInlineDeclaration(Config.DefaultIndent);
+            //            return s;
+            //        });
 
-                sw.WriteLine("};");
+            //    sw.WriteLine("};");
 
-                sw.WriteLine();
-                sw.WriteLine();
-            }
+            //    sw.WriteLine();
+            //    sw.WriteLine();
+            //}
 
             /*
              * End ai lists
              */
+        }
+
+        private void WriteForwardDeclaration(StreamWriter sw, SetupSectionId typeId, string prefix = "")
+        {
+            var section = Sections.Where(x => x.IsMainSection && x.TypeId == typeId && x.IsUnreferenced == false).FirstOrDefault();
+
+            if (object.ReferenceEquals(null, section))
+            {
+                return;
+            }
+
+            sw.WriteLine($"{prefix}{section.GetDeclarationTypeName()};");
+        }
+
+        private string GetSectionPointer(SetupSectionId typeId)
+        {
+            var section = Sections.Where(x => x.IsMainSection && x.TypeId == typeId && x.IsUnreferenced == false).FirstOrDefault();
+
+            if (object.ReferenceEquals(null, section))
+            {
+                // return default null pointer text
+                return Formatters.Strings.ToCPointerOrNull(null);
+            }
+
+            return Formatters.Strings.ToCPointerOrNull(section.VariableName);
         }
     }
 }

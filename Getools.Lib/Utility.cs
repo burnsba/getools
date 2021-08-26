@@ -100,5 +100,33 @@ namespace Getools.Lib
                 lastAction(collection[collection.Count - 1]);
             }
         }
+
+        /// <summary>
+        /// Iterates a collection of objects. Each item except for the last is
+        /// sent through <paramref name="allButLastAction"/>. The very last item in
+        /// the collection is sent to <paramref name="lastAction"/> (or if there
+        /// is only one item).
+        /// Action.
+        /// </summary>
+        /// <typeparam name="T">Type of collection to iterate.</typeparam>
+        /// <param name="collection">Collection to iterate.</param>
+        /// <param name="allButLastAction">Accepts a collection item (all except the last item) and 
+        /// and iteration index does something with it. If there is only one item in the collection this
+        /// action is not used.</param>
+        /// <param name="lastAction">Accepts the last collection item and 
+        /// iteration index and does something with it.</param>
+        public static void AllButLast<T>(List<T> collection, Action<T, int> allButLastAction, Action<T, int> lastAction)
+        {
+            int index = 0;
+            for (int i = 0; i < collection.Count - 1; i++, index++)
+            {
+                allButLastAction(collection[i], index);
+            }
+
+            if (collection.Count > 0)
+            {
+                lastAction(collection[collection.Count - 1], index);
+            }
+        }
     }
 }

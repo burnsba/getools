@@ -124,6 +124,14 @@ namespace Getools.Lib.Kaitai.Gen
             Credits = 8,
             EndIntro = 9,
         }
+
+        public enum IntroCreditsAlignment
+        {
+            Right = 0,
+            Left = 1,
+            Center = 2,
+            Previous = 65535,
+        }
         public Setup(KaitaiStream p__io, KaitaiStruct p__parent = null, Setup p__root = null) : base(p__io)
         {
             m_parent = p__parent;
@@ -520,6 +528,45 @@ namespace Getools.Lib.Kaitai.Gen
             public float Zmax { get { return _zmax; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.Pad3d M_Parent { get { return m_parent; } }
+        }
+        public partial class IntroCreditEntry : KaitaiStruct
+        {
+            public static IntroCreditEntry FromFile(string fileName)
+            {
+                return new IntroCreditEntry(new KaitaiStream(fileName));
+            }
+
+            public IntroCreditEntry(KaitaiStream p__io, Setup.SetupIntroCreditsBody p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _textId1 = m_io.ReadU2be();
+                _textId2 = m_io.ReadU2be();
+                _textPosition1 = m_io.ReadS2be();
+                _textAlignment1 = ((Setup.IntroCreditsAlignment)m_io.ReadU2be());
+                _textPosition2 = m_io.ReadS2be();
+                _textAlignment2 = ((Setup.IntroCreditsAlignment)m_io.ReadU2be());
+            }
+            private ushort _textId1;
+            private ushort _textId2;
+            private short _textPosition1;
+            private IntroCreditsAlignment _textAlignment1;
+            private short _textPosition2;
+            private IntroCreditsAlignment _textAlignment2;
+            private Setup m_root;
+            private Setup.SetupIntroCreditsBody m_parent;
+            public ushort TextId1 { get { return _textId1; } }
+            public ushort TextId2 { get { return _textId2; } }
+            public short TextPosition1 { get { return _textPosition1; } }
+            public IntroCreditsAlignment TextAlignment1 { get { return _textAlignment1; } }
+            public short TextPosition2 { get { return _textPosition2; } }
+            public IntroCreditsAlignment TextAlignment2 { get { return _textAlignment2; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupIntroCreditsBody M_Parent { get { return m_parent; } }
         }
         public partial class SetupObjectivePhotographItemBody : KaitaiStruct
         {
@@ -1638,6 +1685,7 @@ namespace Getools.Lib.Kaitai.Gen
                 m_root = p__root;
                 _startPos = p_startPos;
                 f_len = false;
+                f_csharpFillerType = false;
                 _read();
             }
             private void _read()
@@ -1667,6 +1715,19 @@ namespace Getools.Lib.Kaitai.Gen
                     return _len;
                 }
             }
+            private bool f_csharpFillerType;
+            private sbyte _csharpFillerType;
+            public sbyte CsharpFillerType
+            {
+                get
+                {
+                    if (f_csharpFillerType)
+                        return _csharpFillerType;
+                    _csharpFillerType = (sbyte)(0);
+                    f_csharpFillerType = true;
+                    return _csharpFillerType;
+                }
+            }
             private List<byte[]> _data;
             private uint _startPos;
             private Setup m_root;
@@ -1675,6 +1736,32 @@ namespace Getools.Lib.Kaitai.Gen
             public uint StartPos { get { return _startPos; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SectionBlock M_Parent { get { return m_parent; } }
+        }
+        public partial class IntroNotSupported : KaitaiStruct
+        {
+            public IntroNotSupported(Introdef p_type, KaitaiStream p__io, Setup.SetupIntroRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _type = p_type;
+                _read();
+            }
+            private void _read()
+            {
+                _pos = m_io.ReadU4be();
+                if (!(Pos == M_Io.Pos))
+                {
+                    throw new ValidationNotEqualError(M_Io.Pos, Pos, M_Io, "/types/intro_not_supported/seq/0");
+                }
+            }
+            private uint _pos;
+            private Introdef _type;
+            private Setup m_root;
+            private Setup.SetupIntroRecord m_parent;
+            public uint Pos { get { return _pos; } }
+            public Introdef Type { get { return _type; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
         }
         public partial class ObjectHeaderData : KaitaiStruct
         {
@@ -1774,6 +1861,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupIntroSpawnBody(m_io, this, m_root);
                             break;
                         }
+                    default:
+                        {
+                            _body = new IntroNotSupported(Header.Type, m_io, this, m_root);
+                            break;
+                        }
                 }
             }
             private SetupIntroHeaderData _header;
@@ -1826,16 +1918,44 @@ namespace Getools.Lib.Kaitai.Gen
             {
                 m_parent = p__parent;
                 m_root = p__root;
+                f_creditData = false;
                 _read();
             }
             private void _read()
             {
-                _noValue = m_io.ReadBytes(0);
+                _dataOffset = m_io.ReadS4be();
             }
-            private byte[] _noValue;
+            private bool f_creditData;
+            private List<IntroCreditEntry> _creditData;
+            public List<IntroCreditEntry> CreditData
+            {
+                get
+                {
+                    if (f_creditData)
+                        return _creditData;
+                    KaitaiStream io = M_Root.M_Io;
+                    long _pos = io.Pos;
+                    io.Seek(DataOffset);
+                    _creditData = new List<IntroCreditEntry>();
+                    {
+                        var i = 0;
+                        IntroCreditEntry M_;
+                        do
+                        {
+                            M_ = new IntroCreditEntry(io, this, m_root);
+                            _creditData.Add(M_);
+                            i++;
+                        } while (!(((M_.TextId1 == 0) && (M_.TextId2 == 0))));
+                    }
+                    io.Seek(_pos);
+                    f_creditData = true;
+                    return _creditData;
+                }
+            }
+            private int _dataOffset;
             private Setup m_root;
             private Setup.SetupIntroRecord m_parent;
-            public byte[] NoValue { get { return _noValue; } }
+            public int DataOffset { get { return _dataOffset; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupIntroRecord M_Parent { get { return m_parent; } }
         }
@@ -2775,17 +2895,17 @@ namespace Getools.Lib.Kaitai.Gen
             }
             private void _read()
             {
-                _pos = m_io.ReadU4be();
-                if (!(Pos == M_Io.Pos))
+                _end = ((Setup.Propdef)m_io.ReadU1());
+                if (!(End == Type))
                 {
-                    throw new ValidationNotEqualError(M_Io.Pos, Pos, M_Io, "/types/not_supported/seq/0");
+                    throw new ValidationNotEqualError(Type, End, M_Io, "/types/not_supported/seq/0");
                 }
             }
-            private uint _pos;
+            private Propdef _end;
             private Propdef _type;
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
-            public uint Pos { get { return _pos; } }
+            public Propdef End { get { return _end; } }
             public Propdef Type { get { return _type; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }

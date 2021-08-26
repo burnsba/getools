@@ -50,6 +50,39 @@ namespace Getools.Lib.Game.Asset.Setup
         public PathListing Indeces { get; set; }
 
         /// <summary>
+        /// Some setups have a single NULL entry before the path link section,
+        /// instead of two "not used" arrays. Mark this as a NULL
+        /// entry with this property.
+        /// </summary>
+        public bool IsNull { get; set; }
+
+        /// <summary>
+        /// Gets or sets the variable name used in source file.
+        /// </summary>
+        public string VariableName { get; set; }
+
+        /// <summary>
+        /// Builds a string to describe the current object
+        /// as a complete declaraction in c, using normal structs. Includes type, variable
+        /// name and trailing semi-colon.
+        /// </summary>
+        /// <param name="prefix">Prefix or indentation.</param>
+        /// <returns>String of object.</returns>
+        public string ToCDeclaration(string prefix = "")
+        {
+            if (!(object.ReferenceEquals(null, Indeces) && object.ReferenceEquals(null, Neighbors) && IsNull))
+            {
+                throw new NotImplementedException($"{nameof(SetupPathLinkEntry)} {nameof(ToCDeclaration)} not implemented for non-null variable");
+            }
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}{CTypeName} {VariableName} = NULL;");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Builds a string to describe the current object
         /// as a complete declaraction in c, using normal structs.
         /// Does not include type, variable name, or trailing semi-colon.

@@ -10,6 +10,11 @@ namespace Getools.Lib.Game.Asset.Intro
     public abstract class IntroBase : GameObjectHeaderBase, IIntro
     {
         /// <summary>
+        /// C file, type name. Should match known struct type.
+        /// </summary>
+        public const string CTypeName = "s32";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IntroBase"/> class.
         /// </summary>
         public IntroBase()

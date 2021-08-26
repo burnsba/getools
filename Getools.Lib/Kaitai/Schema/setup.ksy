@@ -78,6 +78,11 @@ enums:
     0x7: watch_time
     0x8: credits
     0x9: end_intro
+  intro_credits_alignment:
+    0x0: right
+    0x1: left
+    0x2: center
+    0xffff: previous
 types:
   ff_list_item:
     seq:
@@ -858,15 +863,15 @@ types:
         type: u1
         enum: propdef
     seq:
-      #- id: end
-      #  type: u1
-      #  enum: propdef
-      #  valid:
-      #    eq: type
-      - id: pos
-        type: u4
+      - id: end
+        type: u1
+        enum: propdef
         valid:
-          eq: _io.pos
+          eq: type
+      #- id: pos
+      #  type: u4
+      #  valid:
+      #    eq: _io.pos
   setup_object_record:
     seq:
       - id: header
@@ -927,6 +932,22 @@ types:
       - id: type
         type: u1
         enum: introdef
+  intro_credit_entry:
+    seq:
+      - id: text_id_1
+        type: u2
+      - id: text_id_2
+        type: u2
+      - id: text_position_1
+        type: s2
+      - id: text_alignment_1
+        type: u2
+        enum: intro_credits_alignment
+      - id: text_position_2
+        type: s2
+      - id: text_alignment_2
+        type: u2
+        enum: intro_credits_alignment
   # type = 0x0
   setup_intro_spawn_body:
     seq:
@@ -1010,13 +1031,35 @@ types:
   # type = 0x8
   setup_intro_credits_body:
     seq:
-      - id: no_value
-        size: 0
+      - id: data_offset
+        type: s4
+    instances:
+      credit_data:
+        type: intro_credit_entry
+        io: _root._io
+        pos: data_offset
+        repeat: until
+        repeat-until: _.text_id_1 == 0 and _.text_id_2 == 0
   # type = 0x9
   setup_intro_end_intro_body:
     seq:
       - id: no_value
         size: 0
+  intro_not_supported:
+    params:
+      - id: type
+        type: u1
+        enum: introdef
+    seq:
+      #- id: end
+      #  type: u1
+      #  enum: introdef
+      #  valid:
+      #    eq: type
+      - id: pos
+        type: u4
+        valid:
+          eq: _io.pos
   setup_intro_record:
     seq:
       - id: header
@@ -1035,6 +1078,7 @@ types:
             'introdef::watch_time': setup_intro_watch_time_body
             'introdef::credits': setup_intro_credits_body
             'introdef::end_intro': setup_intro_end_intro_body
+            _ : intro_not_supported(header.type)
   pad_list:
     seq:
       - id: data
@@ -1148,6 +1192,8 @@ types:
     instances:
       len:
         value: data.size
+      csharp_filler_type:
+        value: 0
   section_block:
     seq:
       - id: body
