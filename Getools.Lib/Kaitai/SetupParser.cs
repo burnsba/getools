@@ -742,6 +742,10 @@ namespace Getools.Lib.Kaitai
                     objectDef = Convert(kaitaiObjectDef);
                     break;
 
+                case Gen.Setup.SetupObjectiveThrowInRoomBody kaitaiObjectDef:
+                    objectDef = Convert(kaitaiObjectDef);
+                    break;
+
                 case Gen.Setup.SetupObjectRenameBody kaitaiObjectDef:
                     objectDef = Convert(kaitaiObjectDef);
                     break;
@@ -1032,6 +1036,18 @@ namespace Getools.Lib.Kaitai
             objectDef.ObjectiveNumber = (int)kaitaiObject.ObjectiveNumber;
             objectDef.TextId = (int)kaitaiObject.TextId;
             objectDef.MinDifficulty = (int)kaitaiObject.MinDifficulty;
+
+            return objectDef;
+        }
+
+        private static ISetupObject Convert(Gen.Setup.SetupObjectiveThrowInRoomBody kaitaiObject)
+        {
+            var objectDef = new SetupObjectObjectiveThrowInRoom();
+
+            objectDef.WeaponSlotIndex = (int)kaitaiObject.WeaponSlotIndex;
+            objectDef.Preset = (int)kaitaiObject.Preset;
+            objectDef.Unknown08 = (int)kaitaiObject.Unknown08;
+            objectDef.Unknown0c = (int)kaitaiObject.Unknown0c;
 
             return objectDef;
         }

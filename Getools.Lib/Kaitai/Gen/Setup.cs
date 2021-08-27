@@ -95,6 +95,7 @@ namespace Getools.Lib.Kaitai.Gen
             CollectObject = 28,
             ObjectivePhotographItem = 30,
             ObjectiveEnterRoom = 32,
+            ObjectiveThrowInRoom = 33,
             ObjectiveCopyItem = 34,
             WatchMenuObjectiveText = 35,
             GasProp = 36,
@@ -2309,6 +2310,11 @@ namespace Getools.Lib.Kaitai.Gen
                             _body = new SetupObjectObjectiveFailConditionBody(m_io, this, m_root);
                             break;
                         }
+                    case Setup.Propdef.ObjectiveThrowInRoom:
+                        {
+                            _body = new SetupObjectiveThrowInRoomBody(m_io, this, m_root);
+                            break;
+                        }
                     case Setup.Propdef.DoorScale:
                         {
                             _body = new SetupObjectDoorScaleBody(m_io, this, m_root);
@@ -2698,6 +2704,39 @@ namespace Getools.Lib.Kaitai.Gen
             public Setup M_Root { get { return m_root; } }
             public Setup.SectionBlock M_Parent { get { return m_parent; } }
         }
+        public partial class SetupObjectiveThrowInRoomBody : KaitaiStruct
+        {
+            public static SetupObjectiveThrowInRoomBody FromFile(string fileName)
+            {
+                return new SetupObjectiveThrowInRoomBody(new KaitaiStream(fileName));
+            }
+
+            public SetupObjectiveThrowInRoomBody(KaitaiStream p__io, Setup.SetupObjectRecord p__parent = null, Setup p__root = null) : base(p__io)
+            {
+                m_parent = p__parent;
+                m_root = p__root;
+                _read();
+            }
+            private void _read()
+            {
+                _weaponSlotIndex = m_io.ReadS4be();
+                _preset = m_io.ReadS4be();
+                _unknown08 = m_io.ReadS4be();
+                _unknown0c = m_io.ReadS4be();
+            }
+            private int _weaponSlotIndex;
+            private int _preset;
+            private int _unknown08;
+            private int _unknown0c;
+            private Setup m_root;
+            private Setup.SetupObjectRecord m_parent;
+            public int WeaponSlotIndex { get { return _weaponSlotIndex; } }
+            public int Preset { get { return _preset; } }
+            public int Unknown08 { get { return _unknown08; } }
+            public int Unknown0c { get { return _unknown0c; } }
+            public Setup M_Root { get { return m_root; } }
+            public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }
+        }
         public partial class SetupIntroStartWeaponBody : KaitaiStruct
         {
             public static SetupIntroStartWeaponBody FromFile(string fileName)
@@ -2895,17 +2934,17 @@ namespace Getools.Lib.Kaitai.Gen
             }
             private void _read()
             {
-                _end = ((Setup.Propdef)m_io.ReadU1());
-                if (!(End == Type))
+                _pos = m_io.ReadU4be();
+                if (!(Pos == M_Io.Pos))
                 {
-                    throw new ValidationNotEqualError(Type, End, M_Io, "/types/not_supported/seq/0");
+                    throw new ValidationNotEqualError(M_Io.Pos, Pos, M_Io, "/types/not_supported/seq/0");
                 }
             }
-            private Propdef _end;
+            private uint _pos;
             private Propdef _type;
             private Setup m_root;
             private Setup.SetupObjectRecord m_parent;
-            public Propdef End { get { return _end; } }
+            public uint Pos { get { return _pos; } }
             public Propdef Type { get { return _type; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.SetupObjectRecord M_Parent { get { return m_parent; } }

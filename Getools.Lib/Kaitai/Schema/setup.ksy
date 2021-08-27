@@ -53,6 +53,7 @@ enums:
     0x1c: collect_object
     0x1e: objective_photograph_item
     0x20: objective_enter_room
+    0x21: objective_throw_in_room
     0x22: objective_copy_item
     0x23: watch_menu_objective_text
     0x24: gas_prop
@@ -728,6 +729,17 @@ types:
         type: s4
       - id: unknown_08
         type: s4
+  # type = 0x21
+  setup_objective_throw_in_room_body:
+    seq:
+      - id: weapon_slot_index
+        type: s4
+      - id: preset
+        type: s4
+      - id: unknown_08
+        type: s4
+      - id: unknown_0c
+        type: s4
   # type = 0x22
   setup_objective_copy_item_body:
     seq:
@@ -863,15 +875,15 @@ types:
         type: u1
         enum: propdef
     seq:
-      - id: end
-        type: u1
-        enum: propdef
-        valid:
-          eq: type
-      #- id: pos
-      #  type: u4
+      #- id: end
+      #  type: u1
+      #  enum: propdef
       #  valid:
-      #    eq: _io.pos
+      #    eq: type
+      - id: pos
+        type: u4
+        valid:
+          eq: _io.pos
   setup_object_record:
     seq:
       - id: header
@@ -907,6 +919,7 @@ types:
             'propdef::objective_fail_condition': setup_object_objective_fail_condition_body
             'propdef::objective_photograph_item': setup_objective_photograph_item_body
             'propdef::objective_enter_room': setup_objective_enter_room_body
+            'propdef::objective_throw_in_room': setup_objective_throw_in_room_body
             'propdef::objective_copy_item': setup_objective_copy_item_body
             'propdef::collect_object': setup_object_collect_object_body
             'propdef::watch_menu_objective_text': setup_object_watch_menu_objective_body
