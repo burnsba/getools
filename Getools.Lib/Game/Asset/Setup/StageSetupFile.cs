@@ -353,6 +353,74 @@ namespace Getools.Lib.Game.Asset.Setup
         public DataSectionPathList SectionPathList => Sections.OfType<DataSectionPathList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
         public DataSectionPathSets SectionPathSets => Sections.OfType<DataSectionPathSets>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
         public DataSectionPathTable SectionPathTables => Sections.OfType<DataSectionPathTable>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
+        public RefSectionRodata Rodata => Sections.OfType<RefSectionRodata>().FirstOrDefault();
+        public IEnumerable<UnrefSectionUnknown> FillerBlocks => Sections.OfType<UnrefSectionUnknown>();
+
+        /// <summary>
+        /// Will slice the section and remove it from <see cref="Sections"/>.
+        /// If the <paramref name="length"/> is -1 or equal to the length of the section,
+        /// the entire section is remove and returned. If the length is only partial,
+        /// the remaining bytes are split into a new <see cref="UnrefSectionUnknown"/>
+        /// and placed back into the sections list.
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public UnrefSectionUnknown ClaimUnrefSectionBytes(int offset, int length)
+        {
+            if (length == 0 || length < -1)
+            {
+                throw new ArgumentException("Length must be a positive value or -1");
+            }
+
+            var section = FillerBlocks.Where(x => x.Offset <= offset).OrderByDescending(x => x.Offset).FirstOrDefault();
+
+            if (object.ReferenceEquals(null, section))
+            {
+                throw new InvalidOperationException($"Could not find filler block associated to offset {offset}");
+            }
+
+            if (!(section.Offset <= offset && offset < section.Offset + section.Length))
+            {
+                throw new InvalidOperationException($"Offset paramter={offset} is outside the bounds of the nearest filler block.");
+            }
+
+            if (offset + length > section.Offset + section.Length)
+            {
+                throw new InvalidOperationException($"Data slice will exceed the length of the filler block.");
+            }
+
+            int takeLength = length;
+            if (takeLength == -1)
+            {
+                takeLength = section.Length;
+            }
+
+            int prequel = offset - section.Offset;
+            int remaining = section.Length - takeLength;
+
+            var unknownSectionIndex = Sections.FindIndex(x => x.MetaId == section.MetaId);
+            Sections.RemoveAt(unknownSectionIndex);
+
+            if (prequel > 0)
+            {
+                var prequelBlock = new UnrefSectionUnknown(section.GetDataBytes().Take(prequel).ToArray());
+                prequelBlock.Offset = section.Offset;
+                Sections.Add(prequelBlock);
+            }
+
+            if (remaining > 0)
+            {
+                var remainBlock = new UnrefSectionUnknown(section.GetDataBytes().Skip(prequel + takeLength).Take(remaining).ToArray());
+                remainBlock.Offset = section.Offset + prequel + takeLength;
+                Sections.Add(remainBlock);
+            }
+
+            var returnBlock = new UnrefSectionUnknown(section.GetDataBytes().Skip(prequel).Take(takeLength).ToArray());
+            returnBlock.Offset = section.Offset + prequel;
+
+            return returnBlock;
+        }
 
         public void AddSectionBefore(SetupDataSection section, SetupSectionId type)
         {

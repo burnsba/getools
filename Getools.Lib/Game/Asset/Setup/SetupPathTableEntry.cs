@@ -15,6 +15,11 @@ namespace Getools.Lib.Game.Asset.Setup
         public const string CTypeName = "struct s_pathTbl";
 
         /// <summary>
+        /// Size of the point struct in bytes.
+        /// </summary>
+        public const int SizeOf = 16;
+
+        /// <summary>
         /// Gets or sets the offset this entry was read from.
         /// </summary>
         public int Offset { get; set; }

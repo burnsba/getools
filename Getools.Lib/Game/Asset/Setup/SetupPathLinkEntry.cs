@@ -18,6 +18,11 @@ namespace Getools.Lib.Game.Asset.Setup
         public const UInt32 RecordDelimiter = 0;
 
         /// <summary>
+        /// Size of the point struct in bytes.
+        /// </summary>
+        public const int SizeOf = 16;
+
+        /// <summary>
         /// C file, type name. Should match known struct type.
         /// </summary>
         public const string CTypeName = "struct s_pathLink";
