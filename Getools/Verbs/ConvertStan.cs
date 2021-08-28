@@ -133,6 +133,34 @@ namespace Getools.Verbs
             Console.WriteLine(texty);
         }
 
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.InputTypeFormat"/> based on <see cref="ConvertOptionsBase.InputDataFormatIsBeta"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
+        public override void ValidateSetInputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
+        {
+            base.ValidateSetInputTypeFormat(result, opts);
+
+            var thisOpts = (ConvertStanOptions)opts;
+            thisOpts.InputTypeFormat = (thisOpts.InputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
+        }
+
+        /// <summary>
+        /// Sets <see cref="ConvertOptionsBase.OutputTypeFormat"/> based on <see cref="ConvertOptionsBase.OutputDataFormatIsBeta"/>.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
+        public override void ValidateSetOutputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
+        {
+            base.ValidateSetInputTypeFormat(result, opts);
+
+            var thisOpts = (ConvertStanOptions)opts;
+            thisOpts.OutputTypeFormat = (thisOpts.OutputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
+        }
+
         private static string GetInFormatNames()
         {
             var dataformats = StandFile.SupportedInputFormats;
@@ -149,6 +177,8 @@ namespace Getools.Verbs
 
         private void Convert(ConvertOptionsBase opts)
         {
+            var thisOpts = (ConvertStanOptions)opts;
+
             StandFile stan;
 
             switch (opts.InputDataFormat)
@@ -176,22 +206,22 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta.Value}\"");
+                    ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{thisOpts.InputFileTypeString}\", beta=\"{thisOpts.InputDataFormatIsBeta.Value}\"");
                     Environment.Exit(1);
                     return;
             }
 
             switch (opts.OutputDataFormat)
             {
-                /*
-                // case Lib.Game.DataFormats.Bin:
-                //    StanConverters.WriteToBin(stan, opts.OutputFilename);
-                //    break;
+                case Lib.Game.DataFormats.Bin:
+                    stan.SetFormat(Lib.Game.TypeFormat.Normal);
+                    StanConverters.WriteToBin(stan, opts.OutputFilename);
+                    break;
 
-                // case Lib.Game.DataFormats.BetaBin:
-                //    StanConverters.WriteToBetaBin(stan, opts.OutputFilename);
-                //    break;
-                */
+                case Lib.Game.DataFormats.BetaBin:
+                    stan.SetFormat(Lib.Game.TypeFormat.Beta);
+                    StanConverters.WriteToBin(stan, opts.OutputFilename);
+                    break;
 
                 case Lib.Game.DataFormats.C:
                     stan.SetFormat(Lib.Game.TypeFormat.Normal);
@@ -208,9 +238,39 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta.Value}\"");
+                    ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{thisOpts.OutputFileTypeString}\", beta=\"{thisOpts.OutputDataFormatIsBeta.Value}\"");
                     Environment.Exit(1);
                     return;
+            }
+        }
+
+        /// <summary>
+        /// Validates/sets the beta flag.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
+        private void ValidateSetInputDataFormatIsBeta<T>(ParserResult<T> result, ConvertStanOptions opts)
+        {
+            // promote null to false.
+            if (opts.InputDataFormatIsBeta != true)
+            {
+                opts.InputDataFormatIsBeta = false;
+            }
+        }
+
+        /// <summary>
+        /// Validates/sets the beta flag.
+        /// </summary>
+        /// <typeparam name="T">Parser type.</typeparam>
+        /// <param name="result">Parser result.</param>
+        /// <param name="opts">Options verb.</param>
+        private void ValidateSetOutputDataFormatIsBeta<T>(ParserResult<T> result, ConvertStanOptions opts)
+        {
+            // promote null to false.
+            if (opts.OutputDataFormatIsBeta != true)
+            {
+                opts.OutputDataFormatIsBeta = false;
             }
         }
     }

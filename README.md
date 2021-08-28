@@ -70,6 +70,26 @@ Run with
 
     getools.exe convert_setup
     
+Command line help output:
+    
+    USAGE:
+    
+      -i, --input-file            Required. Input filename.
+      --input-file-type=FTYPE     Describes file type, such as whether this is a binary file or json.
+                                  Attempts to guess the format based on file extension if not set.
+      -o, --output-file           Required. Output filename.
+      --output-file-type=FTYPE    Describes file type, such as whether this is a binary file or json.
+                                  Attempts to guess the format based on file extension if not set.
+      -d, --dname                 Container object declaration name, used when converting to
+                                  code/source. Defaults to input filename without extension if not set.
+      --help                      Display this help screen.
+
+The following values are supported for input "FTYPE":
+Json, Bin
+
+The following values are supported for output "FTYPE"
+C, Json
+    
 Example powershell script to convert all .bin setups to .c files:
 
     # version invariant setups

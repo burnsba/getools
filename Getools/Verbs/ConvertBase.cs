@@ -68,29 +68,14 @@ namespace Getools.Verbs
         }
 
         /// <summary>
-        /// Validates/sets the beta flag.
-        /// </summary>
-        /// <typeparam name="T">Parser type.</typeparam>
-        /// <param name="result">Parser result.</param>
-        /// <param name="opts">Options verb.</param>
-        public void ValidateSetInputDataFormatIsBeta<T>(ParserResult<T> result, ConvertOptionsBase opts)
-        {
-            // promote null to false.
-            if (opts.InputDataFormatIsBeta != true)
-            {
-                opts.InputDataFormatIsBeta = false;
-            }
-        }
-
-        /// <summary>
         /// Sets <see cref="ConvertOptionsBase.InputTypeFormat"/> based on <see cref="ConvertOptionsBase.InputDataFormatIsBeta"/>.
         /// </summary>
         /// <typeparam name="T">Parser type.</typeparam>
         /// <param name="result">Parser result.</param>
         /// <param name="opts">Options verb.</param>
-        public void ValidateSetInputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
+        public virtual void ValidateSetInputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
-            opts.InputTypeFormat = (opts.InputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
+            opts.InputTypeFormat = Lib.Game.TypeFormat.Normal;
         }
 
         /// <summary>
@@ -150,29 +135,14 @@ namespace Getools.Verbs
         }
 
         /// <summary>
-        /// Validates/sets the beta flag.
-        /// </summary>
-        /// <typeparam name="T">Parser type.</typeparam>
-        /// <param name="result">Parser result.</param>
-        /// <param name="opts">Options verb.</param>
-        public void ValidateSetOutputDataFormatIsBeta<T>(ParserResult<T> result, ConvertOptionsBase opts)
-        {
-            // promote null to false.
-            if (opts.OutputDataFormatIsBeta != true)
-            {
-                opts.OutputDataFormatIsBeta = false;
-            }
-        }
-
-        /// <summary>
         /// Sets <see cref="ConvertOptionsBase.OutputTypeFormat"/> based on <see cref="ConvertOptionsBase.OutputDataFormatIsBeta"/>.
         /// </summary>
         /// <typeparam name="T">Parser type.</typeparam>
         /// <param name="result">Parser result.</param>
         /// <param name="opts">Options verb.</param>
-        public void ValidateSetOutputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
+        public virtual void ValidateSetOutputTypeFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
-            opts.OutputTypeFormat = (opts.OutputDataFormatIsBeta == true) ? Lib.Game.TypeFormat.Beta : Lib.Game.TypeFormat.Normal;
+            opts.OutputTypeFormat = Lib.Game.TypeFormat.Normal;
         }
 
         /// <summary>

@@ -42,18 +42,6 @@ namespace Getools.Options
         public string DeclarationName { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to use beta structs or not for input.
-        /// </summary>
-        [Option("input-data-is-beta", Required = false, Default = false, HelpText = "Flag for input to use beta data structures/formats.")]
-        public bool? InputDataFormatIsBeta { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to use beta structs or not for output.
-        /// </summary>
-        [Option("output-data-is-beta", Required = false, Default = false, HelpText = "Flag for output to use beta data structures/formats.")]
-        public bool? OutputDataFormatIsBeta { get; set; }
-
-        /// <summary>
         /// Capture any remaining command line arguments here.
         /// </summary>
         [Value(0, Hidden = true)]

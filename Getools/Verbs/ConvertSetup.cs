@@ -137,14 +137,14 @@ namespace Getools.Verbs
 
         private static string GetInFormatNames()
         {
-            var dataformats = StandFile.SupportedInputFormats;
+            var dataformats = StageSetupFile.SupportedInputFormats;
             var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
             return string.Join(", ", fileTypes);
         }
 
         private static string GetOutFormatNames()
         {
-            var dataformats = StandFile.SupportedOutputFormats;
+            var dataformats = StageSetupFile.SupportedOutputFormats;
             var fileTypes = Getools.Lib.Converters.FormatConverter.ToKnownFileTypes(dataformats);
             return string.Join(", ", fileTypes);
         }
@@ -167,6 +167,11 @@ namespace Getools.Verbs
                     ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\"");
                     Environment.Exit(1);
                     return;
+            }
+
+            if (!string.IsNullOrEmpty(opts.DeclarationName))
+            {
+                setup.Name = opts.DeclarationName;
             }
 
             switch (opts.OutputDataFormat)

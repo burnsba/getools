@@ -79,6 +79,11 @@ namespace Getools.Lib.Game.Asset.Setup
         }
 
         /// <summary>
+        /// Gets or sets header variable name. Optional.
+        /// </summary>
+        public string Name { get; set; } = "setup";
+
+        /// <summary>
         /// Gets or sets the list of all known sections in the setup file.
         /// This includes non-main sections.
         /// </summary>
@@ -560,7 +565,13 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sw.WriteLine();
 
-            sw.WriteLine($"{CTypeName} setup = {{");
+            var headerName = Name;
+            if (string.IsNullOrEmpty(headerName) || string.IsNullOrWhiteSpace(headerName))
+            {
+                headerName = "setup";
+            }
+
+            sw.WriteLine($"{CTypeName} {headerName} = {{");
             sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPathTable)},");
             sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionPathLink)},");
             sw.WriteLine($"{Config.DefaultIndent}{GetSectionPointer(SetupSectionId.SectionIntro)},");
