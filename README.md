@@ -10,6 +10,7 @@ Command line application. Wrapper for main library.
 Available actions:
 
 - convert_stan: convert stan file between/from various file formats
+- convert_setup: convert setup file between/from various file formats
 
 # getools.lib
 
@@ -84,11 +85,11 @@ Command line help output:
                                   code/source. Defaults to input filename without extension if not set.
       --help                      Display this help screen.
 
-The following values are supported for input "FTYPE":
-Json, Bin
-
-The following values are supported for output "FTYPE"
-C, Json
+    The following values are supported for input "FTYPE":
+    Json, Bin
+    
+    The following values are supported for output "FTYPE"
+    C, Json
     
 Example powershell script to convert all .bin setups to .c files:
 
