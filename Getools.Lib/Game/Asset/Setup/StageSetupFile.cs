@@ -6,6 +6,7 @@ using System.Text;
 using Getools.Lib.Error;
 using Getools.Lib.Game.Asset.Intro;
 using Getools.Lib.Game.Asset.SetupObject;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -34,7 +35,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public static List<DataFormats> SupportedInputFormats = new List<DataFormats>()
             {
                 // DataFormats.C,
-                // DataFormats.Json,
+                DataFormats.Json,
                 DataFormats.Bin,
             };
 
@@ -44,8 +45,8 @@ namespace Getools.Lib.Game.Asset.Setup
         public static List<DataFormats> SupportedOutputFormats = new List<DataFormats>()
             {
                 DataFormats.C,
+                DataFormats.Json,
 
-                // DataFormats.Json,
                 // DataFormats.Bin,
             };
 
@@ -72,6 +73,7 @@ namespace Getools.Lib.Game.Asset.Setup
             SetupSectionId.SectionAiList,
         };
 
+        [JsonConstructor]
         private StageSetupFile()
         {
         }
@@ -80,66 +82,78 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the list of all known sections in the setup file.
         /// This includes non-main sections.
         /// </summary>
-        public List<SetupDataSection> Sections { get; set; } = new List<SetupDataSection>();
+        public List<ISetupSection> Sections { get; set; } = new List<ISetupSection>();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionAiList"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionAiList SectionAiLists => Sections.OfType<DataSectionAiList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionIntros"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionIntros SectionIntros => Sections.OfType<DataSectionIntros>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionObjects"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionObjects SectionObjects => Sections.OfType<DataSectionObjects>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPad3dList"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPad3dList SectionPad3dList => Sections.OfType<DataSectionPad3dList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPad3dNames"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPad3dNames SectionPad3dNames => Sections.OfType<DataSectionPad3dNames>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPadList"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPadList SectionPadList => Sections.OfType<DataSectionPadList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPadNames"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPadNames SectionPadNames => Sections.OfType<DataSectionPadNames>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPathList"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPathList SectionPathList => Sections.OfType<DataSectionPathList>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPathSets"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPathSets SectionPathSets => Sections.OfType<DataSectionPathSets>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="DataSectionPathTable"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public DataSectionPathTable SectionPathTables => Sections.OfType<DataSectionPathTable>().Where(x => x.IsUnreferenced == false).FirstOrDefault();
 
         /// <summary>
         /// Gets the first known referenced section of type <see cref="RefSectionRodata"/>, or null.
         /// </summary>
+        [JsonIgnore]
         public RefSectionRodata Rodata => Sections.OfType<RefSectionRodata>().FirstOrDefault();
 
         /// <summary>
         /// Gets all unreferenced sections.
         /// </summary>
+        [JsonIgnore]
         public IEnumerable<UnrefSectionUnknown> FillerBlocks => Sections.OfType<UnrefSectionUnknown>();
 
         /// <summary>
@@ -367,7 +381,7 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             int index;
 
-            IEnumerable<SetupDataSection> sectionsByType = null;
+            IEnumerable<ISetupSection> sectionsByType = null;
             var seen = new HashSet<Guid>();
 
             // Need to look at similar kinds of sections. Want the unreferenced items to start at index 0,

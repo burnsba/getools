@@ -1,0 +1,537 @@
+{
+  "$type": "Getools.Lib.Game.Asset.Setup.StageSetupFile, Getools.Lib",
+  "Sections": {
+    "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.ISetupSection, Getools.Lib]], System.Private.CoreLib",
+    "$values": [
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPadList, Getools.Lib",
+        "PadList": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.Pad, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.Pad, Getools.Lib",
+              "Position": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": -389.0,
+                "Y": 95.0,
+                "Z": 160.0,
+                "VariableName": null
+              },
+              "Up": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 1.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Look": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": -0.999859,
+                "Y": 0.0,
+                "Z": -0.016799,
+                "VariableName": null
+              },
+              "Name": {
+                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+                "Offset": 608,
+                "Value": "p274a2"
+              },
+              "Unknown": 0,
+              "VariableName": null
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.Pad, Getools.Lib",
+              "Position": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Up": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Look": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Name": {
+                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+                "Offset": 0,
+                "Value": null
+              },
+              "Unknown": 0,
+              "VariableName": null
+            }
+          ]
+        },
+        "TypeId": 11,
+        "Offset": 40,
+        "VariableName": "padlist",
+        "IsUnreferenced": false,
+        "MetaId": "1d505f43-0a49-439e-a862-2d68f5d94a3b"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPad3dList, Getools.Lib",
+        "Pad3dList": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.Pad3d, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.Pad3d, Getools.Lib",
+              "BoundingBox": {
+                "$type": "Getools.Lib.Game.BoundingBoxf, Getools.Lib",
+                "MinX": -89.0,
+                "MaxX": 90.0,
+                "MinY": -5.7E-05,
+                "MaxY": 5.6E-05,
+                "MinZ": -94.99999,
+                "MaxZ": 93.99999
+              },
+              "Position": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 380.0,
+                "Y": 95.0,
+                "Z": -127.0,
+                "VariableName": null
+              },
+              "Up": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": -1.0,
+                "Y": 0.0,
+                "Z": 1E-06,
+                "VariableName": null
+              },
+              "Look": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 1.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Name": {
+                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+                "Offset": 616,
+                "Value": "p25a2"
+              },
+              "Unknown": 0,
+              "VariableName": null
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.Pad3d, Getools.Lib",
+              "BoundingBox": {
+                "$type": "Getools.Lib.Game.BoundingBoxf, Getools.Lib",
+                "MinX": 0.0,
+                "MaxX": 0.0,
+                "MinY": 0.0,
+                "MaxY": 0.0,
+                "MinZ": 0.0,
+                "MaxZ": 0.0
+              },
+              "Position": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Up": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Look": {
+                "$type": "Getools.Lib.Game.Coord3df, Getools.Lib",
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0,
+                "VariableName": null
+              },
+              "Name": {
+                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+                "Offset": 0,
+                "Value": null
+              },
+              "Unknown": 0,
+              "VariableName": null
+            }
+          ]
+        },
+        "TypeId": 12,
+        "Offset": 128,
+        "VariableName": "pad3dlist",
+        "IsUnreferenced": false,
+        "MetaId": "7edd05af-e98f-49fc-bdfc-c997ab2cde95"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionObjects, Getools.Lib",
+        "Objects": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.SetupObject.ISetupObject, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.SetupObject.SetupObjectWeapon, Getools.Lib",
+              "GunPickup": 88,
+              "LinkedItem": 255,
+              "Timer": 65535,
+              "PointerLinkedItem": 0,
+              "ObjectId": 333,
+              "Preset": 1,
+              "Flags1": 1,
+              "Flags2": 0,
+              "PointerPositionData": 0,
+              "PointerObjInstanceController": 0,
+              "Unknown18": 0,
+              "Unknown1c": 0,
+              "Unknown20": 0,
+              "Unknown24": 0,
+              "Unknown28": 0,
+              "Unknown2c": 0,
+              "Unknown30": 0,
+              "Unknown34": 0,
+              "Unknown38": 0,
+              "Unknown3c": 0,
+              "Unknown40": 0,
+              "Unknown44": 0,
+              "Unknown48": 0,
+              "Unknown4c": 0,
+              "Unknown50": 0,
+              "Unknown54": 0,
+              "Xpos": 0,
+              "Ypos": 0,
+              "Zpos": 0,
+              "Bitflags": 0,
+              "PointerCollisionBlock": 0,
+              "Unknown6c": 0,
+              "Unknown70": 0,
+              "Health": 1000,
+              "MaxHealth": 0,
+              "Unknown78": 0,
+              "Unknown7c": 0,
+              "Type": 8,
+              "Scale": 256,
+              "Hidden2Raw": 0,
+              "TypeRaw": 8
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.SetupObject.SetupObjectEndProps, Getools.Lib",
+              "Type": 48,
+              "Scale": 0,
+              "Hidden2Raw": 0,
+              "TypeRaw": 48
+            }
+          ]
+        },
+        "TypeId": 14,
+        "Offset": 264,
+        "VariableName": "objlist",
+        "IsUnreferenced": false,
+        "MetaId": "6d244b8f-2a84-4efd-8b38-d99169dea419"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionIntros, Getools.Lib",
+        "Intros": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Intro.IIntro, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Intro.IntroSpawn, Getools.Lib",
+              "Unknown_00": 0,
+              "Unknown_04": 0,
+              "Type": 0,
+              "Scale": 0,
+              "Hidden2Raw": 0,
+              "TypeRaw": 0
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Intro.IntroEndIntro, Getools.Lib",
+              "Type": 9,
+              "Scale": 0,
+              "Hidden2Raw": 0,
+              "TypeRaw": 9
+            }
+          ]
+        },
+        "TypeId": 15,
+        "Offset": 404,
+        "VariableName": "intro",
+        "IsUnreferenced": false,
+        "MetaId": "2f85ba1a-3fa6-49b9-a79f-54e83e712f46"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathList, Getools.Lib",
+        "PathLinkEntries": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.SetupPathLinkEntry, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathLinkEntry, Getools.Lib",
+              "Offset": 0,
+              "NeighborsPointer": 420,
+              "Neighbors": {
+                "$type": "Getools.Lib.Game.Asset.Setup.PathListing, Getools.Lib",
+                "Offset": 0,
+                "VariableName": "path_neighbors_0",
+                "Ids": {
+                  "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
+                  "$values": [
+                    1,
+                    -1
+                  ]
+                }
+              },
+              "IndexPointer": 428,
+              "Indeces": {
+                "$type": "Getools.Lib.Game.Asset.Setup.PathListing, Getools.Lib",
+                "Offset": 0,
+                "VariableName": "path_indeces_0",
+                "Ids": {
+                  "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
+                  "$values": [
+                    43,
+                    44,
+                    45,
+                    -1
+                  ]
+                }
+              },
+              "IsNull": false,
+              "VariableName": null
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathLinkEntry, Getools.Lib",
+              "Offset": 0,
+              "NeighborsPointer": 0,
+              "Neighbors": null,
+              "IndexPointer": 0,
+              "Indeces": null,
+              "IsNull": false,
+              "VariableName": null
+            }
+          ]
+        },
+        "TypeId": 19,
+        "Offset": 444,
+        "VariableName": "pathlist",
+        "IsUnreferenced": false,
+        "MetaId": "9cee72e1-a854-4526-9bf3-1586085c3c70"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPad3dNames, Getools.Lib",
+        "Pad3dNames": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.StringPointer, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+              "Offset": 624,
+              "Value": "chk_locdam_all_p"
+            },
+            {
+              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+              "Offset": 0,
+              "Value": null
+            }
+          ]
+        },
+        "TypeId": 20,
+        "Offset": 468,
+        "VariableName": "pad3dnames",
+        "IsUnreferenced": false,
+        "MetaId": "80beae1a-e34d-4576-953d-1000ec27db4b"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathTable, Getools.Lib",
+        "PathTables": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.SetupPathTableEntry, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathTableEntry, Getools.Lib",
+              "Offset": 0,
+              "Unknown_00": 0,
+              "Unknown_02": 329,
+              "EntryPointer": 476,
+              "Entry": {
+                "$type": "Getools.Lib.Game.Asset.Setup.PathTable, Getools.Lib",
+                "Offset": 0,
+                "VariableName": "path_table_0",
+                "Ids": {
+                  "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
+                  "$values": [
+                    5,
+                    39,
+                    41,
+                    42,
+                    -1
+                  ]
+                }
+              },
+              "Unknown_08": 0,
+              "Unknown_0C": 0
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathTableEntry, Getools.Lib",
+              "Offset": 0,
+              "Unknown_00": 65535,
+              "Unknown_02": 65535,
+              "EntryPointer": 0,
+              "Entry": null,
+              "Unknown_08": 0,
+              "Unknown_0C": 0
+            }
+          ]
+        },
+        "TypeId": 23,
+        "Offset": 496,
+        "VariableName": "pathtbl",
+        "IsUnreferenced": false,
+        "MetaId": "6585020f-a4a2-4088-853f-0d1380695724"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPadNames, Getools.Lib",
+        "PadNames": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.StringPointer, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+              "Offset": 644,
+              "Value": "PAD_mk44_dam_all_p"
+            },
+            {
+              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
+              "Offset": 0,
+              "Value": null
+            }
+          ]
+        },
+        "TypeId": 24,
+        "Offset": 528,
+        "VariableName": "padnames",
+        "IsUnreferenced": false,
+        "MetaId": "46ffd96b-6436-42a1-b707-76413b41989e"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathSets, Getools.Lib",
+        "PathSets": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib",
+              "Offset": 0,
+              "EntryPointer": 536,
+              "Entry": {
+                "$type": "Getools.Lib.Game.Asset.Setup.PathSet, Getools.Lib",
+                "Offset": 0,
+                "VariableName": "path_set_0",
+                "Ids": {
+                  "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
+                  "$values": [
+                    148,
+                    149,
+                    150,
+                    -1
+                  ]
+                }
+              },
+              "Unknown_04": 65536
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib",
+              "Offset": 0,
+              "EntryPointer": 0,
+              "Entry": null,
+              "Unknown_04": 0
+            }
+          ]
+        },
+        "TypeId": 27,
+        "Offset": 552,
+        "VariableName": "paths",
+        "IsUnreferenced": false,
+        "MetaId": "72593827-6e51-4b5d-981d-bb6f5f3a1cc5"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.UnrefSectionAiFunction, Getools.Lib",
+        "AiLists": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
+              "EntryPointer": 0,
+              "Id": 0,
+              "Function": {
+                "$type": "Getools.Lib.Game.Asset.Setup.AiFunction, Getools.Lib",
+                "Offset": 568,
+                "Data": {
+                  "$type": "System.Byte[], System.Private.CoreLib",
+                  "$value": "BAAAAA=="
+                },
+                "VariableName": "ai_not_used_0",
+                "OrderIndex": 0
+              },
+              "OrderIndex": 0
+            }
+          ]
+        },
+        "TypeId": 28,
+        "Offset": 568,
+        "VariableName": "ailists",
+        "IsUnreferenced": true,
+        "MetaId": "aafb7ba0-4f8b-48ed-bda7-993b834194be"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.DataSectionAiList, Getools.Lib",
+        "AiLists": {
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib]], System.Private.CoreLib",
+          "$values": [
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
+              "EntryPointer": 572,
+              "Id": 1025,
+              "Function": {
+                "$type": "Getools.Lib.Game.Asset.Setup.AiFunction, Getools.Lib",
+                "Offset": 572,
+                "Data": {
+                  "$type": "System.Byte[], System.Private.CoreLib",
+                  "$value": "IAAF/QAHBAA="
+                },
+                "VariableName": "ai_1",
+                "OrderIndex": 1
+              },
+              "OrderIndex": 1
+            },
+            {
+              "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
+              "EntryPointer": 0,
+              "Id": 0,
+              "Function": null,
+              "OrderIndex": 2
+            }
+          ]
+        },
+        "TypeId": 30,
+        "Offset": 580,
+        "VariableName": "ailists",
+        "IsUnreferenced": false,
+        "MetaId": "1ef46894-fd88-4b7c-96a8-b533a11073f7"
+      },
+      {
+        "$type": "Getools.Lib.Game.Asset.Setup.RefSectionRodata, Getools.Lib",
+        "Length": 76,
+        "Data": {
+          "$type": "System.Byte[], System.Private.CoreLib",
+          "$value": "AAAAAAAAAAAAAAAAcDI3NGEyAABwMjVhMgAAAGNoa19sb2NkYW1fYWxsX3AAAAAAUEFEX21rNDRfZGFtX2FsbF9wAAAAAAAAAAAAAA=="
+        },
+        "TypeId": 32,
+        "Offset": 596,
+        "VariableName": null,
+        "IsUnreferenced": true,
+        "MetaId": "692a5045-374b-4df2-a374-951fd5161178"
+      }
+    ]
+  }
+}

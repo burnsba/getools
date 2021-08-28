@@ -15,6 +15,7 @@ namespace Getools.Test.AssetTests
         private const string _testFileDirectory = "../../../TestFiles/setup";
 
         private const string _filename_bin = "Usetup_testZ.bin";
+        private const string _filename_json = "Usetup_testZ.json";
 
         private readonly ITestOutputHelper _testOutputHelper;
 
@@ -27,12 +28,40 @@ namespace Getools.Test.AssetTests
         public void Read_bin_simple()
         {
             var path = Path.Combine(_testFileDirectory, _filename_bin);
-            var referenceFilePath = Path.Combine(_testFileDirectory, _filename_bin);
+            var setup = SetupConverters.ReadFromBinFile(path);
+
+            _testOutputHelper.WriteLine($"input: {path}");
+
+            Assert_simple_file(setup);
+        }
+
+        [Fact]
+        public void Read_json_simple()
+        {
+            var path = Path.Combine(_testFileDirectory, _filename_json);
+            var setup = SetupConverters.ReadFromJson(path);
+
+            _testOutputHelper.WriteLine($"input: {path}");
+
+            Assert_simple_file(setup);
+        }
+
+        [Fact]
+        public void Can_write_json()
+        {
+            var path = Path.Combine(_testFileDirectory, _filename_bin);
             var setup = SetupConverters.ReadFromBinFile(path);
             string outfile = "z" + Guid.NewGuid().ToString("n");
 
             _testOutputHelper.WriteLine($"input: {path}");
 
+            SetupConverters.WriteToJson(setup, outfile);
+
+            Assert.True(File.Exists(outfile));
+        }
+
+        private void Assert_simple_file(StageSetupFile setup)
+        {
             Assert.NotNull(setup);
 
             Assert.NotNull(setup.SectionPadList);
@@ -101,6 +130,5 @@ namespace Getools.Test.AssetTests
             Assert.NotNull(aifunction.Function);
             Assert.NotNull(aifunction.Function.Data);
         }
-
     }
 }

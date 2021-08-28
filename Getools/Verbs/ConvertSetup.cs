@@ -159,6 +159,10 @@ namespace Getools.Verbs
                     setup = SetupConverters.ReadFromBinFile(opts.InputFilename);
                     break;
 
+                case Lib.Game.DataFormats.Json:
+                    setup = SetupConverters.ReadFromJson(opts.InputFilename);
+                    break;
+
                 default:
                     ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\"");
                     Environment.Exit(1);
@@ -169,6 +173,10 @@ namespace Getools.Verbs
             {
                 case Lib.Game.DataFormats.C:
                     SetupConverters.WriteToC(setup, opts.OutputFilename);
+                    break;
+
+                case Lib.Game.DataFormats.Json:
+                    SetupConverters.WriteToJson(setup, opts.OutputFilename);
                     break;
 
                 default:
