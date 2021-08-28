@@ -183,13 +183,15 @@ namespace Getools.Verbs
 
             switch (opts.OutputDataFormat)
             {
-                //case Lib.Game.DataFormats.Bin:
+                /*
+                // case Lib.Game.DataFormats.Bin:
                 //    StanConverters.WriteToBin(stan, opts.OutputFilename);
                 //    break;
 
-                //case Lib.Game.DataFormats.BetaBin:
+                // case Lib.Game.DataFormats.BetaBin:
                 //    StanConverters.WriteToBetaBin(stan, opts.OutputFilename);
                 //    break;
+                */
 
                 case Lib.Game.DataFormats.C:
                     stan.SetFormat(Lib.Game.TypeFormat.Normal);

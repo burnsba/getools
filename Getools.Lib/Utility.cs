@@ -110,10 +110,10 @@ namespace Getools.Lib
         /// </summary>
         /// <typeparam name="T">Type of collection to iterate.</typeparam>
         /// <param name="collection">Collection to iterate.</param>
-        /// <param name="allButLastAction">Accepts a collection item (all except the last item) and 
+        /// <param name="allButLastAction">Accepts a collection item (all except the last item) and
         /// and iteration index does something with it. If there is only one item in the collection this
         /// action is not used.</param>
-        /// <param name="lastAction">Accepts the last collection item and 
+        /// <param name="lastAction">Accepts the last collection item and
         /// iteration index and does something with it.</param>
         public static void AllButLast<T>(List<T> collection, Action<T, int> allButLastAction, Action<T, int> lastAction)
         {

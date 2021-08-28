@@ -63,3 +63,21 @@ Parse .c file with beta types, convert to json:
 
     getools convert_stan --input-file Tbg_cat_all_p_stanZ.c --input-data-is-beta True --output-file out --output-file-type json
 
+
+## convert_setup
+
+Run with 
+
+    getools.exe convert_setup
+    
+Example powershell script to convert all .bin setups to .c files:
+
+    # version invariant setups
+    $assetFolder = "../../../../asset/setup/"
+    $setups = "Ump_setupameZ", "Ump_setuparkZ", "Ump_setupashZ", "Ump_setupcaveZ", "Ump_setupcradZ", "Ump_setupcrypZ", "Ump_setupdishZ", "Ump_setupimpZ", "Ump_setupoatZ", "Ump_setuprefZ", "Ump_setupsevbZ", "Ump_setupstatueZ", "UsetuparchZ", "UsetuparkZ", "UsetupaztZ", "UsetupcaveZ", "UsetupcontrolZ", "UsetupcrypZ", "UsetupdamZ", "UsetupdepoZ", "UsetuppeteZ", "UsetuprunZ", "UsetupsevbunkerZ", "UsetupsevbZ", "UsetupsevxbZ", "UsetupsevxZ"
+    $setups | ForEach-Object { .\Getools.exe convert_setup --input-file="${assetFolder}${_}.bin" --output-file="${assetFolder}${_}.c" }
+    
+    # version=US setups
+    $assetFolder = "../../../../asset/setup/u/"
+    $setups = "Ump_setuparchZ", "UsetupcradZ", "UsetupdestZ", "UsetupjunZ", "UsetuplenZ", "UsetupsiloZ", "UsetupstatueZ", "UsetuptraZ"
+    $setups | ForEach-Object { .\Getools.exe convert_setup --input-file="${assetFolder}${_}.bin" --output-file="${assetFolder}${_}.c" }

@@ -44,19 +44,6 @@ namespace Getools.Lib.Kaitai
         {
             var ssf = StageSetupFile.NewEmpty();
 
-            //ssf.PathTablesOffset = (int)kaitaiObject.Pointers.PathTablesOffset;
-            //ssf.PathLinksOffset = (int)kaitaiObject.Pointers.PathLinksOffset;
-            //ssf.IntrosOffset = (int)kaitaiObject.Pointers.IntrosOffset;
-            //ssf.ObjectsOffset = (int)kaitaiObject.Pointers.ObjectListOffset;
-            //ssf.PathSetsOffset = (int)kaitaiObject.Pointers.PathSetsOffset;
-            //ssf.AiListOffset = (int)kaitaiObject.Pointers.AiListOffset;
-            //ssf.PadListOffset = (int)kaitaiObject.Pointers.PadListOffset;
-            //ssf.Pad3dListOffset = (int)kaitaiObject.Pointers.Pad3dListOffset;
-            //ssf.PadNamesOffset = (int)kaitaiObject.Pointers.PadNamesOffset;
-            //ssf.Pad3dNamesOffset = (int)kaitaiObject.Pointers.Pad3dNamesOffset;
-
-            //var fillerBlocks = new List<Gen.Setup.FillerBlock>();
-
             foreach (var block in kaitaiObject.Contents)
             {
                 switch (block.Body)
@@ -115,16 +102,13 @@ namespace Getools.Lib.Kaitai
             ParseRodataSection(ssf);
 
             ParseAiListData(ssf);
-            //ParsePadNames(ssf, fillerBlocks, rodataBytes, rodataOffset, ref fillerBlockPathSetCount, ref potentialPathSetCount);
-            //ParsePad3dNames(ssf, fillerBlocks, rodataBytes, rodataOffset, ref fillerBlockPathTableCount, ref potentialPathTableCount);
-            //ParsePathLinkEntries(ssf, fillerBlocks);
-            //ParsePathTablesEntries(ssf);
-            //ParsePathSetsEntries(ssf);
             ParseUnrefAiListData(ssf);
 
             SearchPadNames(ssf);
 
-            // mark entry data filler blocks as taken
+            /*
+            * mark entry data filler blocks as taken
+            */
 
             if (!object.ReferenceEquals(null, ssf.SectionIntros))
             {
@@ -1652,191 +1636,6 @@ namespace Getools.Lib.Kaitai
             }
         }
 
-
-        //private static void ParsePathLinkEntries(StageSetupFile ssf)
-        //{
-        //    // It's possible the path list and path table entries are empty (multiplayer maps).
-        //    // But it seems there's still a "not-used" entry of sorts included in the bin file.
-        //    // Check for "not used" struct s_pathLink pathlist[] (s32 path_neighbors... and s32 path_indeces) here.
-        //    // The path table entries (s32 path_table...) will be checked next.
-        //    if (!object.ReferenceEquals(null, ssf.SectionPathList) && ssf.SectionPathList.PathLinkEntries.Count <= 1)
-        //    {
-        //        var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionPathList.Offset);
-
-        //        // looking for filler section immediately before struct s_pathLink pathlist section.
-        //        var pathListData = ssf.FillerBlocks
-        //            .Where(x => x.Offset > previousSectionOffset && x.Offset < ssf.SectionPathList.Offset)
-        //            .OrderByDescending(x => x.Offset)
-        //            .FirstOrDefault();
-
-        //        if (!object.ReferenceEquals(null, pathListData))
-        //        {
-        //            // Alright, there's a number of theoretical scenarios, but going to keep this practical for now.
-        //            // It's known there aren't any ssf.PathLinkEntries (except the NULL entry), so assume
-        //            // that the only item here is a { -1 } and { -1 } neighbors and indeces arrays. Throw an exception
-        //            // if that's not the case and figure out what to do at that time.
-        //            //
-        //            // Scenario 2: there's just a NULL entry.
-        //            if (pathListData.Length != 8 && pathListData.Length != 4)
-        //            {
-        //                // Will be claimed by the unreferenced filler block check.
-        //                // throw new NotSupportedException($"Error parsing setup. The path list array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there are two [ -1 ] entries, but that assumption is not correct.");
-        //                return;
-        //            }
-
-        //            var claimed = ssf.ClaimUnrefSectionBytes(pathListData.Offset, -1);
-
-        //            UnrefSectionPathList section;
-
-        //            if (claimed.Length == 8)
-        //            {
-        //                section = UnrefSectionPathList.NewUnreferencedPathLinkEntry();
-        //                section.Offset = claimed.Offset;
-
-        //                var neighborVal = BitUtility.Read32Big(claimed.GetDataBytes(), 0);
-        //                var indecesVal = BitUtility.Read32Big(claimed.GetDataBytes(), 4);
-
-        //                var entry = new SetupPathLinkEntry()
-        //                {
-        //                    // set order if there's more than one
-        //                    Neighbors = new PathListing()
-        //                    {
-        //                        Ids = new List<int>() { neighborVal },
-        //                    },
-        //                    Indeces = new PathListing()
-        //                    {
-        //                        Ids = new List<int>() { indecesVal },
-        //                    },
-        //                };
-
-        //                section.PathLinkEntries.Add(entry);
-
-        //                ssf.AddSectionBefore(section, SetupSectionId.SectionPathLink);
-        //            }
-        //            else if (claimed.Length == 4)
-        //            {
-        //                section = UnrefSectionPathList.NewUnreferencedPathLinkPointer();
-        //                section.Offset = claimed.Offset;
-
-        //                var val = BitUtility.Read32Big(claimed.GetDataBytes(), 0);
-        //                if (val != 0)
-        //                {
-        //                    throw new NotSupportedException($"Error parsing setup. The path list array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this was just a NULL entry, but that assumption is not correct.");
-        //                }
-
-        //                var entry = new SetupPathLinkEntry()
-        //                {
-        //                    IsNull = true,
-        //                };
-
-        //                section.PathLinkEntries.Add(entry);
-
-        //                ssf.AddSectionBefore(section, SetupSectionId.SectionPathLink);
-        //            }
-        //        }
-        //    }
-        //}
-
-        //private static void ParsePathTablesEntries(StageSetupFile ssf)
-        //{
-        //    // It's possible the path list and path table entries are empty (multiplayer maps).
-        //    // But it seems there's still a "not-used" entry of sorts included in the bin file.
-        //    // Check for "not used" entries
-        //    if (!object.ReferenceEquals(null, ssf.SectionPathTables) && ssf.SectionPathTables.PathTables.Count <= 1)
-        //    {
-        //        var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionPathTables.Offset);
-
-        //        // looking for filler section immediately before struct s_pathTbl pathtbl section.
-        //        var pathTableData = ssf.FillerBlocks
-        //            .Where(x => x.Offset > previousSectionOffset && x.Offset < ssf.SectionPathTables.Offset)
-        //            .OrderByDescending(x => x.Offset)
-        //            .FirstOrDefault();
-
-        //        if (!object.ReferenceEquals(null, pathTableData)
-        //            && (pathTableData.Length != 0))
-        //        {
-        //            var expectedWords = 1;
-
-        //            // See notes in the other section above.
-        //            if (pathTableData.Length != (expectedWords * Config.TargetWordSize))
-        //            {
-        //                // Will be claimed by the unreferenced filler block check.
-        //                // throw new NotSupportedException($"Error parsing setup. The path table array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one [ -1 ] entry, but that assumption is not correct.");
-        //                return;
-        //            }
-
-        //            var claimed = ssf.ClaimUnrefSectionBytes(pathTableData.Offset, -1);
-
-        //            var section = UnrefSectionPathTable.NewUnreferencedSection();
-        //            section.Offset = claimed.Offset;
-
-        //            var pathTableVal = BitUtility.Read32Big(claimed.GetDataBytes(), 0);
-
-        //            var entry = new SetupPathTableEntry()
-        //            {
-        //                // set order if there's more than one
-        //                Entry = new PathTable()
-        //                {
-        //                    Ids = new List<int>() { pathTableVal },
-        //                },
-        //            };
-
-        //            section.PathTables.Add(entry);
-
-        //            ssf.AddSectionBefore(section, SetupSectionId.SectionPathTable);
-        //        }
-        //    }
-        //}
-
-        //private static void ParsePathSetsEntries(StageSetupFile ssf)
-        //{
-        //    // Check for "not used" entries
-        //    if (ssf.SectionPathSets.PathSets.Count <= 1)
-        //    {
-        //        var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionPathSets.Offset);
-
-        //        // looking for filler section immediately before struct s_pathSet paths section.
-        //        var pathSetsData = ssf.FillerBlocks
-        //            .Where(x => x.Offset > previousSectionOffset && x.Offset < ssf.SectionPathSets.Offset)
-        //            .OrderByDescending(x => x.Offset)
-        //            .FirstOrDefault();
-
-        //        if (!object.ReferenceEquals(null, pathSetsData)
-        //            && (pathSetsData.Length != 0))
-        //        {
-        //            var expectedWords = 1;
-
-        //            // See notes in the other section above.
-        //            if (pathSetsData.Length != (expectedWords * Config.TargetWordSize))
-        //            {
-        //                // Will be claimed by the unreferenced filler block check.
-        //                // throw new NotSupportedException($"Error parsing setup. The path sets array doesn't reference any data points, but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one [ -1 ] entry, but that assumption is not correct.");
-        //                return;
-        //            }
-
-        //            var claimed = ssf.ClaimUnrefSectionBytes(pathSetsData.Offset, -1);
-
-        //            var section = UnrefSectionPathSets.NewUnreferencedSection();
-        //            section.Offset = claimed.Offset;
-
-        //            var pathTableVal = BitUtility.Read32Big(claimed.GetDataBytes(), 0);
-
-        //            var entry = new SetupPathSetEntry()
-        //            {
-        //                // set order if there's more than one
-        //                Entry = new PathSet()
-        //                {
-        //                    Ids = new List<int>() { pathTableVal },
-        //                },
-        //            };
-
-        //            section.PathSets.Add(entry);
-
-        //            ssf.AddSectionBefore(section, SetupSectionId.SectionPathSets);
-        //        }
-        //    }
-        //}
-
         private static void ParseUnrefAiListData(StageSetupFile ssf)
         {
             // "0x04" marks the end of an entry, and these are byte arrays, so "0x04..." (pad to 1 word) is the "not used" entry.
@@ -1885,8 +1684,6 @@ namespace Getools.Lib.Kaitai
         {
             var knownSectionOffsets = ssf.Sections.Select(x => x.Offset).ToList();
 
-            //var unreferenced = fillerBlocks.Where(x => !knownSectionOffsets.Contains((int)x.StartPos));
-
             // if we do find a section, that will permute the underlying list, so start with a list
             // of ids and looked the relevant section each iteration.
             var unreferencedOffsetIds = ssf.FillerBlocks.OrderBy(x => x.Offset).Select(x => x.Offset);
@@ -1905,7 +1702,6 @@ namespace Getools.Lib.Kaitai
                 return;
             }
 
-            //foreach (var fillerSection in )
             foreach (var sectionOffset in unreferencedOffsetIds)
             {
                 var fillerSection = ssf.FillerBlocks.First(x => x.Offset == sectionOffset);
@@ -2049,33 +1845,6 @@ namespace Getools.Lib.Kaitai
                 ssf.Sections.Add(rodataSection);
             }
         }
-
-        //private static void MarkEntryFillerBlocksTaken<T>(
-        //    StageSetupFile ssf,
-        //    List<Gen.Setup.FillerBlock> fillerBlocks,
-        //    SetupDataSection refSection,
-        //    List<T> collection,
-        //    Func<List<T>, IEnumerable<int>> getPossibleEntries)
-        //{
-        //    if (refSection != null)
-        //    {
-        //        if (collection.Any())
-        //        {
-        //            //var possibleEntries = ssf.SectionPathTables.PathTables.Where(x => x.EntryPointer > 0).Select(x => x.EntryPointer).Take(5);
-        //            var possibleEntries = getPossibleEntries(collection);
-        //            foreach (var entryAddress in possibleEntries)
-        //            {
-        //                if (fillerBlocks.Any(x => (int)x.StartPos == entryAddress))
-        //                {
-        //                    var section = new RefSectionIgnore();
-        //                    section.Offset = entryAddress;
-        //                    ssf.Sections.Add(section);
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
 
         private static UnrefSectionUnknown ToUnrefUnknown(Gen.Setup.FillerBlock fillerBlock)
         {
