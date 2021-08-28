@@ -11,7 +11,6 @@ namespace Getools.Test.AssetTests
 {
     public partial class Stan
     {
-
         private const string _filename_c = "Tbg_test_all_p_stanZ.c";
         private const string _filename_json = "Tbg_test_all_p_stanZ.json";
         private const string _filename_bin = "Tbg_test_all_p_stanZ.bin";
