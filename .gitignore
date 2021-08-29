@@ -155,6 +155,7 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-workbin/
+/workbin/
 Getools.Lib/Kaitai/Schema/*.cs
-asset/
+/asset/
+/asset/**

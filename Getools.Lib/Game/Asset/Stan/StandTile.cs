@@ -545,5 +545,34 @@ namespace Getools.Lib.Game.Asset.Stan
             // close points list
             sb.AppendLine($"{prefix}{Config.DefaultIndent}}}");
         }
+
+        private void LookupPadLink()
+        {
+            // TODO: pad link.
+
+            /*
+             * from carnivorous:
+
+unsigned char Byte1 = ((level.clippingPoints[clippingClicked.back().clippingRoom][clippingClicked.back().clippingNumber].threeBytes >> 16) & 0xFF);
+unsigned char Byte2 = ((level.clippingPoints[clippingClicked.back().clippingRoom][clippingClicked.back().clippingNumber].threeBytes >> 8) & 0xFF);
+unsigned char Byte3 = (level.clippingPoints[clippingClicked.back().clippingRoom][clippingClicked.back().clippingNumber].threeBytes & 0xFF);
+
+CString tempDecimal;
+tempDecimal.Format("p%u", ((Byte1 << 8) | Byte2));
+
+char letters[26] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+
+CString tempLetter;
+tempLetter.Format("%c", letters[(int)Byte3 / (int) 8]);
+tempDecimal += tempLetter;
+
+if ((Byte3 % 8) > 0)
+{
+    CString tempChar;
+    tempChar.Format("%u", (Byte3 % 8));
+    tempDecimal += tempChar;
+}
+             * */
+        }
     }
 }

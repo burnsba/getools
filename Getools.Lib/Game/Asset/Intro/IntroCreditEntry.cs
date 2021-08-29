@@ -1,90 +1,83 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
+using Getools.Lib.Game.Enums;
 
-namespace Getools.Lib.Game.Asset.Setup
+namespace Getools.Lib.Game.Asset.Intro
 {
     /// <summary>
-    /// Pad. Each room in the game is composed of one or more pads.
+    /// Credits screen entry.
     /// </summary>
-    /// <remarks>
-    /// TODO: see LookupPadLink() on <see cref="StandTile"/>.
-    /// </remarks>
-    public class Pad
+    public class IntroCreditEntry
     {
+        /*
+         * Struct layout:
+         *     id1
+         *     id2
+         *     position1
+         *     alignment1
+         *     position2
+         *     alignemtn2
+         */
+
         /// <summary>
         /// C file, type name. Should match known struct type.
         /// </summary>
-        public const string CTypeName = "struct pad";
+        public const string CTypeName = "CreditsEntry";
 
         /// <summary>
         /// Size of the point struct in bytes.
         /// </summary>
-        public const int SizeOf = 44;
+        public const int SizeOf = 12;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Pad"/> class.
+        /// Initializes a new instance of the <see cref="IntroCreditEntry"/> class.
         /// </summary>
-        public Pad()
+        public IntroCreditEntry()
         {
         }
 
         /// <summary>
-        /// Gets or sets position coordinate.
-        /// Struct offset 0x0.
+        /// Overall game text id, for text 1.
         /// </summary>
-        public Coord3df Position { get; set; }
+        public ushort TextId1 { get; set; }
 
         /// <summary>
-        /// Gets or sets "up" coordinate.
-        /// Struct offset 0xc.
+        /// Overall game text id, for text 2.
         /// </summary>
-        public Coord3df Up { get; set; }
+        public ushort TextId2 { get; set; }
 
         /// <summary>
-        /// Gets or sets "look" coordinate.
-        /// Struct offset 0x18.
+        /// Text 1 position.
+        /// TODO: Unknown (vertical? horizontal?)
         /// </summary>
-        public Coord3df Look { get; set; }
+        public short Position1 { get; set; }
 
         /// <summary>
-        /// Gets or sets name string/pointer.
-        /// Struct offset 0x24.
+        /// Text 1 alignment.
         /// </summary>
-        public StringPointer Name { get; set; }
+        public CreditTextAlignment Alignment1 { get; set; }
 
         /// <summary>
-        /// TODO: Unknown fields.
-        /// Struct offset 0x28.
-        /// Seems to always be zero, to indicate end of pad in setup.
+        /// Text 1 position.
+        /// TODO: Unknown (vertical? horizontal?)
         /// </summary>
-        public int Unknown { get; set; }
+        public short Position2 { get; set; }
+
+        /// <summary>
+        /// Text 2 alignment.
+        /// </summary>
+        public CreditTextAlignment Alignment2 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the offset this entry was read from.
+        /// </summary>
+        public int Offset { get; set; }
 
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
-
-        /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using normal structs.
-        /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <returns>New object.</returns>
-        public static Pad ReadFromBinFile(BinaryReader br)
-        {
-            var result = new Pad();
-
-            result.Position = Coord3df.ReadFromBinFile(br);
-            result.Up = Coord3df.ReadFromBinFile(br);
-            result.Look = Coord3df.ReadFromBinFile(br);
-
-            result.Name = BitUtility.Read16Big(br);
-            result.Unknown = BitUtility.Read32Big(br);
-
-            return result;
-        }
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -134,15 +127,17 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <param name="prefix">Optional prefix to prepend.</param>
         protected virtual void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
-            sb.Append(Position.ToCInlineDeclaration(string.Empty));
+            sb.Append(Formatters.IntegralTypes.ToHex4(TextId1));
             sb.Append(", ");
-            sb.Append(Up.ToCInlineDeclaration(string.Empty));
+            sb.Append(Formatters.IntegralTypes.ToHex4(TextId2));
             sb.Append(", ");
-            sb.Append(Look.ToCInlineDeclaration(string.Empty));
+            sb.Append(Formatters.IntegralTypes.ToHex4(Position1));
             sb.Append(", ");
-            sb.Append(Name.ToCValueOrNullEmpty());
+            sb.Append(Formatters.IntegralTypes.ToHex4((short)Alignment1));
             sb.Append(", ");
-            sb.Append(Unknown);
+            sb.Append(Formatters.IntegralTypes.ToHex4(Position2));
+            sb.Append(", ");
+            sb.Append(Formatters.IntegralTypes.ToHex4((short)Alignment2));
         }
     }
 }
