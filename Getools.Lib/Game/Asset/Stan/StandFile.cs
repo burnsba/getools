@@ -118,16 +118,55 @@ namespace Getools.Lib.Game.Asset.Stan
         public void DeserializeFix()
         {
             // need to set the pointer to correct value
-            Header.FirstTileOffset = Header.GetDataSizeOf();
+            //Header.FirstTileOffset = Header.GetDataSizeOf();
 
-            var rodataLocation = GetDataSizeOf();
-            int offset = rodataLocation;
+            //var rodataLocation = GetDataSizeOf();
+            //int offset = rodataLocation;
 
+            if (Tiles.Any())
+            {
+                // check if variable name was parsed from .c file, if so then
+                // resolve to a tile or throw.
+                // Otherwise, set the pointer to the first tile (if there are any).
+                if (!object.ReferenceEquals(null, Header.FirstTilePointer)
+                    && !string.IsNullOrEmpty(Header.FirstTilePointer.AddressOfVariableName)
+                    && Header.FirstTilePointer.IsNull)
+                {
+                    var pointsTo = Tiles.FirstOrDefault(x => x.VariableName == Header.FirstTilePointer.AddressOfVariableName);
+
+                    if (object.ReferenceEquals(null, pointsTo))
+                    {
+                        throw new NullReferenceException($"Error trying to resolve first-tile pointer in header. Address of variable name is \"{Header.FirstTilePointer.AddressOfVariableName}\", but no tile's {nameof(StandTile.VariableName)} match");
+                    }
+
+                    Header.FirstTilePointer.AssignPointer(pointsTo);
+                }
+                else
+                {
+                    Header.FirstTilePointer = new PointerVariable(Tiles.First());
+                }
+
+                Header.FirstTilePointer.BaseDataOffset = 1 * Config.TargetWordSize;
+            }
+
+            if (object.ReferenceEquals(null, Header.FirstTilePointer))
+            {
+                throw new NullReferenceException("stan header pointer to first tile (lib object) is null");
+            }
+
+            int offset = Header.BaseDataSize;
             foreach (var tile in Tiles)
             {
+                tile.BaseDataOffset = offset;
                 tile.DeserializeFix();
 
-                offset += StandTile.TileNameStringLength;
+                offset += tile.GetDataSizeOf();
+            }
+
+            if (string.IsNullOrEmpty(Header.FirstTilePointer.AddressOfVariableName))
+            {
+                // can only assign name after DeserializeFix is called on the tile
+                Header.FirstTilePointer.AddressOfVariableName = ((StandTile)Header.FirstTilePointer.Dereference()).VariableName;
             }
         }
 
@@ -198,39 +237,51 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine();
         }
 
-        /// <summary>
-        /// This is a mini-compiler to build up the .data and .rodata sections to send them to <see cref="AssembledFile"/>.
-        /// </summary>
-        /// <returns>Assembled file. Call <see cref="AssembledFile.GetLinkedFile"/> to get fully linked file.</returns>
-        internal AssembledFile GetAssembledBinFile()
-        {
-            var file = new AssembledFile();
-            var dataSectionOffset = 0;
+        ///// <summary>
+        ///// This is a mini-compiler to build up the .data and .rodata sections to send them to <see cref="AssembledFile"/>.
+        ///// </summary>
+        ///// <returns>Assembled file. Call <see cref="AssembledFile.GetLinkedFile"/> to get fully linked file.</returns>
+        //internal AssembledFile GetAssembledBinFile()
+        //{
+        //    var file = new AssembledFile();
+        //    var dataSectionOffset = 0;
 
-            var headerBytes = Header.ToByteArray();
-            file.AppendData(headerBytes);
-            dataSectionOffset += headerBytes.Length;
+        //    var headerBytes = Header.ToByteArray();
+        //    file.AppendData(headerBytes);
+        //    dataSectionOffset += headerBytes.Length;
+
+        //    foreach (var tile in Tiles)
+        //    {
+        //        var tileBytes = tile.ToByteArray();
+
+        //        file.AppendData(tileBytes);
+
+        //        if (tile.Format == TypeFormat.Beta)
+        //        {
+        //            tile.DebugName.Offset = dataSectionOffset;
+        //            var pr = new PointerRodata(tile.DebugName, PointerRodata.SizeOfRodataPointer);
+
+        //            file.RodataPointers.Add(pr);
+        //        }
+
+        //        dataSectionOffset += tileBytes.Length;
+        //    }
+
+        //    file.AppendData(Footer.ToByteArray(dataSectionOffset));
+
+        //    return file;
+        //}
+
+        internal void AddToMipsFile(MipsFile file)
+        {
+            Header.Collect(file);
 
             foreach (var tile in Tiles)
             {
-                var tileBytes = tile.ToByteArray();
-
-                file.AppendData(tileBytes);
-
-                if (tile.Format == TypeFormat.Beta)
-                {
-                    tile.DebugName.Offset = dataSectionOffset;
-                    var pr = new PointerRodata(tile.DebugName, PointerRodata.SizeOfRodataPointer);
-
-                    file.RodataPointers.Add(pr);
-                }
-
-                dataSectionOffset += tileBytes.Length;
+                tile.Collect(file);
             }
 
-            file.AppendData(Footer.ToByteArray(dataSectionOffset));
-
-            return file;
+            Footer.Collect(file);
         }
 
         /// <summary>
@@ -239,7 +290,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="bw">Binary stream to write to.</param>
         internal void WriteToBinFile(BinaryWriter bw)
         {
-            var file = GetAssembledBinFile();
+            var file = new MipsFile();
+
+            AddToMipsFile(file);
+
+            file.Assemble();
             var fileContents = file.GetLinkedFile();
 
             bw.Write(fileContents);

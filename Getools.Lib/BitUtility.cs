@@ -87,6 +87,69 @@ namespace Getools.Lib
             Array.Copy(t, 0, arr, index, targetStringLength);
         }
 
+        public static byte[] StringToBytes(string s, bool appendZero)
+        {
+            return StringToBytesAlign(s, appendZero, -1, -1);
+        }
+
+        public static byte[] StringToBytesPad(string s, bool appendZero, int prependBytesCount = 0, int appendBytesCount = 0)
+        {
+            if (object.ReferenceEquals(null, s))
+            {
+                throw new ArgumentException("String cannot be null");
+            }
+
+            if (prependBytesCount < 0)
+            {
+                throw new ArgumentException($"{nameof(prependBytesCount)} must be non-negative.");
+            }
+
+            if (appendBytesCount < 0)
+            {
+                throw new ArgumentException($"{nameof(appendBytesCount)} must be non-negative.");
+            }
+
+            var resultLength = prependBytesCount + s.Length + appendBytesCount;
+            if (appendZero)
+            {
+                resultLength++;
+            }
+
+            var result = Enumerable.Repeat<byte>(0, resultLength).ToArray();
+
+            Array.Copy(Encoding.ASCII.GetBytes(s), 0, result, prependBytesCount, s.Length);
+
+            return result;
+        }
+
+        public static byte[] StringToBytesAlign(string s, bool appendZero, int alignSize, int currentAddress)
+        {
+            if (object.ReferenceEquals(null, s))
+            {
+                throw new ArgumentException("String cannot be null");
+            }
+
+            int adjust = 0;
+
+            if (currentAddress > -1 && alignSize > 1)
+            {
+                var endAddress = BitUtility.AlignToWidth(currentAddress + alignSize, alignSize);
+                adjust = endAddress - currentAddress;
+            }
+
+            var resultLength = adjust + s.Length;
+            if (appendZero)
+            {
+                resultLength++;
+            }
+
+            var result = Enumerable.Repeat<byte>(0, resultLength).ToArray();
+
+            Array.Copy(Encoding.ASCII.GetBytes(s), result, s.Length);
+
+            return result;
+        }
+
         /// <summary>
         /// Converts 32 bit value to LSB using the lower 3 bytes and inserts into array at index.
         /// </summary>

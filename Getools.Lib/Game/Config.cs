@@ -27,6 +27,8 @@ namespace Getools.Lib.Game
         /// </summary>
         public const int TargetWordSize = 4;
 
+        public const int TargetPointerAlignment = 4;
+
         /// <summary>
         /// C macro name, used to build a 32-bit word from two 16-bit values.
         /// </summary>

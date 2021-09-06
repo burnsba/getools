@@ -1,7 +1,10 @@
 {
   "Header": {
     "Unknown1": null,
-    "FirstTileOffset": 12,
+    "FirstTilePointer": {
+      "AddressOfVariableName": "tile_0",
+      "IsNull": false
+    },
     "UnknownHeaderData": [
       0,
       0,

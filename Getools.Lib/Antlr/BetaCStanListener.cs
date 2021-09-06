@@ -6,6 +6,7 @@ using System.Text;
 using Antlr4.Runtime.Misc;
 using Getools.Lib;
 using Getools.Lib.Antlr.Gen;
+using Getools.Lib.BinPack;
 using Getools.Lib.Error;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Stan;
@@ -265,15 +266,18 @@ namespace Getools.Lib.Antlr
                 }
                 else if (_currentFieldIndex == 1)
                 {
-                    if (val.HasValue)
+                    // This should be a pointer to the first tile.
+                    // We'll resolve the reference to a tile after everything is parsed.
+                    if (!string.IsNullOrEmpty(text))
                     {
-                        // this is a constant, can set this now.
-                        _workingResult.Header.FirstTileOffset = val.Value;
-                    }
-                    else
-                    {
-                        // might be a pointer, it will get resolved when calling DeserializeFix
-                        _workingResult.Header.FirstTileOffset = -1;
+                        var p = new PointerVariable();
+                        p.AddressOfVariableName = text;
+                        if (p.AddressOfVariableName.StartsWith('&'))
+                        {
+                            p.AddressOfVariableName = p.AddressOfVariableName.Substring(1);
+                        }
+
+                        _workingResult.Header.FirstTilePointer = p;
                     }
 
                     _currentFieldIndex++;

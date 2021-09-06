@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Error;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
@@ -11,8 +13,10 @@ namespace Getools.Lib.Game.Asset.Stan
     /// Point used by stan.
     /// Subset of <see cref="StandTile"/> within <see cref="StandFile"/>.
     /// </summary>
-    public class StandTilePoint
+    public class StandTilePoint : IBinData
     {
+        private Guid _metaId = Guid.NewGuid();
+
         /// <summary>
         /// Size of the point struct in bytes (non-beta).
         /// </summary>
@@ -38,6 +42,10 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             Format = format;
         }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public Guid MetaId => _metaId;
 
         /// <summary>
         /// Gets or sets point X coordinate. This property is used for "standard" points (not debug/beta).
@@ -73,6 +81,18 @@ namespace Getools.Lib.Game.Asset.Stan
         /// Gets or sets "link" property of point.
         /// </summary>
         public int Link { get; set; }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int BaseDataSize => GetSizeOf();
 
         /// <summary>
         /// Gets or sets explanation for how object should be serialized.
@@ -135,32 +155,50 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Converts the current object to a byte array. The size will vary based on <see cref="Format"/>.
         /// </summary>
+        /// <param name="prependBytesCount">Optional. If set, will prepend this many bytes at the start of the object.</param>
+        /// <param name="appendBytesCount">Optional. If set, will append this many bytes after the object. Used for alignment.</param>
         /// <returns>Byte array of object.</returns>
-        public byte[] ToByteArray()
+        public byte[] ToByteArray(int? prependBytesCount = null, int? appendBytesCount = null)
         {
+            int prepend = prependBytesCount ?? 0;
+            var resultLength = prepend + (appendBytesCount ?? 0);
+            int resultIndex = prepend;
+
             if (Format == TypeFormat.Normal)
             {
-                var results = new byte[SizeOf];
+                resultLength += SizeOf;
 
-                BitUtility.InsertShortBig(results, 0, (short)X);
-                BitUtility.InsertShortBig(results, 2, (short)Y);
-                BitUtility.InsertShortBig(results, 4, (short)Z);
-                BitUtility.InsertShortBig(results, 6, (short)Link);
+                var results = new byte[resultLength];
+
+                BitUtility.InsertShortBig(results, resultIndex, (short)X);
+                resultIndex += 2;
+                BitUtility.InsertShortBig(results, resultIndex, (short)Y);
+                resultIndex += 2;
+                BitUtility.InsertShortBig(results, resultIndex, (short)Z);
+                resultIndex += 2;
+                BitUtility.InsertShortBig(results, resultIndex, (short)Link);
+                resultIndex += 2;
 
                 return results;
             }
             else if (Format == TypeFormat.Beta)
             {
-                var results = new byte[BetaSizeOf];
+                resultLength += BetaSizeOf;
+
+                var results = new byte[resultLength];
 
                 var fx = BitUtility.CastToInt32(FloatX);
                 var fy = BitUtility.CastToInt32(FloatY);
                 var fz = BitUtility.CastToInt32(FloatZ);
 
-                BitUtility.Insert32Big(results, 0, (int)fx);
-                BitUtility.Insert32Big(results, 4, (int)fy);
-                BitUtility.Insert32Big(results, 8, (int)fz);
-                BitUtility.Insert32Big(results, 12, (int)Link);
+                BitUtility.Insert32Big(results, resultIndex, (int)fx);
+                resultIndex += 4;
+                BitUtility.Insert32Big(results, resultIndex, (int)fy);
+                resultIndex += 4;
+                BitUtility.Insert32Big(results, resultIndex, (int)fz);
+                resultIndex += 4;
+                BitUtility.Insert32Big(results, resultIndex, (int)Link);
+                resultIndex += 4;
 
                 return results;
             }
@@ -168,6 +206,17 @@ namespace Getools.Lib.Game.Asset.Stan
             {
                 throw new InvalidStateException("Format not set.");
             }
+        }
+
+        public void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        public void Assemble(IAssembleContext context)
+        {
+            var aac = context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);
+            BaseDataOffset = aac.DataStartAddress;
         }
 
         /// <summary>
@@ -191,31 +240,31 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
-        /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using beta structs.
-        /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <returns>New object.</returns>
-        internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
-        {
-            var result = new StandTilePoint(TypeFormat.Beta);
+        ///// <summary>
+        ///// Reads from current position in stream. Loads object from
+        ///// stream as it would be read from a binary file using beta structs.
+        ///// </summary>
+        ///// <param name="br">Stream to read.</param>
+        ///// <returns>New object.</returns>
+        //internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
+        //{
+        //    var result = new StandTilePoint(TypeFormat.Beta);
 
-            var ix = BitUtility.Read32Big(br);
-            var iy = BitUtility.Read32Big(br);
-            var iz = BitUtility.Read32Big(br);
+        //    var ix = BitUtility.Read32Big(br);
+        //    var iy = BitUtility.Read32Big(br);
+        //    var iz = BitUtility.Read32Big(br);
 
-            result.FloatX = BitUtility.CastToFloat(ix);
-            result.FloatY = BitUtility.CastToFloat(iy);
-            result.FloatZ = BitUtility.CastToFloat(iz);
+        //    result.FloatX = BitUtility.CastToFloat(ix);
+        //    result.FloatY = BitUtility.CastToFloat(iy);
+        //    result.FloatZ = BitUtility.CastToFloat(iz);
 
-            result.X = (int)result.FloatX;
-            result.Y = (int)result.FloatY;
-            result.Z = (int)result.FloatZ;
+        //    result.X = (int)result.FloatX;
+        //    result.Y = (int)result.FloatY;
+        //    result.Z = (int)result.FloatZ;
 
-            result.Link = BitUtility.Read32Big(br);
+        //    result.Link = BitUtility.Read32Big(br);
 
-            return result;
-        }
+        //    return result;
+        //}
     }
 }

@@ -63,7 +63,6 @@ namespace Getools.Lib.Kaitai
             var result = new StandFileHeader();
 
             result.Unknown1 = ParseHelpers.ToCPointer(kaitaiObject.Unknown1);
-            result.FirstTileOffset = (int)kaitaiObject.TileOffset;
             result.UnknownHeaderData = kaitaiObject.UnknownHeaderData.ToList();
 
             return result;
@@ -93,10 +92,6 @@ namespace Getools.Lib.Kaitai
             var result = new StandTile();
 
             result.DebugName = kaitaiObject.DebugName.Deref;
-            if (!object.ReferenceEquals(null, result.DebugName))
-            {
-                result.DebugName.Offset = (int)kaitaiObject.DebugName.Offset;
-            }
 
             result.UnknownBeta = (short)kaitaiObject.BetaUnknown;
             result.Flags = (byte)kaitaiObject.Flags;

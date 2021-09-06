@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Error;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
@@ -11,8 +13,10 @@ namespace Getools.Lib.Game.Asset.Stan
     /// Single tile definition.
     /// Subset of <see cref="StandFile"/>.
     /// </summary>
-    public class StandTile
+    public class StandTile : IBinData
     {
+        private Guid _metaId = Guid.NewGuid();
+
         /// <summary>
         /// Size of the tile struct in bytes without any points.
         /// </summary>
@@ -60,6 +64,10 @@ namespace Getools.Lib.Game.Asset.Stan
             Format = format;
         }
 
+        /// <inheritdoc />
+        [JsonIgnore]
+        public Guid MetaId => _metaId;
+
         /// <summary>
         /// Tile internal name or identifier. Only used in release struct.
         /// 24 bits.
@@ -80,7 +88,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// Debug string giving the tile name. This may be the <see cref="InternalName"/>
         /// but this is not known for sure.
         /// </summary>
-        public StringPointer DebugName { get; set; }
+        public RodataString DebugName { get; set; }
 
         /// <summary>
         /// 4 bits.
@@ -151,6 +159,18 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public List<StandTilePoint> Points { get; set; } = new List<StandTilePoint>();
 
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public int BaseDataSize => GetDataSizeOf();
+
         /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
         /// </summary>
@@ -196,9 +216,14 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public void DeserializeFix()
         {
+            int offset = BaseDataOffset;
+
             foreach (var point in Points)
             {
+                point.BaseDataOffset = offset;
                 point.DeserializeFix();
+
+                offset += point.GetSizeOf();
             }
 
             if (string.IsNullOrEmpty(VariableName))
@@ -291,6 +316,68 @@ namespace Getools.Lib.Game.Asset.Stan
                 }
 
                 return results;
+            }
+            else
+            {
+                throw new InvalidStateException("Format not set.");
+            }
+        }
+
+        public void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+
+            if (Format == TypeFormat.Beta)
+            {
+                context.AppendToRodataSection(DebugName);
+            }
+
+            for (int i = 0; i < Points.Count; i++)
+            {
+                Points[i].Collect(context);
+            }
+        }
+
+        public void Assemble(IAssembleContext context)
+        {
+            if (Format == TypeFormat.Normal)
+            {
+                var results = new byte[SizeOfTileWithoutPoints];
+
+                BitUtility.InsertLower24Big(results, 0, InternalName);
+                results[3] = Room;
+
+                results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
+                results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
+                results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (FirstPoint & 0xf));
+                results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
+
+                var aac = context.AssembleAppendBytes(results, Config.TargetWordSize);
+                BaseDataOffset = aac.DataStartAddress;
+            }
+            else if (Format == TypeFormat.Beta)
+            {
+                var results = new byte[SizeOfBetaTileWithoutPoints];
+
+                // .rodata pointer address is unknown at this time.
+                BitUtility.Insert32Big(results, 0, (short)0);
+
+                results[4] = (byte)(((Flags & 0xf) << 4) | (R & 0xf));
+                results[5] = (byte)(((G & 0xf) << 4) | (B & 0xf));
+
+                BitUtility.InsertShortBig(results, 6, UnknownBeta ?? 0);
+
+                results[8] = (byte)Points.Count;
+                results[9] = (byte)FirstPoint;
+                results[10] = (byte)SecondPoint;
+                results[11] = (byte)ThirdPoint;
+
+                var aac = context.AssembleAppendBytes(results, Config.TargetWordSize);
+                BaseDataOffset = aac.DataStartAddress;
+
+                var p = new PointerVariable(DebugName);
+                p.BaseDataOffset = aac.DataStartAddress;
+                context.RegisterPointer(p);
             }
             else
             {
