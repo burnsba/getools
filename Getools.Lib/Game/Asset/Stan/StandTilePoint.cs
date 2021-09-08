@@ -15,8 +15,6 @@ namespace Getools.Lib.Game.Asset.Stan
     /// </summary>
     public class StandTilePoint : IBinData
     {
-        private Guid _metaId = Guid.NewGuid();
-
         /// <summary>
         /// Size of the point struct in bytes (non-beta).
         /// </summary>
@@ -26,6 +24,8 @@ namespace Getools.Lib.Game.Asset.Stan
         /// Size of the beta point struct in bytes.
         /// </summary>
         public const int BetaSizeOf = 16;
+
+        private Guid _metaId = Guid.NewGuid();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StandTilePoint"/> class.
@@ -239,32 +239,5 @@ namespace Getools.Lib.Game.Asset.Stan
                 throw new InvalidStateException("Format not set.");
             }
         }
-
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using beta structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandTilePoint ReadFromBetaBinFile(BinaryReader br)
-        //{
-        //    var result = new StandTilePoint(TypeFormat.Beta);
-
-        //    var ix = BitUtility.Read32Big(br);
-        //    var iy = BitUtility.Read32Big(br);
-        //    var iz = BitUtility.Read32Big(br);
-
-        //    result.FloatX = BitUtility.CastToFloat(ix);
-        //    result.FloatY = BitUtility.CastToFloat(iy);
-        //    result.FloatZ = BitUtility.CastToFloat(iz);
-
-        //    result.X = (int)result.FloatX;
-        //    result.Y = (int)result.FloatY;
-        //    result.Z = (int)result.FloatZ;
-
-        //    result.Link = BitUtility.Read32Big(br);
-
-        //    return result;
-        //}
     }
 }

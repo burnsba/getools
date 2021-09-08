@@ -15,12 +15,12 @@ namespace Getools.Lib.Game.Asset.Stan
     /// </summary>
     public class StandFileHeader : IBinData
     {
-        private Guid _metaId = Guid.NewGuid();
-
         /// <summary>
         /// C file, header section type name, non-beta. Should match known struct type.
         /// </summary>
         public const string HeaderCTypeName = "StandFileHeader";
+
+        private Guid _metaId = Guid.NewGuid();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StandFileHeader"/> class.
@@ -38,13 +38,9 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public int? Unknown1 { get; set; }
 
-        ///// <summary>
-        ///// Offset to first tile from start of stan.
-        ///// This value is ignored when generating output, and actualy offset
-        ///// calculation is used instead.
-        ///// </summary>
-        //public int FirstTileOffset { get; set; }
-
+        /// <summary>
+        /// Gets or sets pointer to the first tile.
+        /// </summary>
         public PointerVariable FirstTilePointer { get; set; }
 
         /// <summary>
@@ -144,62 +140,5 @@ namespace Getools.Lib.Game.Asset.Stan
         {
             return (2 * Config.TargetPointerSize) + UnknownHeaderData.Count;
         }
-
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using beta structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <param name="name">Sets the header <see cref="Name"/>.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandFileHeader ReadFromBetaBinFile(BinaryReader br, string name)
-        //{
-        //    var result = new StandFileHeader();
-
-        //    result.Unknown1 = br.ReadInt32();
-        //    if (result.Unknown1 == 0)
-        //    {
-        //        result.Unknown1 = null;
-        //    }
-
-        //    result.FirstTileOffset = (int)BitUtility.Swap((uint)br.ReadInt32());
-
-        //    var remaining = result.FirstTileOffset - br.BaseStream.Position;
-        //    if (remaining < 0)
-        //    {
-        //        throw new BadFileFormatException($"Error reading stan header, invalid first tile offset: \"{result.FirstTileOffset}\"");
-        //    }
-
-        //    for (int i = 0; i < remaining; i++)
-        //    {
-        //        result.UnknownHeaderData.Add(br.ReadByte());
-        //    }
-
-        //    result.Name = name;
-
-        //    return result;
-        //}
-
-        ///// <summary>
-        ///// Converts this object to a byte array using normal structs and writes
-        ///// it to the current stream position.
-        ///// </summary>
-        ///// <param name="stream">Stream to write to.</param>
-        //internal void AppendToBinaryStream(BinaryWriter stream)
-        //{
-        //    var bytes = ToByteArray();
-        //    stream.Write(bytes);
-        //}
-
-        ///// <summary>
-        ///// Converts this object to a byte array using beta structs and writes
-        ///// it to the current stream position.
-        ///// </summary>
-        ///// <param name="stream">Stream to write to.</param>
-        //internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        //{
-        //    // no changes for beta
-        //    AppendToBinaryStream(stream);
-        //}
     }
 }

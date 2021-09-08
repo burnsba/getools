@@ -237,41 +237,6 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine();
         }
 
-        ///// <summary>
-        ///// This is a mini-compiler to build up the .data and .rodata sections to send them to <see cref="AssembledFile"/>.
-        ///// </summary>
-        ///// <returns>Assembled file. Call <see cref="AssembledFile.GetLinkedFile"/> to get fully linked file.</returns>
-        //internal AssembledFile GetAssembledBinFile()
-        //{
-        //    var file = new AssembledFile();
-        //    var dataSectionOffset = 0;
-
-        //    var headerBytes = Header.ToByteArray();
-        //    file.AppendData(headerBytes);
-        //    dataSectionOffset += headerBytes.Length;
-
-        //    foreach (var tile in Tiles)
-        //    {
-        //        var tileBytes = tile.ToByteArray();
-
-        //        file.AppendData(tileBytes);
-
-        //        if (tile.Format == TypeFormat.Beta)
-        //        {
-        //            tile.DebugName.Offset = dataSectionOffset;
-        //            var pr = new PointerRodata(tile.DebugName, PointerRodata.SizeOfRodataPointer);
-
-        //            file.RodataPointers.Add(pr);
-        //        }
-
-        //        dataSectionOffset += tileBytes.Length;
-        //    }
-
-        //    file.AppendData(Footer.ToByteArray(dataSectionOffset));
-
-        //    return file;
-        //}
-
         internal void AddToMipsFile(MipsFile file)
         {
             Header.Collect(file);

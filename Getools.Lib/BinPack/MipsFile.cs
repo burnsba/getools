@@ -55,6 +55,13 @@ namespace Getools.Lib.BinPack
             _rodataContents.Add(data);
         }
 
+        /// <summary>
+        /// This iterates all of the data collected from <see cref="AppendToDataSection"/>
+        /// and <see cref="AppendToRodataSection"/> calling <see cref="IBinData.Assemble(IAssembleContext)"/>
+        /// to convert each object to a byte array.
+        /// Each <see cref="IBinData"/> should make a call back to <see cref="AssembleAppendBytes"/> to
+        /// add the object as byte array to this file.
+        /// </summary>
         public void Assemble()
         {
             foreach (var item in _contents)
@@ -119,6 +126,7 @@ namespace Getools.Lib.BinPack
         /// (i.e., the return value can be ignored one or more times).
         /// All pointers from .data to .rodata are resolved.
         /// The .rodata section and end of file are aligned to 16 bytes.
+        /// Call <see cref="Assemble"/> to build byte arrays first.
         /// Call <see cref="BeginAssembling"/> to reset the state.
         /// </summary>
         /// <returns>Full linked and assembled file as byte array.</returns>
@@ -129,15 +137,10 @@ namespace Getools.Lib.BinPack
                 return _linkedFile;
             }
 
-            // var totalFileSize = _dataList.Sum(x => x.Length);
-            // var totalFile = new byte[totalFileSize];
-            // var fileOffset = 0;
-            // 
-            // foreach (var list in _dataList)
-            // {
-            //     Array.Copy(list, 0, totalFile, fileOffset, list.Length);
-            //     fileOffset += list.Length;
-            // }
+            if (object.ReferenceEquals(null, _dataList) || !_dataList.Any())
+            {
+                throw new InvalidOperationException($"Error, no byte arrays to build. Call {nameof(Assemble)} first.");
+            }
 
             var totalFile = _dataList.SelectMany(x => x).ToArray();
 
@@ -153,11 +156,18 @@ namespace Getools.Lib.BinPack
             return _linkedFile;
         }
 
+        /// <summary>
+        /// Adds byte array to the file contents, taking into account alignement.
+        /// This should be called by <see cref="IBinData.Assemble(IAssembleContext)"/>.
+        /// </summary>
+        /// <param name="bytes">Byte array to add to file contents.</param>
+        /// <param name="align">Optional byte alignment; e.g., 4 is (MIPS) word aligned.</param>
+        /// <returns>Address information for file of bytes added.</returns>
         public AssembleAddressContext AssembleAppendBytes(byte[] bytes, int align)
         {
             int prior = _currentAddress;
 
-            if (align > 0)
+            if (align > 1)
             {
                 var nextAddress = BitUtility.AlignToWidth(_currentAddress, align);
                 var size = nextAddress - _currentAddress;
@@ -178,6 +188,10 @@ namespace Getools.Lib.BinPack
             return new AssembleAddressContext(prior, dataStart, finalCurrentAddress);
         }
 
+        /// <summary>
+        /// Returns current address of the file being assembled. Does not adjust for alignment.
+        /// </summary>
+        /// <returns>Current address.</returns>
         public int GetCurrentAddress()
         {
             return _currentAddress;

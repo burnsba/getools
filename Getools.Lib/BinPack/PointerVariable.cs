@@ -50,8 +50,6 @@ namespace Getools.Lib.BinPack
         [JsonIgnore]
         public int PointedToSize { get; set; }
 
-        //public string VariableName { get; set; }
-
         public string AddressOfVariableName { get; set; }
 
         [JsonIgnore]

@@ -16,8 +16,6 @@ namespace Getools.Lib.Game.Asset.Stan
     /// </summary>
     public class StandFileFooter : IBinData
     {
-        private Guid _metaId = Guid.NewGuid();
-
         /// <summary>
         /// Number of bytes for the "unstric" string.
         /// Includes terminating zeros.
@@ -35,6 +33,8 @@ namespace Getools.Lib.Game.Asset.Stan
         public const string FooterCTypeName = "StandFileFooter";
 
         private const int _numberWordsProperties = 4;
+
+        private Guid _metaId = Guid.NewGuid();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StandFileFooter"/> class.
@@ -226,114 +226,5 @@ namespace Getools.Lib.Game.Asset.Stan
             var aac = context.AssembleAppendBytes(results, Config.TargetWordSize);
             BaseDataOffset = aac.DataStartAddress;
         }
-
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using normal structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandFileFooter ReadFromBinFile(BinaryReader br)
-        //{
-        //    var result = new StandFileFooter();
-
-        //    int stringStart = (int)br.BaseStream.Position;
-
-        //    var strBytes = new List<byte>();
-        //    int stringLength = 0;
-        //    int safety = 32;
-        //    while (true)
-        //    {
-        //        Byte b = br.ReadByte();
-
-        //        if (b == 0)
-        //        {
-        //            br.BaseStream.Seek(-1, SeekOrigin.Current);
-        //            break;
-        //        }
-
-        //        strBytes.Add(b);
-
-        //        stringLength++;
-
-        //        if (stringLength >= safety)
-        //        {
-        //            throw new BadFileFormatException("Could not find terminating character when reading stan footer string");
-        //        }
-        //    }
-
-        //    var unstricString = System.Text.Encoding.ASCII.GetString(strBytes.ToArray());
-        //    result.C = unstricString;
-
-        //    int stringEnd = stringStart + stringLength;
-        //    if ((stringEnd % 16) != 0)
-        //    {
-        //        int next16 = ((int)(stringEnd / 16) + 1) * 16;
-        //        var seek = next16 - stringEnd;
-        //        br.BaseStream.Seek(seek, SeekOrigin.Current);
-        //    }
-
-        //    result.Unknown3 = br.ReadInt32();
-        //    if (result.Unknown3 == 0)
-        //    {
-        //        result.Unknown3 = null;
-        //    }
-
-        //    result.Unknown4 = br.ReadInt32();
-        //    if (result.Unknown4 == 0)
-        //    {
-        //        result.Unknown4 = null;
-        //    }
-
-        //    result.Unknown5 = br.ReadInt32();
-        //    if (result.Unknown5 == 0)
-        //    {
-        //        result.Unknown5 = null;
-        //    }
-
-        //    result.Unknown6 = br.ReadInt32();
-        //    if (result.Unknown6 == 0)
-        //    {
-        //        result.Unknown6 = null;
-        //    }
-
-        //    result.Name = DefaultDeclarationName;
-
-        //    return result;
-        //}
-
-        ///// <summary>
-        ///// Reads from current position in stream. Loads object from
-        ///// stream as it would be read from a binary file using beta structs.
-        ///// </summary>
-        ///// <param name="br">Stream to read.</param>
-        ///// <returns>New object.</returns>
-        //internal static StandFileFooter ReadFromBetaBinFile(BinaryReader br)
-        //{
-        //    // footer is the same here.
-        //    return StandFileFooter.ReadFromBinFile(br);
-        //}
-
-        ///// <summary>
-        ///// Converts this object to a byte array using normal structs and writes
-        ///// it to the current stream position.
-        ///// </summary>
-        ///// <param name="stream">Stream to write to.</param>
-        //internal void AppendToBinaryStream(BinaryWriter stream)
-        //{
-        //    var bytes = ToByteArray((int)stream.BaseStream.Position);
-        //    stream.Write(bytes);
-        //}
-
-        ///// <summary>
-        ///// Converts this object to a byte array using beta structs and writes
-        ///// it to the current stream position.
-        ///// </summary>
-        ///// <param name="stream">Stream to write to.</param>
-        //internal void BetaAppendToBinaryStream(BinaryWriter stream)
-        //{
-        //    // no changes for beta
-        //    AppendToBinaryStream(stream);
-        //}
     }
 }

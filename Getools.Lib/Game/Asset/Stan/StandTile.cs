@@ -15,8 +15,6 @@ namespace Getools.Lib.Game.Asset.Stan
     /// </summary>
     public class StandTile : IBinData
     {
-        private Guid _metaId = Guid.NewGuid();
-
         /// <summary>
         /// Size of the tile struct in bytes without any points.
         /// </summary>
@@ -47,6 +45,8 @@ namespace Getools.Lib.Game.Asset.Stan
         /// C file, beta tile type name. Should match known struct type.
         /// </summary>
         public const string TileBetaCTypeName = "BetaStandTile";
+
+        private Guid _metaId = Guid.NewGuid();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StandTile"/> class.
