@@ -117,12 +117,6 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public void DeserializeFix()
         {
-            // need to set the pointer to correct value
-            //Header.FirstTileOffset = Header.GetDataSizeOf();
-
-            //var rodataLocation = GetDataSizeOf();
-            //int offset = rodataLocation;
-
             if (Tiles.Any())
             {
                 // check if variable name was parsed from .c file, if so then
@@ -237,6 +231,11 @@ namespace Getools.Lib.Game.Asset.Stan
             sw.WriteLine();
         }
 
+        /// <summary>
+        /// Adds lib objects to the file, so they can be compiled into .bin
+        /// in the correct order.
+        /// </summary>
+        /// <param name="file">File to add stan to.</param>
         internal void AddToMipsFile(MipsFile file)
         {
             Header.Collect(file);

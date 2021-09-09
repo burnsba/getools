@@ -118,11 +118,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             context.AppendToDataSection(this);
         }
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             var aac = context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);

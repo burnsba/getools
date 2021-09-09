@@ -190,11 +190,13 @@ namespace Getools.Lib.Game.Asset.Stan
             return results;
         }
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             context.AppendToDataSection(this);
         }
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             int stringEnd = C.Length - 1; // adjust for zero

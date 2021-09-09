@@ -87,11 +87,31 @@ namespace Getools.Lib
             Array.Copy(t, 0, arr, index, targetStringLength);
         }
 
+        /// <summary>
+        /// Returns ASCII byte encoding of string.
+        /// </summary>
+        /// <param name="s">String to convert. Must be non-null.</param>
+        /// <param name="appendZero">
+        /// Flag to indicate whether a '\0' character should be appended to the end of the string.
+        /// By default, C# will not include a terminating zero when getting string as bytes.
+        /// </param>
+        /// <returns>String as byte array.</returns>
         public static byte[] StringToBytes(string s, bool appendZero)
         {
             return StringToBytesAlign(s, appendZero, -1, -1);
         }
 
+        /// <summary>
+        /// Returns ASCII byte encoding of string.
+        /// </summary>
+        /// <param name="s">String to convert. Must be non-null.</param>
+        /// <param name="appendZero">
+        /// Flag to indicate whether a '\0' character should be appended to the end of the string.
+        /// By default, C# will not include a terminating zero when getting string as bytes.
+        /// </param>
+        /// <param name="prependBytesCount">Optional parameter, number of '\0' characters to prepend before string.</param>
+        /// <param name="appendBytesCount">Optional parameter, number of '\0' characters to append after string.</param>
+        /// <returns>String as byte array.</returns>
         public static byte[] StringToBytesPad(string s, bool appendZero, int prependBytesCount = 0, int appendBytesCount = 0)
         {
             if (object.ReferenceEquals(null, s))
@@ -122,6 +142,19 @@ namespace Getools.Lib
             return result;
         }
 
+        /// <summary>
+        /// Returns ASCII byte encoding of string.
+        /// </summary>
+        /// <param name="s">String to convert. Must be non-null.</param>
+        /// <param name="appendZero">
+        /// Flag to indicate whether a '\0' character should be appended to the end of the string.
+        /// If alignment adjusts the return length to include additional '\0' characters then
+        /// this value is ignored.
+        /// By default, C# will not include a terminating zero when getting string as bytes.
+        /// </param>
+        /// <param name="alignSize">Align size in bytes. 0 or 1 indicate no alignment, 4 is for (MIPS) word alignment, etc.</param>
+        /// <param name="currentAddress">Current address used to determine alignment.</param>
+        /// <returns>String as byte array.</returns>
         public static byte[] StringToBytesAlign(string s, bool appendZero, int alignSize, int currentAddress)
         {
             if (object.ReferenceEquals(null, s))
@@ -138,7 +171,7 @@ namespace Getools.Lib
             }
 
             var resultLength = adjust + s.Length;
-            if (appendZero)
+            if (appendZero && adjust == 0)
             {
                 resultLength++;
             }

@@ -8,16 +8,23 @@ namespace Getools.Lib.BinPack
 {
     /// <summary>
     /// MIPS string, will be stored in .rodata section.
-    /// The string must be non-null, but can be zero length (one byte, character '\0').
+    /// The string must be non-null (when placed into .rodata), but can be zero length (one byte, character '\0').
     /// </summary>
     public class RodataString : IGetoolsLibObject, IBinData
     {
         private Guid _metaId = Guid.NewGuid();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RodataString"/> class.
+        /// </summary>
         public RodataString()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RodataString"/> class.
+        /// </summary>
+        /// <param name="value">Value of string.</param>
         public RodataString(string value)
         {
             Value = value;
@@ -73,16 +80,24 @@ namespace Getools.Lib.BinPack
             return new RodataString() { BaseDataOffset = offset };
         }
 
+        /// <summary>
+        /// Gets the ASCII encoding of the string.
+        /// </summary>
+        /// <param name="prependBytesCount">Optional parameter, number of '\0' characters to prepend before string.</param>
+        /// <param name="appendBytesCount">Optional parameter, number of '\0' characters to append after string.</param>
+        /// <returns>String as byte array.</returns>
         public byte[] ToByteArray(int? prependBytesCount = null, int? appendBytesCount = null)
         {
             return BitUtility.StringToBytesPad(Value, true, prependBytesCount ?? 0, appendBytesCount ?? 0);
         }
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             context.AppendToRodataSection(this);
         }
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             var aac = context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);

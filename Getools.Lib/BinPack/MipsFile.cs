@@ -5,19 +5,68 @@ using System.Text;
 
 namespace Getools.Lib.BinPack
 {
+    /// <summary>
+    /// MIPS file to build/assemble.
+    /// See documentation on <see cref="IAssembleContext"/> for outline of compile process.
+    /// </summary>
     public class MipsFile : IAssembleContext
     {
+        /// <summary>
+        /// .data section contents as lib objects.
+        /// </summary>
         private List<IBinData> _contents = new List<IBinData>();
+
+        /// <summary>
+        /// .rodata section contents as lib objects.
+        /// </summary>
         private List<IBinData> _rodataContents = new List<IBinData>();
+
+        /// <summary>
+        /// Assembly phase file contents as byte arrays.
+        /// </summary>
         private List<byte[]> _dataList = new List<byte[]>();
+
+        /// <summary>
+        /// Dictionary of pointer <see cref="IGetoolsLibObject.MetaId"/> to lib object <see cref="IGetoolsLibObject.MetaId"/>.
+        /// </summary>
         private Dictionary<Guid, Guid> _pointerToObjectLookup = new Dictionary<Guid, Guid>();
+
+        /// <summary>
+        /// Reverse pointer lookup.
+        /// For any lib object <see cref="IGetoolsLibObject.MetaId"/>, contains collection
+        /// of pointer <see cref="IGetoolsLibObject.MetaId"/> that point to this object.
+        /// </summary>
         private Dictionary<Guid, HashSet<Guid>> _objectToPointersLookup = new Dictionary<Guid, HashSet<Guid>>();
+
+        /// <summary>
+        /// Collection of pointer <see cref="IGetoolsLibObject.MetaId"/> that are NULL pointers.
+        /// </summary>
         private HashSet<Guid> _nullPointers = new HashSet<Guid>();
+
+        /// <summary>
+        /// Dictionary of pointer <see cref="IGetoolsLibObject.MetaId"/> to pointer lib object.
+        /// </summary>
         private Dictionary<Guid, PointerVariable> _pointers = new Dictionary<Guid, PointerVariable>();
+
+        /// <summary>
+        /// Collected, assembled, linked file contents.
+        /// </summary>
         private byte[] _linkedFile = null;
+
+        /// <summary>
+        /// Current file assembly context state.
+        /// </summary>
         private FileBuildState _buildState = FileBuildState.DefaultUnknown;
+
+        /// <summary>
+        /// Current address of file while being built.
+        /// This is updated during the assembly phase.
+        /// </summary>
         private int _currentAddress = 0;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MipsFile"/> class.
+        /// </summary>
         public MipsFile()
         {
         }
@@ -45,23 +94,19 @@ namespace Getools.Lib.BinPack
             _pointers = new Dictionary<Guid, PointerVariable>();
         }
 
+        /// <inheritdoc />
         public void AppendToDataSection(IBinData data)
         {
             _contents.Add(data);
         }
 
+        /// <inheritdoc />
         public void AppendToRodataSection(IBinData data)
         {
             _rodataContents.Add(data);
         }
 
-        /// <summary>
-        /// This iterates all of the data collected from <see cref="AppendToDataSection"/>
-        /// and <see cref="AppendToRodataSection"/> calling <see cref="IBinData.Assemble(IAssembleContext)"/>
-        /// to convert each object to a byte array.
-        /// Each <see cref="IBinData"/> should make a call back to <see cref="AssembleAppendBytes"/> to
-        /// add the object as byte array to this file.
-        /// </summary>
+        /// <inheritdoc />
         public void Assemble()
         {
             foreach (var item in _contents)
@@ -120,16 +165,7 @@ namespace Getools.Lib.BinPack
             }
         }
 
-        /// <summary>
-        /// Builds .data section and .rodata section.
-        /// Resulting file is saved in an internal variable which can be retrieved by calling this again
-        /// (i.e., the return value can be ignored one or more times).
-        /// All pointers from .data to .rodata are resolved.
-        /// The .rodata section and end of file are aligned to 16 bytes.
-        /// Call <see cref="Assemble"/> to build byte arrays first.
-        /// Call <see cref="BeginAssembling"/> to reset the state.
-        /// </summary>
-        /// <returns>Full linked and assembled file as byte array.</returns>
+        /// <inheritdoc />
         public byte[] GetLinkedFile()
         {
             if (_buildState == FileBuildState.FullyLinked)
@@ -156,13 +192,7 @@ namespace Getools.Lib.BinPack
             return _linkedFile;
         }
 
-        /// <summary>
-        /// Adds byte array to the file contents, taking into account alignement.
-        /// This should be called by <see cref="IBinData.Assemble(IAssembleContext)"/>.
-        /// </summary>
-        /// <param name="bytes">Byte array to add to file contents.</param>
-        /// <param name="align">Optional byte alignment; e.g., 4 is (MIPS) word aligned.</param>
-        /// <returns>Address information for file of bytes added.</returns>
+        /// <inheritdoc />
         public AssembleAddressContext AssembleAppendBytes(byte[] bytes, int align)
         {
             int prior = _currentAddress;
@@ -188,15 +218,13 @@ namespace Getools.Lib.BinPack
             return new AssembleAddressContext(prior, dataStart, finalCurrentAddress);
         }
 
-        /// <summary>
-        /// Returns current address of the file being assembled. Does not adjust for alignment.
-        /// </summary>
-        /// <returns>Current address.</returns>
+        /// <inheritdoc />
         public int GetCurrentAddress()
         {
             return _currentAddress;
         }
 
+        /// <inheritdoc />
         public void RegisterPointer(PointerVariable pointer)
         {
             var pointerKey = pointer.MetaId;
@@ -221,6 +249,7 @@ namespace Getools.Lib.BinPack
             }
         }
 
+        /// <inheritdoc />
         public void RemovePointer(PointerVariable pointer)
         {
             var pointerKey = pointer.MetaId;
@@ -245,6 +274,7 @@ namespace Getools.Lib.BinPack
             }
         }
 
+        /// <inheritdoc />
         public void UnreferenceObject(IGetoolsLibObject pointsTo)
         {
             if (object.ReferenceEquals(null, pointsTo))

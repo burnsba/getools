@@ -323,6 +323,7 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             context.AppendToDataSection(this);
@@ -338,6 +339,7 @@ namespace Getools.Lib.Game.Asset.Stan
             }
         }
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             if (Format == TypeFormat.Normal)

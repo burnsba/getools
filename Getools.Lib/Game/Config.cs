@@ -27,6 +27,9 @@ namespace Getools.Lib.Game
         /// </summary>
         public const int TargetWordSize = 4;
 
+        /// <summary>
+        /// Default alignment for pointers on MIPS.
+        /// </summary>
         public const int TargetPointerAlignment = 4;
 
         /// <summary>
