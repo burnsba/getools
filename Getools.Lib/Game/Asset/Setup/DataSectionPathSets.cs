@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -36,6 +37,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// would be listed before this main entry.
         /// </summary>
         public List<SetupPathSetEntry> PathSets { get; set; } = new List<SetupPathSetEntry>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    (GetEntriesCount() * SetupPathSetEntry.SizeOf);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         public override string GetDeclarationTypeName()
@@ -87,6 +104,8 @@ namespace Getools.Lib.Game.Asset.Setup
 
             foreach (var entry in PathSets)
             {
+                entry.DeserializeFix();
+
                 if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
                 {
                     entry.Entry.VariableName = string.Format(baseNameFormat, index);
@@ -106,6 +125,26 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return PathSets.Where(x => x.Entry != null).Sum(x => x.Entry.Ids.Count) * Config.TargetWordSize;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            foreach (var entry in PathSets)
+            {
+                context.AppendToDataSection(entry.Entry);
+            }
+
+            foreach (var entry in PathSets)
+            {
+                context.AppendToDataSection(entry);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

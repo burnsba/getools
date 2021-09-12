@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Asset.Intro;
 using Newtonsoft.Json;
 
@@ -10,7 +11,7 @@ namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// Non main section. Pseudo section, should refer to the main intro section.
-    /// This is only used to print the credits data in the correct spot.
+    /// This is only used to place the credits data in the correct spot.
     /// </summary>
     public class RefSectionCredits : SetupDataSection
     {
@@ -25,6 +26,9 @@ namespace Getools.Lib.Game.Asset.Setup
             : base(typeId)
         {
         }
+
+        /// <inheritdoc />
+        public override int BaseDataSize { get; set; }
 
         /// <summary>
         /// Creates a new credits section.
@@ -80,6 +84,21 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            if (_credits.Credits != null)
+            {
+                context.AppendToDataSection(_credits.Credits);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

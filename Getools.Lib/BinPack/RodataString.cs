@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Getools.Lib.Game;
 using Newtonsoft.Json;
@@ -7,12 +8,13 @@ using Newtonsoft.Json;
 namespace Getools.Lib.BinPack
 {
     /// <summary>
-    /// MIPS string, will be stored in .rodata section.
-    /// The string must be non-null (when placed into .rodata), but can be zero length (one byte, character '\0').
+    /// MIPS string. A pointer will be placed in .data.
+    /// If the string is non-NULL, the string value will be placed in .rodata.
+    /// A zero length string (char '\0') is non-NULL.
     /// </summary>
     public class RodataString : IGetoolsLibObject, IBinData
     {
-        private Guid _metaId = Guid.NewGuid();
+        private PointedToString _rodataString;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RodataString"/> class.
@@ -32,7 +34,7 @@ namespace Getools.Lib.BinPack
 
         /// <inheritdoc />
         [JsonIgnore]
-        public Guid MetaId => _metaId;
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -94,14 +96,34 @@ namespace Getools.Lib.BinPack
         /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
-            context.AppendToRodataSection(this);
+            context.AppendToDataSection(this);
+
+            if (!object.ReferenceEquals(null, Value))
+            {
+                _rodataString = new PointedToString()
+                {
+                    Value = Value,
+                };
+
+                _rodataString.Collect(context);
+            }
         }
 
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
-            var aac = context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);
-            BaseDataOffset = aac.DataStartAddress;
+            // Pointer will be updated when linked
+            var bytes = Enumerable.Repeat<byte>(0, Config.TargetWordSize).ToArray();
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+
+            // unless this is a NULL pointer, then we're done.
+            if (!object.ReferenceEquals(null, Value) && !object.ReferenceEquals(null, _rodataString))
+            {
+                var p = new PointerVariable(_rodataString);
+                p.BaseDataOffset = result.DataStartAddress;
+                context.RegisterPointer(p);
+            }
         }
 
         /// <inheritdoc />
@@ -159,6 +181,31 @@ namespace Getools.Lib.BinPack
             }
 
             return prefix + Formatters.Strings.ToQuotedString(Value);
+        }
+
+        private class PointedToString : IBinData, IGetoolsLibObject
+        {
+            public string Value { get; set; }
+
+            public int ByteAlignment => Config.TargetWordSize;
+
+            public int BaseDataOffset { get; set; }
+
+            public int BaseDataSize => Value?.Length ?? 0;
+
+            public Guid MetaId { get; private set; } = Guid.NewGuid();
+
+            public void Collect(IAssembleContext context)
+            {
+                context.AppendToRodataSection(this);
+            }
+
+            public void Assemble(IAssembleContext context)
+            {
+                var bytes = BitUtility.StringToBytesPad(Value, true, 0, 0);
+                var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+                BaseDataOffset = result.DataStartAddress;
+            }
         }
     }
 }

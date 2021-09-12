@@ -11,6 +11,8 @@ namespace Getools.Lib.BinPack
     /// </summary>
     public class MipsFile : IAssembleContext
     {
+        private MipsElfSection _currentSection = MipsElfSection.DefaultUnknown;
+
         /// <summary>
         /// .data section contents as lib objects.
         /// </summary>
@@ -109,6 +111,8 @@ namespace Getools.Lib.BinPack
         /// <inheritdoc />
         public void Assemble()
         {
+            _currentSection = MipsElfSection.Data;
+
             foreach (var item in _contents)
             {
                 item.Assemble(this);
@@ -137,6 +141,8 @@ namespace Getools.Lib.BinPack
                 _currentAddress += delta;
             }
 
+            _currentSection = MipsElfSection.Rodata;
+
             foreach (var item in _rodataContents)
             {
                 item.Assemble(this);
@@ -163,6 +169,8 @@ namespace Getools.Lib.BinPack
             {
                 _dataList.Add(new byte[delta]);
             }
+
+            _currentSection = MipsElfSection.DefaultUnknown;
         }
 
         /// <inheritdoc />
@@ -222,6 +230,12 @@ namespace Getools.Lib.BinPack
         public int GetCurrentAddress()
         {
             return _currentAddress;
+        }
+
+        /// <inheritdoc />
+        public MipsElfSection GetCurrentSection()
+        {
+            return _currentSection;
         }
 
         /// <inheritdoc />

@@ -6,6 +6,7 @@ namespace Getools.Lib.Game.Asset.Intro
 {
     /// <summary>
     /// Type of intro definitions.
+    /// Matches enum INTRO_TYPE.
     /// </summary>
     public enum IntroType
     {

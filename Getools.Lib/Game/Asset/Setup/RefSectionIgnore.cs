@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Getools.Lib.Game.Asset.Intro;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -20,6 +20,9 @@ namespace Getools.Lib.Game.Asset.Setup
             : base(SetupSectionId.Ignored)
         {
         }
+
+        /// <inheritdoc />
+        public override int BaseDataSize { get; set; }
 
         /// <inheritdoc />
         public override void DeserializeFix(int startingIndex = 0)
@@ -58,6 +61,18 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            // nothing to do
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

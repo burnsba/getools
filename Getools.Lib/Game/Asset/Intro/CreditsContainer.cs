@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.Intro
@@ -8,7 +9,7 @@ namespace Getools.Lib.Game.Asset.Intro
     /// <summary>
     /// Container object for credits data. TO be used to convert collection into .c array.
     /// </summary>
-    public class CreditsContainer
+    public class CreditsContainer : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CreditsContainer"/> class.
@@ -31,6 +32,18 @@ namespace Getools.Lib.Game.Asset.Intro
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public virtual int BaseDataSize { get; set; }
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -72,6 +85,21 @@ namespace Getools.Lib.Game.Asset.Intro
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            foreach (var entry in CreditsEntries)
+            {
+                entry.Collect(context);
+            }
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

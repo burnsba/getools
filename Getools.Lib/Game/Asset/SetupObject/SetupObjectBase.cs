@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -14,6 +15,8 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// C file, type name. Should match known struct type.
         /// </summary>
         public const string CTypeName = "s32";
+
+        public const int BaseSizeOf = 4;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectBase"/> class.
@@ -44,6 +47,38 @@ namespace Getools.Lib.Game.Asset.SetupObject
             {
                 TypeRaw = (byte)value;
             }
+        }
+
+        /// <summary>
+        /// Gets Getools.Lib reference id for the section/filler section.
+        /// </summary>
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
+        /// <inheritdoc />
+        public virtual int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public virtual int BaseDataSize { get; set; }
+
+        /// <inheritdoc />
+        public virtual void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public virtual void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[GameObjectHeaderBase.SizeOf];
+
+            var headerBytes = ((GameObjectHeaderBase)this).ToByteArray();
+            Array.Copy(headerBytes, bytes, headerBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -10,6 +11,9 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectKey : SetupObjectGenericBase
     {
+        private const int _thisSize = 1 * Config.TargetWordSize;
+        public const int SizeOf = SetupObjectBase.BaseSizeOf + _thisSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectKey"/> class.
         /// </summary>
@@ -25,6 +29,20 @@ namespace Getools.Lib.Game.Asset.SetupObject
         public uint Key { get; set; }
 
         /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -33,6 +51,33 @@ namespace Getools.Lib.Game.Asset.SetupObject
             AppendToCInlineS32Array(sb);
 
             return sb.ToString();
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[_thisSize];
+
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, Key);
+            pos += Config.TargetWordSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[SizeOf];
+
+            var thisBytes = ToByteArray();
+
+            var baseBytes = ((SetupObjectGenericBase)this).ToByteArray();
+            Array.Copy(baseBytes, bytes, baseBytes.Length);
+            Array.Copy(thisBytes, bytes, thisBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
 
         /// <inheritdoc />

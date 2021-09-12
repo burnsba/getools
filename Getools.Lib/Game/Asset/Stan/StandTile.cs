@@ -354,8 +354,8 @@ namespace Getools.Lib.Game.Asset.Stan
                 results[6] = (byte)((((byte)Points.Count & 0xf) << 4) | (FirstPoint & 0xf));
                 results[7] = (byte)(((SecondPoint & 0xf) << 4) | (ThirdPoint & 0xf));
 
-                var aac = context.AssembleAppendBytes(results, Config.TargetWordSize);
-                BaseDataOffset = aac.DataStartAddress;
+                var result = context.AssembleAppendBytes(results, Config.TargetWordSize);
+                BaseDataOffset = result.DataStartAddress;
             }
             else if (Format == TypeFormat.Beta)
             {
@@ -374,11 +374,11 @@ namespace Getools.Lib.Game.Asset.Stan
                 results[10] = (byte)SecondPoint;
                 results[11] = (byte)ThirdPoint;
 
-                var aac = context.AssembleAppendBytes(results, Config.TargetWordSize);
-                BaseDataOffset = aac.DataStartAddress;
+                var result = context.AssembleAppendBytes(results, Config.TargetWordSize);
+                BaseDataOffset = result.DataStartAddress;
 
                 var p = new PointerVariable(DebugName);
-                p.BaseDataOffset = aac.DataStartAddress;
+                p.BaseDataOffset = result.DataStartAddress;
                 context.RegisterPointer(p);
             }
             else

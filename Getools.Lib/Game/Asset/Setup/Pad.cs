@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -11,7 +12,7 @@ namespace Getools.Lib.Game.Asset.Setup
     /// <remarks>
     /// TODO: see LookupPadLink() on <see cref="StandTile"/>.
     /// </remarks>
-    public class Pad
+    public class Pad : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -52,7 +53,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets name string/pointer.
         /// Struct offset 0x24.
         /// </summary>
-        public StringPointer Name { get; set; }
+        public RodataString Name { get; set; }
 
         /// <summary>
         /// TODO: Unknown fields.
@@ -65,6 +66,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public virtual int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Reads from current position in stream. Loads object from
@@ -124,6 +137,42 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(" }");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public virtual void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(Position);
+            context.AppendToDataSection(Up);
+            context.AppendToDataSection(Look);
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public virtual void Assemble(IAssembleContext context)
+        {
+            // the coord3d are handled in their own class, only need the native properties here.
+            var size = Config.TargetWordSize * 2;
+            var bytes = new byte[size];
+            int pos = 0;
+            int pointerOffset = 0;
+
+            // need to save offset in struct to set the pointer baseaddress
+            pointerOffset = pos;
+
+            // pointer value will be resolved when linking
+            BitUtility.Insert32Big(bytes, pos, 0);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Unknown);
+            pos += Config.TargetWordSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+
+            var p = new PointerVariable(Name);
+            p.BaseDataOffset = result.DataStartAddress;
+            context.RegisterPointer(p);
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Intro
 {
@@ -13,6 +14,8 @@ namespace Getools.Lib.Game.Asset.Intro
         /// C file, type name. Should match known struct type.
         /// </summary>
         public const string CTypeName = "s32";
+
+        public const int BaseSizeOf = 4;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntroBase"/> class.
@@ -46,5 +49,25 @@ namespace Getools.Lib.Game.Asset.Intro
                 TypeRaw = (byte)value;
             }
         }
+
+        /// <summary>
+        /// Gets Getools.Lib reference id for the section/filler section.
+        /// </summary>
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
+        /// <inheritdoc />
+        public virtual int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public abstract int BaseDataSize { get; set; }
+
+        /// <inheritdoc />
+        public abstract void Collect(IAssembleContext context);
+
+        /// <inheritdoc />
+        public abstract void Assemble(IAssembleContext context);
     }
 }

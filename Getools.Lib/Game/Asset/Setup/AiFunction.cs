@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// Single ai script function.
     /// </summary>
-    public class AiFunction
+    public class AiFunction : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -43,6 +44,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public int OrderIndex { get; set; } = 0;
 
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => Data.Length;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
         /// <summary>
         /// Builds a string to describe the current object
         /// as a complete declaraction in c, using normal structs. Includes type, variable
@@ -71,6 +84,23 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.AppendLine(" };");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            // Leaving this not implemented.
+            // Collect should be called by the DataSectionAiList because the entries
+            // and prequel entries need to be placed in the correct order as a complete
+            // group.
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var result = context.AssembleAppendBytes(Data, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
     }
 }

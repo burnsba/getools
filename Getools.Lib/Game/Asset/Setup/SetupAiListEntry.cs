@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// SetupAiListEntry.
     /// </summary>
-    public class SetupAiListEntry
+    public class SetupAiListEntry : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -15,10 +16,15 @@ namespace Getools.Lib.Game.Asset.Setup
         public const string CTypeName = "struct ailist";
 
         /// <summary>
-        /// Gets or sets address of function being pointed to.
-        /// Struct offset 0x0.
+        /// Size of the point struct in bytes.
         /// </summary>
-        public UInt32 EntryPointer { get; set; }
+        public const int SizeOf = 8;
+
+        ///// <summary>
+        ///// Gets or sets address of function being pointed to.
+        ///// Struct offset 0x0.
+        ///// </summary>
+        //public UInt32 EntryPointer { get; set; }
 
         /// <summary>
         /// Gets or sets ai script id.
@@ -31,12 +37,26 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public AiFunction Function { get; set; }
 
+        public PointerVariable EntryPointer { get; set; }
+
         /// <summary>
         /// Gets or sets the index of how this entry is sorted
         /// in the <see cref="StageSetupFile"/> AI Script section.
         /// This should coorespond to sorting by <see cref="Id"/>.
         /// </summary>
         public int OrderIndex { get; set; } = 0;
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -58,6 +78,55 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(" }");
 
             return sb.ToString();
+        }
+
+        public void DeserializeFix()
+        {
+            if (object.ReferenceEquals(null, EntryPointer))
+            {
+                EntryPointer = new PointerVariable();
+
+                if (!object.ReferenceEquals(null, Function))
+                {
+                    EntryPointer.AssignPointer(Function);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            // Leaving this not implemented.
+            // Collect should be called by the DataSectionAiList because the entries
+            // and prequel entries need to be placed in the correct order as a complete
+            // group.
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+            int pointerOffset = 0;
+
+            // need to save offset in struct to set the pointer baseaddress
+            pointerOffset = pos;
+
+            // pointer value will be resolved when linking
+            BitUtility.Insert32Big(bytes, pos, 0);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Id);
+            pos += Config.TargetWordSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+
+            EntryPointer.BaseDataOffset = BaseDataOffset + pointerOffset;
+
+            context.RegisterPointer(EntryPointer);
         }
     }
 }

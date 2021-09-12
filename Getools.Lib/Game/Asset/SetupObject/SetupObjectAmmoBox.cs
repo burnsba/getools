@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -19,6 +20,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </remarks>
     public class SetupObjectAmmoBox : SetupObjectGenericBase
     {
+        private const int _thisSize = 26 * Config.TargetShortSize;
+
+        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectAmmoBox"/> class.
         /// </summary>
@@ -184,6 +189,20 @@ namespace Getools.Lib.Game.Asset.SetupObject
         public short AmmoGolden { get; set; }
 
         /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -192,6 +211,95 @@ namespace Getools.Lib.Game.Asset.SetupObject
             AppendToCInlineS32Array(sb);
 
             return sb.ToString();
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[_thisSize];
+
+            int pos = 0;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_00);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, Ammo9mm);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_04);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, Ammo9mm2);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_08);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoRifle);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_0c);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoShotgun);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_10);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoHgrenade);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_14);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoRockets);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_18);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoRemoteMine);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_1c);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoProximityMine);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_20);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoTimedMine);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_24);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoThrowing);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_28);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoGrenadeLauncher);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_2c);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoMagnum);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unused_30);
+            pos += Config.TargetShortSize;
+            BitUtility.InsertShortBig(bytes, pos, AmmoGolden);
+            pos += Config.TargetShortSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[SizeOf];
+
+            var thisBytes = ToByteArray();
+
+            var baseBytes = ((SetupObjectGenericBase)this).ToByteArray();
+            Array.Copy(baseBytes, bytes, baseBytes.Length);
+            Array.Copy(thisBytes, bytes, thisBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
 
         /// <inheritdoc />

@@ -79,5 +79,18 @@ namespace Getools.Lib.Converters
 
             File.WriteAllText(path, json);
         }
+
+        /// <summary>
+        /// Assembles and links setup file the same way the N64 version does and writes as uncompressed bytes.
+        /// </summary>
+        /// <param name="source">Object to convert.</param>
+        /// <param name="path">Path of file to write to.</param>
+        public static void WriteToBin(StageSetupFile source, string path)
+        {
+            using (var bw = new BinaryWriter(new FileStream(path, FileMode.Create)))
+            {
+                source.WriteToBinFile(bw);
+            }
+        }
     }
 }

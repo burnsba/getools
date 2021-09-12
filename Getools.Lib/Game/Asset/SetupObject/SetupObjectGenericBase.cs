@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -10,6 +11,8 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public abstract class SetupObjectGenericBase : SetupObjectBase
     {
+        public const int SizeOf = SetupObjectBase.BaseSizeOf + (31 * Config.TargetWordSize);
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectGenericBase"/> class.
         /// </summary>
@@ -193,6 +196,20 @@ namespace Getools.Lib.Game.Asset.SetupObject
         public UInt32 Unknown7c { get; set; }
 
         /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -201,6 +218,138 @@ namespace Getools.Lib.Game.Asset.SetupObject
             AppendToCInlineS32Array(sb);
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Converts the base generic object to byte array.
+        /// Includes object header.
+        /// </summary>
+        /// <returns>Object as byte array.</returns>
+        public byte[] ToByteArray()
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            // base data
+            Array.Copy(((GameObjectHeaderBase)this).ToByteArray(), bytes, 0);
+
+            // this object data
+            BitUtility.InsertShortBig(bytes, pos, ObjectId);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Preset);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Flags1);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Flags2);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, PointerPositionData);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, PointerObjInstanceController);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown18);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown1c);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown20);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown24);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown28);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown2c);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown30);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown34);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown38);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown3c);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown40);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown44);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown48);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown4c);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown50);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown54);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Xpos);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Ypos);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Zpos);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Bitflags);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, PointerCollisionBlock);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown6c);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown70);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Health);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, MaxHealth);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown78);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown7c);
+            pos += Config.TargetPointerSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = ToByteArray();
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
 
         /// <inheritdoc />

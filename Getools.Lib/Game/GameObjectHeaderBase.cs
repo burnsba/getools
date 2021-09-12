@@ -10,6 +10,8 @@ namespace Getools.Lib.Game
     /// </summary>
     public abstract class GameObjectHeaderBase : GameObjectBase, IGameObjectHeader
     {
+        public const int SizeOf = Config.TargetWordSize;
+
         /// <inheritdoc />
         public UInt16 Scale { get; set; }
 
@@ -28,6 +30,17 @@ namespace Getools.Lib.Game
             AppendToCInlineS32Array(sb);
 
             return sb.ToString();
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[4];
+
+            BitUtility.InsertShortBig(bytes, 0, Scale);
+            bytes[2] = Hidden2Raw;
+            bytes[3] = TypeRaw;
+
+            return bytes;
         }
 
         /// <summary>

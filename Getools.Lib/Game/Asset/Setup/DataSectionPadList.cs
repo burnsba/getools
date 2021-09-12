@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -27,6 +28,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// would be listed before this main entry.
         /// </summary>
         public List<Pad> PadList { get; set; } = new List<Pad>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    (GetEntriesCount() * Pad.SizeOf);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         public override string GetDeclarationTypeName()
@@ -69,6 +86,22 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            // no prequel data, passthrough to item
+            foreach (var entry in PadList)
+            {
+                entry.Collect(context);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

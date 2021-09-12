@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Formatters;
 
 namespace Getools.Lib.Game
@@ -9,7 +10,7 @@ namespace Getools.Lib.Game
     /// <summary>
     /// bondtypes.h struct bbox.
     /// </summary>
-    public class BoundingBoxf
+    public class BoundingBoxf : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file type name.
@@ -64,6 +65,18 @@ namespace Getools.Lib.Game
         /// </summary>
         public Single MaxZ { get; set; }
 
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
         /// <summary>
         /// Reads from current position in stream. Loads object from
         /// stream as it would be read from a binary file using normal structs.
@@ -111,6 +124,41 @@ namespace Getools.Lib.Game
             sb.Append("}");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MinX));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MaxX));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MinY));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MaxY));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MinZ));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(MaxZ));
+            pos += Config.TargetWordSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
     }
 }

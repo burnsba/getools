@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -10,6 +11,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectSingleMonitor : SetupObjectGenericBase
     {
+        private const int _thisSize = 124;
+
+        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectSingleMonitor"/> class.
         /// </summary>
@@ -263,6 +268,162 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// Struct offset: 0x7c.
         /// </summary>
         public uint AnimationNum { get; set; }
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[_thisSize];
+
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, CurNumCmdsFromStartRotation);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, LoopCounter);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, ImgnumOrPtrheader);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Rotation);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurHzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurHzoomTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalHzoomTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, InitialHzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalHzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurVzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurVzoomTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurVzoomTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalVzoomTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, InitialVzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalVzoom);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurHpos);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurHscrollTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalHscrollTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, InitialHpos);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalHpos);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurVpos);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, CurVscrollTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalVscrollTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, InitialVpos);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalVpos);
+            pos += Config.TargetWordSize;
+
+            bytes[pos] = CurRed;
+            pos++;
+            bytes[pos] = InitialRed;
+            pos++;
+            bytes[pos] = FinalRed;
+            pos++;
+
+            bytes[pos] = CurGreen;
+            pos++;
+            bytes[pos] = InitialGreen;
+            pos++;
+            bytes[pos] = FinalGreen;
+            pos++;
+
+            bytes[pos] = CurBlue;
+            pos++;
+            bytes[pos] = InitialBlue;
+            pos++;
+            bytes[pos] = FinalBlue;
+            pos++;
+
+            bytes[pos] = CurAlpha;
+            pos++;
+            bytes[pos] = InitialAlpha;
+            pos++;
+            bytes[pos] = FinalAlpha;
+            pos++;
+
+            BitUtility.Insert32Big(bytes, pos, CurColorTransitionTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FinalColorTransitionTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BackwardMonLink);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, ForwardMonLink);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, AnimationNum);
+            pos += Config.TargetWordSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[SizeOf];
+
+            var thisBytes = ToByteArray();
+
+            var baseBytes = ((SetupObjectGenericBase)this).ToByteArray();
+            Array.Copy(baseBytes, bytes, baseBytes.Length);
+            Array.Copy(thisBytes, bytes, thisBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+        }
 
         /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")

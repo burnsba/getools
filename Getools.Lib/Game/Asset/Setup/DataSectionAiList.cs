@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -36,6 +37,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// would be listed before this main entry.
         /// </summary>
         public List<SetupAiListEntry> AiLists { get; set; } = new List<SetupAiListEntry>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    (GetEntriesCount() * SetupAiListEntry.SizeOf);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         public override string GetDeclarationTypeName()
@@ -129,6 +146,8 @@ namespace Getools.Lib.Game.Asset.Setup
 
             foreach (var entry in AiLists.OrderBy(x => x.EntryPointer))
             {
+                entry.DeserializeFix();
+
                 if (!object.ReferenceEquals(null, entry.Function))
                 {
                     entry.Function.OrderIndex = entry.OrderIndex;
@@ -151,6 +170,26 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return AiLists.Where(x => x.Function != null).Sum(x => x.Function.Data.Length);
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            foreach (var entry in AiLists)
+            {
+                context.AppendToDataSection(entry.Function);
+            }
+
+            foreach (var entry in AiLists)
+            {
+                context.AppendToDataSection(entry);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

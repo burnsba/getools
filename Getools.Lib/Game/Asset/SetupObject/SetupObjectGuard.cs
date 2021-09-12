@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -10,6 +11,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectGuard : SetupObjectBase, ISetupObject
     {
+        private const int _thisSize = 6 * Config.TargetWordSize;
+
+        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectGuard"/> class.
         /// </summary>
@@ -67,6 +72,74 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// TODO: Unknown.
         /// </summary>
         public uint PointerRuntimeData { get; set; }
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[_thisSize];
+
+            int pos = 0;
+
+            BitUtility.InsertShortBig(bytes, pos, ObjectId);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Preset);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, BodyId);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, ActionPathAssignment);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, PresetToTrigger);
+            pos += Config.TargetWordSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Unknown10);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Health);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, ReactionTime);
+            pos += Config.TargetShortSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Head);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, PointerRuntimeData);
+            pos += Config.TargetWordSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[SizeOf];
+
+            var thisBytes = ToByteArray();
+
+            var headerBytes = ((GameObjectHeaderBase)this).ToByteArray();
+            Array.Copy(headerBytes, bytes, headerBytes.Length);
+            Array.Copy(thisBytes, bytes, thisBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+        }
 
         /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")

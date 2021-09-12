@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// Base interface setup section.
     /// </summary>
-    public interface ISetupSection
+    public interface ISetupSection : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// Gets a value indicating whether this is one of the sections that can be
@@ -35,11 +36,6 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the variable name used in source file.
         /// </summary>
         string VariableName { get; set; }
-
-        /// <summary>
-        /// Gets Getools.Lib reference id for the section/filler section.
-        /// </summary>
-        Guid MetaId { get; }
 
         /// <summary>
         /// Iterates over the collection after it has been deserialized

@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// PathTable, points to a list of ids.
     /// </summary>
-    public class PathTable
+    public class PathTable : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -46,6 +47,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public List<int> Ids { get; set; } = new List<int>();
 
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => Config.TargetWordSize * Ids.Count;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
         /// <summary>
         /// Builds a string to describe the current object
         /// as a complete declaraction in c, using normal structs. Includes type, variable
@@ -64,6 +77,33 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.AppendLine(" };");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            // Leaving this not implemented.
+            // Collect should be called by the DataSectionPathTable because the entries
+            // and prequel entries need to be placed in the correct order as a complete
+            // group.
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = Ids.Count * Config.TargetWordSize;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            foreach (var id in Ids)
+            {
+                BitUtility.Insert32Big(bytes, pos, id);
+                pos += Config.TargetWordSize;
+            }
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
     }
 }

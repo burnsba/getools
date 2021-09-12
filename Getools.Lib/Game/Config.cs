@@ -28,6 +28,11 @@ namespace Getools.Lib.Game
         public const int TargetWordSize = 4;
 
         /// <summary>
+        /// Size of short/ushort in bytes on N64 MIPS hardware.
+        /// </summary>
+        public const int TargetShortSize = 2;
+
+        /// <summary>
         /// Default alignment for pointers on MIPS.
         /// </summary>
         public const int TargetPointerAlignment = 4;

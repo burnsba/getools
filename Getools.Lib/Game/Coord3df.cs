@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Formatters;
 
 namespace Getools.Lib.Game
@@ -10,12 +11,17 @@ namespace Getools.Lib.Game
     /// 3d float point.
     /// Cooresponds to `struct coord3d`.
     /// </summary>
-    public class Coord3df
+    public class Coord3df : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file type name.
         /// </summary>
         public const string CTypeName = "struct coord3d";
+
+        /// <summary>
+        /// Size of the struct in bytes.
+        /// </summary>
+        public const int SizeOf = 12;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Coord3df"/> class.
@@ -43,6 +49,18 @@ namespace Getools.Lib.Game
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Reads from current position in stream. Loads object from
@@ -91,6 +109,32 @@ namespace Getools.Lib.Game
             sb.AppendLine($"{prefix}}};");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(X));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(Y));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(Z));
+            pos += Config.TargetWordSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
 
         /// <inheritdoc />

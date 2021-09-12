@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -33,6 +34,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public BoundingBoxf BoundingBox { get; set; }
 
+        /// <inheritdoc />
+        public override int BaseDataSize => SizeOf;
+
         /// <summary>
         /// Reads from current position in stream. Loads object from
         /// stream as it would be read from a binary file using normal structs.
@@ -53,6 +57,16 @@ namespace Getools.Lib.Game.Asset.Setup
             result.BoundingBox = BoundingBoxf.ReadFromBinFile(br);
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(Position);
+            context.AppendToDataSection(Up);
+            context.AppendToDataSection(Look);
+            context.AppendToDataSection(this);
+            context.AppendToDataSection(BoundingBox);
         }
 
         /// <inheritdoc />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -24,7 +25,23 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets the pad names list.
         /// </summary>
-        public List<StringPointer> PadNames { get; set; } = new List<StringPointer>();
+        public List<RodataString> PadNames { get; set; } = new List<RodataString>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    (GetEntriesCount() * Config.TargetPointerSize);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         public override string GetDeclarationTypeName()
@@ -74,6 +91,21 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            foreach (var entry in PadNames)
+            {
+                context.AppendToDataSection(entry);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

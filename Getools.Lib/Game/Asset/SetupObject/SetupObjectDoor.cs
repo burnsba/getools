@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.SetupObject
@@ -11,6 +12,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// </summary>
     public class SetupObjectDoor : SetupObjectGenericBase
     {
+        private const int _thisSize = 32 * Config.TargetWordSize;
+
+        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectDoor"/> class.
         /// </summary>
@@ -267,6 +272,161 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// Offset 0xfc.
         /// </summary>
         public UInt32 Timer { get; set; }
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return SizeOf;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public byte[] ToByteArray()
+        {
+            var bytes = new byte[_thisSize];
+
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, LinkedDoorOffset);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, MaxFrac);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, PerimFrac);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Accel);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Decel);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, MaxSpeed);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, DoorFlags);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, DoorType);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, KeyFlags);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, AutoCloseFrames);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, DoorOpenSound);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Frac);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownAc);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownB0);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(OpenPosition));
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, BitUtility.CastToInt32(Speed));
+            pos += Config.TargetWordSize;
+
+            bytes[pos] = State;
+            pos++;
+
+            bytes[pos] = UnknownBd;
+            pos++;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownBe);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownC0);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownC4);
+            pos += Config.TargetShortSize;
+
+            bytes[pos] = SoundType;
+            pos++;
+
+            bytes[pos] = FadeTime60;
+            pos++;
+
+            BitUtility.Insert32Big(bytes, pos, LinkedDoorPointer);
+            pos += Config.TargetWordSize;
+
+            bytes[pos] = LaserFade;
+            pos++;
+
+            bytes[pos] = UnknownCd;
+            pos++;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownCe);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownD0);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownD4);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownD8);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownDc);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownE0);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownE4);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownE8);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, OpenedTime);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, PortalNumber);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownF4Pointer);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, UnknownF8);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Timer);
+            pos += Config.TargetWordSize;
+
+            return bytes;
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var bytes = new byte[SizeOf];
+
+            var thisBytes = ToByteArray();
+
+            var baseBytes = ((SetupObjectGenericBase)this).ToByteArray();
+            Array.Copy(baseBytes, bytes, baseBytes.Length);
+            Array.Copy(thisBytes, bytes, thisBytes.Length);
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+        }
 
         /// <inheritdoc />
         public override string ToCInlineS32Array(string prefix = "")

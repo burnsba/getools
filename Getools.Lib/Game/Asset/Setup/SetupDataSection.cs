@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
@@ -57,6 +58,15 @@ namespace Getools.Lib.Game.Asset.Setup
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <inheritdoc />
+        public virtual int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public abstract int BaseDataSize { get; set; }
+
+        /// <inheritdoc />
         public abstract string GetDeclarationTypeName();
 
         /// <inheritdoc />
@@ -73,6 +83,12 @@ namespace Getools.Lib.Game.Asset.Setup
 
         /// <inheritdoc />
         public abstract int GetPrequelDataSize();
+
+        /// <inheritdoc />
+        public abstract void Collect(IAssembleContext context);
+
+        /// <inheritdoc />
+        public abstract void Assemble(IAssembleContext context);
 
         /// <inheritdoc />
         public override int GetHashCode()

@@ -234,6 +234,18 @@ namespace Getools.Lib
         }
 
         /// <summary>
+        /// Converts 16 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void InsertShortBig(byte[] arr, int index, ushort value)
+        {
+            arr[index + 1] = (byte)(value & 0xff);
+            arr[index + 0] = (byte)((value >> 8) & 0xff);
+        }
+
+        /// <summary>
         /// Converts 32 bit value to LSB and inserts into array at index.
         /// </summary>
         /// <param name="arr">Array to insert value into.</param>
@@ -248,12 +260,40 @@ namespace Getools.Lib
         }
 
         /// <summary>
+        /// Converts 32 bit value to LSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert32Little(byte[] arr, int index, uint value)
+        {
+            arr[index + 0] = (byte)(value & 0xff);
+            arr[index + 1] = (byte)((value >> 8) & 0xff);
+            arr[index + 2] = (byte)((value >> 16) & 0xff);
+            arr[index + 3] = (byte)((value >> 24) & 0xff);
+        }
+
+        /// <summary>
         /// Converts 32 bit value to MSB and inserts into array at index.
         /// </summary>
         /// <param name="arr">Array to insert value into.</param>
         /// <param name="index">Index to insert value at.</param>
         /// <param name="value">Value to insert.</param>
         public static void Insert32Big(byte[] arr, int index, int value)
+        {
+            arr[index + 0] = (byte)((value >> 24) & 0xff);
+            arr[index + 1] = (byte)((value >> 16) & 0xff);
+            arr[index + 2] = (byte)((value >> 8) & 0xff);
+            arr[index + 3] = (byte)(value & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 32 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert32Big(byte[] arr, int index, uint value)
         {
             arr[index + 0] = (byte)((value >> 24) & 0xff);
             arr[index + 1] = (byte)((value >> 16) & 0xff);

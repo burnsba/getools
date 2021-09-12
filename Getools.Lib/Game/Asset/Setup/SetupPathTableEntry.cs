@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
     /// SetupPathTableEntry.
     /// </summary>
-    public class SetupPathTableEntry
+    public class SetupPathTableEntry : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -36,16 +37,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public UInt16 Unknown_02 { get; set; }
 
-        /// <summary>
-        /// Pointer address of <see cref="Entry"/>.
-        /// Struct offset 0x4.
-        /// </summary>
-        public int EntryPointer { get; set; }
+        ///// <summary>
+        ///// Pointer address of <see cref="Entry"/>.
+        ///// Struct offset 0x4.
+        ///// </summary>
+        //public int EntryPointer { get; set; }
 
         /// <summary>
         /// Value pointed to from <see cref="EntryPointer"/>.
         /// </summary>
         public PathTable Entry { get; set; }
+
+        public PointerVariable EntryPointer { get; set; }
 
         /// <summary>
         /// TODO: unknown.
@@ -58,6 +61,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Struct offset 0xc.
         /// </summary>
         public UInt32 Unknown_0C { get; set; }
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -85,6 +100,64 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(" }");
 
             return sb.ToString();
+        }
+
+        public void DeserializeFix()
+        {
+            if (object.ReferenceEquals(null, EntryPointer))
+            {
+                EntryPointer = new PointerVariable();
+
+                if (!object.ReferenceEquals(null, Entry))
+                {
+                    EntryPointer.AssignPointer(Entry);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            // Leaving this not implemented.
+            // Collect should be called by the DataSectionPathTable because the entries
+            // and prequel entries need to be placed in the correct order as a complete
+            // group.
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+            int pointerOffset = 0;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown_00);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Unknown_02);
+            pos += Config.TargetWordSize;
+
+            // need to save offset in struct to set the pointer baseaddress
+            pointerOffset = pos;
+
+            // pointer value will be resolved when linking
+            BitUtility.Insert32Big(bytes, pos, 0);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Unknown_08);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Unknown_0C);
+            pos += Config.TargetWordSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+
+            EntryPointer.BaseDataOffset = BaseDataOffset + pointerOffset;
+
+            context.RegisterPointer(EntryPointer);
         }
     }
 }

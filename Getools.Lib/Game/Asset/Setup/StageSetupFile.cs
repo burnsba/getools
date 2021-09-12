@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Error;
 using Getools.Lib.Game.Asset.Intro;
 using Getools.Lib.Game.Asset.SetupObject;
@@ -15,6 +16,8 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class StageSetupFile
     {
+        private StageSetupFileHeader _header;
+
         /// <summary>
         /// C file, type name. Should match known struct type.
         /// </summary>
@@ -518,6 +521,51 @@ namespace Getools.Lib.Game.Asset.Setup
             {
                 section.DeserializeFix();
             }
+        }
+
+        /// <summary>
+        /// Adds lib objects to the file, so they can be compiled into .bin
+        /// in the correct order.
+        /// </summary>
+        /// <param name="file">File to add stan to.</param>
+        internal void AddToMipsFile(MipsFile file)
+        {
+            _header = new StageSetupFileHeader(
+                SectionPathTables,
+                SectionPathList,
+                SectionIntros,
+                SectionObjects,
+                SectionPathSets,
+                SectionAiLists,
+                SectionPadList,
+                SectionPad3dList,
+                SectionPadNames,
+                SectionPad3dNames);
+
+            _header.Collect(file);
+
+            foreach (var section in Sections)
+            {
+                section.Collect(file);
+            }
+        }
+
+        /// <summary>
+        /// Builds the entire .bin file describing setup and writes to stream at the current position.
+        /// </summary>
+        /// <param name="bw">Binary stream to write to.</param>
+        internal void WriteToBinFile(BinaryWriter bw)
+        {
+            var file = new MipsFile();
+
+            AddToMipsFile(file);
+
+            file.Assemble();
+            var fileContents = file.GetLinkedFile();
+
+            bw.Write(fileContents);
+
+            _header = null;
         }
 
         /// <summary>

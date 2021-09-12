@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Asset.Intro;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// Path table section.
+    /// Intros section.
     /// </summary>
     public class DataSectionIntros : SetupDataSection
     {
@@ -37,6 +38,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// would be listed before this main entry.
         /// </summary>
         public List<IIntro> Intros { get; set; } = new List<IIntro>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    Intros.Sum(x => x.BaseDataSize);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataSectionIntros"/> class.
@@ -122,6 +139,21 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return 0;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            foreach (var entry in Intros)
+            {
+                context.AppendToDataSection(entry);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

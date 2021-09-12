@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -36,6 +37,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// would be listed before this main entry.
         /// </summary>
         public List<SetupPathLinkEntry> PathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return
+                    GetPrequelDataSize() +
+                    (GetEntriesCount() * SetupPathLinkEntry.SizeOf);
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         public override string GetDeclarationTypeName()
@@ -109,6 +126,8 @@ namespace Getools.Lib.Game.Asset.Setup
             {
                 foreach (var entry in PathLinkEntries)
                 {
+                    entry.DeserializeFix();
+
                     if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
                     {
                         entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
@@ -131,6 +150,8 @@ namespace Getools.Lib.Game.Asset.Setup
             {
                 foreach (var entry in PathLinkEntries)
                 {
+                    entry.DeserializeFix();
+
                     if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
                     {
                         entry.Neighbors.VariableName = $"path_neighbors_{index}";
@@ -158,6 +179,31 @@ namespace Getools.Lib.Game.Asset.Setup
             var neighborsSize = PathLinkEntries.Where(x => x.Neighbors != null).Sum(x => x.Neighbors.Ids.Count) * Config.TargetWordSize;
             var indecesSize = PathLinkEntries.Where(x => x.Indeces != null).Sum(x => x.Indeces.Ids.Count) * Config.TargetWordSize;
             return neighborsSize + indecesSize;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            foreach (var entry in PathLinkEntries)
+            {
+                context.AppendToDataSection(entry.Neighbors);
+            }
+
+            foreach (var entry in PathLinkEntries)
+            {
+                context.AppendToDataSection(entry.Indeces);
+            }
+
+            foreach (var entry in PathLinkEntries)
+            {
+                context.AppendToDataSection(entry);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            // nothing to do
         }
     }
 }

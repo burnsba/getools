@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.Intro
@@ -8,7 +9,7 @@ namespace Getools.Lib.Game.Asset.Intro
     /// <summary>
     /// Credits screen entry.
     /// </summary>
-    public class IntroCreditEntry
+    public class IntroCreditEntry : IBinData, IGetoolsLibObject
     {
         /*
          * Struct layout:
@@ -79,6 +80,18 @@ namespace Getools.Lib.Game.Asset.Intro
         /// </summary>
         public string VariableName { get; set; }
 
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public virtual int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
+
         /// <summary>
         /// Builds a string to describe the current object
         /// as a complete declaraction in c, using normal structs. Includes type, variable
@@ -117,6 +130,41 @@ namespace Getools.Lib.Game.Asset.Intro
             sb.Append(" }");
 
             return sb.ToString();
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            BitUtility.InsertShortBig(bytes, pos, TextId1);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, TextId2);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Position1);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, (short)Alignment1);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, Position2);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.InsertShortBig(bytes, pos, (short)Alignment2);
+            pos += Config.TargetPointerSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
 
         /// <summary>

@@ -74,6 +74,12 @@ namespace Getools.Lib.BinPack
         int GetCurrentAddress();
 
         /// <summary>
+        /// Returns current section being assembled.
+        /// </summary>
+        /// <returns>Current section.</returns>
+        MipsElfSection GetCurrentSection();
+
+        /// <summary>
         /// Builds .data section and .rodata section.
         /// Resulting file is saved in an internal variable which can be retrieved by calling this again
         /// (i.e., the return value can be ignored one or more times).

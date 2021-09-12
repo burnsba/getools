@@ -131,13 +131,13 @@ namespace Getools.Lib.Kaitai
             if (!object.ReferenceEquals(null, ssf.SectionPathTables))
             {
                 var entrySize = ssf.SectionPathTables.GetPrequelDataSize();
-                var firstEntry = ssf.SectionPathTables.PathTables.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionPathTables.PathTables.Where(x => x.EntryPointer.PointedToOffset > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.EntryPointer && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.EntryPointer, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.EntryPointer.PointedToOffset, -1);
                     }
                 }
             }
@@ -359,13 +359,16 @@ namespace Getools.Lib.Kaitai
 
             spte.Unknown_00 = kaitaiObject.Unknown00;
             spte.Unknown_02 = kaitaiObject.Unknown02;
-            spte.EntryPointer = (int)kaitaiObject.UnknownPointer;
+            spte.EntryPointer = new BinPack.PointerVariable();
+            spte.EntryPointer.PointedToOffset = (int)kaitaiObject.UnknownPointer;
+
             spte.Unknown_08 = kaitaiObject.Unknown08;
             spte.Unknown_0C = kaitaiObject.Unknown0c;
 
             if (!object.ReferenceEquals(null, kaitaiObject.Data))
             {
                 spte.Entry = new PathTable(kaitaiObject.Data.Select(x => (int)x.Value));
+                spte.EntryPointer.AssignPointer(spte.Entry);
             }
 
             return spte;

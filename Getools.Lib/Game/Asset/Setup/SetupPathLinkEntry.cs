@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Getools.Lib.BinPack;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -10,7 +11,7 @@ namespace Getools.Lib.Game.Asset.Setup
     /// <remarks>
     /// Record ends with (UInt32)0.
     /// </remarks>
-    public class SetupPathLinkEntry
+    public class SetupPathLinkEntry : IBinData, IGetoolsLibObject
     {
         /// <summary>
         /// Each entry ends with this value.
@@ -32,22 +33,26 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public int Offset { get; set; }
 
-        /// <summary>
-        /// Gets or sets address of the <see cref="Neighbors"/> list being pointed to.
-        /// Struct offset 0x0.
-        /// </summary>
-        public int NeighborsPointer { get; set; }
+        ///// <summary>
+        ///// Gets or sets address of the <see cref="Neighbors"/> list being pointed to.
+        ///// Struct offset 0x0.
+        ///// </summary>
+        //public int NeighborsPointer { get; set; }
+
+        public PointerVariable NeighborsPointer { get; set; }
 
         /// <summary>
         /// List of ids pointed to from <see cref="NeighborsPointer"/>.
         /// </summary>
         public PathListing Neighbors { get; set; }
 
-        /// <summary>
-        /// Gets or sets address of the <see cref="Indeces"/> list being pointed to.
-        /// Struct offset 0x4.
-        /// </summary>
-        public int IndexPointer { get; set; }
+        ///// <summary>
+        ///// Gets or sets address of the <see cref="Indeces"/> list being pointed to.
+        ///// Struct offset 0x4.
+        ///// </summary>
+        //public int IndexPointer { get; set; }
+
+        public PointerVariable IndexPointer { get; set; }
 
         /// <summary>
         /// List of ids pointed to from <see cref="IndexPointer"/>.
@@ -65,6 +70,18 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
+
+        /// <inheritdoc />
+        public int ByteAlignment => Config.TargetWordSize;
+
+        /// <inheritdoc />
+        public int BaseDataOffset { get; set; }
+
+        /// <inheritdoc />
+        public int BaseDataSize => SizeOf;
+
+        /// <inheritdoc />
+        public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -109,6 +126,75 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(" }");
 
             return sb.ToString();
+        }
+
+        public void DeserializeFix()
+        {
+            if (object.ReferenceEquals(null, NeighborsPointer))
+            {
+                NeighborsPointer = new PointerVariable();
+
+                if (!object.ReferenceEquals(null, Neighbors))
+                {
+                    NeighborsPointer.AssignPointer(Neighbors);
+                }
+            }
+
+            if (object.ReferenceEquals(null, IndexPointer))
+            {
+                IndexPointer = new PointerVariable();
+
+                if (!object.ReferenceEquals(null, Indeces))
+                {
+                    IndexPointer.AssignPointer(Indeces);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Collect(IAssembleContext context)
+        {
+            // Leaving this not implemented.
+            // Collect should be called by the DataSectionPathList because the entries
+            // and prequel entries need to be placed in the correct order as a complete
+            // group.
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public void Assemble(IAssembleContext context)
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            int neighborPointerOffset = 0;
+            int indexPointerOffset = 0;
+
+            // need to save offset in struct to set the pointer baseaddress
+            neighborPointerOffset = pos;
+
+            // pointer value will be resolved when linking
+            BitUtility.Insert32Big(bytes, pos, 0);
+            pos += Config.TargetPointerSize;
+
+            indexPointerOffset = pos;
+
+            // pointer value will be resolved when linking
+            BitUtility.Insert32Big(bytes, pos, 0);
+            pos += Config.TargetPointerSize;
+
+            BitUtility.Insert32Big(bytes, pos, RecordDelimiter);
+            pos += Config.TargetPointerSize;
+
+            var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
+
+            NeighborsPointer.BaseDataOffset = BaseDataOffset + neighborPointerOffset;
+            context.RegisterPointer(NeighborsPointer);
+
+            IndexPointer.BaseDataOffset = BaseDataOffset + indexPointerOffset;
+            context.RegisterPointer(IndexPointer);
         }
     }
 }

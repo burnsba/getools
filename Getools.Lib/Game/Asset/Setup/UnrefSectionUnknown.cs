@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Getools.Lib.BinPack;
 using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
@@ -59,6 +60,20 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets the length in bytes of the data.
         /// </summary>
         public int Length => _byteData?.Length ?? 0;
+
+        /// <inheritdoc />
+        public override int BaseDataSize
+        {
+            get
+            {
+                return Length;
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         [JsonProperty("Data")]
         private byte[] JsonPropData
@@ -138,6 +153,19 @@ namespace Getools.Lib.Game.Asset.Setup
         public override int GetPrequelDataSize()
         {
             return Length;
+        }
+
+        /// <inheritdoc />
+        public override void Collect(IAssembleContext context)
+        {
+            context.AppendToDataSection(this);
+        }
+
+        /// <inheritdoc />
+        public override void Assemble(IAssembleContext context)
+        {
+            var result = context.AssembleAppendBytes(_byteData, Config.TargetWordSize);
+            BaseDataOffset = result.DataStartAddress;
         }
     }
 }
