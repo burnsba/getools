@@ -32,6 +32,17 @@ namespace Getools.Lib.BinPack
             Value = value;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RodataString"/> class.
+        /// </summary>
+        /// <param name="baseDataOffset">base data offset.</param>
+        /// <param name="value">Value of string.</param>
+        public RodataString(int baseDataOffset, string value)
+        {
+            BaseDataOffset = baseDataOffset;
+            Value = value;
+        }
+
         /// <inheritdoc />
         [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();

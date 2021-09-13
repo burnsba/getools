@@ -40,9 +40,6 @@ namespace Getools.Lib.Game.Asset.Setup
         public SetupSectionId TypeId { get; private set; }
 
         /// <inheritdoc />
-        public int Offset { get; set; }
-
-        /// <inheritdoc />
         public string VariableName { get; set; }
 
         /// <inheritdoc />

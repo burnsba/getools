@@ -216,19 +216,19 @@ namespace Getools.Lib.Game.Asset.Setup
                 throw new ArgumentException("Length must be a positive value or -1");
             }
 
-            var section = FillerBlocks.Where(x => x.Offset <= offset).OrderByDescending(x => x.Offset).FirstOrDefault();
+            var section = FillerBlocks.Where(x => x.BaseDataOffset <= offset).OrderByDescending(x => x.BaseDataOffset).FirstOrDefault();
 
             if (object.ReferenceEquals(null, section))
             {
                 throw new InvalidOperationException($"Could not find filler block associated to offset {offset}");
             }
 
-            if (!(section.Offset <= offset && offset < section.Offset + section.Length))
+            if (!(section.BaseDataOffset <= offset && offset < section.BaseDataOffset + section.Length))
             {
                 throw new InvalidOperationException($"Offset paramter={offset} is outside the bounds of the nearest filler block.");
             }
 
-            if (offset + length > section.Offset + section.Length)
+            if (offset + length > section.BaseDataOffset + section.Length)
             {
                 throw new InvalidOperationException($"Data slice will exceed the length of the filler block.");
             }
@@ -239,7 +239,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 takeLength = section.Length;
             }
 
-            int prequel = offset - section.Offset;
+            int prequel = offset - section.BaseDataOffset;
             int remaining = section.Length - takeLength;
 
             var unknownSectionIndex = Sections.FindIndex(x => x.MetaId == section.MetaId);
@@ -248,19 +248,19 @@ namespace Getools.Lib.Game.Asset.Setup
             if (prequel > 0)
             {
                 var prequelBlock = new UnrefSectionUnknown(section.GetDataBytes().Take(prequel).ToArray());
-                prequelBlock.Offset = section.Offset;
+                prequelBlock.BaseDataOffset = section.BaseDataOffset;
                 Sections.Add(prequelBlock);
             }
 
             if (remaining > 0)
             {
                 var remainBlock = new UnrefSectionUnknown(section.GetDataBytes().Skip(prequel + takeLength).Take(remaining).ToArray());
-                remainBlock.Offset = section.Offset + prequel + takeLength;
+                remainBlock.BaseDataOffset = section.BaseDataOffset + prequel + takeLength;
                 Sections.Add(remainBlock);
             }
 
             var returnBlock = new UnrefSectionUnknown(section.GetDataBytes().Skip(prequel).Take(takeLength).ToArray());
-            returnBlock.Offset = section.Offset + prequel;
+            returnBlock.BaseDataOffset = section.BaseDataOffset + prequel;
 
             return returnBlock;
         }
@@ -311,7 +311,7 @@ namespace Getools.Lib.Game.Asset.Setup
             }
             else
             {
-                int index = Sections.FindIndex(0, x => x.TypeId == type && x.Offset == offset);
+                int index = Sections.FindIndex(0, x => x.TypeId == type && x.BaseDataOffset == offset);
 
                 if (index >= 0)
                 {
@@ -336,8 +336,8 @@ namespace Getools.Lib.Game.Asset.Setup
                 .Where(x =>
                     x.IsMainSection == true
                     && x.IsUnreferenced == false
-                    && x.Offset < offset)
-                .OrderByDescending(x => x.Offset)
+                    && x.BaseDataOffset < offset)
+                .OrderByDescending(x => x.BaseDataOffset)
                 .FirstOrDefault();
 
             if (object.ReferenceEquals(null, section))
@@ -345,7 +345,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 throw new NullReferenceException($"Could not find main section prior to offset={offset}");
             }
 
-            return section.Offset;
+            return section.BaseDataOffset;
         }
 
         /// <summary>
@@ -360,8 +360,8 @@ namespace Getools.Lib.Game.Asset.Setup
         public int BytesToNextAnySection(int offset, int defaultReturn)
         {
             var nextSection = Sections
-                .Where(x => x.Offset > offset)
-                .OrderBy(x => x.Offset)
+                .Where(x => x.BaseDataOffset > offset)
+                .OrderBy(x => x.BaseDataOffset)
                 .FirstOrDefault();
 
             if (object.ReferenceEquals(null, nextSection))
@@ -369,7 +369,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 return defaultReturn;
             }
 
-            return nextSection.Offset - offset;
+            return nextSection.BaseDataOffset - offset;
         }
 
         /// <summary>
@@ -377,7 +377,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public void SortSectionsByOffset()
         {
-            Sections = Sections.OrderBy(x => x.Offset).ToList();
+            Sections = Sections.OrderBy(x => x.BaseDataOffset).ToList();
         }
 
         /// <summary>

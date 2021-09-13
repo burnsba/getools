@@ -120,9 +120,9 @@ namespace Getools.Lib.Kaitai
 
                     if (entrySize > 0)
                     {
-                        if (ssf.FillerBlocks.Any(x => x.Offset == credits.DataOffset && x.Length == entrySize))
+                        if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == credits.BaseDataOffset && x.Length == entrySize))
                         {
-                            ssf.ClaimUnrefSectionBytes(credits.DataOffset, -1);
+                            ssf.ClaimUnrefSectionBytes(credits.BaseDataOffset, -1);
                         }
                     }
                 }
@@ -131,11 +131,14 @@ namespace Getools.Lib.Kaitai
             if (!object.ReferenceEquals(null, ssf.SectionPathTables))
             {
                 var entrySize = ssf.SectionPathTables.GetPrequelDataSize();
-                var firstEntry = ssf.SectionPathTables.PathTables.Where(x => x.EntryPointer.PointedToOffset > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionPathTables.PathTables
+                    .Where(x => !x.EntryPointer.IsNull)
+                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
                     {
                         ssf.ClaimUnrefSectionBytes(firstEntry.EntryPointer.PointedToOffset, -1);
                     }
@@ -146,13 +149,16 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
-                var firstEntry = ssf.SectionPathList.PathLinkEntries.Where(x => x.NeighborsPointer > 0).OrderBy(x => x.NeighborsPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionPathList.PathLinkEntries
+                    .Where(x => !x.NeighborsPointer.IsNull)
+                    .OrderBy(x => x.NeighborsPointer.PointedToOffset)
+                    .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.NeighborsPointer && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.NeighborsPointer.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.NeighborsPointer, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.NeighborsPointer.PointedToOffset, -1);
                     }
                 }
             }
@@ -161,13 +167,16 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
-                var firstEntry = ssf.SectionPathList.PathLinkEntries.Where(x => x.IndexPointer > 0).OrderBy(x => x.IndexPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionPathList.PathLinkEntries
+                    .Where(x => !x.IndexPointer.IsNull)
+                    .OrderBy(x => x.IndexPointer.PointedToOffset)
+                    .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.IndexPointer && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.IndexPointer.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.IndexPointer, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.IndexPointer.PointedToOffset, -1);
                     }
                 }
             }
@@ -175,13 +184,16 @@ namespace Getools.Lib.Kaitai
             if (!object.ReferenceEquals(null, ssf.SectionPathSets))
             {
                 var entrySize = ssf.SectionPathSets.GetPrequelDataSize();
-                var firstEntry = ssf.SectionPathSets.PathSets.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionPathSets.PathSets
+                    .Where(x => !x.EntryPointer.IsNull)
+                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.EntryPointer && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer, -1);
+                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer.PointedToOffset, -1);
                     }
                 }
             }
@@ -189,13 +201,16 @@ namespace Getools.Lib.Kaitai
             if (!object.ReferenceEquals(null, ssf.SectionAiLists))
             {
                 var entrySize = ssf.SectionAiLists.GetPrequelDataSize();
-                var firstEntry = ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer > 0).OrderBy(x => x.EntryPointer).FirstOrDefault();
+                var firstEntry = ssf.SectionAiLists.AiLists
+                    .Where(x => !x.EntryPointer.IsNull)
+                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.Offset == firstEntry.EntryPointer && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer, -1);
+                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer.PointedToOffset, -1);
                     }
                 }
             }
@@ -209,7 +224,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPathTable();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathTablesOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathTablesOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -223,7 +238,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPathList();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathLinksOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathLinksOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -237,7 +252,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionIntros();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.IntrosOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.IntrosOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -247,7 +262,7 @@ namespace Getools.Lib.Kaitai
                 if (intro is IntroCredits credits)
                 {
                     var section = RefSectionCredits.NewSection(credits);
-                    section.Offset = credits.DataOffset;
+                    section.BaseDataOffset = credits.BaseDataOffset;
                     parent.AddSectionBefore(section, SetupSectionId.SectionObjects);
                 }
             }
@@ -259,7 +274,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionObjects();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.ObjectListOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.ObjectListOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -273,7 +288,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPathSets();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathSetsOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PathSetsOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -287,7 +302,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionAiList();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.AiListOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.AiListOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -301,7 +316,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPadList();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PadListOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PadListOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -315,7 +330,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPad3dList();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.Pad3dListOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.Pad3dListOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -329,7 +344,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPadNames();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PadNamesOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.PadNamesOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -343,7 +358,7 @@ namespace Getools.Lib.Kaitai
         {
             var result = new DataSectionPad3dNames();
 
-            result.Offset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.Pad3dNamesOffset;
+            result.BaseDataOffset = (int)kaitaiObject.M_Parent.M_Parent.Pointers.Pad3dNamesOffset;
 
             foreach (var entry in kaitaiObject.Data)
             {
@@ -378,8 +393,10 @@ namespace Getools.Lib.Kaitai
         {
             var sple = new SetupPathLinkEntry();
 
-            sple.NeighborsPointer = (int)kaitaiObject.PadNeighborOffset;
-            sple.IndexPointer = (int)kaitaiObject.PadIndexOffset;
+            sple.NeighborsPointer = new BinPack.PointerVariable();
+            sple.NeighborsPointer.PointedToOffset = (int)kaitaiObject.PadNeighborOffset;
+            sple.IndexPointer = new BinPack.PointerVariable();
+            sple.IndexPointer.PointedToOffset = (int)kaitaiObject.PadIndexOffset;
 
             if (!object.ReferenceEquals(null, kaitaiObject.PadNeighborIds))
             {
@@ -469,11 +486,13 @@ namespace Getools.Lib.Kaitai
         {
             var intro = new IntroCredits();
 
-            intro.DataOffset = kaitaiObject.DataOffset;
+            intro.CreditsDataPointer = new BinPack.PointerVariable();
+            intro.CreditsDataPointer.PointedToOffset = kaitaiObject.DataOffset;
 
-            if (intro.DataOffset > 0 && kaitaiObject.CreditData.Any())
+            if (intro.CreditsDataPointer.PointedToOffset > 0 && kaitaiObject.CreditData.Any())
             {
                 intro.Credits = new CreditsContainer();
+                intro.CreditsDataPointer.AssignPointer(intro.Credits);
 
                 foreach (var entry in kaitaiObject.CreditData)
                 {
@@ -1427,7 +1446,8 @@ namespace Getools.Lib.Kaitai
         {
             var spse = new SetupPathSetEntry();
 
-            spse.EntryPointer = kaitaiObject.Pointer;
+            spse.EntryPointer = new BinPack.PointerVariable();
+            spse.EntryPointer.PointedToOffset = (int)kaitaiObject.Pointer;
             spse.Unknown_04 = kaitaiObject.Unknown04;
 
             if (!object.ReferenceEquals(null, kaitaiObject.Data))
@@ -1442,7 +1462,8 @@ namespace Getools.Lib.Kaitai
         {
             var sae = new SetupAiListEntry();
 
-            sae.EntryPointer = kaitaiObject.Pointer;
+            sae.EntryPointer = new BinPack.PointerVariable();
+            sae.EntryPointer.PointedToOffset = (int)kaitaiObject.Pointer;
             sae.Id = kaitaiObject.Id;
 
             return sae;
@@ -1473,18 +1494,18 @@ namespace Getools.Lib.Kaitai
             return bbox;
         }
 
-        private static StringPointer Convert(Gen.Setup.StringPointer kaitaiObject)
+        private static BinPack.RodataString Convert(Gen.Setup.StringPointer kaitaiObject)
         {
-            var sp = new StringPointer();
+            var sp = new BinPack.RodataString();
 
             if (kaitaiObject.Offset == 0)
             {
-                sp.Offset = 0;
+                sp.BaseDataOffset = 0;
                 sp.Value = null;
             }
             else
             {
-                sp.Offset = (int)kaitaiObject.Offset;
+                sp.BaseDataOffset = (int)kaitaiObject.Offset;
                 sp.Value = kaitaiObject.Deref;
             }
 
@@ -1523,57 +1544,63 @@ namespace Getools.Lib.Kaitai
         private static void ParseAiListData(StageSetupFile ssf)
         {
             if (!object.ReferenceEquals(null, ssf.SectionAiLists)
-                && ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer > 0).Any())
+                && ssf.SectionAiLists.AiLists.Where(x => !x.EntryPointer.IsNull).Any())
             {
                 // Facility has a duplicate ailist entry, so note the .Distinct here.
-                var sortedPointers = ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer > 0).Select(x => x.EntryPointer).OrderBy(x => x).Distinct().ToList();
+                var sortedPointers = ssf.SectionAiLists.AiLists
+                    .Where(x => !x.EntryPointer.IsNull)
+                    .Select(x => x.EntryPointer.PointedToOffset)
+                    .OrderBy(x => x)
+                    .Distinct()
+                    .ToList();
+
                 var numberSortedPointers = sortedPointers.Count;
                 int functionSize = 0;
 
                 var aidataOffset = ssf.SectionAiLists.AiLists
-                    .Where(x => x.EntryPointer > 0)
-                    .OrderBy(x => x.EntryPointer)
-                    .Select(x => x.EntryPointer)
+                    .Where(x => !x.EntryPointer.IsNull)
+                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .Select(x => x.EntryPointer.PointedToOffset)
                     .First();
 
-                var aidataBlock = ssf.FillerBlocks.FirstOrDefault(x => x.Offset == aidataOffset);
+                var aidataBlock = ssf.FillerBlocks.FirstOrDefault(x => x.BaseDataOffset == aidataOffset);
 
                 // There may be unreferenced AI functions at the start of the filler block.
                 if (object.ReferenceEquals(null, aidataBlock))
                 {
-                    var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionAiLists.Offset);
+                    var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionAiLists.BaseDataOffset);
 
                     // looking for filler section immediately before AI List section.
                     aidataBlock = ssf.FillerBlocks
-                        .Where(x => x.Offset > previousSectionOffset && x.Offset < ssf.SectionAiLists.Offset)
-                        .OrderByDescending(x => x.Offset)
+                        .Where(x => x.BaseDataOffset > previousSectionOffset && x.BaseDataOffset < ssf.SectionAiLists.BaseDataOffset)
+                        .OrderByDescending(x => x.BaseDataOffset)
                         .FirstOrDefault();
 
-                    functionSize = (int)aidataOffset - aidataBlock.Offset;
+                    functionSize = (int)aidataOffset - aidataBlock.BaseDataOffset;
                     if (functionSize < 0)
                     {
-                        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{aidataBlock.Offset:x4}");
+                        throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{aidataBlock.BaseDataOffset:x4}");
                     }
 
-                    var claimed = ssf.ClaimUnrefSectionBytes(aidataBlock.Offset, functionSize);
-                    claimed.Offset = aidataBlock.Offset;
+                    var claimed = ssf.ClaimUnrefSectionBytes(aidataBlock.BaseDataOffset, functionSize);
+                    claimed.BaseDataOffset = aidataBlock.BaseDataOffset;
 
                     var f2 = new SetupAiListEntry()
                     {
                         Function = new AiFunction()
                         {
                             Data = claimed.GetDataBytes().Take(functionSize).ToArray(),
-                            Offset = claimed.Offset,
+                            Offset = claimed.BaseDataOffset,
                         },
                     };
 
                     var section = UnrefSectionAiFunction.NewUnreferencedSection();
-                    section.Offset = f2.Function.Offset;
+                    section.BaseDataOffset = f2.Function.Offset;
                     section.AiLists.Add(f2);
-                    ssf.AddSectionBefore(section, SetupSectionId.SectionAiList, ssf.SectionAiLists.Offset);
+                    ssf.AddSectionBefore(section, SetupSectionId.SectionAiList, ssf.SectionAiLists.BaseDataOffset);
 
                     // done with unclaimed AI List, this should fixup the aidatablock now
-                    aidataBlock = ssf.FillerBlocks.FirstOrDefault(x => x.Offset == aidataOffset);
+                    aidataBlock = ssf.FillerBlocks.FirstOrDefault(x => x.BaseDataOffset == aidataOffset);
                 }
 
                 if (object.ReferenceEquals(null, aidataBlock))
@@ -1586,25 +1613,25 @@ namespace Getools.Lib.Kaitai
                 var aimap = new Dictionary<int, AiFunction>();
                 var claimedDataSize = 0;
 
-                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer > 0))
+                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => !x.EntryPointer.IsNull))
                 {
                     // if this is a duplicate entry link the existing function and continue.
-                    if (aimap.ContainsKey((int)entry.EntryPointer))
+                    if (aimap.ContainsKey((int)entry.EntryPointer.PointedToOffset))
                     {
-                        entry.Function = aimap[(int)entry.EntryPointer];
+                        entry.Function = aimap[(int)entry.EntryPointer.PointedToOffset];
                         continue;
                     }
 
                     functionSize = 0;
-                    int currentEntrySortedIndex = sortedPointers.IndexOf(entry.EntryPointer);
+                    int currentEntrySortedIndex = sortedPointers.IndexOf(entry.EntryPointer.PointedToOffset);
 
                     if (currentEntrySortedIndex < numberSortedPointers - 1)
                     {
-                        functionSize = (int)sortedPointers[currentEntrySortedIndex + 1] - (int)entry.EntryPointer;
+                        functionSize = (int)sortedPointers[currentEntrySortedIndex + 1] - (int)entry.EntryPointer.PointedToOffset;
                     }
                     else
                     {
-                        functionSize = ssf.SectionAiLists.Offset - (int)entry.EntryPointer;
+                        functionSize = ssf.SectionAiLists.BaseDataOffset - (int)entry.EntryPointer.PointedToOffset;
                     }
 
                     if (functionSize < 0)
@@ -1612,7 +1639,7 @@ namespace Getools.Lib.Kaitai
                         throw new ArgumentException($"Calculated invalid AI funciton size: {functionSize}, function entry: 0x{entry.EntryPointer:x4}");
                     }
 
-                    blockIndex = (int)entry.EntryPointer - (int)aidataOffset;
+                    blockIndex = (int)entry.EntryPointer.PointedToOffset - (int)aidataOffset;
 
                     if (blockIndex < 0)
                     {
@@ -1622,19 +1649,19 @@ namespace Getools.Lib.Kaitai
                     entry.Function = new AiFunction()
                     {
                         Data = new byte[functionSize],
-                        Offset = (int)entry.EntryPointer,
+                        Offset = (int)entry.EntryPointer.PointedToOffset,
                     };
 
                     claimedDataSize += functionSize;
 
-                    aimap.Add((int)entry.EntryPointer, entry.Function);
+                    aimap.Add((int)entry.EntryPointer.PointedToOffset, entry.Function);
 
                     Array.Copy(aidataBlock.GetDataBytes(), blockIndex, entry.Function.Data, 0, functionSize);
                 }
 
                 if (claimedDataSize > 0)
                 {
-                    ssf.ClaimUnrefSectionBytes(aidataBlock.Offset, claimedDataSize);
+                    ssf.ClaimUnrefSectionBytes(aidataBlock.BaseDataOffset, claimedDataSize);
                 }
             }
         }
@@ -1644,12 +1671,12 @@ namespace Getools.Lib.Kaitai
             // "0x04" marks the end of an entry, and these are byte arrays, so "0x04..." (pad to 1 word) is the "not used" entry.
             if (ssf.SectionAiLists.AiLists.Count <= 1)
             {
-                var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionAiLists.Offset);
+                var previousSectionOffset = ssf.PreviousSectionOffset(ssf.SectionAiLists.BaseDataOffset);
 
                 // looking for filler section immediately before AI List section.
                 var ailistData = ssf.FillerBlocks
-                    .Where(x => x.Offset > previousSectionOffset && x.Offset < ssf.SectionAiLists.Offset)
-                    .OrderByDescending(x => x.Offset)
+                    .Where(x => x.BaseDataOffset > previousSectionOffset && x.BaseDataOffset < ssf.SectionAiLists.BaseDataOffset)
+                    .OrderByDescending(x => x.BaseDataOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, ailistData))
@@ -1661,10 +1688,10 @@ namespace Getools.Lib.Kaitai
                         throw new NotSupportedException($"Error parsing setup. The AI List array doesn't reference any AI functions (byte arrays), but it appears there are entries included in the .bin file. It was assumed this is a multiplayer map and there is only one entry (of size 1 word), but that assumption is not correct.");
                     }
 
-                    var claimed = ssf.ClaimUnrefSectionBytes(ailistData.Offset, -1);
+                    var claimed = ssf.ClaimUnrefSectionBytes(ailistData.BaseDataOffset, -1);
 
                     var section = UnrefSectionAiFunction.NewUnreferencedSection();
-                    section.Offset = claimed.Offset;
+                    section.BaseDataOffset = claimed.BaseDataOffset;
 
                     var entry = new SetupAiListEntry()
                     {
@@ -1685,11 +1712,11 @@ namespace Getools.Lib.Kaitai
         // Needs to happen after looking for section data entries, but before claiming all unreferenced sections.
         private static void SearchPadNames(StageSetupFile ssf)
         {
-            var knownSectionOffsets = ssf.Sections.Select(x => x.Offset).ToList();
+            var knownSectionOffsets = ssf.Sections.Select(x => x.BaseDataOffset).ToList();
 
             // if we do find a section, that will permute the underlying list, so start with a list
             // of ids and looked the relevant section each iteration.
-            var unreferencedOffsetIds = ssf.FillerBlocks.OrderBy(x => x.Offset).Select(x => x.Offset);
+            var unreferencedOffsetIds = ssf.FillerBlocks.OrderBy(x => x.BaseDataOffset).Select(x => x.BaseDataOffset);
 
             int found = 0;
             int rodataOffset = -1;
@@ -1697,8 +1724,8 @@ namespace Getools.Lib.Kaitai
 
             if (!object.ReferenceEquals(null, ssf.Rodata))
             {
-                rodataOffset = ssf.Rodata.Offset;
-                binSize = ssf.Rodata.Offset + ssf.Rodata.Length;
+                rodataOffset = ssf.Rodata.BaseDataOffset;
+                binSize = ssf.Rodata.BaseDataOffset + ssf.Rodata.Length;
             }
             else
             {
@@ -1707,7 +1734,7 @@ namespace Getools.Lib.Kaitai
 
             foreach (var sectionOffset in unreferencedOffsetIds)
             {
-                var fillerSection = ssf.FillerBlocks.First(x => x.Offset == sectionOffset);
+                var fillerSection = ssf.FillerBlocks.First(x => x.BaseDataOffset == sectionOffset);
 
                 if (fillerSection.Length <= 4)
                 {
@@ -1720,7 +1747,7 @@ namespace Getools.Lib.Kaitai
                     continue;
                 }
 
-                var availableBytes = ssf.BytesToNextAnySection(fillerSection.Offset, fillerSection.Length);
+                var availableBytes = ssf.BytesToNextAnySection(fillerSection.BaseDataOffset, fillerSection.Length);
 
                 var pointerCount = fillerSection.Length / Config.TargetPointerSize;
                 int fillerBlockIndex = 0;
@@ -1730,7 +1757,7 @@ namespace Getools.Lib.Kaitai
                 {
                     // pad3dnames
                     var section = new DataSectionPad3dNames();
-                    section.Offset = fillerSection.Offset;
+                    section.BaseDataOffset = fillerSection.BaseDataOffset;
                     section.IsUnreferenced = true;
 
                     if ((fillerSection.Length % Config.TargetPointerSize) != 0)
@@ -1745,7 +1772,7 @@ namespace Getools.Lib.Kaitai
                         if (pointer > 0)
                         {
                             var stringValue = BitUtility.ReadString(ssf.Rodata.GetDataBytes(), pointer - rodataOffset, 50);
-                            section.Pad3dNames.Add(new StringPointer(fillerSection.Offset + fillerBlockIndex, stringValue));
+                            section.Pad3dNames.Add(new BinPack.RodataString(fillerSection.BaseDataOffset + fillerBlockIndex, stringValue));
                             fillerBlockIndex += Config.TargetPointerSize;
                         }
                         else if (pointer < 0)
@@ -1754,13 +1781,13 @@ namespace Getools.Lib.Kaitai
                         }
                         else
                         {
-                            section.Pad3dNames.Add(new StringPointer(null));
+                            section.Pad3dNames.Add(new BinPack.RodataString(null));
                             fillerBlockIndex += Config.TargetPointerSize;
                             break;
                         }
                     }
 
-                    var nextSectionIndex = ssf.Sections.FindIndex(x => x.Offset > fillerSection.Offset);
+                    var nextSectionIndex = ssf.Sections.FindIndex(x => x.BaseDataOffset > fillerSection.BaseDataOffset);
                     if (nextSectionIndex < 0)
                     {
                         nextSectionIndex = 0;
@@ -1769,13 +1796,13 @@ namespace Getools.Lib.Kaitai
                     ssf.Sections.Insert(nextSectionIndex, section);
 
                     // claim the data that was just taken
-                    ssf.ClaimUnrefSectionBytes(fillerSection.Offset, fillerBlockIndex);
+                    ssf.ClaimUnrefSectionBytes(fillerSection.BaseDataOffset, fillerBlockIndex);
                 }
                 else if (found == 2)
                 {
                     // padnames
                     var section = new DataSectionPadNames();
-                    section.Offset = fillerSection.Offset;
+                    section.BaseDataOffset = fillerSection.BaseDataOffset;
                     section.IsUnreferenced = true;
 
                     if ((fillerSection.Length % Config.TargetPointerSize) != 0)
@@ -1790,7 +1817,7 @@ namespace Getools.Lib.Kaitai
                         if (pointer > 0)
                         {
                             var stringValue = BitUtility.ReadString(ssf.Rodata.GetDataBytes(), pointer - rodataOffset, 50);
-                            section.PadNames.Add(new StringPointer(fillerSection.Offset + fillerBlockIndex, stringValue));
+                            section.PadNames.Add(new BinPack.RodataString(fillerSection.BaseDataOffset + fillerBlockIndex, stringValue));
                             fillerBlockIndex += Config.TargetPointerSize;
                         }
                         else if (pointer < 0)
@@ -1799,13 +1826,13 @@ namespace Getools.Lib.Kaitai
                         }
                         else
                         {
-                            section.PadNames.Add(new StringPointer(null));
+                            section.PadNames.Add(new BinPack.RodataString(null));
                             fillerBlockIndex += Config.TargetPointerSize;
                             break;
                         }
                     }
 
-                    var nextSectionIndex = ssf.Sections.FindIndex(x => x.Offset > fillerSection.Offset);
+                    var nextSectionIndex = ssf.Sections.FindIndex(x => x.BaseDataOffset > fillerSection.BaseDataOffset);
                     if (nextSectionIndex < 0)
                     {
                         nextSectionIndex = 0;
@@ -1814,7 +1841,7 @@ namespace Getools.Lib.Kaitai
                     ssf.Sections.Insert(nextSectionIndex, section);
 
                     // claim the data that was just taken
-                    ssf.ClaimUnrefSectionBytes(fillerSection.Offset, fillerBlockIndex);
+                    ssf.ClaimUnrefSectionBytes(fillerSection.BaseDataOffset, fillerBlockIndex);
                 }
                 else
                 {
@@ -1827,14 +1854,14 @@ namespace Getools.Lib.Kaitai
         {
             var lastMainSectionOffset = ssf.Sections
                 .Where(x => x.IsMainSection)
-                .OrderByDescending(x => x.Offset)
-                .Select(x => x.Offset)
+                .OrderByDescending(x => x.BaseDataOffset)
+                .Select(x => x.BaseDataOffset)
                 .First();
 
             var rodataFiller = ssf.Sections
-                .Where(x => x.TypeId == SetupSectionId.UnreferencedUnknown && x.Offset > lastMainSectionOffset)
+                .Where(x => x.TypeId == SetupSectionId.UnreferencedUnknown && x.BaseDataOffset > lastMainSectionOffset)
                 .Cast<UnrefSectionUnknown>()
-                .OrderByDescending(x => x.Offset)
+                .OrderByDescending(x => x.BaseDataOffset)
                 .FirstOrDefault();
 
             if (!object.ReferenceEquals(null, rodataFiller))
@@ -1843,7 +1870,7 @@ namespace Getools.Lib.Kaitai
                 ssf.Sections.RemoveAt(unknownSectionIndex);
 
                 var rodataSection = new RefSectionRodata(rodataFiller.GetDataBytes());
-                rodataSection.Offset = rodataFiller.Offset;
+                rodataSection.BaseDataOffset = rodataFiller.BaseDataOffset;
 
                 ssf.Sections.Add(rodataSection);
             }
@@ -1854,7 +1881,7 @@ namespace Getools.Lib.Kaitai
             var fillerBytes = fillerBlock.Data.SelectMany(x => x).ToArray();
 
             var section = new UnrefSectionUnknown(fillerBytes);
-            section.Offset = (int)fillerBlock.StartPos;
+            section.BaseDataOffset = (int)fillerBlock.StartPos;
 
             return section;
         }

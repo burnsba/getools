@@ -23,11 +23,6 @@ namespace Getools.Lib.Game.Asset.Setup
         bool IsUnreferenced { get; set; }
 
         /// <summary>
-        /// Gets or sets file offset to first byte in section.
-        /// </summary>
-        int Offset { get; set; }
-
-        /// <summary>
         /// Gets type of section.
         /// </summary>
         SetupSectionId TypeId { get; }

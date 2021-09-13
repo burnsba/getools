@@ -81,6 +81,22 @@ namespace Getools.Lib.BinPack
         }
 
         /// <summary>
+        /// Implicit convertion from pointer to int, returns
+        /// the <see cref="PointedToOffset"/> unless pointer is
+        /// null, then <see cref="NullReferenceException"/> is thrown.
+        /// </summary>
+        /// <param name="pointer">Pointer variable.</param>
+        public static implicit operator int(PointerVariable pointer)
+        {
+            if (object.ReferenceEquals(null, pointer._pointsTo))
+            {
+                throw new NullReferenceException($"Implicit convertion from pointer to int failed, {nameof(_pointsTo)} is null.");
+            }
+
+            return pointer.PointedToOffset;
+        }
+
+        /// <summary>
         /// Sets the object that the pointer points to.
         /// </summary>
         /// <param name="pointsTo">Objet to point to.</param>
@@ -111,9 +127,7 @@ namespace Getools.Lib.BinPack
 
             var b = new byte[resultLength];
 
-            // hmmm, shouldn't this be PointedToOffset? Pointer values get updated/set once
-            // file is done with assembly phase, so BaseDataOffset probably isn't even used ...
-            BitUtility.Insert32Big(b, prepend, BaseDataOffset);
+            BitUtility.Insert32Big(b, prepend, PointedToOffset);
             return b;
         }
 
