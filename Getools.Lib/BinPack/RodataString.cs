@@ -14,8 +14,6 @@ namespace Getools.Lib.BinPack
     /// </summary>
     public class RodataString : IGetoolsLibObject, IBinData
     {
-        private PointedToString _rodataString;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="RodataString"/> class.
         /// </summary>
@@ -107,116 +105,22 @@ namespace Getools.Lib.BinPack
         /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
-            context.AppendToDataSection(this);
-
-            if (!object.ReferenceEquals(null, Value))
-            {
-                _rodataString = new PointedToString()
-                {
-                    Value = Value,
-                };
-
-                _rodataString.Collect(context);
-            }
+            context.AppendToRodataSection(this);
         }
 
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             // Pointer will be updated when linked
-            var bytes = Enumerable.Repeat<byte>(0, Config.TargetWordSize).ToArray();
+            var bytes = ToByteArray();
             var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
             BaseDataOffset = result.DataStartAddress;
-
-            // unless this is a NULL pointer, then we're done.
-            if (!object.ReferenceEquals(null, Value) && !object.ReferenceEquals(null, _rodataString))
-            {
-                var p = new PointerVariable(_rodataString);
-                p.BaseDataOffset = result.DataStartAddress;
-                context.RegisterPointer(p);
-            }
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
             return Value;
-        }
-
-        /// <summary>
-        /// Converts the string to a quoted c literal.
-        /// If the <see cref="Value"/> is null or empty, an
-        /// empty string is returned.
-        /// </summary>
-        /// <param name="prefix">Optional prefix before string.</param>
-        /// <returns>Quoted value.</returns>
-        public string ToCValue(string prefix = "")
-        {
-            if (string.IsNullOrEmpty(Value))
-            {
-                return prefix + Formatters.Strings.ToQuotedString(string.Empty);
-            }
-
-            return prefix + Formatters.Strings.ToQuotedString(Value);
-        }
-
-        /// <summary>
-        /// Converts the string to a quoted c literal.
-        /// If the <see cref="Value"/> is null or empty, the c macro NULL
-        /// is returned (without quotes).
-        /// </summary>
-        /// <param name="prefix">Optional prefix before string.</param>
-        /// <returns>Quoted value.</returns>
-        public string ToCValueOrNull(string prefix = "")
-        {
-            if (string.IsNullOrEmpty(Value))
-            {
-                return $"{prefix}NULL";
-            }
-
-            return prefix + Formatters.Strings.ToQuotedString(Value);
-        }
-
-        /// <summary>
-        /// Converts the string to a quoted c literal.
-        /// If the <see cref="Value"/> is null, the c macro NULL
-        /// is returned (without quotes). Otherwise, a quoted string is returned (this may be <see cref="string.Empty"/>).
-        /// </summary>
-        /// <param name="prefix">Optional prefix before string.</param>
-        /// <returns>Quoted value.</returns>
-        public string ToCValueOrNullEmpty(string prefix = "")
-        {
-            if (object.ReferenceEquals(null, Value))
-            {
-                return $"{prefix}NULL";
-            }
-
-            return prefix + Formatters.Strings.ToQuotedString(Value);
-        }
-
-        private class PointedToString : IBinData, IGetoolsLibObject
-        {
-            public string Value { get; set; }
-
-            public int ByteAlignment => Config.TargetWordSize;
-
-            public int BaseDataOffset { get; set; }
-
-            public int BaseDataSize => Value?.Length ?? 0;
-
-            public Guid MetaId { get; private set; } = Guid.NewGuid();
-
-            public void Collect(IAssembleContext context)
-            {
-                context.AppendToRodataSection(this);
-            }
-
-            public void Assemble(IAssembleContext context)
-            {
-                var bytes = BitUtility.StringToBytesPad(Value, true, 0, 0);
-                var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
-                BaseDataOffset = result.DataStartAddress;
-            }
         }
     }
 }

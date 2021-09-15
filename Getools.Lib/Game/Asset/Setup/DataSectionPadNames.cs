@@ -64,8 +64,8 @@ namespace Getools.Lib.Game.Asset.Setup
 
                 Utility.AllButLast(
                         PadNames,
-                        x => sw.WriteLine(x.ToCValue(Config.DefaultIndent) + ","),
-                        x => sw.WriteLine(x.ToCValueOrNull(Config.DefaultIndent)));
+                        x => sw.WriteLine(Formatters.Strings.ToCValue(x.Value, Config.DefaultIndent) + ","),
+                        x => sw.WriteLine(Formatters.Strings.ToCValueOrNull(x.Value, Config.DefaultIndent)));
 
                 sw.WriteLine("};");
             }

@@ -47,5 +47,59 @@ namespace Getools.Lib.Formatters
 
             return $"&{s}";
         }
+
+        /// <summary>
+        /// Converts the string to a quoted c literal.
+        /// If the <see cref="Value"/> is null or empty, an
+        /// empty string is returned.
+        /// </summary>
+        /// <param name="s">String to format.</param>
+        /// <param name="prefix">Optional prefix before string.</param>
+        /// <returns>Quoted value.</returns>
+        public static string ToCValue(string s, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return prefix + Formatters.Strings.ToQuotedString(string.Empty);
+            }
+
+            return prefix + Formatters.Strings.ToQuotedString(s);
+        }
+
+        /// <summary>
+        /// Converts the string to a quoted c literal.
+        /// If the <see cref="Value"/> is null or empty, the c macro NULL
+        /// is returned (without quotes).
+        /// </summary>
+        /// <param name="s">String to format.</param>
+        /// <param name="prefix">Optional prefix before string.</param>
+        /// <returns>Quoted value.</returns>
+        public static string ToCValueOrNull(string s, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return $"{prefix}NULL";
+            }
+
+            return prefix + Formatters.Strings.ToQuotedString(s);
+        }
+
+        /// <summary>
+        /// Converts the string to a quoted c literal.
+        /// If the <see cref="Value"/> is null, the c macro NULL
+        /// is returned (without quotes). Otherwise, a quoted string is returned (this may be <see cref="string.Empty"/>).
+        /// </summary>
+        /// <param name="s">String to format.</param>
+        /// <param name="prefix">Optional prefix before string.</param>
+        /// <returns>Quoted value.</returns>
+        public static string ToCValueOrNullEmpty(string s, string prefix = "")
+        {
+            if (object.ReferenceEquals(null, s))
+            {
+                return $"{prefix}NULL";
+            }
+
+            return prefix + Formatters.Strings.ToQuotedString(s);
+        }
     }
 }

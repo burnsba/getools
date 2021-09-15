@@ -88,7 +88,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// Debug string giving the tile name. This may be the <see cref="InternalName"/>
         /// but this is not known for sure.
         /// </summary>
-        public RodataString DebugName { get; set; }
+        public ClaimedStringPointer DebugName { get; set; }
 
         /// <summary>
         /// 4 bits.
@@ -235,7 +235,7 @@ namespace Getools.Lib.Game.Asset.Stan
             // since the setup data is missing ...
             if (Format == TypeFormat.Normal)
             {
-                if (object.ReferenceEquals(null, DebugName) || string.IsNullOrEmpty(DebugName.Value))
+                if (object.ReferenceEquals(null, DebugName) || string.IsNullOrEmpty(DebugName.GetString()))
                 {
                     DebugName = "p" + InternalName.ToString("x:8").Substring(3);
                 }
@@ -247,9 +247,9 @@ namespace Getools.Lib.Game.Asset.Stan
             }
             else if (Format == TypeFormat.Beta)
             {
-                if (!object.ReferenceEquals(null, DebugName) && !string.IsNullOrEmpty(DebugName.Value) && DebugName.Value[0] == 'p')
+                if (!object.ReferenceEquals(null, DebugName) && !string.IsNullOrEmpty(DebugName.GetString()) && DebugName.GetString()[0] == 'p')
                 {
-                    InternalName = Convert.ToInt32(DebugName.Value.Substring(1), 16);
+                    InternalName = Convert.ToInt32(DebugName.GetString().Substring(1), 16);
                 }
 
                 if (Room == 0)
@@ -330,7 +330,7 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (Format == TypeFormat.Beta)
             {
-                context.AppendToRodataSection(DebugName);
+                context.AppendToRodataSection(DebugName.GetLibString());
             }
 
             for (int i = 0; i < Points.Count; i++)
@@ -377,9 +377,8 @@ namespace Getools.Lib.Game.Asset.Stan
                 var result = context.AssembleAppendBytes(results, Config.TargetWordSize);
                 BaseDataOffset = result.DataStartAddress;
 
-                var p = new PointerVariable(DebugName);
-                p.BaseDataOffset = result.DataStartAddress;
-                context.RegisterPointer(p);
+                DebugName.BaseDataOffset = result.DataStartAddress;
+                context.RegisterPointer(DebugName);
             }
             else
             {
@@ -607,7 +606,7 @@ namespace Getools.Lib.Game.Asset.Stan
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
-            sb.AppendLine($"{prefix}{Config.DefaultIndent}{DebugName.ToCValueOrNullEmpty()},");
+            sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.Strings.ToCValueOrNullEmpty(DebugName.GetString())},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{UnknownBeta:x4},");

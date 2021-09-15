@@ -48,7 +48,7 @@ namespace Getools.Lib.BinPack
         /// <summary>
         /// Dictionary of pointer <see cref="IGetoolsLibObject.MetaId"/> to pointer lib object.
         /// </summary>
-        private Dictionary<Guid, PointerVariable> _pointers = new Dictionary<Guid, PointerVariable>();
+        private Dictionary<Guid, IPointerVariable> _pointers = new Dictionary<Guid, IPointerVariable>();
 
         /// <summary>
         /// Collected, assembled, linked file contents.
@@ -93,7 +93,7 @@ namespace Getools.Lib.BinPack
             _pointerToObjectLookup = new Dictionary<Guid, Guid>();
             _objectToPointersLookup = new Dictionary<Guid, HashSet<Guid>>();
             _nullPointers = new HashSet<Guid>();
-            _pointers = new Dictionary<Guid, PointerVariable>();
+            _pointers = new Dictionary<Guid, IPointerVariable>();
         }
 
         /// <inheritdoc />
@@ -239,7 +239,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public void RegisterPointer(PointerVariable pointer)
+        public void RegisterPointer(IPointerVariable pointer)
         {
             var pointerKey = pointer.MetaId;
 
@@ -264,7 +264,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public void RemovePointer(PointerVariable pointer)
+        public void RemovePointer(IPointerVariable pointer)
         {
             var pointerKey = pointer.MetaId;
 

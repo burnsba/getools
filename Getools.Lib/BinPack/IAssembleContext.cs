@@ -44,13 +44,13 @@ namespace Getools.Lib.BinPack
         /// be resolved once assembling is complete.
         /// </summary>
         /// <param name="pointer">Pointer to resolve later.</param>
-        void RegisterPointer(PointerVariable pointer);
+        void RegisterPointer(IPointerVariable pointer);
 
         /// <summary>
         /// Stops tracking pointer.
         /// </summary>
         /// <param name="pointer">Pointer to no longer resolve.</param>
-        void RemovePointer(PointerVariable pointer);
+        void RemovePointer(IPointerVariable pointer);
 
         /// <summary>
         /// Removes any pointers to this object. If there are no pointers, nothing happens.

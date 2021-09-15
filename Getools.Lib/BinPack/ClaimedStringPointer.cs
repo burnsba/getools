@@ -6,28 +6,9 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.BinPack
 {
-    /// <summary>
-    /// Lib object to model pointer used in game file.
-    /// </summary>
-    public class PointerVariable : IGetoolsLibObject, IBinData, IPointerVariable
+    public class ClaimedStringPointer : IPointerVariable
     {
-        private IGetoolsLibObject _pointsTo = null;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerVariable"/> class.
-        /// </summary>
-        public PointerVariable()
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerVariable"/> class.
-        /// </summary>
-        /// <param name="pointsTo">Object pointer points to.</param>
-        public PointerVariable(IGetoolsLibObject pointsTo)
-        {
-            _pointsTo = pointsTo;
-        }
+        private RodataString _pointsTo;
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -79,20 +60,22 @@ namespace Getools.Lib.BinPack
             }
         }
 
-        /// <summary>
-        /// Implicit convertion from pointer to int, returns
-        /// the <see cref="PointedToOffset"/> unless pointer is
-        /// null, then <see cref="NullReferenceException"/> is thrown.
-        /// </summary>
-        /// <param name="pointer">Pointer variable.</param>
-        public static implicit operator int(PointerVariable pointer)
+        public ClaimedStringPointer()
         {
-            if (object.ReferenceEquals(null, pointer._pointsTo))
-            {
-                throw new NullReferenceException($"Implicit convertion from pointer to int failed, {nameof(_pointsTo)} is null.");
-            }
+        }
 
-            return pointer.PointedToOffset;
+        public ClaimedStringPointer(string value)
+        {
+            _pointsTo = new RodataString(value);
+        }
+
+        /// <summary>
+        /// Implicit conversion from string.
+        /// </summary>
+        /// <param name="value">Zero terminated string.</param>
+        public static implicit operator ClaimedStringPointer(string value)
+        {
+            return new ClaimedStringPointer(value);
         }
 
         /// <summary>
@@ -101,7 +84,21 @@ namespace Getools.Lib.BinPack
         /// <param name="pointsTo">Objet to point to.</param>
         public void AssignPointer(IGetoolsLibObject pointsTo)
         {
-            _pointsTo = pointsTo;
+            if (object.ReferenceEquals(null, pointsTo))
+            {
+                _pointsTo = null;
+            }
+            else
+            {
+                if (pointsTo is RodataString rs)
+                {
+                    _pointsTo = rs;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{nameof(pointsTo)} must be of type {nameof(RodataString)} or null");
+                }
+            }
         }
 
         /// <summary>
@@ -113,20 +110,30 @@ namespace Getools.Lib.BinPack
             return _pointsTo;
         }
 
-        /// <summary>
-        /// Gets value of the pointer as byte array.
-        /// </summary>
-        /// <param name="prependBytesCount">Optional parameter, number of '\0' characters to prepend before string.</param>
-        /// <param name="appendBytesCount">Optional parameter, number of '\0' characters to append after string.</param>
-        /// <returns>Pointer value.</returns>
-        public byte[] ToByteArray(int? prependBytesCount = null, int? appendBytesCount = null)
+        public RodataString GetLibString()
         {
-            int prepend = prependBytesCount ?? 0;
-            var resultLength = prepend + Config.TargetPointerSize + (appendBytesCount ?? 0);
+            return _pointsTo;
+        }
 
-            var b = new byte[resultLength];
+        public string GetString()
+        {
+            if (object.ReferenceEquals(null, _pointsTo))
+            {
+                return null;
+            }
 
-            BitUtility.Insert32Big(b, prepend, PointedToOffset);
+            return _pointsTo.Value;
+        }
+
+        public byte[] ToByteArray()
+        {
+            var b = new byte[Config.TargetPointerSize];
+
+            if (!object.ReferenceEquals(null, _pointsTo))
+            {
+                BitUtility.Insert32Big(b, 0, _pointsTo.BaseDataOffset);
+            }
+
             return b;
         }
 
