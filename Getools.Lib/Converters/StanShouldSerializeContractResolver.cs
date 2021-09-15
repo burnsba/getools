@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using Getools.Lib.BinPack;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Stan;
 using Newtonsoft.Json;
@@ -18,6 +19,22 @@ namespace Getools.Lib.Converters
     public class StanShouldSerializeContractResolver : DefaultContractResolver
     {
         public static readonly StanShouldSerializeContractResolver Instance = new StanShouldSerializeContractResolver();
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            var jsonProperties = base.CreateProperties(type, memberSerialization);
+
+            // Filter here based on type, attribute or whatever and if want to customize a specific property type:
+            foreach (var jsonProperty in jsonProperties)
+            {
+                if (jsonProperty.PropertyName == nameof(StandTile.DebugName))
+                {
+                    jsonProperty.Converter = new ClaimedStringPointerJsonConverter(typeof(ClaimedStringPointer));
+                }
+            }
+
+            return jsonProperties;
+        }
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
@@ -41,6 +58,11 @@ namespace Getools.Lib.Converters
                 property.ShouldSerialize =
                     instance =>
                     {
+                        if (property.PropertyName == nameof(StandTile.DebugName))
+                        {
+                            property.Converter = new ClaimedStringPointerJsonConverter(typeof(ClaimedStringPointer));
+                        }
+
                         StandTile x = (StandTile)instance;
                         return x.Format == TypeFormat.Beta;
                     };

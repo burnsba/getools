@@ -15,9 +15,7 @@
   },
   "Tiles": [
     {
-      "DebugName": {
-        "Value": "p502a2"
-      },
+      "DebugName": "p502a2",
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -51,9 +49,7 @@
       ]
     },
     {
-      "DebugName": {
-        "Value": "p502a1"
-      },
+      "DebugName": "p502a1",
       "Flags": 0,
       "R": 15,
       "G": 15,
@@ -111,9 +107,7 @@
       ]
     },
     {
-      "DebugName": {
-        "Value": "p486a2"
-      },
+      "DebugName": "p486a2",
       "Flags": 0,
       "R": 15,
       "G": 15,

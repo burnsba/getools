@@ -41,9 +41,21 @@ namespace Getools.Lib.BinPack
         public int PointedToSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the game file variable name of the pointer.
+        /// Not used for <see cref="ClaimedStringPointer"/>.
         /// </summary>
-        public string AddressOfVariableName { get; set; }
+        [JsonIgnore]
+        public string AddressOfVariableName
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -52,6 +64,7 @@ namespace Getools.Lib.BinPack
         /// <summary>
         /// Gets a value indicating whether the game file pointer is null or not.
         /// </summary>
+        [JsonIgnore]
         public bool IsNull
         {
             get

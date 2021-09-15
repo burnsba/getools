@@ -98,7 +98,12 @@ namespace Getools.Lib.Converters
         public static StandFile ReadFromJson(string path)
         {
             var json = File.ReadAllText(path);
-            var stan = JsonConvert.DeserializeObject<StandFile>(json);
+            var stan = JsonConvert.DeserializeObject<StandFile>(
+                json,
+                new JsonSerializerSettings
+                {
+                    ContractResolver = new StanShouldSerializeContractResolver(),
+                });
 
             if (stan.Format == TypeFormat.DefaultUnknown)
             {
