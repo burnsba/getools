@@ -132,7 +132,7 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathTables.GetPrequelDataSize();
                 var firstEntry = ssf.SectionPathTables.PathTables
-                    .Where(x => !x.EntryPointer.IsNull)
+                    .Where(x => x.EntryPointer.PointedToOffset > 0)
                     .OrderBy(x => x.EntryPointer.PointedToOffset)
                     .FirstOrDefault();
 
@@ -150,7 +150,7 @@ namespace Getools.Lib.Kaitai
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
                 var firstEntry = ssf.SectionPathList.PathLinkEntries
-                    .Where(x => !x.NeighborsPointer.IsNull)
+                    .Where(x => x.NeighborsPointer.PointedToOffset > 0)
                     .OrderBy(x => x.NeighborsPointer.PointedToOffset)
                     .FirstOrDefault();
 
@@ -168,7 +168,7 @@ namespace Getools.Lib.Kaitai
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
                 var firstEntry = ssf.SectionPathList.PathLinkEntries
-                    .Where(x => !x.IndexPointer.IsNull)
+                    .Where(x => x.IndexPointer.PointedToOffset > 0)
                     .OrderBy(x => x.IndexPointer.PointedToOffset)
                     .FirstOrDefault();
 
@@ -185,7 +185,7 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathSets.GetPrequelDataSize();
                 var firstEntry = ssf.SectionPathSets.PathSets
-                    .Where(x => !x.EntryPointer.IsNull)
+                    .Where(x => x.EntryPointer.PointedToOffset > 0)
                     .OrderBy(x => x.EntryPointer.PointedToOffset)
                     .FirstOrDefault();
 
@@ -202,7 +202,7 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionAiLists.GetPrequelDataSize();
                 var firstEntry = ssf.SectionAiLists.AiLists
-                    .Where(x => !x.EntryPointer.IsNull)
+                    .Where(x => x.EntryPointer.PointedToOffset > 0)
                     .OrderBy(x => x.EntryPointer.PointedToOffset)
                     .FirstOrDefault();
 
@@ -1544,11 +1544,11 @@ namespace Getools.Lib.Kaitai
         private static void ParseAiListData(StageSetupFile ssf)
         {
             if (!object.ReferenceEquals(null, ssf.SectionAiLists)
-                && ssf.SectionAiLists.AiLists.Where(x => !x.EntryPointer.IsNull).Any())
+                && ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer.PointedToOffset > 0).Any())
             {
                 // Facility has a duplicate ailist entry, so note the .Distinct here.
                 var sortedPointers = ssf.SectionAiLists.AiLists
-                    .Where(x => !x.EntryPointer.IsNull)
+                    .Where(x => x.EntryPointer.PointedToOffset > 0)
                     .Select(x => x.EntryPointer.PointedToOffset)
                     .OrderBy(x => x)
                     .Distinct()
@@ -1558,7 +1558,7 @@ namespace Getools.Lib.Kaitai
                 int functionSize = 0;
 
                 var aidataOffset = ssf.SectionAiLists.AiLists
-                    .Where(x => !x.EntryPointer.IsNull)
+                    .Where(x => x.EntryPointer.PointedToOffset > 0)
                     .OrderBy(x => x.EntryPointer.PointedToOffset)
                     .Select(x => x.EntryPointer.PointedToOffset)
                     .First();
@@ -1613,7 +1613,7 @@ namespace Getools.Lib.Kaitai
                 var aimap = new Dictionary<int, AiFunction>();
                 var claimedDataSize = 0;
 
-                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => !x.EntryPointer.IsNull))
+                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer.PointedToOffset > 0))
                 {
                     // if this is a duplicate entry link the existing function and continue.
                     if (aimap.ContainsKey((int)entry.EntryPointer.PointedToOffset))

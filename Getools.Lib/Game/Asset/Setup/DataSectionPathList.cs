@@ -83,7 +83,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 }
             }
 
-            foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null).OrderBy(x => x.NeighborsPointer))
+            foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null).OrderBy(x => x.NeighborsPointer.PointedToOffset))
             {
                 sw.Write(entry.Neighbors.ToCDeclaration());
             }
@@ -93,7 +93,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 sw.WriteLine();
             }
 
-            foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null).OrderBy(x => x.IndexPointer))
+            foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null).OrderBy(x => x.IndexPointer.PointedToOffset))
             {
                 sw.Write(entry.Indeces.ToCDeclaration());
             }

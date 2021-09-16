@@ -63,7 +63,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void WritePrequelData(StreamWriter sw)
         {
-            foreach (var entry in PathTables.Where(x => x.Entry != null).OrderBy(x => x.EntryPointer))
+            foreach (var entry in PathTables.Where(x => x.Entry != null).OrderBy(x => x.EntryPointer.PointedToOffset))
             {
                 sw.Write(entry.Entry.ToCDeclaration());
             }

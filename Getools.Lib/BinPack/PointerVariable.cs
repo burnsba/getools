@@ -9,7 +9,7 @@ namespace Getools.Lib.BinPack
     /// <summary>
     /// Lib object to model pointer used in game file.
     /// </summary>
-    public class PointerVariable : IGetoolsLibObject, IBinData, IPointerVariable
+    public class PointerVariable : IGetoolsLibObject, IBinData, IPointerVariable, IComparable
     {
         private IGetoolsLibObject _pointsTo = null;
 
@@ -87,9 +87,19 @@ namespace Getools.Lib.BinPack
         /// <param name="pointer">Pointer variable.</param>
         public static implicit operator int(PointerVariable pointer)
         {
+            /* The order of logic is a bit odd here, deserialization can set
+             * the PointedToOffset without _pointsTo object being set, so
+             * first check if the value is not null, then do null check,
+             * then fall back to else statement (not null but zero).
+             * */
+            if (pointer.PointedToOffset > 0)
+            {
+                return pointer.PointedToOffset;
+            }
+
             if (object.ReferenceEquals(null, pointer._pointsTo))
             {
-                throw new NullReferenceException($"Implicit convertion from pointer to int failed, {nameof(_pointsTo)} is null.");
+                return 0;
             }
 
             return pointer.PointedToOffset;
@@ -140,6 +150,20 @@ namespace Getools.Lib.BinPack
         public void Assemble(IAssembleContext context)
         {
             context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            var other = obj as PointerVariable;
+
+            if (object.ReferenceEquals(null, other) || other.IsNull)
+            {
+                // this object should be placed before null item
+                return -1;
+            }
+
+            return PointedToOffset.CompareTo(other.PointedToOffset);
         }
     }
 }

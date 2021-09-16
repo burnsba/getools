@@ -83,7 +83,7 @@ namespace Getools.Lib.Game.Asset.Setup
             }
             else
             {
-                foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer))
+                foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer.PointedToOffset))
                 {
                     if (!declared.Contains(entry.Function.VariableName))
                     {
