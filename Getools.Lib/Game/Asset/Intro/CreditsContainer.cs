@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Intro
 {
@@ -24,25 +25,24 @@ namespace Getools.Lib.Game.Asset.Intro
         public List<IntroCreditEntry> CreditsEntries { get; set; } = new List<IntroCreditEntry>();
 
         /// <summary>
-        /// Gets or sets the offset this entry was read from.
-        /// </summary>
-        public int Offset { get; set; }
-
-        /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public virtual int BaseDataSize { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>

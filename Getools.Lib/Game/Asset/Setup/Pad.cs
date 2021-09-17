@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -53,7 +54,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets name string/pointer.
         /// Struct offset 0x24.
         /// </summary>
-        public RodataString Name { get; set; }
+        public ClaimedStringPointer Name { get; set; }
 
         /// <summary>
         /// TODO: Unknown fields.
@@ -68,36 +69,20 @@ namespace Getools.Lib.Game.Asset.Setup
         public string VariableName { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public virtual int BaseDataSize => SizeOf;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
-
-        /// <summary>
-        /// Reads from current position in stream. Loads object from
-        /// stream as it would be read from a binary file using normal structs.
-        /// </summary>
-        /// <param name="br">Stream to read.</param>
-        /// <returns>New object.</returns>
-        public static Pad ReadFromBinFile(BinaryReader br)
-        {
-            var result = new Pad();
-
-            result.Position = Coord3df.ReadFromBinFile(br);
-            result.Up = Coord3df.ReadFromBinFile(br);
-            result.Look = Coord3df.ReadFromBinFile(br);
-
-            result.Name = BitUtility.Read16Big(br);
-            result.Unknown = BitUtility.Read32Big(br);
-
-            return result;
-        }
 
         /// <summary>
         /// Builds a string to describe the current object
@@ -170,9 +155,8 @@ namespace Getools.Lib.Game.Asset.Setup
             var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
             BaseDataOffset = result.DataStartAddress;
 
-            var p = new PointerVariable(Name);
-            p.BaseDataOffset = result.DataStartAddress;
-            context.RegisterPointer(p);
+            Name.BaseDataOffset = result.DataStartAddress;
+            context.RegisterPointer(Name);
         }
 
         /// <summary>
@@ -189,7 +173,7 @@ namespace Getools.Lib.Game.Asset.Setup
             sb.Append(", ");
             sb.Append(Look.ToCInlineDeclaration(string.Empty));
             sb.Append(", ");
-            sb.Append(Formatters.Strings.ToCValueOrNullEmpty(Name.Value));
+            sb.Append(Formatters.Strings.ToCValueOrNullEmpty(Name.GetString()));
             sb.Append(", ");
             sb.Append(Unknown);
         }

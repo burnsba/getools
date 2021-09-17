@@ -24,7 +24,6 @@ namespace Getools.Lib.Converters
         {
             var jsonProperties = base.CreateProperties(type, memberSerialization);
 
-            // Filter here based on type, attribute or whatever and if want to customize a specific property type:
             foreach (var jsonProperty in jsonProperties)
             {
                 if (jsonProperty.PropertyName == nameof(StandTile.DebugName))

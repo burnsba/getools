@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -39,6 +40,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<SetupPathLinkEntry> PathLinkEntries { get; set; } = new List<SetupPathLinkEntry>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get
@@ -66,18 +68,12 @@ namespace Getools.Lib.Game.Asset.Setup
             if (IsUnreferenced)
             {
                 foreach (var entry in PathLinkEntries
-                    .Where(x =>
-                        object.ReferenceEquals(null, x.Neighbors)
-                        && object.ReferenceEquals(null, x.Indeces)
-                        && x.IsNull))
+                    .Where(x => x.IsNull))
                 {
                     sw.WriteLine(entry.ToCDeclaration());
                 }
 
-                if (PathLinkEntries.Any(x =>
-                    object.ReferenceEquals(null, x.Neighbors)
-                    && object.ReferenceEquals(null, x.Indeces)
-                    && x.IsNull))
+                if (PathLinkEntries.Any(x => x.IsNull))
                 {
                     sw.WriteLine();
                 }
@@ -128,17 +124,33 @@ namespace Getools.Lib.Game.Asset.Setup
                 {
                     entry.DeserializeFix();
 
-                    if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
+                    if (!object.ReferenceEquals(null, entry.Neighbors))
                     {
-                        entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
+                        if (string.IsNullOrEmpty(entry.Neighbors.VariableName))
+                        {
+                            entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
+                        }
+
+                        if (entry.NeighborsPointer.IsNull || entry.NeighborsPointer.PointedToOffset == 0)
+                        {
+                            entry.NeighborsPointer.AssignPointer(entry.Neighbors);
+                        }
                     }
 
-                    if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
+                    if (!object.ReferenceEquals(null, entry.Indeces))
                     {
-                        entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
+                        if (string.IsNullOrEmpty(entry.Indeces.VariableName))
+                        {
+                            entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
+                        }
+
+                        if (entry.IndexPointer.IsNull || entry.IndexPointer.PointedToOffset == 0)
+                        {
+                            entry.IndexPointer.AssignPointer(entry.Indeces);
+                        }
                     }
 
-                    if (object.ReferenceEquals(null, entry.Neighbors) && object.ReferenceEquals(null, entry.Indeces) && entry.IsNull)
+                    if (entry.IsNull)
                     {
                         entry.VariableName = $"path_not_used_{index}";
                     }
@@ -152,14 +164,30 @@ namespace Getools.Lib.Game.Asset.Setup
                 {
                     entry.DeserializeFix();
 
-                    if (!object.ReferenceEquals(null, entry.Neighbors) && string.IsNullOrEmpty(entry.Neighbors.VariableName))
+                    if (!object.ReferenceEquals(null, entry.Neighbors))
                     {
-                        entry.Neighbors.VariableName = $"path_neighbors_{index}";
+                        if (string.IsNullOrEmpty(entry.Neighbors.VariableName))
+                        {
+                            entry.Neighbors.VariableName = $"path_neighbors_{index}";
+                        }
+
+                        if (entry.NeighborsPointer.IsNull || entry.NeighborsPointer.PointedToOffset == 0)
+                        {
+                            entry.NeighborsPointer.AssignPointer(entry.Neighbors);
+                        }
                     }
 
-                    if (!object.ReferenceEquals(null, entry.Indeces) && string.IsNullOrEmpty(entry.Indeces.VariableName))
+                    if (!object.ReferenceEquals(null, entry.Indeces))
                     {
-                        entry.Indeces.VariableName = $"path_indeces_{index}";
+                        if (string.IsNullOrEmpty(entry.Indeces.VariableName))
+                        {
+                            entry.Indeces.VariableName = $"path_indeces_{index}";
+                        }
+
+                        if (entry.IndexPointer.IsNull || entry.IndexPointer.PointedToOffset == 0)
+                        {
+                            entry.IndexPointer.AssignPointer(entry.Indeces);
+                        }
                     }
 
                     index++;

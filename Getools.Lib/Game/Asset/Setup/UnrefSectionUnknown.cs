@@ -62,6 +62,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public int Length => _byteData?.Length ?? 0;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get

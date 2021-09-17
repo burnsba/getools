@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Formatters;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game
 {
@@ -66,15 +67,19 @@ namespace Getools.Lib.Game
         public Single MaxZ { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataSize => SizeOf;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>

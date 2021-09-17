@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Intro
 {
@@ -53,15 +54,19 @@ namespace Getools.Lib.Game.Asset.Intro
         /// <summary>
         /// Gets Getools.Lib reference id for the section/filler section.
         /// </summary>
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public virtual int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public abstract int BaseDataSize { get; set; }
 
         /// <inheritdoc />

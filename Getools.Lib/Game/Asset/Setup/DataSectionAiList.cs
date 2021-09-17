@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -39,6 +40,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<SetupAiListEntry> AiLists { get; set; } = new List<SetupAiListEntry>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get
@@ -155,6 +157,11 @@ namespace Getools.Lib.Game.Asset.Setup
                     if (string.IsNullOrEmpty(entry.Function.VariableName))
                     {
                         entry.Function.VariableName = string.Format(baseNameFormat, entry.Function.OrderIndex);
+                    }
+
+                    if (entry.EntryPointer.IsNull || entry.EntryPointer.PointedToOffset == 0)
+                    {
+                        entry.EntryPointer.AssignPointer(entry.Function);
                     }
                 }
             }

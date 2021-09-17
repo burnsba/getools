@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Intro
 {
@@ -40,6 +41,7 @@ namespace Getools.Lib.Game.Asset.Intro
         public UInt32 Set { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get

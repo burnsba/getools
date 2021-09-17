@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -33,11 +34,6 @@ namespace Getools.Lib.Game.Asset.Setup
         }
 
         /// <summary>
-        /// Gets or sets the offset this entry was read from.
-        /// </summary>
-        public int Offset { get; set; }
-
-        /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string VariableName { get; set; }
@@ -48,15 +44,19 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<int> Ids { get; set; } = new List<int>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataSize => Config.TargetWordSize * Ids.Count;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>

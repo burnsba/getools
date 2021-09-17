@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Game.Asset.Intro;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -40,6 +41,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<IIntro> Intros { get; set; } = new List<IIntro>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get
@@ -123,6 +125,11 @@ namespace Getools.Lib.Game.Asset.Setup
                 if (string.IsNullOrEmpty(entry.Credits.VariableName))
                 {
                     entry.Credits.VariableName = $"credits_data_{index}";
+                }
+
+                if (entry.CreditsDataPointer.IsNull || entry.CreditsDataPointer.PointedToOffset == 0)
+                {
+                    entry.CreditsDataPointer.AssignPointer(entry.Credits);
                 }
 
                 index++;

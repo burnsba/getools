@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -47,15 +48,19 @@ namespace Getools.Lib.Game.Asset.Setup
         public int OrderIndex { get; set; } = 0;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataSize => SizeOf;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>

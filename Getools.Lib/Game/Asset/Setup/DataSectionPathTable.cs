@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -39,6 +40,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<SetupPathTableEntry> PathTables { get; set; } = new List<SetupPathTableEntry>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get
@@ -106,9 +108,17 @@ namespace Getools.Lib.Game.Asset.Setup
             {
                 entry.DeserializeFix();
 
-                if (!object.ReferenceEquals(null, entry.Entry) && string.IsNullOrEmpty(entry.Entry.VariableName))
+                if (!object.ReferenceEquals(null, entry.Entry))
                 {
-                    entry.Entry.VariableName = string.Format(baseNameFormat, index);
+                    if (string.IsNullOrEmpty(entry.Entry.VariableName))
+                    {
+                        entry.Entry.VariableName = string.Format(baseNameFormat, index);
+                    }
+
+                    if (entry.EntryPointer.IsNull || entry.EntryPointer.PointedToOffset == 0)
+                    {
+                        entry.EntryPointer.AssignPointer(entry.Entry);
+                    }
                 }
 
                 index++;

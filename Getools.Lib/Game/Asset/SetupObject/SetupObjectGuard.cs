@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.SetupObject
 {
@@ -74,6 +75,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
         public uint PointerRuntimeData { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get

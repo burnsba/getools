@@ -6,9 +6,17 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.BinPack
 {
+    /// <summary>
+    /// String pointer with associated string.
+    /// The string is <see cref="RodataString"/>.
+    /// This object only manages it's own pointer value during .bin building.
+    /// It is up to the parent object to dereference the pointer and <see cref="MipsFile.AppendToDataSection(IBinData)"/>
+    /// or <see cref="MipsFile.AppendToRodataSection(IBinData)"/> the referenced string in the correct location.
+    /// The parent object will also need to <see cref="MipsFile.RegisterPointer(IPointerVariable)"/>.
+    /// </summary>
     public class ClaimedStringPointer : IPointerVariable
     {
-        private RodataString _pointsTo;
+        private RodataString _pointsTo = null;
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -136,6 +144,18 @@ namespace Getools.Lib.BinPack
             }
 
             return _pointsTo.Value;
+        }
+
+        public void SetString(string s)
+        {
+            if (object.ReferenceEquals(null, s))
+            {
+                _pointsTo = null;
+            }
+            else
+            {
+                _pointsTo = new RodataString(s);
+            }
         }
 
         public byte[] ToByteArray()

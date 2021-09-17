@@ -8,9 +8,10 @@ using Newtonsoft.Json;
 namespace Getools.Lib.BinPack
 {
     /// <summary>
-    /// MIPS string. A pointer will be placed in .data.
-    /// If the string is non-NULL, the string value will be placed in .rodata.
-    /// A zero length string (char '\0') is non-NULL.
+    /// MIPS string. If <see cref="Collect(IAssembleContext)"/> is called, this will be placed in .rodata.
+    /// Otherwise its up to the parent object to place this in the correct file location.
+    /// There are no pointers managed by this object.
+    /// A terminating zero ('\0') is included in the binary string.
     /// </summary>
     public class RodataString : IGetoolsLibObject, IBinData
     {

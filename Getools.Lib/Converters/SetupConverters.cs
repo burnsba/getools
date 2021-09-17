@@ -27,7 +27,11 @@ namespace Getools.Lib.Converters
         /// <returns>Parsed setup.</returns>
         public static StageSetupFile ReadFromBinFile(string path)
         {
-            return Kaitai.SetupParser.ParseBin(path);
+            var setup = Kaitai.SetupParser.ParseBin(path);
+
+            setup.DeserializeFix();
+
+            return setup;
         }
 
         /// <summary>
@@ -44,7 +48,10 @@ namespace Getools.Lib.Converters
                 {
                     TypeNameHandling = TypeNameHandling.All,
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    ContractResolver = new SetupShouldSerializeContractResolver(),
                 });
+
+            setup.DeserializeFix();
 
             return setup;
         }
@@ -75,6 +82,7 @@ namespace Getools.Lib.Converters
                 new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.All,
+                    ContractResolver = new SetupShouldSerializeContractResolver(),
                 });
 
             File.WriteAllText(path, json);

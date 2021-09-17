@@ -28,6 +28,7 @@ namespace Getools.Lib.Game.Asset.Setup
         }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize { get; set; }
 
         /// <summary>

@@ -108,25 +108,25 @@ namespace Getools.Test.AssetTests
             Assert.Single(setup.Sections.OfType<UnrefSectionAiFunction>());
 
             var pathLink = setup.SectionPathList.PathLinkEntries.First();
-            Assert.True(pathLink.NeighborsPointer > 0);
-            Assert.True(pathLink.IndexPointer > 0);
+            Assert.False(pathLink.NeighborsPointer.IsNull);
+            Assert.False(pathLink.IndexPointer.IsNull);
             Assert.NotNull(pathLink.Neighbors);
             Assert.NotNull(pathLink.Indeces);
             Assert.Equal(2, pathLink.Neighbors.Ids.Count);
             Assert.Equal(4, pathLink.Indeces.Ids.Count);
 
             var pathTable = setup.SectionPathTables.PathTables.First();
-            Assert.True(pathTable.EntryPointer > 0);
+            Assert.False(pathTable.EntryPointer.IsNull);
             Assert.NotNull(pathTable.Entry);
             Assert.Equal(5, pathTable.Entry.Ids.Count);
 
             var pathSet = setup.SectionPathSets.PathSets.First();
-            Assert.True(pathSet.EntryPointer > 0);
+            Assert.False(pathSet.EntryPointer.IsNull);
             Assert.NotNull(pathSet.Entry);
             Assert.Equal(4, pathSet.Entry.Ids.Count);
 
             var aifunction = setup.SectionAiLists.AiLists.First();
-            Assert.True(aifunction.EntryPointer > 0);
+            Assert.False(aifunction.EntryPointer.IsNull);
             Assert.NotNull(aifunction.Function);
             Assert.NotNull(aifunction.Function.Data);
         }

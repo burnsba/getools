@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Game.Enums;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.SetupObject
 {
@@ -189,6 +190,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
         public short AmmoGolden { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get

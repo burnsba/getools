@@ -1,5 +1,6 @@
 {
   "$type": "Getools.Lib.Game.Asset.Setup.StageSetupFile, Getools.Lib",
+  "Name": "setup",
   "Sections": {
     "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.Asset.Setup.ISetupSection, Getools.Lib]], System.Private.CoreLib",
     "$values": [
@@ -31,11 +32,7 @@
                 "Z": -0.016799,
                 "VariableName": null
               },
-              "Name": {
-                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-                "Offset": 608,
-                "Value": "p274a2"
-              },
+              "Name": "p274a2",
               "Unknown": 0,
               "VariableName": null
             },
@@ -62,21 +59,15 @@
                 "Z": 0.0,
                 "VariableName": null
               },
-              "Name": {
-                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-                "Offset": 0,
-                "Value": null
-              },
+              "Name": "",
               "Unknown": 0,
               "VariableName": null
             }
           ]
         },
         "TypeId": 11,
-        "Offset": 40,
         "VariableName": "padlist",
-        "IsUnreferenced": false,
-        "MetaId": "1d505f43-0a49-439e-a862-2d68f5d94a3b"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPad3dList, Getools.Lib",
@@ -115,11 +106,7 @@
                 "Z": 0.0,
                 "VariableName": null
               },
-              "Name": {
-                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-                "Offset": 616,
-                "Value": "p25a2"
-              },
+              "Name": "p25a2",
               "Unknown": 0,
               "VariableName": null
             },
@@ -155,21 +142,15 @@
                 "Z": 0.0,
                 "VariableName": null
               },
-              "Name": {
-                "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-                "Offset": 0,
-                "Value": null
-              },
+              "Name": "",
               "Unknown": 0,
               "VariableName": null
             }
           ]
         },
         "TypeId": 12,
-        "Offset": 128,
         "VariableName": "pad3dlist",
-        "IsUnreferenced": false,
-        "MetaId": "7edd05af-e98f-49fc-bdfc-c997ab2cde95"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionObjects, Getools.Lib",
@@ -230,10 +211,8 @@
           ]
         },
         "TypeId": 14,
-        "Offset": 264,
         "VariableName": "objlist",
-        "IsUnreferenced": false,
-        "MetaId": "6d244b8f-2a84-4efd-8b38-d99169dea419"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionIntros, Getools.Lib",
@@ -259,10 +238,8 @@
           ]
         },
         "TypeId": 15,
-        "Offset": 404,
         "VariableName": "intro",
-        "IsUnreferenced": false,
-        "MetaId": "2f85ba1a-3fa6-49b9-a79f-54e83e712f46"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathList, Getools.Lib",
@@ -271,11 +248,13 @@
           "$values": [
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathLinkEntry, Getools.Lib",
-              "Offset": 0,
-              "NeighborsPointer": 420,
+              "NeighborsPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "Neighbors": {
                 "$type": "Getools.Lib.Game.Asset.Setup.PathListing, Getools.Lib",
-                "Offset": 0,
                 "VariableName": "path_neighbors_0",
                 "Ids": {
                   "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
@@ -285,10 +264,13 @@
                   ]
                 }
               },
-              "IndexPointer": 428,
+              "IndexPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "Indeces": {
                 "$type": "Getools.Lib.Game.Asset.Setup.PathListing, Getools.Lib",
-                "Offset": 0,
                 "VariableName": "path_indeces_0",
                 "Ids": {
                   "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
@@ -300,49 +282,48 @@
                   ]
                 }
               },
-              "IsNull": false,
               "VariableName": null
             },
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathLinkEntry, Getools.Lib",
-              "Offset": 0,
-              "NeighborsPointer": 0,
+              "NeighborsPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": true
+              },
               "Neighbors": null,
-              "IndexPointer": 0,
+              "IndexPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": true
+              },
               "Indeces": null,
-              "IsNull": false,
               "VariableName": null
             }
           ]
         },
         "TypeId": 19,
-        "Offset": 444,
         "VariableName": "pathlist",
-        "IsUnreferenced": false,
-        "MetaId": "9cee72e1-a854-4526-9bf3-1586085c3c70"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPad3dNames, Getools.Lib",
         "Pad3dNames": {
-          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.StringPointer, Getools.Lib]], System.Private.CoreLib",
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.BinPack.RodataString, Getools.Lib]], System.Private.CoreLib",
           "$values": [
             {
-              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-              "Offset": 624,
+              "$type": "Getools.Lib.BinPack.RodataString, Getools.Lib",
               "Value": "chk_locdam_all_p"
             },
             {
-              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-              "Offset": 0,
-              "Value": null
+              "$type": "Getools.Lib.BinPack.RodataString, Getools.Lib",
+              "Value": ""
             }
           ]
         },
         "TypeId": 20,
-        "Offset": 468,
         "VariableName": "pad3dnames",
-        "IsUnreferenced": false,
-        "MetaId": "80beae1a-e34d-4576-953d-1000ec27db4b"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathTable, Getools.Lib",
@@ -354,10 +335,8 @@
               "Offset": 0,
               "Unknown_00": 0,
               "Unknown_02": 329,
-              "EntryPointer": 476,
               "Entry": {
                 "$type": "Getools.Lib.Game.Asset.Setup.PathTable, Getools.Lib",
-                "Offset": 0,
                 "VariableName": "path_table_0",
                 "Ids": {
                   "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
@@ -370,6 +349,11 @@
                   ]
                 }
               },
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "Unknown_08": 0,
               "Unknown_0C": 0
             },
@@ -378,41 +362,39 @@
               "Offset": 0,
               "Unknown_00": 65535,
               "Unknown_02": 65535,
-              "EntryPointer": 0,
               "Entry": null,
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": true
+              },
               "Unknown_08": 0,
               "Unknown_0C": 0
             }
           ]
         },
         "TypeId": 23,
-        "Offset": 496,
         "VariableName": "pathtbl",
-        "IsUnreferenced": false,
-        "MetaId": "6585020f-a4a2-4088-853f-0d1380695724"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPadNames, Getools.Lib",
         "PadNames": {
-          "$type": "System.Collections.Generic.List`1[[Getools.Lib.Game.StringPointer, Getools.Lib]], System.Private.CoreLib",
+          "$type": "System.Collections.Generic.List`1[[Getools.Lib.BinPack.RodataString, Getools.Lib]], System.Private.CoreLib",
           "$values": [
             {
-              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-              "Offset": 644,
+              "$type": "Getools.Lib.BinPack.RodataString, Getools.Lib",
               "Value": "PAD_mk44_dam_all_p"
             },
             {
-              "$type": "Getools.Lib.Game.StringPointer, Getools.Lib",
-              "Offset": 0,
-              "Value": null
+              "$type": "Getools.Lib.BinPack.RodataString, Getools.Lib",
+              "Value": ""
             }
           ]
         },
         "TypeId": 24,
-        "Offset": 528,
         "VariableName": "padnames",
-        "IsUnreferenced": false,
-        "MetaId": "46ffd96b-6436-42a1-b707-76413b41989e"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionPathSets, Getools.Lib",
@@ -421,11 +403,13 @@
           "$values": [
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib",
-              "Offset": 0,
-              "EntryPointer": 536,
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "Entry": {
                 "$type": "Getools.Lib.Game.Asset.Setup.PathSet, Getools.Lib",
-                "Offset": 0,
                 "VariableName": "path_set_0",
                 "Ids": {
                   "$type": "System.Collections.Generic.List`1[[System.Int32, System.Private.CoreLib]], System.Private.CoreLib",
@@ -441,18 +425,19 @@
             },
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib",
-              "Offset": 0,
-              "EntryPointer": 0,
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": true
+              },
               "Entry": null,
               "Unknown_04": 0
             }
           ]
         },
         "TypeId": 27,
-        "Offset": 552,
         "VariableName": "paths",
-        "IsUnreferenced": false,
-        "MetaId": "72593827-6e51-4b5d-981d-bb6f5f3a1cc5"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.UnrefSectionAiFunction, Getools.Lib",
@@ -461,11 +446,9 @@
           "$values": [
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
-              "EntryPointer": 0,
               "Id": 0,
               "Function": {
                 "$type": "Getools.Lib.Game.Asset.Setup.AiFunction, Getools.Lib",
-                "Offset": 568,
                 "Data": {
                   "$type": "System.Byte[], System.Private.CoreLib",
                   "$value": "BAAAAA=="
@@ -473,15 +456,18 @@
                 "VariableName": "ai_not_used_0",
                 "OrderIndex": 0
               },
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "OrderIndex": 0
             }
           ]
         },
         "TypeId": 28,
-        "Offset": 568,
         "VariableName": "ailists",
-        "IsUnreferenced": true,
-        "MetaId": "aafb7ba0-4f8b-48ed-bda7-993b834194be"
+        "IsUnreferenced": true
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.DataSectionAiList, Getools.Lib",
@@ -490,11 +476,9 @@
           "$values": [
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
-              "EntryPointer": 572,
               "Id": 1025,
               "Function": {
                 "$type": "Getools.Lib.Game.Asset.Setup.AiFunction, Getools.Lib",
-                "Offset": 572,
                 "Data": {
                   "$type": "System.Byte[], System.Private.CoreLib",
                   "$value": "IAAF/QAHBAA="
@@ -502,22 +486,29 @@
                 "VariableName": "ai_1",
                 "OrderIndex": 1
               },
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": false
+              },
               "OrderIndex": 1
             },
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupAiListEntry, Getools.Lib",
-              "EntryPointer": 0,
               "Id": 0,
               "Function": null,
+              "EntryPointer": {
+                "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
+                "AddressOfVariableName": null,
+                "IsNull": true
+              },
               "OrderIndex": 2
             }
           ]
         },
         "TypeId": 30,
-        "Offset": 580,
         "VariableName": "ailists",
-        "IsUnreferenced": false,
-        "MetaId": "1ef46894-fd88-4b7c-96a8-b533a11073f7"
+        "IsUnreferenced": false
       },
       {
         "$type": "Getools.Lib.Game.Asset.Setup.RefSectionRodata, Getools.Lib",
@@ -527,10 +518,8 @@
           "$value": "AAAAAAAAAAAAAAAAcDI3NGEyAABwMjVhMgAAAGNoa19sb2NkYW1fYWxsX3AAAAAAUEFEX21rNDRfZGFtX2FsbF9wAAAAAAAAAAAAAA=="
         },
         "TypeId": 32,
-        "Offset": 596,
         "VariableName": null,
-        "IsUnreferenced": true,
-        "MetaId": "692a5045-374b-4df2-a374-951fd5161178"
+        "IsUnreferenced": true
       }
     ]
   }

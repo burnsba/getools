@@ -348,7 +348,7 @@ namespace Getools.Lib.Kaitai
 
             foreach (var entry in kaitaiObject.Data)
             {
-                result.PadNames.Add(Convert(entry));
+                result.PadNames.Add(ConvertToRodataString(entry));
             }
 
             return result;
@@ -362,7 +362,7 @@ namespace Getools.Lib.Kaitai
 
             foreach (var entry in kaitaiObject.Data)
             {
-                result.Pad3dNames.Add(Convert(entry));
+                result.Pad3dNames.Add(ConvertToRodataString(entry));
             }
 
             return result;
@@ -1494,24 +1494,6 @@ namespace Getools.Lib.Kaitai
             return bbox;
         }
 
-        private static BinPack.RodataString Convert(Gen.Setup.StringPointer kaitaiObject)
-        {
-            var sp = new BinPack.RodataString();
-
-            if (kaitaiObject.Offset == 0)
-            {
-                sp.BaseDataOffset = 0;
-                sp.Value = null;
-            }
-            else
-            {
-                sp.BaseDataOffset = (int)kaitaiObject.Offset;
-                sp.Value = kaitaiObject.Deref;
-            }
-
-            return sp;
-        }
-
         private static Pad Convert(Gen.Setup.Pad kaitaiObject)
         {
             var pad = new Pad();
@@ -1519,7 +1501,7 @@ namespace Getools.Lib.Kaitai
             pad.Position = Convert(kaitaiObject.Pos);
             pad.Up = Convert(kaitaiObject.Up);
             pad.Look = Convert(kaitaiObject.Look);
-            pad.Name = Convert(kaitaiObject.Plink);
+            pad.Name = kaitaiObject.Plink.Deref;
             pad.Unknown = (int)kaitaiObject.Unknown;
 
             return pad;
@@ -1532,12 +1514,26 @@ namespace Getools.Lib.Kaitai
             pad.Position = Convert(kaitaiObject.Pos);
             pad.Up = Convert(kaitaiObject.Up);
             pad.Look = Convert(kaitaiObject.Look);
-            pad.Name = Convert(kaitaiObject.Plink);
+            pad.Name = kaitaiObject.Plink.Deref;
             pad.Unknown = (int)kaitaiObject.Unknown;
 
             pad.BoundingBox = Convert(kaitaiObject.Bbox);
 
             return pad;
+        }
+
+        private static BinPack.ClaimedStringPointer ConvertToClaimedStringPointer(Gen.Setup.StringPointer kaitaiObject)
+        {
+            var csp = new BinPack.ClaimedStringPointer(kaitaiObject.Deref);
+
+            return csp;
+        }
+
+        private static BinPack.RodataString ConvertToRodataString(Gen.Setup.StringPointer kaitaiObject)
+        {
+            var rs = new BinPack.RodataString(kaitaiObject.Deref);
+
+            return rs;
         }
 
         // Parse AI List functions
@@ -1590,12 +1586,12 @@ namespace Getools.Lib.Kaitai
                         Function = new AiFunction()
                         {
                             Data = claimed.GetDataBytes().Take(functionSize).ToArray(),
-                            Offset = claimed.BaseDataOffset,
+                            BaseDataOffset = claimed.BaseDataOffset,
                         },
                     };
 
                     var section = UnrefSectionAiFunction.NewUnreferencedSection();
-                    section.BaseDataOffset = f2.Function.Offset;
+                    section.BaseDataOffset = f2.Function.BaseDataOffset;
                     section.AiLists.Add(f2);
                     ssf.AddSectionBefore(section, SetupSectionId.SectionAiList, ssf.SectionAiLists.BaseDataOffset);
 
@@ -1649,7 +1645,7 @@ namespace Getools.Lib.Kaitai
                     entry.Function = new AiFunction()
                     {
                         Data = new byte[functionSize],
-                        Offset = (int)entry.EntryPointer.PointedToOffset,
+                        BaseDataOffset = (int)entry.EntryPointer.PointedToOffset,
                     };
 
                     claimedDataSize += functionSize;

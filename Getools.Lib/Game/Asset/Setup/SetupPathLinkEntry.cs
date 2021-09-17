@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -27,11 +28,6 @@ namespace Getools.Lib.Game.Asset.Setup
         /// C file, type name. Should match known struct type.
         /// </summary>
         public const string CTypeName = "struct s_pathLink";
-
-        /// <summary>
-        /// Gets or sets the offset this entry was read from.
-        /// </summary>
-        public int Offset { get; set; }
 
         ///// <summary>
         ///// Gets or sets address of the <see cref="Neighbors"/> list being pointed to.
@@ -64,7 +60,14 @@ namespace Getools.Lib.Game.Asset.Setup
         /// instead of two "not used" arrays. Mark this as a NULL
         /// entry with this property.
         /// </summary>
-        public bool IsNull { get; set; }
+        [JsonIgnore]
+        public bool IsNull
+        {
+            get
+            {
+                return object.ReferenceEquals(null, Neighbors) && object.ReferenceEquals(null, Indeces);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the variable name used in source file.
@@ -72,15 +75,19 @@ namespace Getools.Lib.Game.Asset.Setup
         public string VariableName { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetWordSize;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
         /// <inheritdoc />
+        [JsonIgnore]
         public int BaseDataSize => SizeOf;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
         /// <summary>
@@ -92,7 +99,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <returns>String of object.</returns>
         public string ToCDeclaration(string prefix = "")
         {
-            if (!(object.ReferenceEquals(null, Indeces) && object.ReferenceEquals(null, Neighbors) && IsNull))
+            if (!IsNull)
             {
                 throw new NotImplementedException($"{nameof(SetupPathLinkEntry)} {nameof(ToCDeclaration)} not implemented for non-null variable");
             }

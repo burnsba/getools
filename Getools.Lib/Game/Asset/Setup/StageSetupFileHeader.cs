@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -48,12 +49,16 @@ namespace Getools.Lib.Game.Asset.Setup
         public PointerVariable PadNamesSectionPointer { get; set; }
         public PointerVariable Pad3dNamesSectionPointer { get; set; }
 
+        [JsonIgnore]
         public int ByteAlignment => Config.TargetPointerAlignment;
 
+        [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
+        [JsonIgnore]
         public int BaseDataSize => 10 * Config.TargetPointerSize;
 
+        [JsonIgnore]
         public Guid MetaId => _metaId;
 
         public void Collect(IAssembleContext context)

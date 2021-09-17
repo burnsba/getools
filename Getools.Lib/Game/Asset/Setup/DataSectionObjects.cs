@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
 using Getools.Lib.Game.Asset.SetupObject;
+using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -31,6 +32,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public List<ISetupObject> Objects { get; set; } = new List<ISetupObject>();
 
         /// <inheritdoc />
+        [JsonIgnore]
         public override int BaseDataSize
         {
             get
