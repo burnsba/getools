@@ -11,7 +11,10 @@ namespace Getools.Lib.Game.Asset.Intro
     /// </summary>
     public class IntroCuff : IntroBase
     {
-        public const int SizeOf = IntroBase.BaseSizeOf + (1 * Config.TargetWordSize);
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = IntroBase.BaseSizeOf + (1 * Config.TargetWordSize);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntroCuff"/> class.

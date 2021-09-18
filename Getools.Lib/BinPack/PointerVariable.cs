@@ -45,32 +45,22 @@ namespace Getools.Lib.BinPack
         [JsonIgnore]
         public int BaseDataSize => Config.TargetPointerSize;
 
-        /// <summary>
-        /// Gets or sets the file offset being pointed to.
-        /// This won't be known until after the .data section is assembled.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int PointedToOffset { get; set; }
 
-        /// <summary>
-        /// Gets or sets the size in bytes used in .data section for the data.
-        /// This won't be known until after the .data section is assembled.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int PointedToSize { get; set; }
 
-        /// <summary>
-        /// Gets or sets the game file variable name of the pointer.
-        /// </summary>
+        /// <inheritdoc />
         public string AddressOfVariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
-        /// <summary>
-        /// Gets a value indicating whether the game file pointer is null or not.
-        /// </summary>
+        /// <inheritdoc />
         public bool IsNull
         {
             get
@@ -105,19 +95,13 @@ namespace Getools.Lib.BinPack
             return pointer.PointedToOffset;
         }
 
-        /// <summary>
-        /// Sets the object that the pointer points to.
-        /// </summary>
-        /// <param name="pointsTo">Objet to point to.</param>
+        /// <inheritdoc />
         public void AssignPointer(IGetoolsLibObject pointsTo)
         {
             _pointsTo = pointsTo;
         }
 
-        /// <summary>
-        /// Returns the object the pointer points to.
-        /// </summary>
-        /// <returns>Object or null.</returns>
+        /// <inheritdoc />
         public IGetoolsLibObject Dereference()
         {
             return _pointsTo;

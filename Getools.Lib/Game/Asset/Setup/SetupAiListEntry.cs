@@ -21,12 +21,6 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const int SizeOf = 8;
 
-        ///// <summary>
-        ///// Gets or sets address of function being pointed to.
-        ///// Struct offset 0x0.
-        ///// </summary>
-        //public UInt32 EntryPointer { get; set; }
-
         /// <summary>
         /// Gets or sets ai script id.
         /// Struct offset 0x4.
@@ -38,6 +32,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public AiFunction Function { get; set; }
 
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Function"/>.
+        /// </summary>
         public PointerVariable EntryPointer { get; set; }
 
         /// <summary>
@@ -85,6 +82,10 @@ namespace Getools.Lib.Game.Asset.Setup
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Should be called after deserializing from JSON or bin.
+        /// Cleans up values/properties, sets pointers, variable names, etc.
+        /// </summary>
         public void DeserializeFix()
         {
             if (object.ReferenceEquals(null, EntryPointer))

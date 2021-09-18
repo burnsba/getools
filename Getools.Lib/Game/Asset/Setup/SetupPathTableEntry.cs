@@ -38,17 +38,14 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public UInt16 Unknown_02 { get; set; }
 
-        ///// <summary>
-        ///// Pointer address of <see cref="Entry"/>.
-        ///// Struct offset 0x4.
-        ///// </summary>
-        //public int EntryPointer { get; set; }
-
         /// <summary>
         /// Value pointed to from <see cref="EntryPointer"/>.
         /// </summary>
         public PathTable Entry { get; set; }
 
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Entry"/>.
+        /// </summary>
         public PointerVariable EntryPointer { get; set; }
 
         /// <summary>
@@ -107,6 +104,10 @@ namespace Getools.Lib.Game.Asset.Setup
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Should be called after deserializing from JSON or bin.
+        /// Cleans up values/properties, sets pointers, variable names, etc.
+        /// </summary>
         public void DeserializeFix()
         {
             if (object.ReferenceEquals(null, EntryPointer))

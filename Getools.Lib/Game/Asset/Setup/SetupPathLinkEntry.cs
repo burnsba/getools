@@ -20,7 +20,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public const UInt32 RecordDelimiter = 0;
 
         /// <summary>
-        /// Size of the point struct in bytes.
+        /// The overall allocated size of this object in bytes, including child elements.
         /// </summary>
         public const int SizeOf = 16;
 
@@ -29,12 +29,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public const string CTypeName = "struct s_pathLink";
 
-        ///// <summary>
-        ///// Gets or sets address of the <see cref="Neighbors"/> list being pointed to.
-        ///// Struct offset 0x0.
-        ///// </summary>
-        //public int NeighborsPointer { get; set; }
-
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Neighbors"/>.
+        /// </summary>
         public PointerVariable NeighborsPointer { get; set; }
 
         /// <summary>
@@ -42,12 +39,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// </summary>
         public PathListing Neighbors { get; set; }
 
-        ///// <summary>
-        ///// Gets or sets address of the <see cref="Indeces"/> list being pointed to.
-        ///// Struct offset 0x4.
-        ///// </summary>
-        //public int IndexPointer { get; set; }
-
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Indeces"/>.
+        /// </summary>
         public PointerVariable IndexPointer { get; set; }
 
         /// <summary>
@@ -135,6 +129,10 @@ namespace Getools.Lib.Game.Asset.Setup
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Should be called after deserializing from JSON or bin.
+        /// Cleans up values/properties, sets pointers, variable names, etc.
+        /// </summary>
         public void DeserializeFix()
         {
             if (object.ReferenceEquals(null, NeighborsPointer))

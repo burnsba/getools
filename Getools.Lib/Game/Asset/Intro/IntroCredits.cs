@@ -11,7 +11,10 @@ namespace Getools.Lib.Game.Asset.Intro
     /// </summary>
     public class IntroCredits : IntroBase
     {
-        public const int SizeOf = IntroBase.BaseSizeOf + (1 * Config.TargetPointerSize);
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = IntroBase.BaseSizeOf + (1 * Config.TargetPointerSize);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntroCredits"/> class.
@@ -21,11 +24,9 @@ namespace Getools.Lib.Game.Asset.Intro
         {
         }
 
-        ///// <summary>
-        ///// Pointer to credits data.
-        ///// </summary>
-        //public int DataOffset { get; set; }
-
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Credits"/>.
+        /// </summary>
         public PointerVariable CreditsDataPointer { get; set; }
 
         /// <summary>

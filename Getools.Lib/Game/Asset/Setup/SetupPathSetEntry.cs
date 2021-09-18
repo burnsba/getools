@@ -17,16 +17,13 @@ namespace Getools.Lib.Game.Asset.Setup
         public const string CTypeName = "struct s_pathSet";
 
         /// <summary>
-        /// Size of the struct in bytes.
+        /// The overall allocated size of this object in bytes, including child elements.
         /// </summary>
         public const int SizeOf = 8;
 
-        ///// <summary>
-        ///// Gets or sets address of the <see cref="Entry"/> being pointed to.
-        ///// Struct offset 0x0.
-        ///// </summary>
-        //public uint EntryPointer { get; set; }
-
+        /// <summary>
+        /// Gets or sets pointer to <see cref="Entry"/>.
+        /// </summary>
         public PointerVariable EntryPointer { get; set; }
 
         /// <summary>
@@ -78,6 +75,10 @@ namespace Getools.Lib.Game.Asset.Setup
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Should be called after deserializing from JSON or bin.
+        /// Cleans up values/properties, sets pointers, variable names, etc.
+        /// </summary>
         public void DeserializeFix()
         {
             if (object.ReferenceEquals(null, EntryPointer))

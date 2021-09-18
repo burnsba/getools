@@ -13,7 +13,11 @@ namespace Getools.Lib.Game.Asset.SetupObject
     public class SetupObjectKey : SetupObjectGenericBase
     {
         private const int _thisSize = 1 * Config.TargetWordSize;
-        public const int SizeOf = SetupObjectBase.BaseSizeOf + _thisSize;
+
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = SetupObjectBase.BaseSizeOf + _thisSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectKey"/> class.
@@ -55,7 +59,12 @@ namespace Getools.Lib.Game.Asset.SetupObject
             return sb.ToString();
         }
 
-        public byte[] ToByteArray()
+        /// <summary>
+        /// Converts the current object to a byte array.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
+        public new byte[] ToByteArray()
         {
             var bytes = new byte[_thisSize];
 

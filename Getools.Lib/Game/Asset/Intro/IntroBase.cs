@@ -16,6 +16,9 @@ namespace Getools.Lib.Game.Asset.Intro
         /// </summary>
         public const string CTypeName = "s32";
 
+        /// <summary>
+        /// Standard size of intro object in bytes.
+        /// </summary>
         public const int BaseSizeOf = 4;
 
         /// <summary>

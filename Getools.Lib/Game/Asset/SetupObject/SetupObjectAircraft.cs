@@ -14,7 +14,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     {
         private const int _thisSize = 52;
 
-        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectAircraft"/> class.

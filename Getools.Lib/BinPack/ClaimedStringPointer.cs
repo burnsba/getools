@@ -18,33 +18,39 @@ namespace Getools.Lib.BinPack
     {
         private RodataString _pointsTo = null;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClaimedStringPointer"/> class.
+        /// </summary>
+        public ClaimedStringPointer()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClaimedStringPointer"/> class.
+        /// </summary>
+        /// <param name="value">Initial string value.</param>
+        public ClaimedStringPointer(string value)
+        {
+            _pointsTo = new RodataString(value);
+        }
+
         /// <inheritdoc />
         [JsonIgnore]
         public int ByteAlignment => Config.TargetPointerAlignment;
 
-        /// <summary>
-        /// Gets or sets the .data section offset of the pointer.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
-        /// <summary>
-        /// Gets the .data section size in bytes of the pointer.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int BaseDataSize => Config.TargetPointerSize;
 
-        /// <summary>
-        /// Gets or sets the file offset being pointed to.
-        /// This won't be known until after the .data section is assembled.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int PointedToOffset { get; set; }
 
-        /// <summary>
-        /// Gets or sets the size in bytes used in .data section for the data.
-        /// This won't be known until after the .data section is assembled.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public int PointedToSize { get; set; }
 
@@ -69,9 +75,7 @@ namespace Getools.Lib.BinPack
         [JsonIgnore]
         public Guid MetaId { get; private set; } = Guid.NewGuid();
 
-        /// <summary>
-        /// Gets a value indicating whether the game file pointer is null or not.
-        /// </summary>
+        /// <inheritdoc />
         [JsonIgnore]
         public bool IsNull
         {
@@ -79,15 +83,6 @@ namespace Getools.Lib.BinPack
             {
                 return object.ReferenceEquals(null, _pointsTo);
             }
-        }
-
-        public ClaimedStringPointer()
-        {
-        }
-
-        public ClaimedStringPointer(string value)
-        {
-            _pointsTo = new RodataString(value);
         }
 
         /// <summary>
@@ -122,20 +117,25 @@ namespace Getools.Lib.BinPack
             }
         }
 
-        /// <summary>
-        /// Returns the object the pointer points to.
-        /// </summary>
-        /// <returns>Object or null.</returns>
+        /// <inheritdoc />
         public IGetoolsLibObject Dereference()
         {
             return _pointsTo;
         }
 
+        /// <summary>
+        /// Strongly typed version of <see cref="Dereference"/>.
+        /// </summary>
+        /// <returns>Underlying <see cref="RodataString"/>.</returns>
         public RodataString GetLibString()
         {
             return _pointsTo;
         }
 
+        /// <summary>
+        /// Gets the underlying string being pointed to or null.
+        /// </summary>
+        /// <returns>String being pointed to or null.</returns>
         public string GetString()
         {
             if (object.ReferenceEquals(null, _pointsTo))
@@ -146,6 +146,12 @@ namespace Getools.Lib.BinPack
             return _pointsTo.Value;
         }
 
+        /// <summary>
+        /// Sets the underlying string being pointed to.
+        /// If the parameter is null, this sets the private <see cref="RodataString"/> to null
+        /// instead of making the private <see cref="RodataString"/> be a null pointer.
+        /// </summary>
+        /// <param name="s">String value.</param>
         public void SetString(string s)
         {
             if (object.ReferenceEquals(null, s))
@@ -158,6 +164,11 @@ namespace Getools.Lib.BinPack
             }
         }
 
+        /// <summary>
+        /// Converts this object to byte array as it would appear in MIPS .data section.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of this pointer value.</returns>
         public byte[] ToByteArray()
         {
             var b = new byte[Config.TargetPointerSize];

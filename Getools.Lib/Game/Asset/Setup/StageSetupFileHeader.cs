@@ -14,6 +14,19 @@ namespace Getools.Lib.Game.Asset.Setup
     {
         private Guid _metaId = Guid.NewGuid();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StageSetupFileHeader"/> class.
+        /// </summary>
+        /// <param name="pathTableSection">Path table section or null.</param>
+        /// <param name="pathLinkSection">Path link/list section or null.</param>
+        /// <param name="introSection">Intro section or null.</param>
+        /// <param name="objectSection">Object section or null.</param>
+        /// <param name="pathSetSection">Path set section or null.</param>
+        /// <param name="aiListSection">AI script section or null.</param>
+        /// <param name="padSection">Pad section or null.</param>
+        /// <param name="pad3dSection">Pad3d section or null.</param>
+        /// <param name="padNamesSection">Pad names section or null.</param>
+        /// <param name="pad3dNamesSection">Pad3d names section or null.</param>
         public StageSetupFileHeader(
             IGetoolsLibObject pathTableSection,
             IGetoolsLibObject pathLinkSection,
@@ -38,34 +51,79 @@ namespace Getools.Lib.Game.Asset.Setup
             Pad3dNamesSectionPointer = new PointerVariable(pad3dNamesSection);
         }
 
+        /// <summary>
+        /// Gets or sets pointer to path table section.
+        /// </summary>
         public PointerVariable PathTableSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to path link/list section.
+        /// </summary>
         public PointerVariable PathLinkSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to intro section.
+        /// </summary>
         public PointerVariable IntroSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to object section.
+        /// </summary>
         public PointerVariable ObjectSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to path set section.
+        /// </summary>
         public PointerVariable PathSetSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to AI script section.
+        /// </summary>
         public PointerVariable AiListSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to pad section.
+        /// </summary>
         public PointerVariable PadSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to pad3d section.
+        /// </summary>
         public PointerVariable Pad3dSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to pad names section.
+        /// </summary>
         public PointerVariable PadNamesSectionPointer { get; set; }
+
+        /// <summary>
+        /// Gets or sets pointer to pad3d names section.
+        /// </summary>
         public PointerVariable Pad3dNamesSectionPointer { get; set; }
 
+        /// <inheritdoc />
         [JsonIgnore]
         public int ByteAlignment => Config.TargetPointerAlignment;
 
+        /// <inheritdoc />
         [JsonIgnore]
         public int BaseDataOffset { get; set; }
 
+        /// <inheritdoc />
         [JsonIgnore]
         public int BaseDataSize => 10 * Config.TargetPointerSize;
 
+        /// <inheritdoc />
         [JsonIgnore]
         public Guid MetaId => _metaId;
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             context.AppendToDataSection(this);
         }
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             var bytes = new byte[BaseDataSize];

@@ -15,7 +15,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
     {
         private const int _thisSize = 32 * Config.TargetWordSize;
 
-        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectDoor"/> class.
@@ -289,7 +292,12 @@ namespace Getools.Lib.Game.Asset.SetupObject
             }
         }
 
-        public byte[] ToByteArray()
+        /// <summary>
+        /// Converts this object to byte array as it would appear in MIPS .data section.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of this object.</returns>
+        public new byte[] ToByteArray()
         {
             var bytes = new byte[_thisSize];
 

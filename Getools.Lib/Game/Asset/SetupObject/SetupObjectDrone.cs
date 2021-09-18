@@ -15,7 +15,10 @@ namespace Getools.Lib.Game.Asset.SetupObject
         // I got runway setup to match when this was 104, but Egypt wants this to be 88 ....
         private const int _thisSize = 88;
 
-        public const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = GameObjectHeaderBase.SizeOf + _thisSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SetupObjectDrone"/> class.
@@ -46,7 +49,12 @@ namespace Getools.Lib.Game.Asset.SetupObject
             }
         }
 
-        public byte[] ToByteArray()
+        /// <summary>
+        /// Converts this object to byte array as it would appear in MIPS .data section.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of this object.</returns>
+        public new byte[] ToByteArray()
         {
             return Data;
         }

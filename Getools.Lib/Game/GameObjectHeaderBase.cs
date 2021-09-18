@@ -10,6 +10,9 @@ namespace Getools.Lib.Game
     /// </summary>
     public abstract class GameObjectHeaderBase : GameObjectBase, IGameObjectHeader
     {
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
         public const int SizeOf = Config.TargetWordSize;
 
         /// <inheritdoc />
@@ -32,6 +35,11 @@ namespace Getools.Lib.Game
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Converts the current object to a byte array.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of object.</returns>
         public byte[] ToByteArray()
         {
             var bytes = new byte[4];

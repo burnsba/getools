@@ -11,7 +11,10 @@ namespace Getools.Lib.Game.Asset.Intro
     /// </summary>
     public class IntroSpawn : IntroBase
     {
-        public const int SizeOf = IntroBase.BaseSizeOf + (2 * Config.TargetWordSize);
+        /// <summary>
+        /// The overall allocated size of this object in bytes, including child elements.
+        /// </summary>
+        public new const int SizeOf = IntroBase.BaseSizeOf + (2 * Config.TargetWordSize);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntroSpawn"/> class.
