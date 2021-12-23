@@ -146,7 +146,10 @@ namespace Getools.Lib.Game.Asset.Setup
                 index++;
             }
 
-            foreach (var entry in AiLists.OrderBy(x => x.EntryPointer))
+            // entry pointer can change during iteration, so create a copy of the order
+            var sorted = AiLists.OrderBy(x => x.EntryPointer.IsNull == true).ThenBy(x => x.EntryPointer.PointedToOffset).ToList();
+
+            foreach (var entry in sorted)
             {
                 entry.DeserializeFix();
 

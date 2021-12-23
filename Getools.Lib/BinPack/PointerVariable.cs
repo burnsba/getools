@@ -147,6 +147,11 @@ namespace Getools.Lib.BinPack
                 return -1;
             }
 
+            if (object.ReferenceEquals(obj, this) || PointedToOffset == other.PointedToOffset)
+            {
+                return 0;
+            }
+
             return PointedToOffset.CompareTo(other.PointedToOffset);
         }
     }
