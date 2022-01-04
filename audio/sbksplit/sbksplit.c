@@ -237,13 +237,13 @@ int main(int argc, char **argv)
     }
 
     input = fopen(input_filename, "rb");
-	if (input == NULL)
-	{
-		fprintf(stderr, "Cannot open input file: %s\n", input_filename);
+    if (input == NULL)
+    {
+        fprintf(stderr, "Cannot open input file: %s\n", input_filename);
         fflush(stderr);
-		fclose(input);
+        fclose(input);
         return 1;
-	}
+    }
 
     if(fseek(input, 0, SEEK_END) != 0)
     {
