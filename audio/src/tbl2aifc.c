@@ -26,8 +26,11 @@
 #include <string.h>
 #include <limits.h>
 #include <getopt.h>
-#include <sys/stat.h>   /* mkdir(2) */
-#include <errno.h>
+#include "debug.h"
+#include "machine_config.h"
+#include "common.h"
+#include "utility.h"
+#include "llist.h"
 
 /**
  * This program takes as input:
@@ -54,33 +57,12 @@
 #define DEFAULT_FILENAME_PREFIX "snd_"
 #define DEFAULT_EXTENSION       ".aifc" /* Nintendo custom .aiff format */
 
-#define PATH_SEPERATOR '/'
+
 #define TEXT_INDENT "    "
 
-#define VERBOSE_DEBUG 3
-#define DEBUG_OFFSET_CONSOLE 0
-#define DEBUG_TRACE 0
 
-#if DEBUG_TRACE == 1
-static int _trace_depth = 0;
-#define TRACE_ENTER(s)  if (DEBUG_TRACE) \
-    { \
-        printf("[%d] enter " s "\n", _trace_depth); \
-        _trace_depth++; \
-        fflush(stdout); \
-    }
-#define TRACE_LEAVE(s)  if (DEBUG_TRACE) \
-    { \
-        printf("[%d] <- " s "\n", _trace_depth); \
-        _trace_depth--; \
-        fflush(stdout); \
-    }
-#else
-#define TRACE_ENTER(s)
-#define TRACE_LEAVE(s)
-#endif
 
-#define THROW_NOT_IMPLEMENTED 1
+
 #define INST_OBJ_ID_STRING_LEN 25
 
 #define BANKFILE_MAGIC_BYTES 0x4231
@@ -88,52 +70,19 @@ static int _trace_depth = 0;
 #define DEFAULT_SAMPLE_SIZE   0x10
 #define DEFAULT_NUM_CHANNELS     1
 
-// sanity config
-#define MAX_FILES               1024 /* arbitrary */
-#define MAX_FILENAME_LEN         255
-#define MAX_INPUT_FILESIZE  20000000 /* arbitrary, but this should fit on a N64 cart, soooooo */
+
 
 #define  WRITE_BUFFER_LEN      MAX_FILENAME_LEN
 static char write_buffer[WRITE_BUFFER_LEN] = {0};
 
-#ifdef __sgi
-// files are big endian, so don't byte swap 
-#  define BSWAP16(x)
-#  define BSWAP16_INLINE(x) x
-#  define BSWAP32(x)
-#  define BSWAP32_INLINE(x) x
-#  define BSWAP16_MANY(x, n)
-#else
-// else, this is a sane environment, so need to byteswap
-#  define BSWAP16(x) x = __builtin_bswap16(x);
-#  define BSWAP16_INLINE(x) __builtin_bswap16(x)
-#  define BSWAP32(x) x = __builtin_bswap32(x);
-#  define BSWAP32_INLINE(x) __builtin_bswap32(x)
-#  define BSWAP16_MANY(x, n) { s32 _i; for (_i = 0; _i < n; _i++) BSWAP16((x)[_i]) }
-#endif
+
 
 // make system #define if needed...
 typedef __float80 f80;
 
-struct string_data
-{
-    size_t len;
-    char *text;
-};
 
-struct llist_node
-{
-    void *data;
-    struct llist_node *next;
-    struct llist_node *prev;
-};
 
-struct llist_root
-{
-    size_t count;
-    struct llist_node *root;
-    struct llist_node *tail;
-};
+
 
 enum {
     AL_ADPCM_WAVE = 0,
@@ -360,7 +309,7 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new();
 
 #define SUPPORTTED_OUTPUT_MODE "s m"
 
-static int verbosity = 1;
+
 static int opt_help_flag = 0;
 static int opt_ctl_file = 0;
 static int opt_tbl_file = 0;
@@ -375,7 +324,6 @@ static char dir[MAX_FILENAME_LEN] = {0};
 static char filename_prefix[MAX_FILENAME_LEN] = {0};
 static char ctl_filename[MAX_FILENAME_LEN] = {0};
 static char tbl_filename[MAX_FILENAME_LEN] = {0};
-static char output_filename[MAX_FILENAME_LEN] = {0};
 static char inst_filename[MAX_FILENAME_LEN] = {0};
 static char names_filename[MAX_FILENAME_LEN] = {0};
 static struct llist_root user_names = {0};
@@ -584,11 +532,11 @@ void read_opts(int argc, char **argv)
             break;
 
             case 'q':
-                verbosity = 0;
+                g_verbosity = 0;
                 break;
 
             case 'v':
-                verbosity = 2;
+                g_verbosity = 2;
                 break;
 
             case 's':
@@ -665,7 +613,7 @@ void read_opts(int argc, char **argv)
                 break;
 
             case LONG_OPT_DEBUG:
-                verbosity = VERBOSE_DEBUG;
+                g_verbosity = VERBOSE_DEBUG;
                 break;
 
             case '?':
@@ -676,311 +624,7 @@ void read_opts(int argc, char **argv)
     }
 }
 
-int mkpath(const char* path)
-{
-    TRACE_ENTER("mkpath")
 
-    size_t len = strlen(path);
-    char local_path[MAX_FILENAME_LEN];
-    char *p;
-
-    if (len > MAX_FILENAME_LEN)
-    {
-        fprintf(stderr, "error, mkpath name too long.\n");
-        fflush(stderr);
-        return 1;
-    }
-
-    memset(local_path, 0, MAX_FILENAME_LEN);
-    strcpy(local_path, path);
-
-    for (p = local_path + 1; *p; p++)
-    {
-        if (*p == PATH_SEPERATOR)
-        {
-            *p = '\0';
-
-            if (mkdir(local_path, S_IRWXU) != 0)
-            {
-                if (errno != EEXIST)
-                {
-                    fprintf(stderr, "mkpath error, could not create dir at step %s.\n", local_path);
-                    fflush(stderr);
-                    return 1;
-                }
-            }
-            else
-            {
-                if (verbosity >= VERBOSE_DEBUG)
-                {
-                    printf("create dir %s\n", local_path);
-                }
-            }
-
-            *p = PATH_SEPERATOR;
-        }
-    }   
-
-    if (mkdir(local_path, S_IRWXU) != 0)
-    {
-        if (errno != EEXIST)
-        {
-            fprintf(stderr, "mkpath error, could not create dir %s.\n", path);
-            fflush(stderr);
-            return 1;
-        }
-    }
-    else
-    {
-        if (verbosity >= VERBOSE_DEBUG)
-        {
-            printf("create dir %s\n", local_path);
-        }
-    }
-
-    TRACE_LEAVE("mkpath");
-
-    return 0;
-}
-
-void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
-{
-    if (dest == NULL || src == NULL || len == 0)
-    {
-        return;
-    }
-
-    size_t i;
-    for (i=0; i<len; i++)
-    {
-        dest[len - i - 1] = src[i];
-    }
-}
-
-void reverse_inplace(uint8_t *arr, size_t len)
-{
-    if (arr == NULL || len == 0)
-    {
-        return;
-    }
-
-    size_t i;
-    for (i=0; i<len/2; i++)
-    {
-        uint8_t t = arr[len - i - 1];
-        arr[len - i - 1] = arr[i];
-        arr[i] = t;
-    }
-}
-
-void fwrite_bswap(void *data, size_t size, size_t n, FILE* fp)
-{
-    int i;
-
-    if (size == 2)
-    {
-        for (i=0; i<n; i++)
-        {
-            uint16_t b16 = BSWAP16_INLINE(((uint16_t*)data)[i]);
-            fwrite(&b16, size, n, fp);
-        }
-    }
-    else if (size == 4)
-    {
-        
-        for (i=0; i<n; i++)
-        {
-            uint32_t b32 = BSWAP32_INLINE(((uint32_t*)data)[i]);
-            fwrite(&b32, size, n, fp);
-        }
-    }
-    else
-    {
-        fwrite(data, size, n, fp);
-    }
-}
-
-// length in bytes of input file
-static size_t _input_filesize;
-void get_file_contents(char *path, uint8_t **buffer)
-{
-    TRACE_ENTER("get_file_contents")
-
-    FILE *input;
-
-    size_t f_result;
-
-    input = fopen(path, "rb");
-    if (input == NULL)
-    {
-        fprintf(stderr, "Cannot open file: %s\n", path);
-        fflush(stderr);
-        exit(1);
-    }
-
-    if(fseek(input, 0, SEEK_END) != 0)
-    {
-        fprintf(stderr, "error attempting to seek to end of file %s\n", path);
-        fflush(stderr);
-        fclose(input);
-        exit(1);
-    }
-
-    _input_filesize = ftell(input);
-
-    if (verbosity > 2)
-    {
-        printf("file size: %s %d\n", path, _input_filesize);
-    }
-
-    if(fseek(input, 0, SEEK_SET) != 0)
-    {
-        fprintf(stderr, "error attempting to seek to beginning of file %s\n", path);
-        fflush(stderr);
-        fclose(input);
-        exit(1);
-    }
-
-    if (_input_filesize > MAX_INPUT_FILESIZE)
-    {
-        fprintf(stderr, "error, filesize=%d is larger than max supported=%d\n", _input_filesize, MAX_INPUT_FILESIZE);
-        fflush(stderr);
-        fclose(input);
-        exit(2);
-    }
-
-    *buffer = (uint8_t *)malloc(_input_filesize);
-    if (*buffer == NULL)
-    {
-        perror("malloc");
-		fclose(input);
-        exit(3);
-    }
-
-    f_result = fread((void *)*buffer, 1, _input_filesize, input);
-    if(f_result != _input_filesize || ferror(input))
-    {
-        fprintf(stderr, "error reading file [%s], expected to read %d bytes, but read %d\n", path, _input_filesize, f_result);
-        fflush(stderr);
-		fclose(input);
-        exit(4);
-    }
-
-    // done with input file, it's in memory now.
-    fclose(input);
-
-    TRACE_LEAVE("get_file_contents");
-}
-
-/**
- * malloc (count*item_size) number of bytes.
- * memset result to zero.
- * if malloc fails the program will exit.
-*/
-void *malloc_zero(size_t count, size_t item_size)
-{
-    TRACE_ENTER("malloc_zero")
-
-    void *outp;
-    size_t malloc_size;
-
-    malloc_size = count * item_size;
-    outp = malloc(malloc_size);
-    if (outp == NULL)
-    {
-        perror("malloc");
-        exit(3);
-    }
-    memset(outp, 0, malloc_size);
-
-    TRACE_LEAVE("malloc_zero");
-
-    return outp;
-}
-
-void fp_write_or_exit(const void* buffer, size_t num_bytes, FILE *fp)
-{
-    TRACE_ENTER("fp_write_or_exit")
-
-    int f_result;
-
-    f_result = fwrite(write_buffer, 1, num_bytes, fp);
-    if (f_result != num_bytes || ferror(fp))
-    {
-        fprintf(stderr, "error writing to file, expected to write %d bytes, but wrote %d\n", num_bytes, f_result);
-        fflush(stderr);
-		fclose(fp);
-        exit(4);
-    }
-
-    TRACE_LEAVE("fp_write_or_exit");
-}
-
-void bswap16_memcpy(void *dest, const void *src, size_t num)
-{
-    TRACE_ENTER("bswap16_memcpy")
-
-    int i;
-
-    if (num < 1)
-    {
-        return;
-    }
-
-    if (dest == NULL)
-    {
-        fprintf(stderr, "bswap16_memcpy error, dest is NULL\n");
-        fflush(stderr);
-        exit(1);
-    }
-
-    if (src == NULL)
-    {
-        fprintf(stderr, "bswap16_memcpy error, src is NULL\n");
-        fflush(stderr);
-        exit(1);
-    }
-
-    for (i=0; i<num; i++)
-    {
-        ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)src)[i]);
-    }
-
-    TRACE_LEAVE("bswap16_memcpy");
-}
-
-void bswap32_memcpy(void *dest, const void *src, size_t num)
-{
-    TRACE_ENTER("bswap32_memcpy")
-
-    int i;
-    
-    if (num < 1)
-    {
-        return;
-    }
-
-    if (dest == NULL)
-    {
-        fprintf(stderr, "bswap32_memcpy error, dest is NULL\n");
-        fflush(stderr);
-        exit(1);
-    }
-
-    if (src == NULL)
-    {
-        fprintf(stderr, "bswap32_memcpy error, src is NULL\n");
-        fflush(stderr);
-        exit(1);
-    }
-
-    for (i=0; i<num; i++)
-    {
-        ((uint32_t*)dest)[i] = BSWAP32_INLINE(((uint32_t*)src)[i]);
-    }
-
-    TRACE_LEAVE("bswap32_memcpy");
-}
 
 void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
@@ -1074,7 +718,7 @@ void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents,
     envelope->decay_volume = ctl_file_contents[input_pos];
     input_pos += 1;
 
-    if (DEBUG_OFFSET_CONSOLE && verbosity >= VERBOSE_DEBUG)
+    if (DEBUG_OFFSET_CONSOLE && g_verbosity >= VERBOSE_DEBUG)
     {
         printf("init envelope %d\n", envelope->id);
     }
@@ -1160,7 +804,7 @@ void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32
     keymap->detune = ctl_file_contents[input_pos];
     input_pos += 1;
 
-    if (DEBUG_OFFSET_CONSOLE && verbosity >= VERBOSE_DEBUG)
+    if (DEBUG_OFFSET_CONSOLE && g_verbosity >= VERBOSE_DEBUG)
     {
         printf("init keymap %d\n", keymap->id);
     }
@@ -1237,7 +881,7 @@ void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_conten
     memset(write_buffer, 0, WRITE_BUFFER_LEN);
 
     // want to compare against wavetable->id before increment
-    if (opt_names_file && wavetable->id < user_names.count)
+    if (opt_names_file && (size_t)wavetable->id < user_names.count)
     {
         struct string_data *sd = NULL;
 
@@ -1295,7 +939,7 @@ void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_conten
     wavetable->wave_info.adpcm_wave.loop_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    if (DEBUG_OFFSET_CONSOLE && verbosity >= VERBOSE_DEBUG)
+    if (DEBUG_OFFSET_CONSOLE && g_verbosity >= VERBOSE_DEBUG)
     {
         printf("init wavetable %d. tbl base: 0x%04x, length 0x%04x\n", wavetable->id, wavetable->base, wavetable->len);
     }
@@ -1360,7 +1004,7 @@ void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t 
     sound->flags = ctl_file_contents[input_pos];
     input_pos += 1;
 
-    if (DEBUG_OFFSET_CONSOLE && verbosity >= VERBOSE_DEBUG)
+    if (DEBUG_OFFSET_CONSOLE && g_verbosity >= VERBOSE_DEBUG)
     {
         printf("init sound %d\n", sound->id);
     }
@@ -1391,7 +1035,6 @@ void sound_write_to_fp(struct ALSound *sound, FILE *fp)
     TRACE_ENTER("sound_write_to_fp")
 
     int len;
-    int i;
 
     if (sound->envelope_offset > 0)
     {
@@ -1419,7 +1062,7 @@ void sound_write_to_fp(struct ALSound *sound, FILE *fp)
             len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"use (\"%s\");\n", sound->wavetable->aifc_path);
             fp_write_or_exit(write_buffer, len, fp);
 
-            if (verbosity >= VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(write_buffer, 0, WRITE_BUFFER_LEN);
                 len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offfset = 0x%06x;\n", sound->wavetable_offfset);
@@ -1458,7 +1101,7 @@ void sound_write_to_fp(struct ALSound *sound, FILE *fp)
             len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"envelope = %s;\n", sound->envelope->text_id);
             fp_write_or_exit(write_buffer, len, fp);
 
-            if (verbosity >= VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(write_buffer, 0, WRITE_BUFFER_LEN);
                 len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# envelope_offset = 0x%06x;\n", sound->envelope_offset);
@@ -1472,7 +1115,7 @@ void sound_write_to_fp(struct ALSound *sound, FILE *fp)
             len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keymap = %s;\n", sound->keymap->text_id);
             fp_write_or_exit(write_buffer, len, fp);
 
-            if (verbosity >= VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(write_buffer, 0, WRITE_BUFFER_LEN);
                 len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# key_map_offset = 0x%06x;\n", sound->key_map_offset);
@@ -1545,7 +1188,7 @@ void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_con
     instrument->sound_count = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));
     input_pos += 2;
 
-    if (verbosity >= VERBOSE_DEBUG)
+    if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("instrument %d has %d sounds\n", instrument->id, instrument->sound_count);
     }
@@ -1696,7 +1339,7 @@ void instrument_write_to_fp(struct ALInstrument *instrument, FILE *fp)
             len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sound [%d] = %s;\n", i, instrument->sounds[i]->text_id);
             fp_write_or_exit(write_buffer, len, fp);
 
-            if (verbosity >= VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(write_buffer, 0, WRITE_BUFFER_LEN);
                 len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# sound_offset = 0x%06x;\n", instrument->sound_offsets[i]);
@@ -1742,7 +1385,7 @@ void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t loa
     bank->percussion = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    if (verbosity >= VERBOSE_DEBUG)
+    if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("bank %d has %d instruments\n", bank->id, bank->inst_count);
     }
@@ -1798,7 +1441,7 @@ void bank_write_to_fp(struct ALBank *bank, FILE *fp)
             len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"instrument [%d] = %s;\n", i, bank->instruments[i]->text_id);
             fp_write_or_exit(write_buffer, len, fp);
 
-            if (verbosity >= VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(write_buffer, 0, WRITE_BUFFER_LEN);
                 len = snprintf(write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# inst_offset = 0x%06x;\n", bank->inst_offsets[i]);
@@ -1856,7 +1499,7 @@ void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_content
         exit(1);
     }
 
-    if (verbosity >= VERBOSE_DEBUG)
+    if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("bank file %d has %d entries\n", bank_file->id, bank_file->bank_count);
     }
@@ -2102,7 +1745,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
     if (sound->wavetable != NULL
         && sound->wavetable->len > 0)
     {
-        if (verbosity >= VERBOSE_DEBUG)
+        if (g_verbosity >= VERBOSE_DEBUG)
         {
             printf("copying tbl data from offset 0x%06x len 0x%06x\n", sound->wavetable->base, sound->wavetable->len);
             fflush(stdout);
@@ -2291,7 +1934,7 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, FILE *fp)
                 // else, ignore unsupported
                 else
                 {
-                    if (verbosity >= 2)
+                    if (g_verbosity >= 2)
                     {
                         printf("AdpcmAifcFile_frwrite: APPL ignore code_string '%s'\n", basechunk->code_string);
                     }
@@ -2302,7 +1945,7 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, FILE *fp)
             default:
                 // ignore unsupported
             {
-                if (verbosity >= 2)
+                if (g_verbosity >= 2)
                 {
                     printf("AdpcmAifcFile_frwrite: ignore ck_id 0x%08x\n", ck_id);
                 }
@@ -2344,7 +1987,7 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
             {
                 struct ALSound *sound = inst->sounds[k];
 
-                if (verbosity >= VERBOSE_DEBUG)
+                if (g_verbosity >= VERBOSE_DEBUG)
                 {
                     printf("opening sound file for output aifc: \"%s\"\n", sound->wavetable->aifc_path);
                 }
@@ -2365,78 +2008,6 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
     }
 
     TRACE_LEAVE("write_bank_to_aifc");
-}
-
-void llist_root_append_node(struct llist_root *root, struct llist_node *node)
-{
-    TRACE_ENTER("llist_root_append_node");
-
-    root->count++;
-
-    if (root->root == NULL)
-    {
-        root->root = node;
-        root->tail = node;
-    }
-    else
-    {
-        if (root->tail == NULL)
-        {
-            fprintf(stderr, "llist_root_append_node: tail is NULL\n");
-            fflush(stderr);
-            exit(1);
-        }
-
-        node->prev = root->tail;
-        root->tail->next = node;
-        root->tail = node;
-    }
-
-    TRACE_LEAVE("llist_root_append_node");
-}
-
-struct llist_node *llist_node_string_data_new()
-{
-    TRACE_ENTER("llist_node_string_data_new");
-
-    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
-    node->data = (struct string_data *)malloc_zero(1, sizeof(struct string_data));
-
-    TRACE_LEAVE("llist_node_string_data_new");
-
-    return node;
-}
-
-void set_string_data(struct string_data *sd, char *text, size_t len)
-{
-    TRACE_ENTER("set_string_data");
-
-    // string is always non-null but can be empty, is that a problem?
-    sd->text = (char*)malloc_zero(1, len + 1);
-    memcpy(sd->text, text, len);
-    sd->text[len] = '\0';
-    sd->len = len;
-
-    TRACE_LEAVE("set_string_data");
-}
-
-void llist_node_string_data_print(struct llist_root *root)
-{
-    TRACE_ENTER("llist_node_string_data_print");
-
-    struct llist_node *node = root->root;
-    while (node != NULL)
-    {
-        struct string_data *sd = (struct string_data *)node->data;
-        if (sd != NULL)
-        {
-            printf("%s\n", sd->text);
-        }
-
-        node = node->next;
-    }
-
-    TRACE_LEAVE("llist_node_string_data_print");
 }
 
 void parse_user_names(uint8_t *names_file_contents, size_t file_length)
@@ -2590,7 +2161,7 @@ int main(int argc, char **argv)
         // if user didn't supply output directory use the default
         if (!opt_dir)
         {
-            strncpy(dir, DEFAULT_OUT_DIR, sizeof(DEFAULT_OUT_DIR));
+            strncpy(dir, DEFAULT_OUT_DIR, MAX_FILENAME_LEN);
         }
         else
         {
@@ -2612,30 +2183,29 @@ int main(int argc, char **argv)
     // if user didn't supply filename_prefix use the default
     if (!opt_user_filename_prefix)
     {
-        strncpy(filename_prefix, DEFAULT_FILENAME_PREFIX, sizeof(DEFAULT_FILENAME_PREFIX));
+        strncpy(filename_prefix, DEFAULT_FILENAME_PREFIX, MAX_FILENAME_LEN);
     }
 
     // if user didn't supply inst filename use the default
     if (!opt_inst_file)
     {
-        strncpy(inst_filename, DEFAULT_INST_FILENAME, sizeof(DEFAULT_INST_FILENAME));
+        strncpy(inst_filename, DEFAULT_INST_FILENAME, MAX_FILENAME_LEN);
     }
 
     if (opt_names_file)
     {
         uint8_t *names_file_contents;
         size_t file_length = 0;
-        get_file_contents(names_filename, &names_file_contents);
-        file_length = _input_filesize;
+        file_length = get_file_contents(names_filename, &names_file_contents);
         parse_user_names(names_file_contents, file_length);
         free(names_file_contents);
 
         // llist_node_string_data_print(&user_names);
     }
 
-    if (verbosity >= VERBOSE_DEBUG)
+    if (g_verbosity >= VERBOSE_DEBUG)
     {
-        printf("verbosity: %d\n", verbosity);
+        printf("g_verbosity: %d\n", g_verbosity);
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("opt_ctl_file: %d\n", opt_ctl_file);
         printf("opt_tbl_file: %d\n", opt_tbl_file);
@@ -2650,7 +2220,7 @@ int main(int argc, char **argv)
         printf("generate_aifc: %d\n", generate_aifc);
         printf("generate_inst: %d\n", generate_inst);
         printf("opt_names_file: %d\n", opt_names_file);
-        printf("user_names_count: %d\n", user_names.count);
+        printf("user_names_count: %ld\n", user_names.count);
         printf("dir: %s\n", dir);
         printf("filename_prefix: %s\n", filename_prefix);
         printf("ctl_filename: %s\n", ctl_filename);
