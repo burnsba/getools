@@ -52,9 +52,9 @@ struct WavFile *WavFile_new(size_t num_chunks)
     return p;
 }
 
-struct WavFile *load_wav_from_aifc(struct AdpcmAifcFile *aifc_file)
+struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 {
-    TRACE_ENTER("load_wav_from_aifc")
+    TRACE_ENTER("WavFile_load_from_aifc")
 
     struct WavFile *wav = WavFile_new(WAV_DEFAULT_NUM_CHUNKS);
 
@@ -79,7 +79,7 @@ struct WavFile *load_wav_from_aifc(struct AdpcmAifcFile *aifc_file)
 
     wav->data_chunk->ck_data_size = AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, buffer_len);
 
-    TRACE_LEAVE("load_wav_from_aifc")
+    TRACE_LEAVE("WavFile_load_from_aifc")
 
     return wav;
 }

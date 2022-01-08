@@ -19,9 +19,7 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
     {
         if (root->tail == NULL)
         {
-            fprintf(stderr, "llist_root_append_node: tail is NULL\n");
-            fflush(stderr);
-            exit(1);
+            stderr_exit(1, "llist_root_append_node: tail is NULL\n");
         }
 
         node->prev = root->tail;

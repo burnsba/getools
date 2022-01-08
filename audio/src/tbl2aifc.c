@@ -163,9 +163,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, ctl filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, ctl filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -184,9 +182,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, tbl filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, tbl filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -242,9 +238,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, filename prefix not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, filename prefix not specified\n");
                 }
 
                 // 4 characters allocated for digits
@@ -264,9 +258,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, names filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, names filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -322,8 +314,7 @@ void read_opts(int argc, char **argv)
 
                 if (g_output_mode == -1)
                 {
-                    fprintf(stderr, "invalid output mode %s\n", optarg);
-                    fflush(stderr);
+                    fflush_printf(stderr, "invalid output mode %s\n", optarg);
                     print_help(argv[0]);
                     exit(0);
                 }
@@ -337,9 +328,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, inst filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, inst filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -667,12 +656,3 @@ int main(int argc, char **argv)
     free(ctl_file_contents);
     free(tbl_file_contents);
 }
-
-/**
- * todo:
- * - is sample rate required input option?
- * - call free()
- * - differences for mode=m
- * - documentation
- * 
-*/

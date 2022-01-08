@@ -111,9 +111,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, input filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, input filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -132,9 +130,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, filename prefix not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, filename prefix not specified\n");
                 }
 
                 // 4 characters allocated for digits

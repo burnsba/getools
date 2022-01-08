@@ -23,6 +23,8 @@
 #define ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN 11
 #define ADPCM_AIFC_LOOP_STATE_LEN 0x20
 
+#define FRAME_DECODE_BUFFER_LEN 16
+
 struct AdpcmAifcSoundChunk {
     uint32_t ck_id;
     int32_t ck_data_size;
@@ -44,8 +46,13 @@ struct AdpcmAifcCodebookChunk {
     /* code_string is "VADPCMCODES", no terminating '\0' */
     uint16_t version; /* should be 1 */
     int16_t order;
-    uint16_t nentries;
+    uint16_t nentries; /* aka npredictors */
     uint8_t *table_data; /* length of the tableData field is order*nEntries*16 bytes. */
+
+    /**
+     * parsed and decoded table_data will be loaded into the coef_table.
+    */
+    int32_t ***coef_table;
 };
 
 struct AdpcmAifcLoopData {
@@ -99,6 +106,7 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new();
 void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint8_t *tbl_file_contents, struct ALBank *bank);
 void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi);
 void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi);
+void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk);
 void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi);
 void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi);
 void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi);

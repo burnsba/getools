@@ -851,9 +851,7 @@ void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_content
 
     if (bank_file->revision != BANKFILE_MAGIC_BYTES)
     {
-        fprintf(stderr, "Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", BANKFILE_MAGIC_BYTES, bank_file->revision);
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", BANKFILE_MAGIC_BYTES, bank_file->revision);
     }
 
     bank_file->bank_count = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));
@@ -861,9 +859,7 @@ void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_content
 
     if (bank_file->bank_count < 1)
     {
-        fprintf(stderr, "ctl count=%d, nothing to do.\n", bank_file->bank_count);
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "ctl count=%d, nothing to do.\n", bank_file->bank_count);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)

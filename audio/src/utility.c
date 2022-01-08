@@ -1,11 +1,32 @@
 #include <string.h>
 #include <sys/stat.h>   /* mkdir(2) */
 #include <errno.h>
+#include <stdarg.h>
 #include "debug.h"
 #include "machine_config.h"
 #include "common.h"
 #include "utility.h"
 
+void stderr_exit(int exit_code, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+
+    fflush(stderr);
+    exit(exit_code);
+}
+
+void fflush_printf(FILE *stream, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stream, format, args);
+    va_end(args);
+
+    fflush(stderr);
+}
 
 
 /**
@@ -25,7 +46,7 @@ void *malloc_zero(size_t count, size_t item_size)
     if (outp == NULL)
     {
         perror("malloc");
-        exit(3);
+        exit(1);
     }
     memset(outp, 0, malloc_size);
 
@@ -44,9 +65,7 @@ int mkpath(const char* path)
 
     if (len > MAX_FILENAME_LEN)
     {
-        fprintf(stderr, "error, mkpath name too long.\n");
-        fflush(stderr);
-        return 1;
+        stderr_exit(1, "error, mkpath name too long.\n");
     }
 
     memset(local_path, 0, MAX_FILENAME_LEN);
@@ -62,9 +81,7 @@ int mkpath(const char* path)
             {
                 if (errno != EEXIST)
                 {
-                    fprintf(stderr, "mkpath error, could not create dir at step %s.\n", local_path);
-                    fflush(stderr);
-                    return 1;
+                    stderr_exit(1, "mkpath error, could not create dir at step %s.\n", local_path);
                 }
             }
             else
@@ -83,9 +100,7 @@ int mkpath(const char* path)
     {
         if (errno != EEXIST)
         {
-            fprintf(stderr, "mkpath error, could not create dir %s.\n", path);
-            fflush(stderr);
-            return 1;
+            stderr_exit(1, "mkpath error, could not create dir %s.\n", path);
         }
     }
     else
@@ -131,32 +146,6 @@ void reverse_inplace(uint8_t *arr, size_t len)
     }
 }
 
-// void fwrite_bswap(void *data, size_t size, size_t n, FILE* fp)
-// {
-//     size_t i;
-
-//     if (size == 2)
-//     {
-//         for (i=0; i<n; i++)
-//         {
-//             uint16_t b16 = BSWAP16_INLINE(((uint16_t*)data)[i]);
-//             fwrite(&b16, size, n, fp);
-//         }
-//     }
-//     else if (size == 4)
-//     {
-//         for (i=0; i<n; i++)
-//         {
-//             uint32_t b32 = BSWAP32_INLINE(((uint32_t*)data)[i]);
-//             fwrite(&b32, size, n, fp);
-//         }
-//     }
-//     else
-//     {
-//         fwrite(data, size, n, fp);
-//     }
-// }
-
 size_t get_file_contents(char *path, uint8_t **buffer)
 {
     TRACE_ENTER("get_file_contents")
@@ -171,15 +160,12 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     input = fopen(path, "rb");
     if (input == NULL)
     {
-        fprintf(stderr, "Cannot open file: %s\n", path);
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "Cannot open file: %s\n", path);
     }
 
     if(fseek(input, 0, SEEK_END) != 0)
     {
-        fprintf(stderr, "error attempting to seek to end of file %s\n", path);
-        fflush(stderr);
+        fflush_printf(stderr, "error attempting to seek to end of file %s\n", path);
         fclose(input);
         exit(1);
     }
@@ -193,18 +179,16 @@ size_t get_file_contents(char *path, uint8_t **buffer)
 
     if(fseek(input, 0, SEEK_SET) != 0)
     {
-        fprintf(stderr, "error attempting to seek to beginning of file %s\n", path);
-        fflush(stderr);
+        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", path);
         fclose(input);
         exit(1);
     }
 
     if (input_filesize > MAX_INPUT_FILESIZE)
     {
-        fprintf(stderr, "error, filesize=%ld is larger than max supported=%d\n", input_filesize, MAX_INPUT_FILESIZE);
-        fflush(stderr);
+        fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", input_filesize, MAX_INPUT_FILESIZE);
         fclose(input);
-        exit(2);
+        exit(1);
     }
 
     *buffer = (uint8_t *)malloc(input_filesize);
@@ -212,16 +196,15 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     {
         perror("malloc");
 		fclose(input);
-        exit(3);
+        exit(1);
     }
 
     f_result = fread((void *)*buffer, 1, input_filesize, input);
     if(f_result != input_filesize || ferror(input))
     {
-        fprintf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", path, input_filesize, f_result);
-        fflush(stderr);
+        fflush_printf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", path, input_filesize, f_result);
 		fclose(input);
-        exit(4);
+        exit(1);
     }
 
     // done with input file, it's in memory now.
@@ -250,17 +233,14 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     fi->fp = fopen(filename, mode);
     if (fi->fp == NULL)
     {
-        fprintf(stderr, "Cannot open file: %s\n", filename);
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "Cannot open file: %s\n", filename);
     }
 
     fi->_fp_state = 1;
 
     if(fseek(fi->fp, 0, SEEK_END) != 0)
     {
-        fprintf(stderr, "error attempting to seek to end of file %s\n", filename);
-        fflush(stderr);
+        fflush_printf(stderr, "error attempting to seek to end of file %s\n", filename);
         fclose(fi->fp);
         exit(1);
     }
@@ -274,16 +254,14 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     if(fseek(fi->fp, 0, SEEK_SET) != 0)
     {
-        fprintf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
-        fflush(stderr);
+        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
         fclose(fi->fp);
         exit(1);
     }
 
     if (fi->len > MAX_INPUT_FILESIZE)
     {
-        fprintf(stderr, "error, filesize=%ld is larger than max supported=%d\n", fi->len, MAX_INPUT_FILESIZE);
-        fflush(stderr);
+        fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", fi->len, MAX_INPUT_FILESIZE);
         fclose(fi->fp);
         exit(1);
     }
@@ -299,24 +277,19 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 
     if (fi == NULL)
     {
-        fprintf(stderr, "file_info_fread error, fi is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fread error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        fprintf(stderr, "file_info_fread error, fi->fp not valid\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fread error, fi->fp not valid\n");
     }
 
     size_t f_result = fread((void *)output_buffer, size, n, fi->fp);
     size_t num_bytes = size*n;
     if(f_result != num_bytes || ferror(fi->fp))
     {
-        fprintf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", fi->filename, num_bytes, f_result);
-        fflush(stderr);
+        fflush_printf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", fi->filename, num_bytes, f_result);
 		fclose(fi->fp);
         exit(1);
     }
@@ -334,8 +307,7 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 
     if(ret != 0)
     {
-        fprintf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
-        fflush(stderr);
+        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
         fclose(fi->fp);
         exit(1);
     }
@@ -354,16 +326,12 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 
     if (fi == NULL)
     {
-        fprintf(stderr, "file_info_fwrite error, fi is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fwrite error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        fprintf(stderr, "file_info_fwrite error, fi->fp not valid\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fwrite error, fi->fp not valid\n");
     }
 
     ret = fwrite(data, size, n, fi->fp);
@@ -371,10 +339,9 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     num_bytes = size * n;
     if (ret != num_bytes || ferror(fi->fp))
     {
-        fprintf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, ret);
-        fflush(stderr);
+        fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, ret);
 		fclose(fi->fp);
-        exit(4);
+        exit(1);
     }
 
     TRACE_LEAVE("file_info_fwrite");
@@ -393,16 +360,12 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
     if (fi == NULL)
     {
-        fprintf(stderr, "file_info_fwrite_bswap error, fi is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fwrite_bswap error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        fprintf(stderr, "file_info_fwrite_bswap error, fi->fp not valid\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "file_info_fwrite_bswap error, fi->fp not valid\n");
     }
 
     if (size == 2)
@@ -415,10 +378,9 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             // num_bytes *= 1;
             if (f_result != num_bytes || ferror(fi->fp))
             {
-                fprintf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
-                fflush(stderr);
+                fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
                 fclose(fi->fp);
-                exit(4);
+                exit(1);
             }
 
             ret += f_result;
@@ -434,10 +396,9 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             // num_bytes *= 1;
             if (ret != num_bytes || ferror(fi->fp))
             {
-                fprintf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
-                fflush(stderr);
+                fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
                 fclose(fi->fp);
-                exit(4);
+                exit(1);
             }
 
             ret += f_result;
@@ -450,10 +411,9 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
         num_bytes *= n;
         if (f_result != num_bytes || ferror(fi->fp))
         {
-            fprintf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
-            fflush(stderr);
+            fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
             fclose(fi->fp);
-            exit(4);
+            exit(1);
         }
 
         ret += f_result;
@@ -506,25 +466,6 @@ void file_info_free(struct file_info *fi)
     TRACE_LEAVE("file_info_free");
 }
 
-
-// void fwrite_or_exit(const void* buffer, size_t num_bytes, FILE *fp)
-// {
-//     TRACE_ENTER("fwrite_or_exit")
-
-//     size_t f_result;
-
-//     f_result = fwrite(buffer, 1, num_bytes, fp);
-//     if (f_result != num_bytes || ferror(fp))
-//     {
-//         fprintf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
-//         fflush(stderr);
-// 		fclose(fi->fp);
-//         exit(4);
-//     }
-
-//     TRACE_LEAVE("fwrite_or_exit");
-// }
-
 void bswap16_memcpy(void *dest, const void *src, size_t num)
 {
     TRACE_ENTER("bswap16_memcpy")
@@ -538,16 +479,12 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        fprintf(stderr, "bswap16_memcpy error, dest is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "bswap16_memcpy error, dest is NULL\n");
     }
 
     if (src == NULL)
     {
-        fprintf(stderr, "bswap16_memcpy error, src is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "bswap16_memcpy error, src is NULL\n");
     }
 
     for (i=0; i<num; i++)
@@ -571,16 +508,12 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        fprintf(stderr, "bswap32_memcpy error, dest is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "bswap32_memcpy error, dest is NULL\n");
     }
 
     if (src == NULL)
     {
-        fprintf(stderr, "bswap32_memcpy error, src is NULL\n");
-        fflush(stderr);
-        exit(1);
+        stderr_exit(1, "bswap32_memcpy error, src is NULL\n");
     }
 
     for (i=0; i<num; i++)

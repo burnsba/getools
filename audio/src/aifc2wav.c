@@ -73,9 +73,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, input filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, input filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -94,9 +92,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    fprintf(stderr, "error, output filename not specified\n");
-                    fflush(stderr);
-                    exit(1);
+                    stderr_exit(1, "error, output filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -209,7 +205,7 @@ int main(int argc, char **argv)
     // done with input file
     file_info_free(input_file);
 
-    wav_file = load_wav_from_aifc(aifc_file);
+    wav_file = WavFile_load_from_aifc(aifc_file);
 
     output_file = file_info_fopen(output_filename, "wb");
 
