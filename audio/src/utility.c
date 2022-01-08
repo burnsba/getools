@@ -275,6 +275,8 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 {
     TRACE_ENTER("file_info_fread")
 
+    size_t num_bytes = size*n;
+
     if (fi == NULL)
     {
         stderr_exit(1, "file_info_fread error, fi is NULL\n");
@@ -286,17 +288,17 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
     }
 
     size_t f_result = fread((void *)output_buffer, size, n, fi->fp);
-    size_t num_bytes = size*n;
-    if(f_result != num_bytes || ferror(fi->fp))
+    
+    if(f_result != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", fi->filename, num_bytes, f_result);
+        fflush_printf(stderr, "error reading file [%s], expected to read %ld elements, but read %ld\n", fi->filename, n, f_result);
 		fclose(fi->fp);
         exit(1);
     }
 
     TRACE_LEAVE("file_info_fread")
 
-    return f_result;
+    return num_bytes;
 }
 
 int file_info_fseek(struct file_info *fi, long __off, int __whence)
@@ -324,6 +326,8 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     size_t ret;
     size_t num_bytes;
 
+    num_bytes = size * n;
+
     if (fi == NULL)
     {
         stderr_exit(1, "file_info_fwrite error, fi is NULL\n");
@@ -335,18 +339,17 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     }
 
     ret = fwrite(data, size, n, fi->fp);
-
-    num_bytes = size * n;
-    if (ret != num_bytes || ferror(fi->fp))
+    
+    if (ret != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, ret);
+        fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, ret);
 		fclose(fi->fp);
         exit(1);
     }
 
     TRACE_LEAVE("file_info_fwrite");
 
-    return ret;
+    return num_bytes;
 }
 
 size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n)
@@ -356,7 +359,6 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
     size_t i;
     size_t ret = 0;
     size_t f_result = 0;
-    size_t num_bytes = size;
 
     if (fi == NULL)
     {
@@ -375,15 +377,14 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             uint16_t b16 = BSWAP16_INLINE(((uint16_t*)data)[i]);
             f_result = fwrite(&b16, size, 1, fi->fp);
 
-            // num_bytes *= 1;
-            if (f_result != num_bytes || ferror(fi->fp))
+            if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
+                fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", f_result);
                 fclose(fi->fp);
                 exit(1);
             }
 
-            ret += f_result;
+            ret += size;
         }
     }
     else if (size == 4)
@@ -393,30 +394,28 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             uint32_t b32 = BSWAP32_INLINE(((uint32_t*)data)[i]);
             f_result = fwrite(&b32, size, 1, fi->fp);
 
-            // num_bytes *= 1;
-            if (ret != num_bytes || ferror(fi->fp))
+            if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
+                fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", 1, f_result);
                 fclose(fi->fp);
                 exit(1);
             }
 
-            ret += f_result;
+            ret += size;
         }
     }
     else
     {
         f_result = fwrite(data, size, n, fi->fp);
 
-        num_bytes *= n;
-        if (f_result != num_bytes || ferror(fi->fp))
+        if (f_result != n || ferror(fi->fp))
         {
-            fflush_printf(stderr, "error writing to file, expected to write %ld bytes, but wrote %ld\n", num_bytes, f_result);
+            fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, f_result);
             fclose(fi->fp);
             exit(1);
         }
 
-        ret += f_result;
+        ret += (size * n);
     }
 
     TRACE_LEAVE("file_info_fwrite_bswap");

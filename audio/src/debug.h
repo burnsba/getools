@@ -9,7 +9,7 @@
 #define THROW_NOT_IMPLEMENTED 1
 
 #if DEBUG_TRACE == 1
-static int _trace_depth = 0;
+extern int _trace_depth;
 #define TRACE_ENTER(s)  if (DEBUG_TRACE) \
     { \
         printf("[%d] enter " s "\n", _trace_depth); \

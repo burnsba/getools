@@ -88,7 +88,7 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
 
     file_info_fread(fi, &code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
 
-    if (strcmp(code_string, ADPCM_AIFC_VADPCM_CODES_NAME) == 0)
+    if (strncmp(code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
     {
         struct AdpcmAifcCodebookChunk *p = (struct AdpcmAifcCodebookChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCodebookChunk));
         ret = (struct AdpcmAifcApplicationChunk *)p;
@@ -115,7 +115,7 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
 
         AdpcmAifcCodebookChunk_decode_aifc_codebook(p);
     }
-    else if (strcmp(code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME) == 0)
+    else if (strncmp(code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
     {
         struct AdpcmAifcLoopChunk *p = (struct AdpcmAifcLoopChunk *)malloc_zero(1, sizeof(struct AdpcmAifcLoopChunk));
         ret = (struct AdpcmAifcApplicationChunk *)p;
@@ -152,7 +152,8 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
     }
     else
     {
-        stderr_exit(1, "Unsupported APPL chunk: %s\n", code_string);
+        // no terminating zero, requires explicit length
+        stderr_exit(1, "Unsupported APPL chunk: %.*s\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
     }
 
     TRACE_LEAVE("AdpcmAifcApplicationChunk_new_from_file");
@@ -343,11 +344,12 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
             case ADPCM_AIFC_APPLICATION_CHUNK_ID:
             {
                 struct AdpcmAifcApplicationChunk *appl = (struct AdpcmAifcApplicationChunk *)node->data;
-                if (strcmp(appl->code_string, ADPCM_AIFC_VADPCM_CODES_NAME) == 0)
+                // code_string doesn't have terminating zero, requires explicit length
+                if (strncmp(appl->code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     p->codes_chunk = (struct AdpcmAifcCodebookChunk *)node->data;
                 }
-                else if (strcmp(appl->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME) == 0)
+                else if (strncmp(appl->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     p->loop_chunk = (struct AdpcmAifcLoopChunk *)node->data;
                 }
@@ -453,7 +455,7 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
     int i,j,k;
     int code_book_pos = 0;
 
-    chunk->coef_table = malloc_zero(chunk->nentries, sizeof(int32_t **));
+    chunk->coef_table = malloc_zero(chunk->nentries, sizeof(int32_t**));
 
     for (i = 0; i < chunk->nentries; i++)
     {
@@ -479,7 +481,9 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
                     stderr_exit(1, "AdpcmAifcCodebookChunk_decode_aifc_codebook: attempt to read past end of codebook\n");
                 }
 
-                table_entry[k][j] = BSWAP16_INLINE(*(int16_t*)&chunk->table_data[code_book_pos]);
+                // careful, this needs to pass a signed 16 bit int to bswap, and then sign extend promote to 32 bit.
+                int16_t ts = BSWAP16_INLINE(*(int16_t*)(&chunk->table_data[code_book_pos]));
+                table_entry[k][j] = (int32_t)ts;
                 code_book_pos += 2;
             }
         }
@@ -785,12 +789,13 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
             case ADPCM_AIFC_APPLICATION_CHUNK_ID: // APPL
             {
                 struct AdpcmAifcApplicationChunk *basechunk = (struct AdpcmAifcApplicationChunk *)aaf->chunks[i];
-                if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_CODES_NAME, 10) == 0)
+                // code_string doesn't have terminating zero, requires explicit length
+                if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     struct AdpcmAifcCodebookChunk *chunk = (struct AdpcmAifcCodebookChunk *)basechunk;
                     AdpcmAifcCodebookChunk_frwrite(chunk, fi);
                 }
-                else if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, 10) == 0)
+                else if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     struct AdpcmAifcLoopChunk *chunk = (struct AdpcmAifcLoopChunk *)basechunk;
                     AdpcmAifcLoopChunk_frwrite(chunk, fi);
@@ -800,7 +805,8 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
                 {
                     if (g_verbosity >= 2)
                     {
-                        printf("AdpcmAifcFile_frwrite: APPL ignore code_string '%s'\n", basechunk->code_string);
+                        // no terminating zero, requires explicit length
+                        printf("AdpcmAifcFile_frwrite: APPL ignore code_string '%.*s'\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, basechunk->code_string);
                     }
                 }
             }
@@ -875,10 +881,12 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
     int32_t optimalp;
     int32_t scale;
     int32_t max_level;
-
     
     int32_t scaled_frame[FRAME_DECODE_BUFFER_LEN];
     int32_t convl_frame[FRAME_DECODE_BUFFER_LEN];
+
+    memset(scaled_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+    memset(convl_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
     
     int i,j;
 
@@ -897,22 +905,16 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
         scaled_frame[i] = c >> 4;
         scaled_frame[i + 1] = c & 0xf;
 
-        if (scaled_frame[i] <= max_level)
+        for (j=0; j<2; j++)
         {
-            scaled_frame[i] *= scale;
-        }
-        else
-        {
-            scaled_frame[i] = (-0x10 - -scaled_frame[i]) * scale;
-        }
-
-        if (scaled_frame[i + 1] <= max_level)
-        {
-            scaled_frame[i + 1] *= scale;
-        }
-        else
-        {
-            scaled_frame[i + 1] = (-0x10 - -scaled_frame[i + 1]) * scale;
+            if (scaled_frame[i + j] <= max_level)
+            {
+                scaled_frame[i + j] *= scale;
+            }
+            else
+            {
+                scaled_frame[i + j] = (-0x10 - -scaled_frame[i + j]) * scale;
+            }
         }
     }
 
@@ -962,16 +964,24 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     size_t write_len = 0;
     size_t ssnd_chunk_pos = 0;
     int end_of_ssnd = 0;
+    size_t buffer_pos = 0;
+
+    int32_t ssnd_data_size = aaf->sound_chunk->ck_data_size - 8;
+    if (ssnd_data_size < 0)
+    {
+        ssnd_data_size = 0;
+    }
 
     int32_t *frame_buffer = (int32_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int32_t));
 
     if (aaf->loop_chunk == NULL)
     {
-        while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(aaf->sound_chunk->ck_data_size - 8) && write_len < max_len)
+        while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(16, buffer, frame_buffer);
-            write_len += 16;
+            write_frame_output(16, &buffer[buffer_pos], frame_buffer);
+            write_len += 16 * 2;
+            buffer_pos += 16 * 2;
         }
     }
     else
@@ -1013,7 +1023,9 @@ static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chun
     }
 
     *eof = 0;
-    return aaf->sound_chunk->sound_data[*ssnd_chunk_pos++];
+    uint8_t ret = aaf->sound_chunk->sound_data[*ssnd_chunk_pos];
+    *ssnd_chunk_pos = *ssnd_chunk_pos + 1;
+    return ret;
 }
 
 static void write_frame_output(size_t size, uint8_t *out, int32_t *data)

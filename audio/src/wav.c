@@ -28,7 +28,7 @@ struct WavFmtChunk *WavFmtChunk_new()
     struct WavFmtChunk *p = (struct WavFmtChunk *)malloc_zero(1, sizeof(struct WavFmtChunk));
 
     p->ck_id = WAV_FMT_CHUNK_ID;
-    p->ck_data_size = 16;
+    p->ck_data_size = WAV_FMT_CHUNK_BODY_SIZE;
 
     TRACE_LEAVE("WavFmtChunk_new");
 
@@ -79,6 +79,11 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 
     wav->data_chunk->ck_data_size = AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, buffer_len);
 
+    wav->ck_data_size = 
+        4 + /* rest of FORM header */
+        WAV_FMT_CHUNK_FULL_SIZE + /* "fmt " chunk is const size */
+        8 + wav->data_chunk->ck_data_size; /* "data" chunk header, then data size*/
+
     TRACE_LEAVE("WavFile_load_from_aifc")
 
     return wav;
@@ -88,7 +93,7 @@ void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("WavDataChunk_frwrite")
 
-    file_info_fwrite(fi, &chunk->ck_id, 4, 1);
+    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
 
     if (chunk->ck_data_size > 0)
@@ -103,9 +108,10 @@ void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("WavFmtChunk_frwrite")
 
-    file_info_fwrite(fi, &chunk->ck_id, 4, 1);
+    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
     file_info_fwrite(fi, &chunk->audio_format, 2, 1);
+    file_info_fwrite(fi, &chunk->num_channels, 2, 1);
     file_info_fwrite(fi, &chunk->sample_rate, 4, 1);
     file_info_fwrite(fi, &chunk->byte_rate, 4, 1);
     file_info_fwrite(fi, &chunk->block_align, 2, 1);
@@ -120,9 +126,9 @@ void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi)
 
     int i;
 
-    file_info_fwrite(fi, &wav_file->ck_id, 4, 1);
+    file_info_fwrite_bswap(fi, &wav_file->ck_id, 4, 1);
     file_info_fwrite(fi, &wav_file->ck_data_size, 4, 1);
-    file_info_fwrite(fi, &wav_file->form_type, 4, 1);
+    file_info_fwrite_bswap(fi, &wav_file->form_type, 4, 1);
 
     for (i=0; i<wav_file->chunk_count; i++)
     {

@@ -118,7 +118,7 @@ void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     int len;
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "envelope %s\n", envelope->text_id);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "envelope %s", envelope->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -204,7 +204,7 @@ void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     int len;
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "keymap %s\n", keymap->text_id);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "keymap %s", keymap->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -414,7 +414,7 @@ void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "sound %s\n", sound->text_id);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "sound %s", sound->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -596,7 +596,7 @@ void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *f
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "instrument %s\n", instrument->text_id);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "instrument %s", instrument->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -793,7 +793,7 @@ void bank_write_to_fp(struct ALBank *bank, struct file_info *fi)
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "bank %s\n", bank->text_id);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "bank %s", bank->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);

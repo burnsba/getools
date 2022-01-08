@@ -12,16 +12,20 @@
 
 #define WAV_DEFAULT_NUM_CHUNKS 2
 
+// size without ck_id or ck_data_size
+#define WAV_FMT_CHUNK_BODY_SIZE 16
+#define WAV_FMT_CHUNK_FULL_SIZE 4 + 4 + WAV_FMT_CHUNK_BODY_SIZE
+
 #define WAV_AUDIO_FORMAT 1 /* PCM (uncompressed) */
 
 struct WavDataChunk {
-    uint32_t ck_id;
+    uint32_t ck_id; /* big endian */
     int32_t ck_data_size;
     uint8_t *data;
 };
 
 struct WavFmtChunk {
-    uint32_t ck_id;
+    uint32_t ck_id; /* big endian */
     int32_t ck_data_size;
     int16_t audio_format;
     int16_t num_channels;
@@ -32,9 +36,9 @@ struct WavFmtChunk {
 };
 
 struct WavFile {
-    uint32_t ck_id;
+    uint32_t ck_id; /* big endian */
     int32_t ck_data_size;
-    int32_t form_type;
+    int32_t form_type; /* big endian */
     int32_t chunk_count;
     void **chunks;
 

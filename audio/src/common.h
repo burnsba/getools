@@ -2,6 +2,7 @@
 #define _GAUDIO_COMMON_H_
 
 #include "machine_config.h"
+#include "debug.h"
 
 #define TEXT_INDENT "    "
 

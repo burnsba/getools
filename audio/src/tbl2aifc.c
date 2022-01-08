@@ -68,14 +68,12 @@ static int use_other_aifc_dir = 1;
 static int opt_user_filename_prefix = 0;
 static int opt_inst_file = 0;
 static int opt_output_mode = 0;
-//static int opt_sample_rate = 0;
 static int opt_names_file = 0;
 static char ctl_filename[MAX_FILENAME_LEN] = {0};
 static char tbl_filename[MAX_FILENAME_LEN] = {0};
 static char inst_filename[MAX_FILENAME_LEN] = {0};
 static char names_filename[MAX_FILENAME_LEN] = {0};
 static struct llist_root user_names = {0};
-//static int sample_rate = 0;
 static int generate_aifc = 1;
 static int generate_inst = 1;
 
@@ -93,7 +91,6 @@ static struct option long_options[] =
     {"prefix", required_argument,               NULL,  'p' },
     {"inst",   required_argument,               NULL,   LONG_OPT_INST  },
     {"mode",   required_argument,               NULL,   'm'  },
-    {"sample-rate",required_argument,           NULL,   's'  },
     {"no-aifc",      no_argument,     &generate_aifc,   LONG_OPT_NO_AIFC  },
     {"no-inst",      no_argument,     &generate_inst,   LONG_OPT_NO_INST  },
     {"quiet",        no_argument,               NULL,  'q' },
@@ -133,14 +130,14 @@ void print_help(const char * invoke)
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
-    printf("\n");
-    printf(".inst mode options:\n");
-    printf("\n");
-    printf("    sound output mode: --mode=s\n");
-    printf("        no additional options\n");
-    printf("\n");
-    printf("    music output mode: --mode=m\n");
-    printf("        -s,--sample-rate=NUM      sample rate, between 0 and 65536 HZ\n");
+    // printf("\n");
+    // printf(".inst mode options:\n");
+    // printf("\n");
+    // printf("    sound output mode: --mode=s\n");
+    // printf("        no additional options\n");
+    // printf("\n");
+    // printf("    music output mode: --mode=m\n");
+    // printf("        -s,--sample-rate=NUM      sample rate, between 0 and 65536 HZ\n");
 
     printf("\n");
     fflush(stdout);
@@ -222,12 +219,18 @@ void read_opts(int argc, char **argv)
                     }
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
+                if (str_len > MAX_FILENAME_LEN - 2)
                 {
-                    str_len = MAX_FILENAME_LEN - 1;
+                    str_len = MAX_FILENAME_LEN - 2;
                 }
 
                 strncpy(g_output_dir, optarg, str_len);
+
+                if (g_output_dir[str_len] != PATH_SEPERATOR)
+                {
+                    g_output_dir[str_len+1] = PATH_SEPERATOR;
+                    g_output_dir[str_len+2] = '\0';
+                }
             }
             break;
 
@@ -277,22 +280,6 @@ void read_opts(int argc, char **argv)
             case 'v':
                 g_verbosity = 2;
                 break;
-
-            // case 's':
-            // {
-            //     opt_sample_rate = 1;
-            //     sample_rate = atoi(optarg);
-            //     if (sample_rate > USHRT_MAX)
-            //     {
-            //         sample_rate = USHRT_MAX;
-            //     }
-
-            //     if (sample_rate < 0)
-            //     {
-            //         sample_rate = 0;
-            //     }
-            // }
-            // break;
 
             case 'm':
             {
@@ -617,8 +604,6 @@ int main(int argc, char **argv)
         printf("opt_inst_file: %d\n", opt_inst_file);
         printf("opt_output_mode: %d\n", opt_output_mode);
         printf("g_output_mode: %d\n", g_output_mode);
-        // printf("opt_sample_rate: %d\n", opt_sample_rate);
-        // printf("sample_rate: %d\n", sample_rate);
         printf("generate_aifc: %d\n", generate_aifc);
         printf("generate_inst: %d\n", generate_inst);
         printf("opt_names_file: %d\n", opt_names_file);

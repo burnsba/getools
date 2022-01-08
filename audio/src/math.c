@@ -40,7 +40,7 @@ int32_t divide_round_down(int32_t num, int32_t den)
     result = num / den;
     recalc = result * den;
 
-    if (recalc > result)
+    if (recalc > num)
     {
         return result - 1;
     }
