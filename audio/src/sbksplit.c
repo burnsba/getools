@@ -57,28 +57,9 @@
  * compressed format.
 */
 
-/**
- * Unused, but including for reference:
- * 
- * Metadata for a sequence "file" entry / data content of single sequence.
- * Based on original ALSeqData in n64devkit\ultra\usr\include\PR\libaudio.h.
- */
-struct RareALSeqData
-{
-    // address is offset from the start of .sbk file
-    uint8_t *address;
-
-    // seq length after uncompressed.
-    uint16_t uncompressed_len;
-
-    // len is data segment length in the ROM. This is the 1172 compressed length.
-    uint16_t len;
-};
-
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_user_filename_prefix = 0;
-static char filename_prefix[MAX_FILENAME_LEN] = {0};
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
@@ -162,7 +143,7 @@ void read_opts(int argc, char **argv)
                     str_len = MAX_FILENAME_LEN - 5;
                 }
 
-                strncpy(filename_prefix, optarg, str_len);
+                strncpy(g_filename_prefix, optarg, str_len);
             }
             break;
 
@@ -188,18 +169,16 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    FILE *input;
-    FILE *output;
+    struct file_info *input;
+    struct file_info *output;
+
     // number of .seq files listed in the .sbk header
     int32_t in_seq_count = 0;
-    size_t f_result;
     int32_t i;
     // this will be malloc'd, entire file should fit in RAM, should only be few hundred k at most
     uint8_t *input_file_contents;
     // input file current byte position index. only used for header section
     int32_t input_pos = 0;
-    // length in bytes of input file
-    size_t input_filesize;
     // offset to .seq file, from start of .sbk file
     size_t seq_address;
     // length in bytes of compressed .seq file
@@ -216,76 +195,32 @@ int main(int argc, char **argv)
     // if user didn't supply a prefix use the default
     if (!opt_user_filename_prefix)
     {
-        strncpy(filename_prefix, DEFAULT_FILENAME_PREFIX, MAX_FILENAME_LEN);
+        strncpy(g_filename_prefix, DEFAULT_FILENAME_PREFIX, MAX_FILENAME_LEN);
     }
 
-    if (g_verbosity > 2)
+    if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("opt_user_filename_prefix: %d\n", opt_user_filename_prefix);
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("input_filename: %s\n", input_filename);
-        printf("filename_prefix: %s\n", filename_prefix);
+        printf("g_filename_prefix: %s\n", g_filename_prefix);
         fflush(stdout);
     }
 
-    input = fopen(input_filename, "rb");
-    if (input == NULL)
-    {
-        fprintf(stderr, "Cannot open input file: %s\n", input_filename);
-        fflush(stderr);
-        return 1;
-    }
+    input = file_info_fopen(input_filename, "rb");
 
-    if(fseek(input, 0, SEEK_END) != 0)
-    {
-        fprintf(stderr, "error attempting to seek to end of input file %s\n", input_filename);
-        fflush(stderr);
-        fclose(input);
-        return 1;
-    }
-
-    input_filesize = ftell(input);
-
-    if (g_verbosity > 2)
-    {
-        printf("input_filesize: %ld\n", input_filesize);
-    }
-
-    if(fseek(input, 0, SEEK_SET) != 0)
-    {
-        fprintf(stderr, "error attempting to seek to beginning of input file %s\n", input_filename);
-        fflush(stderr);
-        fclose(input);
-        return 1;
-    }
-
-    if (input_filesize > MAX_INPUT_FILESIZE)
-    {
-        fprintf(stderr, "error, input_filesize=%ld is larger than max supported=%d\n", input_filesize, MAX_INPUT_FILESIZE);
-        fflush(stderr);
-        fclose(input);
-        return 2;
-    }
-
-    input_file_contents = (uint8_t *)malloc(input_filesize);
+    input_file_contents = (uint8_t *)malloc(input->len);
     if (input_file_contents == NULL)
     {
         perror("malloc");
-		fclose(input);
+		file_info_free(input);
         return 3;
     }
 
-    f_result = fread((void *)input_file_contents, 1, input_filesize, input);
-    if(f_result != input_filesize || ferror(input))
-    {
-        fprintf(stderr, "error reading input file [%s], expected to read %ld bytes, but read %ld\n", input_filename, input_filesize, f_result);
-        fflush(stderr);
-		fclose(input);
-        return 4;
-    }
+    file_info_fread(input, input_file_contents, input->len, 1);
 
     // done with input file, it's in memory now.
-    fclose(input);
+    file_info_free(input);
 
     in_seq_count = ((int32_t*)input_file_contents)[0];
     in_seq_count = BSWAP16_INLINE(in_seq_count);
@@ -340,20 +275,13 @@ int main(int argc, char **argv)
         memset(output_filename, 0, MAX_FILENAME_LEN);
         // the getopts method should verify the prefix is within allowed length, including
         // budget for digit characters.
-        write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", filename_prefix, i, DEFAULT_EXTENSION);
+        write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
         if (write_len > MAX_FILENAME_LEN)
         {
             // be quiet gcc
         }
 
-        output = fopen(output_filename, "wb");
-        if (output == NULL)
-        {
-            fprintf(stderr, "Cannot open output file: %s\n", output_filename);
-            fflush(stderr);
-            fclose(output);
-            return 6;
-        }
+        output = file_info_fopen(output_filename, "wb");
 
         if (g_verbosity > 1)
         {
@@ -361,16 +289,9 @@ int main(int argc, char **argv)
         }
 
         // write to output, straight from the input file in memory
-        f_result = fwrite(&input_file_contents[(size_t)seq_address], 1, seq_len, output);
-        if(f_result != seq_len || ferror(input))
-        {
-            fprintf(stderr, "error writing output file [%s] (entry %d), expected to write %d bytes, but wrote %ld\n", output_filename, i, seq_len, f_result);
-            fflush(stderr);
-            fclose(input);
-            return 7;
-        }
+        file_info_fwrite(output, &input_file_contents[(size_t)seq_address], seq_len, 1);
 
-        fclose(output);
+        file_info_free(output);
     }
 
      return 0;

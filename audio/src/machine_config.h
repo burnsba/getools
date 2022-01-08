@@ -24,4 +24,7 @@
 
 #define PATH_SEPERATOR '/'
 
+// make system #define if needed...
+typedef __float80 f80;
+
 #endif
