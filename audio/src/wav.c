@@ -28,6 +28,7 @@ struct WavFmtChunk *WavFmtChunk_new()
     struct WavFmtChunk *p = (struct WavFmtChunk *)malloc_zero(1, sizeof(struct WavFmtChunk));
 
     p->ck_id = WAV_FMT_CHUNK_ID;
+    p->ck_data_size = 16;
 
     TRACE_LEAVE("WavFmtChunk_new");
 
@@ -57,7 +58,26 @@ struct WavFile *load_wav_from_aifc(struct AdpcmAifcFile *aifc_file)
 
     struct WavFile *wav = WavFile_new(WAV_DEFAULT_NUM_CHUNKS);
 
-    AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, wav->data_chunk->ck_data_size);
+    // "fmt " chunk
+    wav->fmt_chunk = WavFmtChunk_new();
+    wav->chunks[0] = wav->fmt_chunk;
+
+    wav->fmt_chunk->audio_format = WAV_AUDIO_FORMAT;
+    wav->fmt_chunk->num_channels = 1;
+    wav->fmt_chunk->sample_rate = AdpcmAifcFile_get_int_sample_rate(aifc_file);
+    wav->fmt_chunk->bits_per_sample = aifc_file->comm_chunk->sample_size;
+    wav->fmt_chunk->byte_rate = wav->fmt_chunk->sample_rate * wav->fmt_chunk->num_channels * wav->fmt_chunk->bits_per_sample/8;
+    wav->fmt_chunk->block_align = wav->fmt_chunk->num_channels * wav->fmt_chunk->bits_per_sample/8;
+
+    // "data" chunk
+    wav->data_chunk = WavDataChunk_new();
+    wav->chunks[1] = wav->data_chunk;
+
+    // this should be using ~4:1 compression, overestimate a bit by taking x5.
+    size_t buffer_len = aifc_file->sound_chunk->ck_data_size * 5;
+    wav->data_chunk->data = (uint8_t *)malloc_zero(1, buffer_len);
+
+    wav->data_chunk->ck_data_size = AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, buffer_len);
 
     TRACE_LEAVE("load_wav_from_aifc")
 

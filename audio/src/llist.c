@@ -32,6 +32,17 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
     TRACE_LEAVE("llist_root_append_node");
 }
 
+struct llist_node *llist_node_new()
+{
+    TRACE_ENTER("llist_node_new");
+
+    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
+
+    TRACE_LEAVE("llist_node_new");
+
+    return node;
+}
+
 struct llist_node *llist_node_string_data_new()
 {
     TRACE_ENTER("llist_node_string_data_new");
@@ -74,4 +85,63 @@ void llist_node_string_data_print(struct llist_root *root)
     }
 
     TRACE_LEAVE("llist_node_string_data_print");
+}
+
+void llist_node_free(struct llist_root *root, struct llist_node *node)
+{
+    TRACE_ENTER("llist_node_free");
+
+    if (node == NULL)
+    {
+        return;
+    }
+
+    struct llist_node *next = node->next;
+    struct llist_node *prev = node->prev;
+
+    if (next != NULL)
+    {
+        next->prev = prev;
+    }
+
+    if (prev != NULL)
+    {
+        prev->next = next;
+    }
+
+    free(node);
+
+    if (root != NULL)
+    {
+        if (root->count > 0)
+        {
+            root->count--;
+        }
+    }
+
+    TRACE_LEAVE("llist_node_free");
+}
+
+void llist_node_root_free(struct llist_root *root)
+{
+    TRACE_ENTER("llist_node_root_free");
+
+    if (root == NULL)
+    {
+        return;
+    }
+
+    struct llist_node *node = root->root;
+    struct llist_node *next;
+
+    while (node != NULL)
+    {
+        next = node->next;
+        free(node);
+        node = next;
+    }
+
+    free(root);
+
+    TRACE_LEAVE("llist_node_root_free");
 }

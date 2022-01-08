@@ -19,6 +19,10 @@
 #define ADPCM_AIFC_VADPCM_LOOPS_NAME "VADPCMLOOPS"
 #define ADPCM_AIFC_VADPCM_COMPRESSION_NAME "VADPCM ~4-1"
 
+#define ADPCM_AIFC_VADPCM_APPL_NAME_LEN 11
+#define ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN 11
+#define ADPCM_AIFC_LOOP_STATE_LEN 0x20
+
 struct AdpcmAifcSoundChunk {
     uint32_t ck_id;
     int32_t ck_data_size;
@@ -32,7 +36,7 @@ struct AdpcmAifcApplicationChunk {
     int32_t ck_data_size;
     uint32_t application_signature;
     uint8_t unknown;
-    char code_string[11];
+    char code_string[ADPCM_AIFC_VADPCM_APPL_NAME_LEN];
 };
 
 struct AdpcmAifcCodebookChunk {
@@ -48,7 +52,7 @@ struct AdpcmAifcLoopData {
     int32_t start;
     int32_t end;
     int32_t count;
-    uint8_t state[0x20];
+    uint8_t state[ADPCM_AIFC_LOOP_STATE_LEN];
 };
 
 struct AdpcmAifcLoopChunk {
@@ -68,7 +72,7 @@ struct AdpcmAifcCommChunk {
     uint8_t sample_rate[10];    /* 80 bit float */
     uint32_t compression_type;
     uint8_t unknown;
-    char compression_name[11];     /* "VADPCM ~4-1", no terminating '\0' */
+    char compression_name[ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN];     /* "VADPCM ~4-1", no terminating '\0' */
 };
 
 struct AdpcmAifcFile {
@@ -103,5 +107,6 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi);
 void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi);
 void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents);
 size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len);
+int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
 
 #endif

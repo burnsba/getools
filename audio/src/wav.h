@@ -12,6 +12,8 @@
 
 #define WAV_DEFAULT_NUM_CHUNKS 2
 
+#define WAV_AUDIO_FORMAT 1 /* PCM (uncompressed) */
+
 struct WavDataChunk {
     uint32_t ck_id;
     int32_t ck_data_size;
@@ -22,6 +24,7 @@ struct WavFmtChunk {
     uint32_t ck_id;
     int32_t ck_data_size;
     int16_t audio_format;
+    int16_t num_channels;
     int32_t sample_rate;
     int32_t byte_rate;
     int16_t block_align;
