@@ -4,11 +4,24 @@
 #include "machine_config.h"
 #include "debug.h"
 
+/**
+ * One indentation level.
+*/
 #define TEXT_INDENT "    "
 
+/**
+ * wav and aifc defaut sample size in bits
+*/
 #define DEFAULT_SAMPLE_SIZE   0x10
+
+/**
+ * wav and aifc default number of channels.
+*/
 #define DEFAULT_NUM_CHANNELS     1
 
+/**
+ * temp write buffer length.
+*/
 #define  WRITE_BUFFER_LEN      MAX_FILENAME_LEN
 
 extern int g_verbosity;

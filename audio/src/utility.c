@@ -6,6 +6,7 @@
 #include "machine_config.h"
 #include "common.h"
 #include "utility.h"
+#include "llist.h"
 
 void stderr_exit(int exit_code, const char *format, ...)
 {
@@ -163,7 +164,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
         stderr_exit(1, "Cannot open file: %s\n", path);
     }
 
-    if(fseek(input, 0, SEEK_END) != 0)
+    if (fseek(input, 0, SEEK_END) != 0)
     {
         fflush_printf(stderr, "error attempting to seek to end of file %s\n", path);
         fclose(input);
@@ -521,4 +522,126 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
     }
 
     TRACE_LEAVE("bswap32_memcpy");
+}
+
+void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
+{
+    TRACE_ENTER("parse_names");
+
+    size_t i;
+    int current_len = 0;
+    int trailing_space = 0;
+
+    /**
+     * states:
+     * 1 - reading line, waiting for comment indicator or text
+     * 2 - appending to current buffer
+     * 3 - ignoring input until newline
+    */
+    int state = 1;
+
+    char name_buffer[MAX_FILENAME_LEN];
+
+    memset(name_buffer, 0, MAX_FILENAME_LEN);
+
+    for (i=0; i<file_length; i++)
+    {
+        char c = (char)names_file_contents[i];
+
+        if (state == 1)
+        {
+            if (
+                (c >= '0' && c <= '9')
+                || (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                // || c == ' ' // can't start with whitespace
+                || c == '-'
+                || c == '_'
+                || c == ','
+                || c == '.'
+                || c == '('
+                || c == ')'
+                || c == '['
+                || c == ']'
+                )
+            {
+                name_buffer[current_len] = c;
+                current_len++;
+                state = 2;
+            }
+            else if (c == '#')
+            {
+                state = 3;
+            }
+        }
+        else if (state == 2)
+        {
+            if (
+                (c >= '0' && c <= '9')
+                || (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                || c == '-'
+                || c == '_'
+                || c == ','
+                || c == '.'
+                || c == '('
+                || c == ')'
+                || c == '['
+                || c == ']'
+                )
+            {
+                name_buffer[current_len] = c;
+                current_len++;
+                trailing_space = 0;
+            }
+            else if (c == ' ')
+            {
+                name_buffer[current_len] = c;
+                current_len++;
+                trailing_space++;
+            }
+        }
+
+        if (c == '\n' || c == '\r')
+        {
+            if (trailing_space > 0)
+            {
+                current_len -= trailing_space;
+                name_buffer[current_len + 1] = '\0';
+            }
+
+            if (current_len > 0)
+            {
+                struct llist_node *node = llist_node_string_data_new();
+                set_string_data((struct string_data *)node->data, name_buffer, current_len);
+                llist_root_append_node(names, node);
+                memset(name_buffer, 0, MAX_FILENAME_LEN);
+            }
+
+            current_len = 0;
+            trailing_space = 0;
+            state = 1;
+        }
+    }
+
+    // last entry might not end with newline
+    if (trailing_space > 0)
+    {
+        current_len -= trailing_space;
+        name_buffer[current_len + 1] = '\0';
+    }
+
+    if (current_len > 0)
+    {
+        struct llist_node *node = llist_node_string_data_new();
+        set_string_data((struct string_data *)node->data, name_buffer, current_len);
+        llist_root_append_node(names, node);
+        memset(name_buffer, 0, MAX_FILENAME_LEN);
+    }
+
+    current_len = 0;
+    trailing_space = 0;
+    state = 1;
+
+    TRACE_LEAVE("parse_names");
 }

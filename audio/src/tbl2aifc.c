@@ -399,134 +399,13 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 }
 
 
-void parse_user_names(uint8_t *names_file_contents, size_t file_length)
-{
-    TRACE_ENTER("parse_user_names");
 
-    size_t i;
-    int current_len = 0;
-    int trailing_space = 0;
-    struct llist_root *names = &user_names;
-
-    /**
-     * states:
-     * 1 - reading line, waiting for comment indicator or text
-     * 2 - appending to current buffer
-     * 3 - ignoring input until newline
-    */
-    int state = 1;
-
-    char name_buffer[MAX_FILENAME_LEN];
-
-    memset(name_buffer, 0, MAX_FILENAME_LEN);
-
-    for (i=0; i<file_length; i++)
-    {
-        char c = (char)names_file_contents[i];
-
-        if (state == 1)
-        {
-            if (
-                (c >= '0' && c <= '9')
-                || (c >= 'a' && c <= 'z')
-                || (c >= 'A' && c <= 'Z')
-                // || c == ' ' // can't start with whitespace
-                || c == '-'
-                || c == '_'
-                || c == ','
-                || c == '.'
-                || c == '('
-                || c == ')'
-                || c == '['
-                || c == ']'
-                )
-            {
-                name_buffer[current_len] = c;
-                current_len++;
-                state = 2;
-            }
-            else if (c == '#')
-            {
-                state = 3;
-            }
-        }
-        else if (state == 2)
-        {
-            if (
-                (c >= '0' && c <= '9')
-                || (c >= 'a' && c <= 'z')
-                || (c >= 'A' && c <= 'Z')
-                || c == '-'
-                || c == '_'
-                || c == ','
-                || c == '.'
-                || c == '('
-                || c == ')'
-                || c == '['
-                || c == ']'
-                )
-            {
-                name_buffer[current_len] = c;
-                current_len++;
-                trailing_space = 0;
-            }
-            else if (c == ' ')
-            {
-                name_buffer[current_len] = c;
-                current_len++;
-                trailing_space++;
-            }
-        }
-
-        if (c == '\n' || c == '\r')
-        {
-            if (trailing_space > 0)
-            {
-                current_len -= trailing_space;
-                name_buffer[current_len + 1] = '\0';
-            }
-
-            if (current_len > 0)
-            {
-                struct llist_node *node = llist_node_string_data_new();
-                set_string_data((struct string_data *)node->data, name_buffer, current_len);
-                llist_root_append_node(names, node);
-                memset(name_buffer, 0, MAX_FILENAME_LEN);
-            }
-
-            current_len = 0;
-            trailing_space = 0;
-            state = 1;
-        }
-    }
-
-    // last entry might not end with newline
-    if (trailing_space > 0)
-    {
-        current_len -= trailing_space;
-        name_buffer[current_len + 1] = '\0';
-    }
-
-    if (current_len > 0)
-    {
-        struct llist_node *node = llist_node_string_data_new();
-        set_string_data((struct string_data *)node->data, name_buffer, current_len);
-        llist_root_append_node(names, node);
-        memset(name_buffer, 0, MAX_FILENAME_LEN);
-    }
-
-    current_len = 0;
-    trailing_space = 0;
-    state = 1;
-
-    TRACE_LEAVE("parse_user_names");
-}
 
 int main(int argc, char **argv)
 {
     struct ALBankFile bank_file;
 
-    // ctl and tbl contents will be malloc'd, these should fit in RAM, should only be < 1MB at most
+    // ctl and tbl contents will be malloc'd, these should fit in RAM
     uint8_t *ctl_file_contents;
     uint8_t *tbl_file_contents;
     
@@ -586,7 +465,7 @@ int main(int argc, char **argv)
         uint8_t *names_file_contents;
         size_t file_length = 0;
         file_length = get_file_contents(names_filename, &names_file_contents);
-        parse_user_names(names_file_contents, file_length);
+        parse_names(names_file_contents, file_length, &user_names);
         free(names_file_contents);
 
         // llist_node_string_data_print(&user_names);
@@ -637,6 +516,8 @@ int main(int argc, char **argv)
     {
         write_bank_to_aifc(&bank_file, tbl_file_contents);
     }
+
+    llist_node_root_free_children(&user_names);
 
     free(ctl_file_contents);
     free(tbl_file_contents);

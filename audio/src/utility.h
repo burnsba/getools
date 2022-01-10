@@ -5,11 +5,32 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "llist.h"
 
+/**
+ * Container for file information.
+*/
 struct file_info {
+    /**
+     * file pointer.
+    */
     FILE *fp;
+
+    /**
+     * Internal state, don't touch.
+    */
     int _fp_state;
+
+    /**
+     * Size in bytes of the file.
+    */
     size_t len;
+
+    /**
+     * Filename with extension.
+     * Copied when opened, internal malloc.
+     * Memory will be released once file_info_free is called.
+    */
     char *filename;
 };
 
@@ -31,6 +52,8 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n);
 int file_info_fclose(struct file_info *fi);
 void file_info_free(struct file_info *fi);
+
+void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names);
 
 
 #endif

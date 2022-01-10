@@ -8,6 +8,10 @@
 #include "adpcm_aifc.h"
 #include "wav.h"
 
+/**
+ * Allocates memory for a {@code struct WavDataChunk} and sets known/const values.
+ * @returns: pointer to new chunk.
+*/
 struct WavDataChunk *WavDataChunk_new()
 {
     TRACE_ENTER("WavDataChunk_new")
@@ -21,6 +25,10 @@ struct WavDataChunk *WavDataChunk_new()
     return p;
 }
 
+/**
+ * Allocates memory for a {@code struct WavFmtChunk} and sets known/const values.
+ * @returns: pointer to new chunk.
+*/
 struct WavFmtChunk *WavFmtChunk_new()
 {
     TRACE_ENTER("WavFmtChunk_new")
@@ -35,6 +43,11 @@ struct WavFmtChunk *WavFmtChunk_new()
     return p;
 }
 
+/**
+ * Allocates memory for a {@code struct WavFile} and sets known/const values.
+ * @param num_chunks: length of chunks array to allocate.
+ * @returns: pointer to new object.
+*/
 struct WavFile *WavFile_new(size_t num_chunks)
 {
     TRACE_ENTER("WavFile_new")
@@ -52,6 +65,15 @@ struct WavFile *WavFile_new(size_t num_chunks)
     return p;
 }
 
+/**
+ * Translates from .aifc to .wav.
+ * The .aifc must be loaded into memory.
+ * Allocates memory for resulting wav file, including uncompressed audio.
+ * The exact .aifc uncompressed audio size is not known, so slightly more space
+ * is allocated than is needed.
+ * @param aifc_file: aifc file to convert to wav
+ * @returns: pointer to new wav file.
+*/
 struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 {
     TRACE_ENTER("WavFile_load_from_aifc")
@@ -89,6 +111,11 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
     return wav;
 }
 
+/**
+ * Writes a {@code struct WavDataChunk} to disk.
+ * @param chunk: Chunk to write.
+ * @param fi: File handle to write to, using current offset.
+*/
 void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("WavDataChunk_frwrite")
@@ -104,6 +131,11 @@ void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
     TRACE_LEAVE("WavDataChunk_frwrite")
 }
 
+/**
+ * Writes a {@code struct WavFmtChunk} to disk.
+ * @param chunk: Chunk to write.
+ * @param fi: File handle to write to, using current offset.
+*/
 void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("WavFmtChunk_frwrite")
@@ -120,6 +152,12 @@ void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
     TRACE_LEAVE("WavFmtChunk_frwrite")
 }
 
+/**
+ * Writes the full {@code struct WavFile} to disk.
+ * Only supported chunks are written to disk, all others are ignored.
+ * @param wav_file: wav to write.
+ * @param fi: File handle to write to, using current offset.
+*/
 void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi)
 {
     TRACE_ENTER("WavFile_frwrite")

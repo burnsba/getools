@@ -1,17 +1,30 @@
 #ifndef _GAUDIO_NAUDIO_H_
 #define _GAUDIO_NAUDIO_H_
 
-// n64 lib + Rare audio related
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "utility.h"
 
-#define NAUDIO_AIFC_OUT_DEFAULT_EXTENSION       ".aifc" /* Nintendo custom .aiff format */
+/**
+ * This file contains structs and defines for supporting Rare's audio structs,
+ * and Nintendo's (libultra) audio structs.
+*/
 
+/**
+ * Default extension when creating a .aifc file.
+*/
+#define NAUDIO_AIFC_OUT_DEFAULT_EXTENSION ".aifc"
+
+/**
+ * The .inst file needs named references for objects. This is the max
+ * name length, including trailing '\0'.
+*/
 #define INST_OBJ_ID_STRING_LEN 25
 
+/**
+ * The .ctl file must begin with this two byte sequence (big endian).
+*/
 #define BANKFILE_MAGIC_BYTES 0x4231
 
 /**
@@ -32,11 +45,15 @@ struct RareALSeqData
     uint16_t len;
 };
 
+/* same as libultra */
 enum {
     AL_ADPCM_WAVE = 0,
     AL_RAW16_WAVE
 };
 
+/**
+ * same as libultra struct.
+*/
 struct ALADPCMBook {
     int32_t order;
     int32_t npredictors;
@@ -45,6 +62,9 @@ struct ALADPCMBook {
 
 #define ADPCM_STATE_SIZE 0x20 /* size in bytes */
 
+/**
+ * same as libultra struct.
+*/
 struct ALADPCMloop {
     uint32_t start;
     uint32_t end;
@@ -52,28 +72,48 @@ struct ALADPCMloop {
     uint8_t state[ADPCM_STATE_SIZE];
 };
 
+/**
+ * same as libultra struct.
+*/
 struct ALRawLoop {
     uint32_t start;
     uint32_t end;
     uint32_t count;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALADPCMWaveInfo {
+    /* begin file format (write elements to disk in order declared according to endianess) */
     int32_t loop_offset;
-    struct ALADPCMloop *loop;
     int32_t book_offset;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    struct ALADPCMloop *loop;
     struct ALADPCMBook *book;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALRAWWaveInfo {
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
     int32_t loop_offset;
+
+    /* end file format ------------------------------------------------------------------- */
+
     struct ALRawLoop *loop;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALWaveTable {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
-    char *aifc_path;
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
     int32_t base; /* offset into .tbl file, can be zero */
     int32_t len;
     uint8_t type;
@@ -83,46 +123,107 @@ struct ALWaveTable {
         struct ALADPCMWaveInfo adpcm_wave;
         struct ALRAWWaveInfo raw_wave;
     } wave_info;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of wave table.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
+    char *aifc_path;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALKeyMap {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+    /* begin file format (write elements to disk in order declared according to endianess) */
     uint8_t velocity_min;
     uint8_t velocity_max;
     uint8_t key_min;
     uint8_t key_max;
     uint8_t key_base;
     int8_t detune;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of keymap.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALEnvelope {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
     int32_t attack_time;
     int32_t decay_time;
     int32_t release_time;
     uint8_t attack_volume;
     uint8_t decay_volume;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of envelope.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALSound {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
     int32_t envelope_offset;
-    struct ALEnvelope *envelope;
     int32_t key_map_offset;
-    struct ALKeyMap *keymap;
     int32_t wavetable_offfset;
-    struct ALWaveTable *wavetable;
     uint8_t sample_pan;
     uint8_t sample_volume;
     uint8_t flags;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of sound.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
+
+    struct ALEnvelope *envelope;
+    struct ALKeyMap *keymap;
+    struct ALWaveTable *wavetable;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALInstrument {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
     uint8_t volume;
     uint8_t pan;
     uint8_t priority;
@@ -138,27 +239,131 @@ struct ALInstrument {
     int16_t bend_range;
     int16_t sound_count;
     int32_t *sound_offsets;
+    
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of instrument.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * Array of pointers to each sound.
+    */
     struct ALSound **sounds;
 };
 
+/**
+ * Modified libultra struct.
+*/
 struct ALBank {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
+    /**
+     * Number of instruments in the bank,
+     * and length of `instruments` array.
+     * big endian.
+    */
     int16_t inst_count;
+
+    /**
+     * Libultra uses this as pointer/offset flag, such that
+     * zero indicates offsets, and one indicates pointers.
+     * Unused by this library, therefore always zero.
+    */
     uint8_t flags;
+
+    /**
+     * Unused.
+    */
     uint8_t pad;
+
+    /**
+     * Playback sample rate.
+     * big endian.
+    */
     int32_t sample_rate;
-    int32_t percussion; /* is this a pointer? */
+
+    /**
+     * Offset/pointer to percussion instrument.
+     * Unused.
+     * big endian.
+    */
+    int32_t percussion;
+
+    /**
+     * File offsets of instruments as read from file.
+     * These are never promoted to pointers by this library.
+     * big endian.
+    */
     int32_t *inst_offsets;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of bank.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * Array of pointers to each instrument.
+    */
     struct ALInstrument **instruments;
 };
 
+/**
+ * Modified libultra struct.
+ * Base container for bank.
+*/
 struct ALBankFile {
-    int32_t id;
-    char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /* begin file format (write elements to disk in order declared according to endianess) */
+
+    /**
+     * Revision....?
+     * Must be BANKFILE_MAGIC_BYTES.
+     * big endian.
+    */
     int16_t revision;
+
+    /**
+     * Number of banks in the file,
+     * and length of `bank_offsets` array.
+     * big endian.
+    */
     int16_t bank_count;
+
+    /**
+     * Offsets into the current file of banks.
+     * big endian.
+    */
     int32_t *bank_offsets;
+
+    /* end file format ------------------------------------------------------------------- */
+
+    /**
+     * Library/runtime id of bank file.
+    */
+    int32_t id;
+
+    /**
+     * inst file text id.
+    */
+    char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * Array of pointers to each bank.
+    */
     struct ALBank **banks;
 };
 
