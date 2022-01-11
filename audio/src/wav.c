@@ -9,6 +9,11 @@
 #include "wav.h"
 
 /**
+ * This file contains primary wav methods.
+ * This contains code to convert from other formats to wav.
+*/
+
+/**
  * Allocates memory for a {@code struct WavDataChunk} and sets known/const values.
  * @returns: pointer to new chunk.
 */

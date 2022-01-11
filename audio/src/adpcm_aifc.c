@@ -10,6 +10,11 @@
 #include "adpcm_aifc.h"
 #include "llist.h"
 
+/**
+ * This file contains primary aifc methods.
+ * This contains code to convert from other formats to aifc.
+*/
+
 // forward declarations
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);

@@ -13,8 +13,16 @@
 #include "adpcm_aifc.h"
 #include "wav.h"
 
+/**
+ * This file contains main entry for aifc2wav app.
+ * 
+ * This app converts an .aifc file to .wav file.
+ * It accepts a file path as input and writes to the given output file path.
+*/
+
 #define APPNAME "aifc2wav"
 #define VERSION "1.0"
+
 
 static int opt_help_flag = 0;
 static int opt_input_file = 0;

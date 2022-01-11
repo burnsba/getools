@@ -28,7 +28,7 @@
 #define BANKFILE_MAGIC_BYTES 0x4231
 
 /**
- * Unused, but including for reference:
+ * Rare .sbk file uses this type.
  * 
  * Metadata for a sequence "file" entry / data content of single sequence.
  * Based on original ALSeqData in n64devkit\ultra\usr\include\PR\libaudio.h.
@@ -46,7 +46,7 @@ struct RareALSeqData
 };
 
 /* same as libultra */
-enum {
+enum AL_WAVETABLE_TYPE {
     AL_ADPCM_WAVE = 0,
     AL_RAW16_WAVE
 };
@@ -55,9 +55,21 @@ enum {
  * same as libultra struct.
 */
 struct ALADPCMBook {
+    /**
+     * big endian.
+    */
     int32_t order;
+
+    /**
+     * aka nentries.
+     * big endian.
+    */
     int32_t npredictors;
-    int16_t *book;        /* Must be 8-byte aligned */
+
+    /**
+     * Must be 8-byte aligned
+    */
+    int16_t *book;
 };
 
 #define ADPCM_STATE_SIZE 0x20 /* size in bytes */
@@ -66,9 +78,27 @@ struct ALADPCMBook {
  * same as libultra struct.
 */
 struct ALADPCMloop {
+    /**
+     * Sample offset of the loop start point.
+     * big endian.
+    */
     uint32_t start;
+
+    /**
+     * Sample offset of the loop end point.
+     * big endian.
+    */
     uint32_t end;
+
+    /**
+     * Number of times to loop. -1 is infinite.
+     * big endian.
+    */
     uint32_t count;
+
+    /**
+     * ADPCM decoder state information.
+    */
     uint8_t state[ADPCM_STATE_SIZE];
 };
 
@@ -76,8 +106,22 @@ struct ALADPCMloop {
  * same as libultra struct.
 */
 struct ALRawLoop {
+    /**
+     * Sample offset of the loop start point.
+     * big endian.
+    */
     uint32_t start;
+
+    /**
+     * Sample offset of the loop end point.
+     * big endian.
+    */
     uint32_t end;
+
+    /**
+     * Number of times to loop. -1 is infinite.
+     * big endian.
+    */
     uint32_t count;
 };
 
@@ -86,12 +130,31 @@ struct ALRawLoop {
 */
 struct ALADPCMWaveInfo {
     /* begin file format (write elements to disk in order declared according to endianess) */
+    
+    /**
+     * File offset of loop data as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t loop_offset;
+
+    /**
+     * File offset of codebook data as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t book_offset;
 
     /* end file format ------------------------------------------------------------------- */
 
+    /**
+     * Pointer to loop data.
+    */
     struct ALADPCMloop *loop;
+
+    /**
+     * Pointer to codebook data.
+    */
     struct ALADPCMBook *book;
 };
 
@@ -101,10 +164,18 @@ struct ALADPCMWaveInfo {
 struct ALRAWWaveInfo {
     /* begin file format (write elements to disk in order declared according to endianess) */
 
+    /**
+     * File offset of loop data as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t loop_offset;
 
     /* end file format ------------------------------------------------------------------- */
 
+    /**
+     * Pointer to loop data.
+    */
     struct ALRawLoop *loop;
 };
 
@@ -114,13 +185,45 @@ struct ALRAWWaveInfo {
 struct ALWaveTable {
     /* begin file format (write elements to disk in order declared according to endianess) */
 
-    int32_t base; /* offset into .tbl file, can be zero */
+    /**
+     * This is the file offset into the .tbl file
+     * of the sound data. Can be zero.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
+    int32_t base;
+
+    /**
+     * Length in bytes of the sound data in the .tbl file.
+     * big endian.
+    */
     int32_t len;
+
+    /**
+     * Type {@code AL_WAVETABLE_TYPE}.
+    */
     uint8_t type;
+
+    /**
+     * Libultra uses this as pointer/offset flag, such that
+     * zero indicates offsets, and one indicates pointers.
+     * Unused by this library, therefore always zero.
+    */
     uint8_t flags;
+
+    /**
+     * unused (explicit padding).
+    */
     uint16_t unused_padding;
+
+    /**
+     * Type specific info.
+    */
     union {
+        // if type is AL_ADPCM_WAVE
         struct ALADPCMWaveInfo adpcm_wave;
+
+        // if type is AL_RAW16_WAVE
         struct ALRAWWaveInfo raw_wave;
     } wave_info;
 
@@ -140,14 +243,45 @@ struct ALWaveTable {
 
 /**
  * Modified libultra struct.
+ * The programming manual says:
+ *     "The ALKeyMap describes how the sound is mapped to the keyboard. It allows
+ *     the sequencer to determine at what pitch to play a sound, given its MIDI
+ *     key number and note on velocity."
+ * 
+ * The programming manual also says keymaps are only used by the sequence player
+ * (ignored by sound effect player).
 */
 struct ALKeyMap {
     /* begin file format (write elements to disk in order declared according to endianess) */
+
+    /**
+     * Minimum note-on velocity for this map.
+    */
     uint8_t velocity_min;
+
+    /**
+     * Maximum note-on velocity for this map.
+    */
     uint8_t velocity_max;
+
+    /**
+     * Lowest MIDI note in this key map.
+    */
     uint8_t key_min;
+
+    /**
+     * Highest MIDI note in this key map.
+    */
     uint8_t key_max;
+
+    /**
+     * The MIDI note equivalent to the sound played at unity pitch.
+    */
     uint8_t key_base;
+
+    /**
+     * Amount in cents to fine-tune this sample.
+    */
     int8_t detune;
 
     /* end file format ------------------------------------------------------------------- */
@@ -169,10 +303,34 @@ struct ALKeyMap {
 struct ALEnvelope {
     /* begin file format (write elements to disk in order declared according to endianess) */
 
+    /**
+     * Time in microseconds to ramp from zero gain to attackVolume. 
+     * big endian.
+    */
     int32_t attack_time;
+
+    /**
+     * Time in microseconds to ramp from the attackVolume to the decayVolume.
+     * big endian.
+    */
     int32_t decay_time;
+
+    /**
+     * Time in microseconds to ramp to zero volume.
+     * big endian.
+    */
     int32_t release_time;
+
+    /**
+     * Target time for attack segment.
+     * Note: different type from the programming manual documentation.
+    */
     uint8_t attack_volume;
+
+    /**
+     * Target time for decay segment.
+     * Note: different type from the programming manual documentation.
+    */
     uint8_t decay_volume;
 
     /* end file format ------------------------------------------------------------------- */
@@ -194,11 +352,42 @@ struct ALEnvelope {
 struct ALSound {
     /* begin file format (write elements to disk in order declared according to endianess) */
 
+    /**
+     * File offset of envelope as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t envelope_offset;
+
+    /**
+     * File offset of keymap as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t key_map_offset;
+
+    /**
+     * File offset of wavetable as read from file.
+     * This is never promoted to a pointer by this library.
+     * big endian.
+    */
     int32_t wavetable_offfset;
+
+    /**
+     * Pan. 0=left, 64=center, 127=right.
+    */
     uint8_t sample_pan;
+
+    /**
+     * Sample playback volume.
+    */
     uint8_t sample_volume;
+
+    /**
+     * Libultra uses this as pointer/offset flag, such that
+     * zero indicates offsets, and one indicates pointers.
+     * Unused by this library, therefore always zero.
+    */
     uint8_t flags;
 
     /* end file format ------------------------------------------------------------------- */
@@ -213,8 +402,19 @@ struct ALSound {
     */
     char text_id[INST_OBJ_ID_STRING_LEN];
 
+    /**
+     * Pointer to envelope.
+    */
     struct ALEnvelope *envelope;
+
+    /**
+     * Pointer to keymap.
+    */
     struct ALKeyMap *keymap;
+
+    /**
+     * Pointer to wavetable.
+    */
     struct ALWaveTable *wavetable;
 };
 
@@ -224,10 +424,30 @@ struct ALSound {
 struct ALInstrument {
     /* begin file format (write elements to disk in order declared according to endianess) */
 
+    /**
+     * Instrument playback volume.
+    */
     uint8_t volume;
+
+    /**
+     * Pan. 0=left, 64=center, 127=right.
+    */
     uint8_t pan;
+
+    /**
+     * Voice priority. 0=lowest, 10=highest.
+    */
     uint8_t priority;
+
+    /**
+     * Libultra uses this as pointer/offset flag, such that
+     * zero indicates offsets, and one indicates pointers.
+     * Unused by this library, therefore always zero.
+    */
     uint8_t flags;
+
+    // undocumented in n64 programming manual:
+
     uint8_t trem_type;
     uint8_t trem_rate;
     uint8_t trem_depth;
@@ -236,8 +456,25 @@ struct ALInstrument {
     uint8_t vib_rate;
     uint8_t vib_depth;
     uint8_t vib_delay;
+
+    /**
+     * Pitch bend range, in cents.
+     * big endian.
+    */
     int16_t bend_range;
+
+    /**
+     * Number of sounds in the instrument,
+     * and length of `sounds` array.
+     * big endian.
+    */
     int16_t sound_count;
+
+    /**
+     * File offsets of sounds as read from file.
+     * These are never promoted to pointers by this library.
+     * big endian.
+    */
     int32_t *sound_offsets;
     
     /* end file format ------------------------------------------------------------------- */
@@ -367,11 +604,21 @@ struct ALBankFile {
     struct ALBank **banks;
 };
 
+/**
+ * Output mode.
+ * The inst file prints different parameters based on whether it's
+ * for sound effect files or music sequences.
+*/
 enum OUTPUT_MODE {
     OUTPUT_MODE_SFX = 0,
     OUTPUT_MODE_MUSIC
 };
 
+/**
+ * Callback function, for use when creating a new wavetable.
+ * This allows setting the aifc filename based on filenames the user provides.
+ * Returns void, accepts one parameter of type {@code struct ALWaveTable *wavetable}.
+*/
 typedef void (*wavetable_init_callback) (struct ALWaveTable *wavetable);
 
 extern wavetable_init_callback wavetable_init_callback_ptr;

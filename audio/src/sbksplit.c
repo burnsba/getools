@@ -31,6 +31,8 @@
 #include "utility.h"
 
 /**
+ * This file contains main entry for sbksplit app.
+ * 
  * This program splits a Rare .sbk file into individual .seq.rz files.
  * It does not perform any decompression.
 */

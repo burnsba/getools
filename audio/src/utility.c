@@ -8,6 +8,19 @@
 #include "utility.h"
 #include "llist.h"
 
+/**
+ * This file contains miscellaneous / common / utility functions.
+ * Broadly:
+ * - writing output
+ * - file I/O
+ * - memory / bit manipulation
+*/
+
+/**
+ * Write printf formatted text to stderr then exit with code.
+ * @param exit_code: application exit code
+ * @param format: printf format string
+*/
 void stderr_exit(int exit_code, const char *format, ...)
 {
     va_list args;
@@ -19,6 +32,11 @@ void stderr_exit(int exit_code, const char *format, ...)
     exit(exit_code);
 }
 
+/**
+ * Write printf formatted text to file stream and flush output.
+ * @param stream: file stream to write to.
+ * @param format: printf format string.
+*/
 void fflush_printf(FILE *stream, const char *format, ...)
 {
     va_list args;
@@ -29,11 +47,10 @@ void fflush_printf(FILE *stream, const char *format, ...)
     fflush(stderr);
 }
 
-
 /**
- * malloc (count*item_size) number of bytes.
- * memset result to zero.
- * if malloc fails the program will exit.
+ * Allocates memory for (count*item_size) number of bytes
+ * and memset the result to zero.
+ * If malloc fails the program will exit.
 */
 void *malloc_zero(size_t count, size_t item_size)
 {
@@ -56,6 +73,12 @@ void *malloc_zero(size_t count, size_t item_size)
     return outp;
 }
 
+/**
+ * Creates directory and any sub directories.
+ * Application exits if this fails.
+ * @param path: path to final directory, including any sub directories.
+ * @returns zero.
+*/
 int mkpath(const char* path)
 {
     TRACE_ENTER("mkpath")
@@ -117,6 +140,15 @@ int mkpath(const char* path)
     return 0;
 }
 
+/**
+ * Reverses a byte array into another byte array.
+ * Both byte arrays must be at least {@code len} bytes long.
+ * If either {@code dest} or {@code src} is NULL, nothing happens.
+ * If {@code len} is zero, nothing happens.
+ * @param dest: destination byte array.
+ * @param src: source byte array.
+ * @param len: length in bytes to reverse.
+*/
 void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
 {
     if (dest == NULL || src == NULL || len == 0)
@@ -131,6 +163,14 @@ void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
     }
 }
 
+/**
+ * Reverses a byte array in place.
+ * Byte array must be at least {@code len} bytes long.
+ * If {@code arr} is NULL, nothing happens.
+ * If {@code len} is zero, nothing happens.
+ * @param arr: array to reverse.
+ * @param len: length in bytes to reverse.
+*/
 void reverse_inplace(uint8_t *arr, size_t len)
 {
     if (arr == NULL || len == 0)
@@ -147,6 +187,13 @@ void reverse_inplace(uint8_t *arr, size_t len)
     }
 }
 
+/**
+ * Reads all contents of a file into a memory buffer.
+ * @param path: path of file to read.
+ * @param buffer: pointer to memory array to store file contents. This should
+ * not point to any allocated memory; memory will be allocated in function.
+ * @returns: number of bytes read from file (also, length of buffer).
+*/
 size_t get_file_contents(char *path, uint8_t **buffer)
 {
     TRACE_ENTER("get_file_contents")
@@ -216,6 +263,13 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     return input_filesize;
 }
 
+/**
+ * struct file_info wrapper to fopen.
+ * Allocates memory for filename, sets internal state, and file length.
+ * @param filename: path/filename to open.
+ * @param mode: file open mode.
+ * @returns: pointer to new {@code struct file_info} that was allocated.
+*/
 struct file_info *file_info_fopen(char *filename, const char *mode)
 {
     TRACE_ENTER("file_info_fopen")
@@ -226,6 +280,8 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     if (filename_len > 0)
     {
+        // TODO: this should check for path seperator and only use
+        // the actual filename.
         fi->filename = (char *)malloc_zero(1, filename_len + 1);
         strcpy(fi->filename, filename);
         fi->filename[filename_len] = '\0';
@@ -272,6 +328,14 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     return fi;
 }
 
+/**
+ * struct file_info wrapper to fread.
+ * @param fi: file_info.
+ * @param output_buffer: buffer to write read result into. Thus must already be allocated.
+ * @param size: size of each element to read.
+ * @param n: number of elements to read.
+ * @returns: number of bytes read (not number of elements read like fread).
+*/
 size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, size_t n)
 {
     TRACE_ENTER("file_info_fread")
@@ -302,6 +366,13 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
     return num_bytes;
 }
 
+/**
+ * struct file_info wrapper to fseek.
+ * @param fi: file_info.
+ * @param __off: seek amount offset.
+ * @param __whence: from where to seek.
+ * @returns: fseek result.
+*/
 int file_info_fseek(struct file_info *fi, long __off, int __whence)
 {
     TRACE_ENTER("file_info_fseek")
@@ -320,6 +391,14 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
     return ret;
 }
 
+/**
+ * struct file_info wrapper to fwrite.
+ * @param fi: file_info.
+ * @param data: data to write.
+ * @param size: size of each element to write.
+ * @param n: number of elements to write.
+ * @returns: number of bytes written (not number of elements written like fwrite).
+*/
 size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, size_t n)
 {
     TRACE_ENTER("file_info_fwrite")
@@ -353,6 +432,17 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     return num_bytes;
 }
 
+/**
+ * struct file_info wrapper to fwrite, with possible byte swapping before writing.
+ * If the size of the element(s) being written is 2 or 4 then the value will be
+ * swapped via 16 bit swap or 32 bit swap respectively. Otherwise the value
+ * is written unchanged.
+ * @param fi: file_info.
+ * @param data: data to write.
+ * @param size: size of each element to write.
+ * @param n: number of elements to write.
+ * @returns: number of bytes written (not number of elements written like fwrite).
+*/
 size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n)
 {
     TRACE_ENTER("file_info_fwrite_bswap")
@@ -424,6 +514,11 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
     return ret;
 }
 
+/**
+ * struct file_info wrapper to fclose.
+ * @param fi: file_info.
+ * @returns: fclose result.
+*/
 int file_info_fclose(struct file_info *fi)
 {
     TRACE_ENTER("file_info_fclose")
@@ -441,6 +536,12 @@ int file_info_fclose(struct file_info *fi)
     return ret;
 }
 
+/**
+ * Frees all memory associated with the struct, including itself.
+ * If internal state indicates the file handle is still open
+ * the {@code flcose} is called on the file handle.
+ * @param fi: file_info.
+*/
 void file_info_free(struct file_info *fi)
 {
     TRACE_ENTER("file_info_free")
@@ -466,6 +567,13 @@ void file_info_free(struct file_info *fi)
     TRACE_LEAVE("file_info_free");
 }
 
+/**
+ * Copies 16 bit elements from source to destination, performing
+ * byte swap on each element.
+ * @param dest: destination array.
+ * @param src: source array.
+ * @param num: number of elements to copy and swap.
+*/
 void bswap16_memcpy(void *dest, const void *src, size_t num)
 {
     TRACE_ENTER("bswap16_memcpy")
@@ -495,6 +603,13 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
     TRACE_LEAVE("bswap16_memcpy");
 }
 
+/**
+ * Copies 32 bit elements from source to destination, performing
+ * byte swap on each element.
+ * @param dest: destination array.
+ * @param src: source array.
+ * @param num: number of elements to copy and swap.
+*/
 void bswap32_memcpy(void *dest, const void *src, size_t num)
 {
     TRACE_ENTER("bswap32_memcpy")
@@ -524,6 +639,20 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
     TRACE_LEAVE("bswap32_memcpy");
 }
 
+/**
+ * Parses contents of a file that has been loaded into memory.
+ * Each line of the file is read as a single entry; the last
+ * entry in the file does not need to end with newline.
+ * Leading and trailing whitespace are ignored.
+ * Lines that begin with a '#' (after zero or more whitespace) are ignored.
+ * Non alphanumeric characters are ignored except: -_,.()[]
+ * Space characters are accepted within.
+ * If the processed line is non-empty, a new {@code struct string_data struct llist_node}
+ * is allocated and appended to the list of names.
+ * @param names_file_contents: buffer containing file content.
+ * @param file_length: size in bytes of file content array.
+ * @param names: linked list to append names to.
+*/
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
 {
     TRACE_ENTER("parse_names");

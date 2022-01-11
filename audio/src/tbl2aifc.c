@@ -35,6 +35,8 @@
 #include "adpcm_aifc.h"
 
 /**
+ * This file contains main entry for tbl2aifc app.
+ * 
  * This program takes as input:
  * - a .ctl file
  * - a .tbl file
@@ -347,7 +349,10 @@ void read_opts(int argc, char **argv)
     }
 }
 
-
+/**
+ * Callback function used when creating a new wavetable.
+ * This allows setting the aifc filename based on filenames the user provides.
+*/
 void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER("wavetable_init_set_aifc_path")
@@ -521,4 +526,6 @@ int main(int argc, char **argv)
 
     free(ctl_file_contents);
     free(tbl_file_contents);
+
+    return 0;
 }

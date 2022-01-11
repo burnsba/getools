@@ -7,10 +7,24 @@
 #include "utility.h"
 #include "naudio.h"
 
+/**
+ * This file contains primary code for supporting Rare's audio structs,
+ * and Nintendo's (libultra) audio structs.
+*/
 
+/**
+ * Callback to initialize wavetable object.
+ * If not set externally, will be set to @see wavetable_init_default_set_aifc_path.
+*/
+wavetable_init_callback wavetable_init_callback_ptr = NULL;
 
-// n64 lib + Rare audio related
-
+/**
+ * Reads a single {@code struct ALADPCMloop} from a .ctl file that has been loaded into memory.
+ * No memory allocation performed.
+ * @param adpcm_loop: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("adpcm_loop_init_load")
@@ -34,6 +48,13 @@ void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_cont
     TRACE_LEAVE("adpcm_loop_init_load");
 }
 
+/**
+ * Reads a single {@code struct ALADPCMBook} from a .ctl file that has been loaded into memory.
+ * {@code adpcm_book->book} is allocated if present.
+ * @param adpcm_book: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void adpcm_book_init_load(struct ALADPCMBook *adpcm_book, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("adpcm_book_init_load")
@@ -60,6 +81,13 @@ void adpcm_book_init_load(struct ALADPCMBook *adpcm_book, uint8_t *ctl_file_cont
     TRACE_LEAVE("adpcm_book_init_load");
 }
 
+/**
+ * Reads a single {@code struct ALRawLoop} from a .ctl file that has been loaded into memory.
+ * No memory allocation performed.
+ * @param raw_loop: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void raw_loop_init_load(struct ALRawLoop *raw_loop, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("raw_loop_init_load")
@@ -78,6 +106,13 @@ void raw_loop_init_load(struct ALRawLoop *raw_loop, uint8_t *ctl_file_contents, 
     TRACE_LEAVE("raw_loop_init_load");
 }
 
+/**
+ * Reads a single {@code struct ALEnvelope} from a .ctl file that has been loaded into memory.
+ * No memory allocation performed.
+ * @param envelope: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("envelope_init_load")
@@ -111,6 +146,12 @@ void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents,
     TRACE_LEAVE("envelope_init_load");
 }
 
+/**
+ * Writes {@code struct ALEnvelope} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param envelope: object to write.
+ * @param fi: file_info.
+*/
 void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
 {
     TRACE_ENTER("envelope_write_to_fp")
@@ -161,6 +202,13 @@ void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     TRACE_LEAVE("envelope_write_to_fp");
 }
 
+/**
+ * Reads a single {@code struct ALKeyMap} from a .ctl file that has been loaded into memory.
+ * No memory allocation performed.
+ * @param keymap: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("keymap_init_load")
@@ -197,6 +245,12 @@ void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32
     TRACE_LEAVE("keymap_init_load");
 }
 
+/**
+ * Writes {@code struct ALKeyMap} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param keymap: object to write.
+ * @param fi: file_info.
+*/
 void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
 {
     TRACE_ENTER("keymap_write_to_fp")
@@ -251,6 +305,11 @@ void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     TRACE_LEAVE("keymap_write_to_fp");
 }
 
+/**
+ * Default wavetable_init method if not set externally.
+ * Sets text id to 4 digit id without any filename.
+ * @param wavetable: wavetable to init.
+*/
 void wavetable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER("wavetable_init_default_set_aifc_path")
@@ -266,8 +325,13 @@ void wavetable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
     TRACE_LEAVE("wavetable_init_default_set_aifc_path")
 }
 
-wavetable_init_callback wavetable_init_callback_ptr = NULL;
-
+/**
+ * Reads a single {@code struct ALWaveTable} from a .ctl file that has been loaded into memory.
+ * Allocates memory and calls _init_load for child book and loop if present.
+ * @param wavetable: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("wavetable_init_load")
@@ -343,6 +407,13 @@ void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_conten
     TRACE_LEAVE("wavetable_init_load");
 }
 
+/**
+ * Reads a single {@code struct ALSound} from a .ctl file that has been loaded into memory.
+ * Allocates memory and calls _init_load for child envelope, keymap, wavetable if present.
+ * @param sound: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("sound_init_load")
@@ -397,6 +468,12 @@ void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t 
     TRACE_LEAVE("sound_init_load");
 }
 
+/**
+ * Writes {@code struct ALSound} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param sound: object to write.
+ * @param fi: file_info.
+*/
 void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 {
     TRACE_ENTER("sound_write_to_fp")
@@ -502,6 +579,13 @@ void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     TRACE_LEAVE("sound_write_to_fp");
 }
 
+/**
+ * Reads a single {@code struct ALInstrument} from a .ctl file that has been loaded into memory.
+ * Allocates memory and calls _init_load for sounds and related if {@code sound_count} > 0.
+ * @param instrument: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("instrument_init_load")
@@ -583,6 +667,12 @@ void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_con
     TRACE_LEAVE("instrument_init_load");
 }
 
+/**
+ * Writes {@code struct ALInstrument} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param instrument: object to write.
+ * @param fi: file_info.
+*/
 void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi)
 {
     TRACE_ENTER("instrument_write_to_fp")
@@ -726,6 +816,13 @@ void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *f
     TRACE_LEAVE("instrument_write_to_fp");
 }
 
+/**
+ * Reads a single {@code struct ALBank} from a .ctl file that has been loaded into memory.
+ * Allocates memory and calls _init_load for instruments and related if {@code inst_count} > 0.
+ * @param bank: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
+*/
 void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER("bank_init_load")
@@ -780,6 +877,12 @@ void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t loa
     TRACE_LEAVE("bank_init_load");
 }
 
+/**
+ * Writes {@code struct ALBank} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param bank: object to write.
+ * @param fi: file_info.
+*/
 void bank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 {
     TRACE_ENTER("bank_write_to_fp")
@@ -829,8 +932,12 @@ void bank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 }
 
 /**
- * Initializes bank file.
- * Reads ctl contents into bank_file, malloc as necessary.
+ * This is the main entry point for reading a .ctl file.
+ * Reads a single {@code struct ALBankFile} from a .ctl file that has been loaded into memory.
+ * Allocates memory and calls _init_load for banks and related if {@code bank_count} > 0.
+ * @param bank_file: object to write to.
+ * @param ctl_file_contents: .ctl file.
+ * @param load_from_offset: position in .ctl file to read data from.
 */
 void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_contents)
 {
@@ -886,6 +993,13 @@ void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_content
     TRACE_LEAVE("bank_file_init_load");
 }
 
+/**
+ * This is the main entry point for writing an .inst file.
+ * Writes {@code struct ALEnvelope} to .inst file, using current file seek position.
+ * Writes any child information as well.
+ * @param bank_file: object to write.
+ * @param inst_filename: path to write to.
+*/
 void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 {
     TRACE_ENTER("write_inst")
