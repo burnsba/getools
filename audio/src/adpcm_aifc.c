@@ -18,10 +18,15 @@
 // forward declarations
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);
-static void write_frame_output(size_t size, uint8_t *out, int32_t *data);
+static void write_frame_output(uint8_t *out, int32_t *data, size_t size);
 
 // end forward declarations
 
+/**
+ * Default constructor for {@code struct AdpcmAifcFile}, only allocates memory
+ * for itself and {@code chunks} list.
+ * @returns: pointer to new {@code struct AdpcmAifcFile}.
+*/
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
 {
     TRACE_ENTER("AdpcmAifcFile_new_simple")
@@ -38,6 +43,12 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
     return p;
 }
 
+/**
+ * Creates new {@code struct AdpcmAifcCommChunk} from aifc file contents.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new common chunk.
+*/
 struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
 {
     TRACE_ENTER("AdpcmAifcCommChunk_new_from_file")
@@ -70,6 +81,13 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi
     return p;
 }
 
+/**
+ * Creates new application chunk from aifc file contents.
+ * Must be codebook or loop chunk, otherwise program exits with error.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new application chunk.
+*/
 struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
 {
     TRACE_ENTER("AdpcmAifcApplicationChunk_new_from_file")
@@ -166,6 +184,12 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
     return ret;
 }
 
+/**
+ * Creates new {@code struct AdpcmAifcSoundChunk} from aifc file contents.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new sound chunk.
+*/
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
 {
     TRACE_ENTER("AdpcmAifcSoundChunk_new_from_file")
@@ -193,6 +217,11 @@ struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *
     return p;
 }
 
+/**
+ * Seeks to beginning of file and parses as {@code struct AdpcmAifcFile}.
+ * @param fi: aifc file.
+ * @returns: pointer to new {@code struct AdpcmAifcFile}.
+*/
 struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcFile_new_from_file")
@@ -236,6 +265,9 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
     // do a pass through the file once counting the number of chunks.
     // this will let us finish malloc'ing the FORM chunk.
+    // As the file is scanned, supported chunks will be parsed and added to a list.
+    // Once the main aifc container is allocated the allocated chunks will
+    // be added to the aifc container chunk list.
     saved_pos = ftell(fi->fp);
 
     pos = saved_pos;
@@ -290,6 +322,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
                 break;
 
                 default:
+                // ignore unsupported chunks
                 break;
             }
 
@@ -374,6 +407,14 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
     return p;
 }
 
+/**
+ * Allocates a new {@code struct AdpcmAifcFile} and initializes default values.
+ * No sound data is loaded/converted, the parameters are simply to know what
+ * needs to be initialized.
+ * @param sound: reference {@code struct ALSound} that will be loaded
+ * @param bank: reference {@code struct ALBank} that is the parent of {@code sound}
+ * @returns pointer to new {@code struct AdpcmAifcFile}
+*/
 struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank)
 {
     TRACE_ENTER("AdpcmAifcFile_new_full")
@@ -434,6 +475,10 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
     return aaf;
 }
 
+/**
+ * Allocates memory for a new {@code struct AdpcmAifcCommChunk} and sets default values.
+ * @returns: pointer to new {@code struct AdpcmAifcCommChunk}.
+*/
 struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new()
 {
     TRACE_ENTER("AdpcmAifcCommChunk_new")
@@ -453,6 +498,11 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new()
     return p;
 }
 
+/**
+ * Parses {@code struct AdpcmAifcCodebookChunk.table_data} and converts to aifc coefficient table.
+ * This allocates memory and stores the results in {@code struct AdpcmAifcCodebookChunk.coef_table}.@
+ * @param chunk: codebook chunk to decode.
+*/
 void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk)
 {
     TRACE_ENTER("AdpcmAifcCodebookChunk_decode_aifc_codebook")
@@ -518,6 +568,12 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
     TRACE_LEAVE("AdpcmAifcCodebookChunk_decode_aifc_codebook");
 }
 
+/**
+ * Allocates memory for a new {@code struct AdpcmAifcCodebookChunk} and sets default values.
+ * @param order: codebook order
+ * @param nentries: codebook nentries (aka npredictors)
+ * @returns: pointer to new {@code struct AdpcmAifcCodebookChunk}.
+*/
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries)
 {
     TRACE_ENTER("AdpcmAifcCodebookChunk_new")
@@ -541,6 +597,11 @@ struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_
     return p;
 }
 
+/**
+ * Allocates memory for a new {@code struct AdpcmAifcSoundChunk} and sets default values.
+ * @param sound_data_size_bytes: size in bytes to allocate for the sound data.
+ * @returns: pointer to new {@code struct AdpcmAifcSoundChunk}.
+*/
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes)
 {
     TRACE_ENTER("AdpcmAifcSoundChunk_new")
@@ -556,6 +617,10 @@ struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes
     return p;
 }
 
+/**
+ * Allocates memory for a new {@code struct AdpcmAifcLoopChunk} and sets default values.
+ * @returns: pointer to new {@code struct AdpcmAifcLoopChunk}.
+*/
 struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
 {
     TRACE_ENTER("AdpcmAifcLoopChunk_new")
@@ -580,6 +645,13 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
     return p;
 }
 
+/**
+ * Reads a {@code struct ALSound} and converts to .aifc format.
+ * @param aaf: destination container
+ * @param sound: object to convert
+ * @param tbl_file_contents: .tbl file contents
+ * @param bank: parent bank of {@code sound}
+*/
 void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint8_t *tbl_file_contents, struct ALBank *bank)
 {
     TRACE_ENTER("load_aifc_from_sound")
@@ -662,6 +734,12 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
     TRACE_LEAVE("load_aifc_from_sound");
 }
 
+/**
+ * Write {@code struct AdpcmAifcCommChunk} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcCommChunk_frwrite")
@@ -679,6 +757,12 @@ void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_in
     TRACE_LEAVE("AdpcmAifcCommChunk_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcApplicationChunk} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcApplicationChunk_frwrite")
@@ -692,6 +776,12 @@ void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, 
     TRACE_LEAVE("AdpcmAifcApplicationChunk_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcCodebookChunk} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcCodebookChunk_frwrite")
@@ -711,6 +801,12 @@ void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct
     TRACE_LEAVE("AdpcmAifcCodebookChunk_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcSoundChunk} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcSoundChunk_frwrite")
@@ -731,6 +827,12 @@ void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_
     TRACE_LEAVE("AdpcmAifcSoundChunk_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcLoopData} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcLoopData_frwrite")
@@ -743,6 +845,12 @@ void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info 
     TRACE_LEAVE("AdpcmAifcLoopData_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcLoopChunk} to disk.
+ * Calls write for all relevant child objects.
+ * @param chunk: object to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcLoopChunk_frwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcLoopChunk_frwrite")
@@ -762,6 +870,12 @@ void AdpcmAifcLoopChunk_frwrite(struct AdpcmAifcLoopChunk *chunk, struct file_in
     TRACE_LEAVE("AdpcmAifcLoopChunk_frwrite");
 }
 
+/**
+ * Write {@code struct AdpcmAifcFile} to disk.
+ * Calls write for all relevant child objects.
+ * @param aaf: .aifc in-memory file to write.
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
 {
     TRACE_ENTER("AdpcmAifcFile_frwrite")
@@ -832,6 +946,13 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
     TRACE_LEAVE("AdpcmAifcFile_frwrite");
 }
 
+/**
+ * Converts {@code struct ALSound} wavetable sound data to .aifc file.
+ * @param sound: sound object holding wavetable data.
+ * @param bank: sound object parent bank
+ * @param tbl_file_contents: .tbl file contents
+ * @param fi: file_info to write to. Uses current seek position.
+*/
 void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi)
 {
     TRACE_ENTER("write_sound_to_aifc")
@@ -845,6 +966,12 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
     TRACE_LEAVE("write_sound_to_aifc");
 }
 
+/**
+ * This is the main entry point for converting {@code struct ALBankFile} to .aifc format.
+ * Converts bank file and .tbl information, writing all wavetable sound data to .aifc files.
+ * @param bank_file: bank file.
+ * @param tbl_file_contents: .tbl file contents
+*/
 void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents)
 {
     TRACE_ENTER("write_bank_to_aifc")
@@ -879,6 +1006,16 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
     TRACE_LEAVE("write_bank_to_aifc");
 }
 
+/**
+ * Applies the standard .aifc decode algorithm from the sound chunk and writes
+ * result to the frame buffer.
+ * @param aaf: container file.
+ * @param frame_buffer: standard frame buffer.
+ * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
+ * {@code eof} then will be set to next byte position.
+ * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
+ * in the sound chunk this is set to 1. Otherwise set to zero.
+*/
 void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
 {
     TRACE_ENTER("AdpcmAifcFile_decode_frame");
@@ -958,8 +1095,8 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
 /**
  * Decode .aifc compressed audio and write to output buffer.
  * @param aaf: input source
- * @param buffer: output buffer
- * @param max_len: max number of bytes to write to output buffer
+ * @param buffer: output buffer. Must be previously allocated.
+ * @param max_len: max number of bytes to write to output buffer.
  * @returns: number of bytes written
 */
 size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len)
@@ -984,7 +1121,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
         while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(16, &buffer[buffer_pos], frame_buffer);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
             write_len += 16 * 2;
             buffer_pos += 16 * 2;
         }
@@ -1001,6 +1138,11 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     return write_len;
 }
 
+/**
+ * Returns sample rate as a 32 bit integer.
+ * @param aaf: file to get sample rate from.
+ * @returns: converted sample rate, or -1 on error.
+*/
 int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf)
 {
     if (aaf == NULL)
@@ -1019,6 +1161,16 @@ int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf)
     return (int32_t)float_sample_rate;
 }
 
+/**
+ * Reads the next byte from the sound chunk. If the end of the chunk has been reached
+ * then zero is returned.
+ * @param aaf: container file.
+ * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
+ * {@code eof} then will be set to next byte position.
+ * @param eof: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
+ * in the sound chunk this is set to 1. Otherwise set to zero.
+ * @returns: next byte from sound chunk or zero.
+*/
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof)
 {
     if (*ssnd_chunk_pos > (size_t)(aaf->sound_chunk->ck_data_size - 8))
@@ -1033,7 +1185,14 @@ static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chun
     return ret;
 }
 
-static void write_frame_output(size_t size, uint8_t *out, int32_t *data)
+/**
+ * Writes to output buffer within clamped range in 16 bit elements.
+ * No allocations are performed.
+ * @param out: destination buffer.
+ * @param data: data to clamp and write to output buffer.
+ * @param size: number of 16 bit elements to write.
+*/
+static void write_frame_output(uint8_t *out, int32_t *data, size_t size)
 {
     size_t i;
     for (i=0; i<size; i++)
