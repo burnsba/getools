@@ -117,6 +117,94 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 }
 
 /**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void WavDataChunk_free(struct WavDataChunk *chunk)
+{
+    TRACE_ENTER("WavDataChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    if (chunk->data != NULL)
+    {
+        free(chunk->data);
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("WavDataChunk_free")
+}
+
+/**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void WavFmtChunk_free(struct WavFmtChunk *chunk)
+{
+    TRACE_ENTER("WavFmtChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("WavFmtChunk_free")
+}
+
+/**
+ * Frees memory allocated to wav file and all child elements.
+ * @param wav_file: object to free.
+*/
+void WavFile_free(struct WavFile *wav_file)
+{
+    TRACE_ENTER("WavFile_free")
+
+    int i;
+
+    if (wav_file == NULL)
+    {
+        return;
+    }
+
+    if (wav_file->chunks != NULL)
+    {
+        // need to iterate the list in case there are duplicates.
+        for (i=0; i<wav_file->chunk_count; i++)
+        {
+            uint32_t ck_id = *(uint32_t *)wav_file->chunks[i];
+            switch (ck_id)
+            {
+                case WAV_FMT_CHUNK_ID:
+                    WavFmtChunk_free((struct WavFmtChunk *)wav_file->chunks[i]);
+                    wav_file->fmt_chunk = NULL;
+                    break;
+
+                case WAV_DATA_CHUNK_ID:
+                    WavDataChunk_free((struct WavDataChunk *)wav_file->chunks[i]);
+                    wav_file->data_chunk = NULL;
+                    break;
+                
+                default:
+                    // ignore unsupported
+                    break;
+            }
+        }
+
+        free(wav_file->chunks);
+    }
+
+    free(wav_file);
+
+    TRACE_LEAVE("WavFile_free")
+}
+
+/**
  * Writes a {@code struct WavDataChunk} to disk.
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.

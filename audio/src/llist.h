@@ -9,6 +9,11 @@
 struct llist_node
 {
     /**
+     * Internal id.
+    */
+    int32_t id;
+
+    /**
      * Pointer to node data.
     */
     void *data;
@@ -70,6 +75,7 @@ void llist_node_string_data_print(struct llist_root *root);
 void llist_node_free(struct llist_root *root, struct llist_node *node);
 void llist_node_root_free_children(struct llist_root *root);
 void llist_node_root_free(struct llist_root *root);
+void llist_node_free_string_data(struct llist_root *root);
 void llist_node_free(struct llist_root *root, struct llist_node *node);
 
 #endif

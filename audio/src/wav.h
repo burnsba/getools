@@ -195,5 +195,8 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file);
 void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi);
 void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi);
 void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi);
+void WavDataChunk_free(struct WavDataChunk *chunk);
+void WavFmtChunk_free(struct WavFmtChunk *chunk);
+void WavFile_free(struct WavFile *wav_file);
 
 #endif

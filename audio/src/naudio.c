@@ -14,22 +14,24 @@
 
 /**
  * Callback to initialize wavetable object.
- * If not set externally, will be set to @see wavetable_init_default_set_aifc_path.
+ * If not set externally, will be set to @see ALWaveTable_init_default_set_aifc_path.
 */
 wavetable_init_callback wavetable_init_callback_ptr = NULL;
 
 /**
- * Reads a single {@code struct ALADPCMloop} from a .ctl file that has been loaded into memory.
+ * Reads a single {@code struct ALADPCMLoop} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
- * @param adpcm_loop: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new loop.
 */
-void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("adpcm_loop_init_load")
+    TRACE_ENTER("ALADPCMLoop_new_from_ctl")
 
     int32_t input_pos = load_from_offset;
+
+    struct ALADPCMLoop *adpcm_loop = (struct ALADPCMLoop *)malloc_zero(1, sizeof(struct ALADPCMLoop));
 
     adpcm_loop->start = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
@@ -45,22 +47,26 @@ void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_cont
     // raw byte copy, no bswap
     memcpy(adpcm_loop->state, &ctl_file_contents[input_pos], ADPCM_STATE_SIZE);
 
-    TRACE_LEAVE("adpcm_loop_init_load");
+    TRACE_LEAVE("ALADPCMLoop_new_from_ctl");
+
+    return adpcm_loop;
 }
 
 /**
  * Reads a single {@code struct ALADPCMBook} from a .ctl file that has been loaded into memory.
  * {@code adpcm_book->book} is allocated if present.
- * @param adpcm_book: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new book
 */
-void adpcm_book_init_load(struct ALADPCMBook *adpcm_book, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("adpcm_book_init_load")
+    TRACE_ENTER("ALADPCMBook_new_from_ctl")
     
     int32_t input_pos = load_from_offset;
     int book_bytes;
+
+    struct ALADPCMBook *adpcm_book = (struct ALADPCMBook *)malloc_zero(1, sizeof(struct ALADPCMBook));
 
     adpcm_book->order = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
@@ -78,21 +84,25 @@ void adpcm_book_init_load(struct ALADPCMBook *adpcm_book, uint8_t *ctl_file_cont
         memcpy(adpcm_book->book, &ctl_file_contents[input_pos], book_bytes);
     }
 
-    TRACE_LEAVE("adpcm_book_init_load");
+    TRACE_LEAVE("ALADPCMBook_new_from_ctl");
+
+    return adpcm_book;
 }
 
 /**
  * Reads a single {@code struct ALRawLoop} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
- * @param raw_loop: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new loop.
 */
-void raw_loop_init_load(struct ALRawLoop *raw_loop, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("raw_loop_init_load")
+    TRACE_ENTER("ALRawLoop_new_from_ctl")
 
     int32_t input_pos = load_from_offset;
+
+    struct ALRawLoop *raw_loop = (struct ALRawLoop *)malloc_zero(1, sizeof(struct ALRawLoop));
 
     raw_loop->start = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
@@ -103,22 +113,26 @@ void raw_loop_init_load(struct ALRawLoop *raw_loop, uint8_t *ctl_file_contents, 
     raw_loop->count = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    TRACE_LEAVE("raw_loop_init_load");
+    TRACE_LEAVE("ALRawLoop_new_from_ctl");
+
+    return raw_loop;
 }
 
 /**
  * Reads a single {@code struct ALEnvelope} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
- * @param envelope: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new envelope.
 */
-void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("envelope_init_load")
+    TRACE_ENTER("ALEnvelope_new_from_ctl")
 
     static int32_t envelope_id = 0;
     int32_t input_pos = load_from_offset;
+
+    struct ALEnvelope *envelope = (struct ALEnvelope *)malloc_zero(1, sizeof(struct ALEnvelope));
 
     envelope->id = envelope_id++;
     snprintf(envelope->text_id, INST_OBJ_ID_STRING_LEN, "Envelope%04d", envelope->id);
@@ -143,7 +157,9 @@ void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents,
         printf("init envelope %d\n", envelope->id);
     }
 
-    TRACE_LEAVE("envelope_init_load");
+    TRACE_LEAVE("ALEnvelope_new_from_ctl");
+
+    return envelope;
 }
 
 /**
@@ -152,9 +168,9 @@ void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents,
  * @param envelope: object to write.
  * @param fi: file_info.
 */
-void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
+void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
 {
-    TRACE_ENTER("envelope_write_to_fp")
+    TRACE_ENTER("ALEnvelope_write_to_fp")
 
     int len;
 
@@ -199,22 +215,24 @@ void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("envelope_write_to_fp");
+    TRACE_LEAVE("ALEnvelope_write_to_fp");
 }
 
 /**
  * Reads a single {@code struct ALKeyMap} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
- * @param keymap: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new keymap.
 */
-void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("keymap_init_load")
+    TRACE_ENTER("ALKeyMap_new_from_ctl")
 
     static int32_t keymap_id = 0;
     int32_t input_pos = load_from_offset;
+
+    struct ALKeyMap *keymap = (struct ALKeyMap *)malloc_zero(1, sizeof(struct ALKeyMap));
 
     keymap->id = keymap_id++;
     snprintf(keymap->text_id, INST_OBJ_ID_STRING_LEN, "Keymap%04d", keymap->id);
@@ -242,7 +260,9 @@ void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32
         printf("init keymap %d\n", keymap->id);
     }
 
-    TRACE_LEAVE("keymap_init_load");
+    TRACE_LEAVE("ALKeyMap_new_from_ctl");
+
+    return keymap;
 }
 
 /**
@@ -251,9 +271,9 @@ void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32
  * @param keymap: object to write.
  * @param fi: file_info.
 */
-void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
+void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
 {
-    TRACE_ENTER("keymap_write_to_fp")
+    TRACE_ENTER("ALKeyMap_write_to_fp")
 
     int len;
 
@@ -302,17 +322,18 @@ void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("keymap_write_to_fp");
+    TRACE_LEAVE("ALKeyMap_write_to_fp");
 }
 
 /**
  * Default wavetable_init method if not set externally.
  * Sets text id to 4 digit id without any filename.
+ * Allocates memory for {@code wavetable->aifc_path}.
  * @param wavetable: wavetable to init.
 */
-void wavetable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
+void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 {
-    TRACE_ENTER("wavetable_init_default_set_aifc_path")
+    TRACE_ENTER("ALWaveTable_init_default_set_aifc_path")
 
     size_t len;
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
@@ -322,22 +343,24 @@ void wavetable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
     wavetable->aifc_path = (char *)malloc_zero(len, 1);
     strncpy(wavetable->aifc_path, g_write_buffer, len);
 
-    TRACE_LEAVE("wavetable_init_default_set_aifc_path")
+    TRACE_LEAVE("ALWaveTable_init_default_set_aifc_path")
 }
 
 /**
  * Reads a single {@code struct ALWaveTable} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for child book and loop if present.
- * @param wavetable: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new wavetable.
 */
-void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("wavetable_init_load")
+    TRACE_ENTER("ALWaveTable_new_from_ctl")
 
     static int32_t wavetable_id = 0;
     int32_t input_pos = load_from_offset;
+
+    struct ALWaveTable *wavetable = (struct ALWaveTable *)malloc_zero(1, sizeof(struct ALWaveTable));
 
     wavetable->id = wavetable_id++;
     snprintf(wavetable->text_id, INST_OBJ_ID_STRING_LEN, "Wavetable%04d", wavetable->id);
@@ -346,7 +369,7 @@ void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_conten
 
     if (wavetable_init_callback_ptr == NULL)
     {
-        wavetable_init_callback_ptr = wavetable_init_default_set_aifc_path;
+        wavetable_init_callback_ptr = ALWaveTable_init_default_set_aifc_path;
     }
 
     wavetable_init_callback_ptr(wavetable);
@@ -385,41 +408,42 @@ void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_conten
     {
         if (wavetable->wave_info.adpcm_wave.loop_offset > 0)
         {
-            wavetable->wave_info.adpcm_wave.loop = (struct ALADPCMloop *)malloc_zero(1, sizeof(struct ALADPCMloop));
-            adpcm_loop_init_load(wavetable->wave_info.adpcm_wave.loop, ctl_file_contents, wavetable->wave_info.adpcm_wave.loop_offset);
+            wavetable->wave_info.adpcm_wave.loop = ALADPCMLoop_new_from_ctl(ctl_file_contents, wavetable->wave_info.adpcm_wave.loop_offset);
         }
 
         if (wavetable->wave_info.adpcm_wave.book_offset > 0)
         {
-            wavetable->wave_info.adpcm_wave.book = (struct ALADPCMBook *)malloc_zero(1, sizeof(struct ALADPCMBook));
-            adpcm_book_init_load(wavetable->wave_info.adpcm_wave.book, ctl_file_contents, wavetable->wave_info.adpcm_wave.book_offset);
+            wavetable->wave_info.adpcm_wave.book = ALADPCMBook_new_from_ctl(ctl_file_contents, wavetable->wave_info.adpcm_wave.book_offset);
         }
     }
     else if (wavetable->type == AL_RAW16_WAVE)
     {
         if (wavetable->wave_info.raw_wave.loop_offset > 0)
         {
-            wavetable->wave_info.raw_wave.loop = (struct ALRawLoop *)malloc_zero(1, sizeof(struct ALRawLoop));
-            raw_loop_init_load(wavetable->wave_info.raw_wave.loop, ctl_file_contents, wavetable->wave_info.raw_wave.loop_offset);
+            wavetable->wave_info.raw_wave.loop = ALRawLoop_new_from_ctl(ctl_file_contents, wavetable->wave_info.raw_wave.loop_offset);
         }
     }
 
-    TRACE_LEAVE("wavetable_init_load");
+    TRACE_LEAVE("ALWaveTable_new_from_ctl");
+
+    return wavetable;
 }
 
 /**
  * Reads a single {@code struct ALSound} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for child envelope, keymap, wavetable if present.
- * @param sound: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new sound.
 */
-void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("sound_init_load")
+    TRACE_ENTER("ALSound_new_from_ctl")
 
     static int32_t sound_id = 0;
     int32_t input_pos = load_from_offset;
+
+    struct ALSound *sound = (struct ALSound *)malloc_zero(1, sizeof(struct ALSound));
 
     sound->id = sound_id++;
     snprintf(sound->text_id, INST_OBJ_ID_STRING_LEN, "Sound%04d", sound->id);
@@ -449,23 +473,22 @@ void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t 
 
     if (sound->envelope_offset > 0)
     {
-        sound->envelope = (struct ALEnvelope *)malloc_zero(1, sizeof(struct ALEnvelope));
-        envelope_init_load(sound->envelope, ctl_file_contents, sound->envelope_offset);
+        sound->envelope = ALEnvelope_new_from_ctl(ctl_file_contents, sound->envelope_offset);
     }
 
     if (sound->key_map_offset > 0)
     {
-        sound->keymap = (struct ALKeyMap *)malloc_zero(1, sizeof(struct ALKeyMap));
-        keymap_init_load(sound->keymap, ctl_file_contents, sound->key_map_offset);
+        sound->keymap = ALKeyMap_new_from_ctl(ctl_file_contents, sound->key_map_offset);
     }
 
     if (sound->wavetable_offfset > 0)
     {
-        sound->wavetable = (struct ALWaveTable *)malloc_zero(1, sizeof(struct ALWaveTable));
-        wavetable_init_load(sound->wavetable, ctl_file_contents, sound->wavetable_offfset);
+        sound->wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
     }
     
-    TRACE_LEAVE("sound_init_load");
+    TRACE_LEAVE("ALSound_new_from_ctl");
+
+    return sound;
 }
 
 /**
@@ -474,20 +497,20 @@ void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t 
  * @param sound: object to write.
  * @param fi: file_info.
 */
-void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
+void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 {
-    TRACE_ENTER("sound_write_to_fp")
+    TRACE_ENTER("ALSound_write_to_fp")
 
     int len;
 
     if (sound->envelope_offset > 0)
     {
-        envelope_write_to_fp(sound->envelope, fi);
+        ALEnvelope_write_to_fp(sound->envelope, fi);
     }
 
     if (sound->key_map_offset > 0)
     {
-        keymap_write_to_fp(sound->keymap, fi);
+        ALKeyMap_write_to_fp(sound->keymap, fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -576,7 +599,7 @@ void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("sound_write_to_fp");
+    TRACE_LEAVE("ALSound_write_to_fp");
 }
 
 /**
@@ -586,13 +609,15 @@ void sound_write_to_fp(struct ALSound *sound, struct file_info *fi)
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
 */
-void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("instrument_init_load")
+    TRACE_ENTER("ALInstrument_new_from_ctl")
     
     static int32_t instrument_id = 0;
     int32_t input_pos = load_from_offset;
     int i;
+
+    struct ALInstrument *instrument = (struct ALInstrument *)malloc_zero(1, sizeof(struct ALInstrument));
 
     instrument->id = instrument_id++;
     snprintf(instrument->text_id, INST_OBJ_ID_STRING_LEN, "Instrument%04d", instrument->id);
@@ -646,7 +671,9 @@ void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_con
 
     if (instrument->sound_count < 1)
     {
-        return;
+        TRACE_LEAVE("ALInstrument_new_from_ctl")
+
+        return instrument;
     }
 
     instrument->sound_offsets = (int32_t *)malloc_zero(instrument->sound_count, sizeof(void*));
@@ -659,12 +686,13 @@ void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_con
     {
         if (instrument->sound_offsets[i] > 0)
         {
-            instrument->sounds[i] = (struct ALSound *)malloc_zero(1, sizeof(struct ALSound));
-            sound_init_load(instrument->sounds[i], ctl_file_contents, instrument->sound_offsets[i]);
+            instrument->sounds[i] = ALSound_new_from_ctl(ctl_file_contents, instrument->sound_offsets[i]);
         }
     }
 
-    TRACE_LEAVE("instrument_init_load");
+    TRACE_LEAVE("ALInstrument_new_from_ctl")
+
+    return instrument;
 }
 
 /**
@@ -673,16 +701,16 @@ void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_con
  * @param instrument: object to write.
  * @param fi: file_info.
 */
-void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi)
+void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi)
 {
-    TRACE_ENTER("instrument_write_to_fp")
+    TRACE_ENTER("ALInstrument_write_to_fp")
 
     int len;
     int i;
 
     for (i=0; i<instrument->sound_count; i++)
     {
-        sound_write_to_fp(instrument->sounds[i], fi);
+        ALSound_write_to_fp(instrument->sounds[i], fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -813,23 +841,25 @@ void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *f
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("instrument_write_to_fp");
+    TRACE_LEAVE("ALInstrument_write_to_fp");
 }
 
 /**
  * Reads a single {@code struct ALBank} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for instruments and related if {@code inst_count} > 0.
- * @param bank: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new bank.
 */
-void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("bank_init_load")
+    TRACE_ENTER("ALBank_new_from_ctl")
 
     static int32_t bank_id = 0;
     int32_t input_pos = load_from_offset;
     int i;
+
+    struct ALBank *bank = (struct ALBank *)malloc_zero(1, sizeof(struct ALBank));
 
     bank->id = bank_id++;
     snprintf(bank->text_id, INST_OBJ_ID_STRING_LEN, "Bank%04d", bank->id);
@@ -856,7 +886,9 @@ void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t loa
 
     if (bank->inst_count < 1)
     {
-        return;
+        TRACE_LEAVE("ALBank_new_from_ctl")
+
+        return bank;
     }
 
     bank->inst_offsets = (int32_t *)malloc_zero(bank->inst_count, sizeof(void*));
@@ -869,12 +901,13 @@ void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t loa
     {
         if (bank->inst_offsets[i] > 0)
         {
-            bank->instruments[i] = (struct ALInstrument *)malloc_zero(1, sizeof(struct ALInstrument));
-            instrument_init_load(bank->instruments[i], ctl_file_contents, bank->inst_offsets[i]);
+            bank->instruments[i] = ALInstrument_new_from_ctl(ctl_file_contents, bank->inst_offsets[i]);
         }
     }
 
-    TRACE_LEAVE("bank_init_load");
+    TRACE_LEAVE("ALBank_new_from_ctl")
+
+    return bank;
 }
 
 /**
@@ -883,16 +916,16 @@ void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t loa
  * @param bank: object to write.
  * @param fi: file_info.
 */
-void bank_write_to_fp(struct ALBank *bank, struct file_info *fi)
+void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 {
-    TRACE_ENTER("bank_write_to_fp")
+    TRACE_ENTER("ALBank_write_to_fp")
 
     int len;
     int i;
 
     for (i=0; i<bank->inst_count; i++)
     {
-        instrument_write_to_fp(bank->instruments[i], fi);
+        ALInstrument_write_to_fp(bank->instruments[i], fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -928,26 +961,27 @@ void bank_write_to_fp(struct ALBank *bank, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("bank_write_to_fp");
+    TRACE_LEAVE("ALBank_write_to_fp");
 }
 
 /**
  * This is the main entry point for reading a .ctl file.
  * Reads a single {@code struct ALBankFile} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for banks and related if {@code bank_count} > 0.
- * @param bank_file: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
+ * @returns: pointer to new bank file.
 */
-void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_contents)
+struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 {
-    TRACE_ENTER("bank_file_init_load")
+    TRACE_ENTER("ALBankFile_new_from_ctl")
 
     static int32_t bank_file_id = 0;
 
     int32_t input_pos = 0;
     int i;
 
+    struct ALBankFile *bank_file = (struct ALBankFile *)malloc_zero(1, sizeof(struct ALBankFile));
     memset(bank_file, 0, sizeof(struct ALBankFile));
 
     bank_file->id = bank_file_id++;
@@ -985,12 +1019,13 @@ void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_content
     {
         if (bank_file->bank_offsets[i] > 0)
         {
-            bank_file->banks[i] = (struct ALBank *)malloc_zero(1, sizeof(struct ALBank));
-            bank_init_load(bank_file->banks[i], ctl_file_contents, bank_file->bank_offsets[i]);
+            bank_file->banks[i] = ALBank_new_from_ctl(ctl_file_contents, bank_file->bank_offsets[i]);
         }
     }
 
-    TRACE_LEAVE("bank_file_init_load");
+    TRACE_LEAVE("ALBankFile_new_from_ctl");
+
+    return bank_file;
 }
 
 /**
@@ -1011,10 +1046,307 @@ void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 
     for (i=0; i<bank_file->bank_count; i++)
     {
-        bank_write_to_fp(bank_file->banks[i], output);
+        ALBank_write_to_fp(bank_file->banks[i], output);
     }
 
     file_info_free(output);
 
-    TRACE_LEAVE("write_inst");
+    TRACE_LEAVE("write_inst")
+}
+
+/**
+ * Frees memory allocated to loop and all child objects.
+ * @param loop: object to free.
+*/
+void ALADPCMLoop_free(struct ALADPCMLoop *loop)
+{
+    TRACE_ENTER("ALADPCMLoop_free")
+
+    if (loop == NULL)
+    {
+        return;
+    }
+
+    free(loop);
+
+    TRACE_LEAVE("ALADPCMLoop_free")
+}
+
+/**
+ * Frees memory allocated to book and all child objects.
+ * @param book: object to free.
+*/
+void ALADPCMBook_free(struct ALADPCMBook *book)
+{
+    TRACE_ENTER("ALADPCMBook_free")
+
+    if (book == NULL)
+    {
+        return;
+    }
+
+    if (book->book != NULL)
+    {
+        free(book->book);
+    }
+
+    free(book);
+
+    TRACE_LEAVE("ALADPCMBook_free")
+}
+
+/**
+ * Frees memory allocated to loop and all child objects.
+ * @param loop: object to free.
+*/
+void ALRawLoop_free(struct ALRawLoop *loop)
+{
+    TRACE_ENTER("ALRawLoop_free")
+
+    if (loop == NULL)
+    {
+        return;
+    }
+
+    free(loop);
+
+    TRACE_LEAVE("ALRawLoop_free")
+}
+
+/**
+ * Frees memory allocated to envelope and all child objects.
+ * @param envelope: object to free.
+*/
+void ALEnvelope_free(struct ALEnvelope *envelope)
+{
+    TRACE_ENTER("ALEnvelope_free")
+
+    if (envelope == NULL)
+    {
+        return;
+    }
+
+    free(envelope);
+
+    TRACE_LEAVE("ALEnvelope_free")
+}
+
+/**
+ * Frees memory allocated to keymap and all child objects.
+ * @param keymap: object to free.
+*/
+void ALKeyMap_free(struct ALKeyMap *keymap)
+{
+    TRACE_ENTER("ALKeyMap_free")
+
+    if (keymap == NULL)
+    {
+        return;
+    }
+
+    free(keymap);
+
+    TRACE_LEAVE("ALKeyMap_free")
+}
+
+/**
+ * Frees memory allocated to wavetable and all child objects.
+ * @param wavetable: object to free.
+*/
+void ALWaveTable_free(struct ALWaveTable *wavetable)
+{
+    TRACE_ENTER("ALWaveTable_free")
+
+    if (wavetable == NULL)
+    {
+        return;
+    }
+
+    if (wavetable->type == AL_ADPCM_WAVE)
+    {
+        if (wavetable->wave_info.adpcm_wave.loop != NULL)
+        {
+            ALADPCMLoop_free(wavetable->wave_info.adpcm_wave.loop);
+            wavetable->wave_info.adpcm_wave.loop = NULL;
+        }
+
+        if (wavetable->wave_info.adpcm_wave.book != NULL)
+        {
+            ALADPCMBook_free(wavetable->wave_info.adpcm_wave.book);
+            wavetable->wave_info.adpcm_wave.book = NULL;
+        }
+    }
+    else if (wavetable->type == AL_RAW16_WAVE)
+    {
+        if (wavetable->wave_info.raw_wave.loop != NULL)
+        {
+            ALRawLoop_free(wavetable->wave_info.raw_wave.loop);
+            wavetable->wave_info.raw_wave.loop = NULL;
+        }
+    }
+
+    if (wavetable->aifc_path != NULL)
+    {
+        free(wavetable->aifc_path);
+    }
+
+    free(wavetable);
+
+    TRACE_LEAVE("ALWaveTable_free")
+}
+
+/**
+ * Frees memory allocated to sound and all child objects.
+ * @param sound: object to free.
+*/
+void ALSound_free(struct ALSound *sound)
+{
+    TRACE_ENTER("ALSound_free")
+
+    if (sound == NULL)
+    {
+        return;
+    }
+
+    if (sound->envelope != NULL)
+    {
+        ALEnvelope_free(sound->envelope);
+        sound->envelope = NULL;
+    }
+
+    if (sound->keymap != NULL)
+    {
+        ALKeyMap_free(sound->keymap);
+        sound->keymap = NULL;
+    }
+
+    if (sound->wavetable != NULL)
+    {
+        ALWaveTable_free(sound->wavetable);
+        sound->wavetable = NULL;
+    }
+
+    free(sound);
+
+    TRACE_LEAVE("ALSound_free")
+}
+
+/**
+ * Frees memory allocated to instrument and all child objects.
+ * @param instrument: object to free.
+*/
+void ALInstrument_free(struct ALInstrument *instrument)
+{
+    TRACE_ENTER("ALInstrument_free")
+
+    int i;
+
+    if (instrument == NULL)
+    {
+        return;
+    }
+
+    if (instrument->sound_offsets != NULL)
+    {
+        free(instrument->sound_offsets);
+        instrument->sound_offsets = NULL;
+    }
+
+    if (instrument->sounds != NULL)
+    {
+        for (i=0; i<instrument->sound_count; i++)
+        {
+            if (instrument->sounds[i] != NULL)
+            {
+                ALSound_free(instrument->sounds[i]);
+                instrument->sounds[i] = NULL;
+            }
+        }
+
+        free(instrument->sounds);
+    }
+
+    free(instrument);
+
+    TRACE_LEAVE("ALInstrument_free")
+}
+
+/**
+ * Frees memory allocated to bank and all child objects.
+ * @param bank: object to free.
+*/
+void ALBank_free(struct ALBank *bank)
+{
+    TRACE_ENTER("ALBank_free")
+
+    int i;
+
+    if (bank == NULL)
+    {
+        return;
+    }
+
+    if (bank->inst_offsets != NULL)
+    {
+        free(bank->inst_offsets);
+        bank->inst_offsets = NULL;
+    }
+
+    if (bank->instruments != NULL)
+    {
+        for (i=0; i<bank->inst_count; i++)
+        {
+            if (bank->instruments[i] != NULL)
+            {
+                ALInstrument_free(bank->instruments[i]);
+                bank->instruments[i] = NULL;
+            }
+        }
+
+        free(bank->instruments);
+    }
+
+    free(bank);
+
+    TRACE_LEAVE("ALBank_free")
+}
+
+/**
+ * Frees memory allocated to bank file and all child objects.
+ * @param bank_file: object to free.
+*/
+void ALBankFile_free(struct ALBankFile *bank_file)
+{
+    TRACE_ENTER("ALBankFile_free")
+
+    int i;
+
+    if (bank_file == NULL)
+    {
+        return;
+    }
+
+    if (bank_file->bank_offsets != NULL)
+    {
+        free(bank_file->bank_offsets);
+        bank_file->bank_offsets = NULL;
+    }
+
+    if (bank_file->banks != NULL)
+    {
+        for (i=0; i<bank_file->bank_count; i++)
+        {
+            if (bank_file->banks[i] != NULL)
+            {
+                ALBank_free(bank_file->banks[i]);
+                bank_file->banks[i] = NULL;
+            }
+        }
+
+        free(bank_file->banks);
+    }
+
+    free(bank_file);
+
+    TRACE_LEAVE("ALBankFile_free")
 }

@@ -207,17 +207,25 @@ int main(int argc, char **argv)
     }
 
     input_file = file_info_fopen(input_filename, "rb");
-
     aifc_file = AdpcmAifcFile_new_from_file(input_file);
 
     // done with input file
     file_info_free(input_file);
+    input_file = NULL;
 
     wav_file = WavFile_load_from_aifc(aifc_file);
+
+    // done with input aifc file
+    AdpcmAifcFile_free(aifc_file);
+    aifc_file = NULL;
 
     output_file = file_info_fopen(output_filename, "wb");
 
     WavFile_frwrite(wav_file, output_file);
+
+    // done with wav file
+    WavFile_free(wav_file);
+    wav_file = NULL;
 
     file_info_free(output_file);
     

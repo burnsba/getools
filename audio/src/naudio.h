@@ -77,7 +77,7 @@ struct ALADPCMBook {
 /**
  * same as libultra struct.
 */
-struct ALADPCMloop {
+struct ALADPCMLoop {
     /**
      * Sample offset of the loop start point.
      * big endian.
@@ -150,7 +150,7 @@ struct ALADPCMWaveInfo {
     /**
      * Pointer to loop data.
     */
-    struct ALADPCMloop *loop;
+    struct ALADPCMLoop *loop;
 
     /**
      * Pointer to codebook data.
@@ -238,6 +238,10 @@ struct ALWaveTable {
      * inst file text id.
     */
     char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * Filename with extension and path where aifc data is located.
+    */
     char *aifc_path;
 };
 
@@ -623,21 +627,31 @@ typedef void (*wavetable_init_callback) (struct ALWaveTable *wavetable);
 
 extern wavetable_init_callback wavetable_init_callback_ptr;
 
-void adpcm_loop_init_load(struct ALADPCMloop *adpcm_loop, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void adpcm_book_init_load(struct ALADPCMBook *adpcm_book, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void raw_loop_init_load(struct ALRawLoop *raw_loop, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void envelope_init_load(struct ALEnvelope *envelope, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void envelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi);
-void keymap_init_load(struct ALKeyMap *keymap, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void keymap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi);
-void wavetable_init_load(struct ALWaveTable *wavetable, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void sound_init_load(struct ALSound *sound, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void sound_write_to_fp(struct ALSound *sound, struct file_info *fi);
-void instrument_init_load(struct ALInstrument *instrument, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void instrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi);
-void bank_init_load(struct ALBank *bank, uint8_t *ctl_file_contents, int32_t load_from_offset);
-void bank_write_to_fp(struct ALBank *bank, struct file_info *fi);
-void bank_file_init_load(struct ALBankFile *bank_file, uint8_t *ctl_file_contents);
+struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi);
+struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi);
+struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi);
+struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi);
+struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi);
+struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents);
 void write_inst(struct ALBankFile *bank_file, char* inst_filename);
+void ALADPCMLoop_free(struct ALADPCMLoop *loop);
+void ALADPCMBook_free(struct ALADPCMBook *book);
+void ALRawLoop_free(struct ALRawLoop *loop);
+void ALEnvelope_free(struct ALEnvelope *envelope);
+void ALKeyMap_free(struct ALKeyMap *keymap);
+void ALWaveTable_free(struct ALWaveTable *wavetable);
+void ALSound_free(struct ALSound *sound);
+void ALInstrument_free(struct ALInstrument *instrument);
+void ALBank_free(struct ALBank *bank);
+void ALBankFile_free(struct ALBankFile *bank_file);
 
 #endif

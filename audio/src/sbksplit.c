@@ -290,7 +290,10 @@ int main(int argc, char **argv)
         file_info_fwrite(output, &input_file_contents[(size_t)seq_address], seq_len, 1);
 
         file_info_free(output);
+        output = NULL;
     }
 
-     return 0;
+    free(input_file_contents);
+
+    return 0;
 }

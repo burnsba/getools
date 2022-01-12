@@ -436,5 +436,10 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
 void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents);
 size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len);
 int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
+void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk);
+void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk);
+void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk);
+void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk);
+void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file);
 
 #endif

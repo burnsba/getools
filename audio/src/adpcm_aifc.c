@@ -716,7 +716,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
         && sound->wavetable->type == AL_ADPCM_WAVE
         && sound->wavetable->wave_info.adpcm_wave.loop != NULL)
     {
-        struct ALADPCMloop *loop = sound->wavetable->wave_info.adpcm_wave.loop;
+        struct ALADPCMLoop *loop = sound->wavetable->wave_info.adpcm_wave.loop;
 
         aaf->loop_chunk->nloops = 1;
         aaf->loop_chunk->loop_data->start = loop->start;
@@ -962,6 +962,7 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
     load_aifc_from_sound(aaf, sound, tbl_file_contents, bank);
 
     AdpcmAifcFile_frwrite(aaf, fi);
+    AdpcmAifcFile_free(aaf);
 
     TRACE_LEAVE("write_sound_to_aifc");
 }
@@ -1162,6 +1163,183 @@ int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf)
 }
 
 /**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk)
+{
+    TRACE_ENTER("AdpcmAifcCommChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("AdpcmAifcCommChunk_free")
+}
+
+/**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk)
+{
+    TRACE_ENTER("AdpcmAifcSoundChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    if (chunk->sound_data != NULL)
+    {
+        free(chunk->sound_data);
+        chunk->sound_data = NULL;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("AdpcmAifcSoundChunk_free")
+}
+
+/**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk)
+{
+    TRACE_ENTER("AdpcmAifcCodebookChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    if (chunk->table_data != NULL)
+    {
+        free(chunk->table_data);
+        chunk->table_data = NULL;
+    }
+
+    if (chunk->coef_table != NULL)
+    {
+        int i,j;
+
+        for (i = 0; i < chunk->nentries; i++)
+        {
+            if (chunk->coef_table[i] != NULL)
+            {
+                for (j = 0; j < 8; j++)
+                {
+                    if (chunk->coef_table[i][j] != NULL)
+                    {
+                        free(chunk->coef_table[i][j]);
+                    }
+                }
+
+                free(chunk->coef_table[i]);
+            }
+        }
+
+        free(chunk->coef_table);
+        chunk->coef_table = NULL;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("AdpcmAifcCodebookChunk_free")
+}
+
+/**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk)
+{
+    TRACE_ENTER("AdpcmAifcLoopChunk_free")
+
+    if (chunk == NULL)
+    {
+        return;
+    }
+
+    if (chunk->loop_data != NULL)
+    {
+        free(chunk->loop_data);
+        chunk->loop_data = NULL;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE("AdpcmAifcLoopChunk_free")
+}
+
+/**
+ * Frees memory allocated to aifc file and all child elements.
+ * @param aifc_file: object to free.
+*/
+void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
+{
+    TRACE_ENTER("AdpcmAifcFile_free")
+
+    int i;
+
+    if (aifc_file == NULL)
+    {
+        return;
+    }
+
+    if (aifc_file->chunks != NULL)
+    {
+        // need to iterate the list in case there are duplicates.
+        for (i=0; i<aifc_file->chunk_count; i++)
+        {
+            uint32_t ck_id = *(uint32_t *)aifc_file->chunks[i];
+            switch (ck_id)
+            {
+                case ADPCM_AIFC_COMMON_CHUNK_ID:
+                    AdpcmAifcCommChunk_free((struct AdpcmAifcCommChunk *)aifc_file->chunks[i]);
+                    aifc_file->comm_chunk = NULL;
+                    break;
+
+                case ADPCM_AIFC_SOUND_CHUNK_ID:
+                    AdpcmAifcSoundChunk_free((struct AdpcmAifcSoundChunk *)aifc_file->chunks[i]);
+                    aifc_file->sound_chunk = NULL;
+                    break;
+
+                case ADPCM_AIFC_APPLICATION_CHUNK_ID:
+                {
+                    struct AdpcmAifcApplicationChunk *appl = (struct AdpcmAifcApplicationChunk *)aifc_file->chunks[i];
+                    // code_string doesn't have terminating zero, requires explicit length
+                    if (strncmp(appl->code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
+                    {
+                        AdpcmAifcCodebookChunk_free((struct AdpcmAifcCodebookChunk *)appl);
+                        aifc_file->codes_chunk = NULL;
+                    }
+                    else if (strncmp(appl->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
+                    {
+                        AdpcmAifcLoopChunk_free((struct AdpcmAifcLoopChunk *)appl);
+                        aifc_file->loop_chunk = NULL;
+                    }
+                }
+                
+                default:
+                    // ignore unsupported
+                    break;
+            }
+        }
+
+        free(aifc_file->chunks);
+    }
+
+    free(aifc_file);
+
+    TRACE_LEAVE("AdpcmAifcFile_free")
+}
+
+/**
  * Reads the next byte from the sound chunk. If the end of the chunk has been reached
  * then zero is returned.
  * @param aaf: container file.
@@ -1173,7 +1351,7 @@ int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf)
 */
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof)
 {
-    if (*ssnd_chunk_pos > (size_t)(aaf->sound_chunk->ck_data_size - 8))
+    if (*ssnd_chunk_pos >= (size_t)(aaf->sound_chunk->ck_data_size - 8))
     {
         *eof = 1;
         return 0;

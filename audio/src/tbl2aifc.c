@@ -352,15 +352,16 @@ void read_opts(int argc, char **argv)
 /**
  * Callback function used when creating a new wavetable.
  * This allows setting the aifc filename based on filenames the user provides.
+ * Allocates memory for {@code wavetable->aifc_path}.
 */
 void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER("wavetable_init_set_aifc_path")
 
     static struct llist_node *name_node = NULL;
-    size_t len;
+    size_t len = 0;
 
-    // want to compare against wavetable->id before increment
+    // only apply user specified filename if there are unclaimed names
     if (opt_names_file && (size_t)wavetable->id < user_names.count)
     {
         struct string_data *sd = NULL;
@@ -375,6 +376,7 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
             sd = (struct string_data *)name_node->data;
         }
 
+        // Only use non empty filename
         if (sd != NULL && sd->len > 0)
         {
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%s", g_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
@@ -392,23 +394,20 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     else
     {
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
-        
     }
 
     // g_write_buffer has terminating '\0', but that's not counted in len
-    len++;
-    wavetable->aifc_path = (char *)malloc_zero(len, 1);
+    wavetable->aifc_path = (char *)malloc_zero(1, len + 1);
     strncpy(wavetable->aifc_path, g_write_buffer, len);
+    // no need for explicit '\0' since strncpy is one less than malloc_zero
 
     TRACE_LEAVE("wavetable_init_set_aifc_path")
 }
 
 
-
-
 int main(int argc, char **argv)
 {
-    struct ALBankFile bank_file;
+    struct ALBankFile *bank_file;
 
     // ctl and tbl contents will be malloc'd, these should fit in RAM
     uint8_t *ctl_file_contents;
@@ -506,26 +505,32 @@ int main(int argc, char **argv)
     }
 
     get_file_contents(ctl_filename, &ctl_file_contents);
-    get_file_contents(tbl_filename, &tbl_file_contents);
-
+    
+    // need to set the callback before any wavetable objects are instantiated.
     wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
 
-    bank_file_init_load(&bank_file, ctl_file_contents);
+    bank_file = ALBankFile_new_from_ctl(ctl_file_contents);
+
+    
 
     if (generate_inst)
     {
-        write_inst(&bank_file, inst_filename);
+        write_inst(bank_file, inst_filename);
     }
 
     if (generate_aifc)
     {
-        write_bank_to_aifc(&bank_file, tbl_file_contents);
+        get_file_contents(tbl_filename, &tbl_file_contents);
+        write_bank_to_aifc(bank_file, tbl_file_contents);
+        free(tbl_file_contents);
     }
 
+    llist_node_free_string_data(&user_names);
     llist_node_root_free_children(&user_names);
+    
+    ALBankFile_free(bank_file);
 
     free(ctl_file_contents);
-    free(tbl_file_contents);
 
     return 0;
 }

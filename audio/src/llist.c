@@ -9,6 +9,8 @@
  * Support for a simple text node is included.
 */
 
+static int32_t next_llist_node_id = 0;
+
 /**
  * Appends a node to the list and increments list count.
  * @param root: list to add node to.
@@ -50,6 +52,9 @@ struct llist_node *llist_node_new()
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
 
+    node->id = next_llist_node_id;
+    next_llist_node_id++;
+
     TRACE_LEAVE("llist_node_new");
 
     return node;
@@ -65,6 +70,9 @@ struct llist_node *llist_node_string_data_new()
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
     node->data = (struct string_data *)malloc_zero(1, sizeof(struct string_data));
+
+    node->id = next_llist_node_id;
+    next_llist_node_id++;
 
     TRACE_LEAVE("llist_node_string_data_new");
 
@@ -85,7 +93,7 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
     // string is always non-null but can be empty, is that a problem?
     sd->text = (char*)malloc_zero(1, len + 1);
     memcpy(sd->text, text, len);
-    sd->text[len] = '\0';
+    // no need for explicit '\0' since memcpy is one less than malloc_zero
     sd->len = len;
 
     TRACE_LEAVE("set_string_data");
@@ -107,6 +115,7 @@ void string_data_free(struct string_data *sd)
     if (sd->text != NULL)
     {
         free(sd->text);
+        sd->text = NULL;
     }
 
     free(sd);
@@ -138,6 +147,7 @@ void llist_node_string_data_print(struct llist_root *root)
 
 /**
  * Frees a node from the list.
+ * This does not free or modify {@code node->data}.
  * Next and previous nodes in the list will have their pointers
  * updated in the expected manner.
  * If {@code root} is not NULL then the node count is decremented.
@@ -157,6 +167,14 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 
     struct llist_node *next = node->next;
     struct llist_node *prev = node->prev;
+    int is_root = 0;
+    int is_tail = 0;
+
+    if (root != NULL)
+    {
+        is_root = node == root->root;
+        is_tail = node == root->tail;
+    }
 
     if (next != NULL)
     {
@@ -176,6 +194,16 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
         {
             root->count--;
         }
+
+        if (is_root)
+        {
+            root->root = NULL;
+        }
+
+        if (is_tail)
+        {
+            root->tail = NULL;
+        }
     }
 
     TRACE_LEAVE("llist_node_free");
@@ -183,6 +211,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 
 /**
  * Iterates list and frees all nodes.
+ * This does not free or modify {@code node->data}.
  * The root node remains unchanged (not freed).
  * If root is NULL then nothing happens.
  * @param root: list to iterate and free child nodes.
@@ -206,11 +235,55 @@ void llist_node_root_free_children(struct llist_root *root)
         node = next;
     }
 
+    root->root = NULL;
+    root->tail = NULL;
+    root->count = 0;
+
     TRACE_LEAVE("llist_node_root_free_children");
 }
 
 /**
+ * Iterates {@code struct string_data} list and frees only {@code node->data}
+ * No other memory is freed.
+ * If root is NULL then nothing happens.
+ * @param root: list to iterate and free child nodes.
+*/
+void llist_node_free_string_data(struct llist_root *root)
+{
+    TRACE_ENTER("llist_node_free_string_data");
+
+    if (root == NULL)
+    {
+        return;
+    }
+
+    struct llist_node *node = root->root;
+
+    while (node != NULL)
+    {
+        if (node->data != NULL)
+        {
+            struct string_data *sd = (struct string_data *)node->data;
+            if (sd->text != NULL)
+            {
+                fflush(stdout);
+                free(sd->text);
+                sd->text = NULL;
+            }
+
+            free(node->data);
+            node->data = NULL;
+        }
+
+        node = node->next;
+    }
+
+    TRACE_LEAVE("llist_node_free_string_data");
+}
+
+/**
  * Iterates list and frees all nodes.
+ * This does not free or modify {@code node->data}.
  * The root node is then freed.
  * If root is NULL then nothing happens.
  * @param root: list to iterate and free.
@@ -233,6 +306,10 @@ void llist_node_root_free(struct llist_root *root)
         free(node);
         node = next;
     }
+
+    root->root = NULL;
+    root->tail = NULL;
+    root->count = 0;
 
     free(root);
 
