@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "debug.h"
+#include "machine_config.h"
 #include "utility.h"
 #include "llist.h"
 
@@ -31,7 +32,7 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
     {
         if (root->tail == NULL)
         {
-            stderr_exit(1, "llist_root_append_node: tail is NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_root_append_node: tail is NULL\n");
         }
 
         node->prev = root->tail;

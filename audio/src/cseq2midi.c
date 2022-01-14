@@ -2,27 +2,23 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <limits.h>
 #include <getopt.h>
 #include "debug.h"
 #include "machine_config.h"
 #include "common.h"
 #include "utility.h"
-#include "llist.h"
-#include "naudio.h"
-#include "adpcm_aifc.h"
-#include "wav.h"
+#include "midi.h"
 
 /**
- * This file contains main entry for aifc2wav app.
+ * This file contains main entry for cseq2midi app.
  * 
- * This app converts an .aifc file to .wav file.
+ * This app converts a compressed MIDI for N64 playback to a regular MIDI.
+ * Only format 0 MIDI is supported.
  * It accepts a file path as input and writes to the given output file path.
 */
 
-#define APPNAME "aifc2wav"
+#define APPNAME "cseq2midi"
 #define VERSION "1.0"
-
 
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
@@ -47,7 +43,7 @@ void print_help(const char * invoke)
 {
     printf("%s %s help\n", APPNAME, VERSION);
     printf("\n");
-    printf("Converts n64 aifc audio to wav format\n");
+    printf("Converts n64 compressed format MIDI to regular MIDI\n");
     printf("usage:\n");
     printf("\n");
     printf("    %s --in file\n", invoke);
@@ -132,10 +128,11 @@ void read_opts(int argc, char **argv)
     }
 }
 
+
 int main(int argc, char **argv)
 {
-    struct WavFile *wav_file;
-    struct AdpcmAifcFile *aifc_file;
+    // struct WavFile *wav_file;
+    // struct AdpcmAifcFile *aifc_file;
     struct file_info *input_file;
     struct file_info *output_file;
 
@@ -150,7 +147,7 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        change_filename_extension(input_filename, output_filename, WAV_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        change_filename_extension(input_filename, output_filename, MIDI_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -164,28 +161,32 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
-    aifc_file = AdpcmAifcFile_new_from_file(input_file);
+    // input_file = file_info_fopen(input_filename, "rb");
+    // aifc_file = AdpcmAifcFile_new_from_file(input_file);
 
-    // done with input file
-    file_info_free(input_file);
-    input_file = NULL;
+    // // done with input file
+    // file_info_free(input_file);
+    // input_file = NULL;
 
-    wav_file = WavFile_load_from_aifc(aifc_file);
+    // wav_file = WavFile_load_from_aifc(aifc_file);
 
-    // done with input aifc file
-    AdpcmAifcFile_free(aifc_file);
-    aifc_file = NULL;
+    // // done with input aifc file
+    // AdpcmAifcFile_free(aifc_file);
+    // aifc_file = NULL;
 
-    output_file = file_info_fopen(output_filename, "wb");
+    // output_file = file_info_fopen(output_filename, "wb");
 
-    WavFile_frwrite(wav_file, output_file);
+    // WavFile_frwrite(wav_file, output_file);
 
-    // done with wav file
-    WavFile_free(wav_file);
-    wav_file = NULL;
+    // // done with wav file
+    // WavFile_free(wav_file);
+    // wav_file = NULL;
 
-    file_info_free(output_file);
+    // file_info_free(output_file);
     
     return 0;
 }
+
+// read seq file into memory
+// convert seq to midi
+// write midi to disk

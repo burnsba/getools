@@ -179,7 +179,7 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "{\n");
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -282,7 +282,7 @@ void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "{\n");
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -518,7 +518,7 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "{\n");
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -718,7 +718,7 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "{\n");
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -933,7 +933,7 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "{\n");
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -992,7 +992,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 
     if (bank_file->revision != BANKFILE_MAGIC_BYTES)
     {
-        stderr_exit(1, "Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", BANKFILE_MAGIC_BYTES, bank_file->revision);
+        stderr_exit(EXIT_CODE_GENERAL, "Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", BANKFILE_MAGIC_BYTES, bank_file->revision);
     }
 
     bank_file->bank_count = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));
@@ -1000,7 +1000,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 
     if (bank_file->bank_count < 1)
     {
-        stderr_exit(1, "ctl count=%d, nothing to do.\n", bank_file->bank_count);
+        stderr_exit(EXIT_CODE_GENERAL, "ctl count=%d, nothing to do.\n", bank_file->bank_count);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)

@@ -35,8 +35,8 @@ extern int _trace_depth;
 */
 #define TRACE_ENTER(s)  if (DEBUG_TRACE) \
     { \
-        printf("[%d] enter " s "\n", _trace_depth); \
         _trace_depth++; \
+        printf("[%d] enter " s "\n", _trace_depth); \
         fflush(stdout); \
     }
 /**

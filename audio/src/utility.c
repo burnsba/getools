@@ -64,7 +64,7 @@ void *malloc_zero(size_t count, size_t item_size)
     if (outp == NULL)
     {
         perror("malloc");
-        exit(1);
+        exit(EXIT_CODE_MALLOC);
     }
     memset(outp, 0, malloc_size);
 
@@ -89,7 +89,7 @@ int mkpath(const char* path)
 
     if (len > MAX_FILENAME_LEN)
     {
-        stderr_exit(1, "error, mkpath name too long.\n");
+        stderr_exit(EXIT_CODE_IO, "error, mkpath name too long.\n");
     }
 
     memset(local_path, 0, MAX_FILENAME_LEN);
@@ -105,7 +105,7 @@ int mkpath(const char* path)
             {
                 if (errno != EEXIST)
                 {
-                    stderr_exit(1, "mkpath error, could not create dir at step %s.\n", local_path);
+                    stderr_exit(EXIT_CODE_IO, "mkpath error, could not create dir at step %s.\n", local_path);
                 }
             }
             else
@@ -124,7 +124,7 @@ int mkpath(const char* path)
     {
         if (errno != EEXIST)
         {
-            stderr_exit(1, "mkpath error, could not create dir %s.\n", path);
+            stderr_exit(EXIT_CODE_IO, "mkpath error, could not create dir %s.\n", path);
         }
     }
     else
@@ -208,14 +208,14 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     input = fopen(path, "rb");
     if (input == NULL)
     {
-        stderr_exit(1, "Cannot open file: %s\n", path);
+        stderr_exit(EXIT_CODE_IO, "Cannot open file: %s\n", path);
     }
 
     if (fseek(input, 0, SEEK_END) != 0)
     {
         fflush_printf(stderr, "error attempting to seek to end of file %s\n", path);
         fclose(input);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     input_filesize = ftell(input);
@@ -229,14 +229,14 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     {
         fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", path);
         fclose(input);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     if (input_filesize > MAX_INPUT_FILESIZE)
     {
         fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", input_filesize, MAX_INPUT_FILESIZE);
         fclose(input);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     *buffer = (uint8_t *)malloc(input_filesize);
@@ -244,7 +244,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     {
         perror("malloc");
 		fclose(input);
-        exit(1);
+        exit(EXIT_CODE_MALLOC);
     }
 
     f_result = fread((void *)*buffer, 1, input_filesize, input);
@@ -252,7 +252,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     {
         fflush_printf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", path, input_filesize, f_result);
 		fclose(input);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     // done with input file, it's in memory now.
@@ -290,7 +290,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     fi->fp = fopen(filename, mode);
     if (fi->fp == NULL)
     {
-        stderr_exit(1, "Cannot open file: %s\n", filename);
+        stderr_exit(EXIT_CODE_IO, "Cannot open file: %s\n", filename);
     }
 
     fi->_fp_state = 1;
@@ -299,28 +299,35 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     {
         fflush_printf(stderr, "error attempting to seek to end of file %s\n", filename);
         fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     fi->len = ftell(fi->fp);
 
     if (g_verbosity > 2)
     {
-        printf("filesize: %ld\n", fi->len);
+        if (strstr(mode, "w") != NULL)
+        {
+            printf("Open file with truncate \"%s\"\n", filename);
+        }
+        else
+        {
+            printf("Open existing file \"%s\", filesize: %ld\n", filename, fi->len);
+        }
     }
 
     if(fseek(fi->fp, 0, SEEK_SET) != 0)
     {
         fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
         fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     if (fi->len > MAX_INPUT_FILESIZE)
     {
         fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", fi->len, MAX_INPUT_FILESIZE);
         fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_GENERAL);
     }
 
     TRACE_LEAVE("file_info_fopen")
@@ -344,12 +351,12 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 
     if (fi == NULL)
     {
-        stderr_exit(1, "file_info_fread error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fread error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(1, "file_info_fread error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fread error, fi->fp not valid\n");
     }
 
     size_t f_result = fread((void *)output_buffer, size, n, fi->fp);
@@ -358,7 +365,7 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
     {
         fflush_printf(stderr, "error reading file [%s], expected to read %ld elements, but read %ld\n", fi->filename, n, f_result);
 		fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     TRACE_LEAVE("file_info_fread")
@@ -379,11 +386,11 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 
     int ret = fseek(fi->fp, __off, __whence);
 
-    if(ret != 0)
+    if (ret != 0)
     {
         fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
         fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     TRACE_LEAVE("file_info_fseek")
@@ -410,12 +417,12 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 
     if (fi == NULL)
     {
-        stderr_exit(1, "file_info_fwrite error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fwrite error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(1, "file_info_fwrite error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fwrite error, fi->fp not valid\n");
     }
 
     ret = fwrite(data, size, n, fi->fp);
@@ -424,7 +431,7 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     {
         fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, ret);
 		fclose(fi->fp);
-        exit(1);
+        exit(EXIT_CODE_IO);
     }
 
     TRACE_LEAVE("file_info_fwrite");
@@ -453,12 +460,12 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
     if (fi == NULL)
     {
-        stderr_exit(1, "file_info_fwrite_bswap error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fwrite_bswap error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(1, "file_info_fwrite_bswap error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_IO, "file_info_fwrite_bswap error, fi->fp not valid\n");
     }
 
     if (size == 2)
@@ -472,7 +479,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             {
                 fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", f_result);
                 fclose(fi->fp);
-                exit(1);
+                exit(EXIT_CODE_IO);
             }
 
             ret += size;
@@ -489,7 +496,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
             {
                 fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", 1, f_result);
                 fclose(fi->fp);
-                exit(1);
+                exit(EXIT_CODE_IO);
             }
 
             ret += size;
@@ -503,7 +510,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
         {
             fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, f_result);
             fclose(fi->fp);
-            exit(1);
+            exit(EXIT_CODE_IO);
         }
 
         ret += (size * n);
@@ -587,12 +594,12 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(1, "bswap16_memcpy error, dest is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap16_memcpy error, dest is NULL\n");
     }
 
     if (src == NULL)
     {
-        stderr_exit(1, "bswap16_memcpy error, src is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap16_memcpy error, src is NULL\n");
     }
 
     for (i=0; i<num; i++)
@@ -623,12 +630,12 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(1, "bswap32_memcpy error, dest is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap32_memcpy error, dest is NULL\n");
     }
 
     if (src == NULL)
     {
-        stderr_exit(1, "bswap32_memcpy error, src is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap32_memcpy error, src is NULL\n");
     }
 
     for (i=0; i<num; i++)
@@ -773,4 +780,129 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
     state = 1;
 
     TRACE_LEAVE("parse_names");
+}
+
+/**
+ * Copies path form source, taking only filename.
+ * @param string: filename, may contain one or more directories as prefix.
+ * @param filename: out parameter. Must already be allocated. Will contain just filename.
+ * @param max_len: max length of output filename. 
+*/
+void get_filename(char *string, char *filename, size_t max_len)
+{
+    TRACE_ENTER("get_filename");
+
+    int i = 0;
+    int last_pos = -1;
+    char c;
+    size_t len;
+    size_t ext_len;
+    int new_len;
+
+    if (string == NULL)
+    {
+        return;
+    }
+
+    // find last occurrence of PATH_SEPERATOR in the input filename.
+    while (1)
+    {
+        c = string[i];
+
+        if (c == PATH_SEPERATOR)
+        {
+            last_pos = i;
+        }
+
+        i++;
+        if (c == '\0' || i >= MAX_FILENAME_LEN)
+        {
+            break;
+        }
+    }
+
+    last_pos++;
+    len = strlen(string);
+
+    // make sure last_pos is within allowed limit for input.
+    if (last_pos > len)
+    {
+        last_pos = len;
+    }
+
+    new_len = (int)len - (int)last_pos;
+
+    // now restrict new length to specified parameter
+    if (new_len > max_len)
+    {
+        new_len = max_len;
+    }
+
+    strncpy(filename, &string[last_pos], new_len);
+
+    TRACE_LEAVE("get_filename");
+}
+
+/**
+ * Copies filename, changing the extension to the one specified.
+ * @param input_filename: source filename.
+ * @param output_filename: out parameter. Will contain new filename. Must be previously allocated.
+ * @param new_extension: extension with leading '.' to replace in source filename.
+ * @param max_len: max length of output filename.
+*/
+void change_filename_extension(char *input_filename, char *output_filename, char *new_extension, size_t max_len)
+{
+    TRACE_ENTER("change_filename_extension");
+
+    int i = 0;
+    int last_pos = -1;
+    char c;
+    size_t len;
+    size_t ext_len;
+
+    // find last occurrence of '.' in the input filename.
+    while (1)
+    {
+        c = input_filename[i];
+
+        if (c == '.')
+        {
+            last_pos = i;
+        }
+
+        i++;
+        if (c == '\0' || i >= MAX_FILENAME_LEN)
+        {
+            break;
+        }
+    }
+
+    if (last_pos > -1)
+    {
+        len = last_pos;
+    }
+    else
+    {
+        // if there's no '.' then just use the entire input filename
+        len = strlen(input_filename);
+    }
+    
+    ext_len = strlen(new_extension);
+
+    // truncate filename so there's room for the extension
+    if (len >= 1 + (MAX_FILENAME_LEN - ext_len))
+    {
+        len = MAX_FILENAME_LEN - ext_len;
+    }
+
+    if (len + ext_len > max_len)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "change_filename_extension: can't change extension, output_filename buffer too short.\n");
+    }
+
+    strncpy(output_filename, input_filename, len);
+    strncpy(&output_filename[len], new_extension, ext_len);
+    output_filename[len+ext_len] = '\0';
+
+    TRACE_LEAVE("change_filename_extension");
 }

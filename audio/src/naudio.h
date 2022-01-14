@@ -67,7 +67,8 @@ struct ALADPCMBook {
     int32_t npredictors;
 
     /**
-     * Must be 8-byte aligned
+     * Must be 8-byte aligned.
+     * Length of book field is order*npredictors*16 bytes.
     */
     int16_t *book;
 };
@@ -393,6 +394,8 @@ struct ALSound {
      * Unused by this library, therefore always zero.
     */
     uint8_t flags;
+
+    uint8_t unused_padding;
 
     /* end file format ------------------------------------------------------------------- */
 

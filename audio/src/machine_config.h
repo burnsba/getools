@@ -43,6 +43,11 @@
 */
 #define PATH_SEPERATOR '/'
 
+#define EXIT_CODE_GENERAL                  1
+#define EXIT_CODE_MALLOC                   2
+#define EXIT_CODE_IO                       3
+#define EXIT_CODE_NULL_REFERENCE_EXCEPTION 4
+
 /**
  * typedef for 80 bit "extended" float.
 */

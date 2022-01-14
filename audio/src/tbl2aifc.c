@@ -1,25 +1,3 @@
- /*
- * Copyright 2022 Ben Burns
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- **/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -126,7 +104,7 @@ void print_help(const char * invoke)
     printf("    --no-inst                     don't generate .inst file\n");
     printf("    -n,--names=FILE               sound names. One name per line. Lines starting with # ignored.\n");
     printf("                                  Names applied in order read, if the list is too short\n");
-    printf("                                  subsequent sounds will be given numeric id (0001, 0002, ...).\n");
+    printf("                                  subsequent items will be given numeric id (0001, 0002, ...).\n");
     printf("                                  Non alphanumeric characters ignored.\n");
     printf("                                  Do not include filename extension.\n");
     printf("    -q,--quiet                    suppress output\n");
@@ -162,7 +140,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, ctl filename not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, ctl filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -181,7 +159,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, tbl filename not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, tbl filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -243,7 +221,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, filename prefix not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, filename prefix not specified\n");
                 }
 
                 // 4 characters allocated for digits
@@ -263,7 +241,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, names filename not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, names filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -317,7 +295,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, inst filename not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, inst filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -393,6 +371,7 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     }
     else
     {
+        // same as above.
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
     }
 
@@ -425,7 +404,7 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "both .aifc and .inst generation disabled, nothing to do.\n");
         fflush(stderr);
-        return 1;
+        exit(EXIT_CODE_GENERAL);
     }
 
     if (use_other_aifc_dir)
@@ -510,8 +489,6 @@ int main(int argc, char **argv)
     wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
 
     bank_file = ALBankFile_new_from_ctl(ctl_file_contents);
-
-    
 
     if (generate_inst)
     {

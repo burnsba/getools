@@ -1,25 +1,3 @@
- /*
- * Copyright 2022 Ben Burns
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- **/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -62,14 +40,18 @@
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_user_filename_prefix = 0;
+static int opt_names_file = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
+static char names_filename[MAX_FILENAME_LEN] = {0};
+static struct llist_root user_names = {0};
 
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
     {"in",     required_argument,               NULL,  'i' },
     {"prefix", required_argument,               NULL,  'p' },
+    {"names",  required_argument,               NULL,  'n' },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,  'd' },
@@ -83,16 +65,21 @@ void print_help(const char * invoke)
     printf("splits a Rare .sbk file into individual .seq files\n");
     printf("usage:\n");
     printf("\n");
-    printf("%s -i file\n", invoke);
+    printf("    %s -i file\n", invoke);
     printf("\n");
     printf("options:\n");
     printf("\n");
-    printf("--help                        print this help\n");
-    printf("-i,--in=FILE                  input file (required)\n");
-    printf("-p,--prefix=STRING            string to prepend to output files. (optional)\n");
-    printf("                              default=%s\n", DEFAULT_FILENAME_PREFIX);
-    printf("-q,--quiet                    suppress output\n");
-    printf("-v,--verbose                  more output\n");
+    printf("    --help                        print this help\n");
+    printf("    -i,--in=FILE                  input file (required)\n");
+    printf("    -p,--prefix=STRING            string to prepend to output files. (optional)\n");
+    printf("                                  default=%s\n", DEFAULT_FILENAME_PREFIX);
+    printf("    -n,--names=FILE               music names. One name per line. Lines starting with # ignored.\n");
+    printf("                                  Names applied in order read, if the list is too short\n");
+    printf("                                  subsequent items will be given numeric id (0001, 0002, ...).\n");
+    printf("                                  Non alphanumeric characters ignored.\n");
+    printf("                                  Do not include filename extension.\n");
+    printf("    -q,--quiet                    suppress output\n");
+    printf("    -v,--verbose                  more output\n");
     printf("\n");
     fflush(stdout);
 }
@@ -113,7 +100,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, input filename not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, input filename not specified\n");
                 }
 
                 if (str_len > MAX_FILENAME_LEN - 1)
@@ -132,7 +119,7 @@ void read_opts(int argc, char **argv)
                 str_len = strlen(optarg);
                 if (str_len < 1)
                 {
-                    stderr_exit(1, "error, filename prefix not specified\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "error, filename prefix not specified\n");
                 }
 
                 // 4 characters allocated for digits
@@ -142,6 +129,25 @@ void read_opts(int argc, char **argv)
                 }
 
                 strncpy(g_filename_prefix, optarg, str_len);
+            }
+            break;
+
+            case 'n':
+            {
+                opt_names_file = 1;
+
+                str_len = strlen(optarg);
+                if (str_len < 1)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, names filename not specified\n");
+                }
+
+                if (str_len > MAX_FILENAME_LEN - 1)
+                {
+                    str_len = MAX_FILENAME_LEN - 1;
+                }
+
+                strncpy(names_filename, optarg, str_len);
             }
             break;
 
@@ -182,6 +188,9 @@ int main(int argc, char **argv)
     // length in bytes of compressed .seq file
     uint16_t seq_len;
 
+    // current name node from the list of user supplied names.
+    struct llist_node *name_node = NULL;
+
     read_opts(argc, argv);
 
     if (opt_help_flag || argc < 2 || !opt_input_file)
@@ -212,7 +221,7 @@ int main(int argc, char **argv)
     {
         perror("malloc");
 		file_info_free(input);
-        return 3;
+        exit(EXIT_CODE_MALLOC);
     }
 
     file_info_fread(input, input_file_contents, input->len, 1);
@@ -231,7 +240,18 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "error, input file has too many seq files\n");
         fflush(stderr);
-		return 5;
+		exit(EXIT_CODE_GENERAL);
+    }
+
+    if (opt_names_file)
+    {
+        uint8_t *names_file_contents;
+        size_t file_length = 0;
+        file_length = get_file_contents(names_filename, &names_file_contents);
+        parse_names(names_file_contents, file_length, &user_names);
+        free(names_file_contents);
+
+        // llist_node_string_data_print(&user_names);
     }
 
     // 4 is to skip the first 32 bits (seq count + padding)
@@ -271,9 +291,45 @@ int main(int argc, char **argv)
         
         // generate output filename.
         memset(output_filename, 0, MAX_FILENAME_LEN);
-        // the getopts method should verify the prefix is within allowed length, including
-        // budget for digit characters.
-        write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+
+        // only apply user specified filename if there are unclaimed names
+        if (opt_names_file && (size_t)i < user_names.count)
+        {
+            struct string_data *sd = NULL;
+
+            if (i == 0)
+            {
+                name_node = user_names.root;
+            }
+
+            if (name_node != NULL)
+            {
+                sd = (struct string_data *)name_node->data;
+            }
+
+            // Only use non empty filename
+            if (sd != NULL && sd->len > 0)
+            {
+                write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
+            }
+            else
+            {
+                // the getopts method should verify the prefix is within allowed length, including
+                // budget for digit characters.
+                write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+            }
+
+            if (name_node != NULL)
+            {
+                name_node = name_node->next;
+            }
+        }
+        else
+        {
+            // same as above.
+            write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+        }
+
         if (write_len > MAX_FILENAME_LEN)
         {
             // be quiet gcc
@@ -294,6 +350,9 @@ int main(int argc, char **argv)
     }
 
     free(input_file_contents);
+
+    llist_node_free_string_data(&user_names);
+    llist_node_root_free_children(&user_names);
 
     return 0;
 }

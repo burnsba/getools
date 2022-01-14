@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "machine_config.h"
 #include "utility.h"
 
 /**
@@ -23,12 +24,12 @@ int32_t dot_product_i32(int32_t *arr1, int32_t *arr2, size_t len)
 
     if (arr1 == NULL)
     {
-        stderr_exit(1, "dot_product_i32: arr1 is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "dot_product_i32: arr1 is NULL\n");
     }
 
     if (arr2 == NULL)
     {
-        stderr_exit(1, "dot_product_i32: arr2 is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "dot_product_i32: arr2 is NULL\n");
     }
 
     for (i=0; i<len; i++)
@@ -54,7 +55,7 @@ int32_t divide_round_down(int32_t num, int32_t den)
 
     if (den == 0)
     {
-        stderr_exit(1, "divide_round_down: divide by zero\n");
+        stderr_exit(EXIT_CODE_GENERAL, "divide_round_down: divide by zero\n");
     }
 
     result = num / den;
