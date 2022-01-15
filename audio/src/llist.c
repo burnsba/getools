@@ -19,7 +19,7 @@ static int32_t next_llist_node_id = 0;
 */
 void llist_root_append_node(struct llist_root *root, struct llist_node *node)
 {
-    TRACE_ENTER("llist_root_append_node");
+    TRACE_ENTER("llist_root_append_node")
 
     root->count++;
 
@@ -40,7 +40,7 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
         root->tail = node;
     }
 
-    TRACE_LEAVE("llist_root_append_node");
+    TRACE_LEAVE("llist_root_append_node")
 }
 
 /**
@@ -49,14 +49,14 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
 */
 struct llist_node *llist_node_new()
 {
-    TRACE_ENTER("llist_node_new");
+    TRACE_ENTER("llist_node_new")
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
 
     node->id = next_llist_node_id;
     next_llist_node_id++;
 
-    TRACE_LEAVE("llist_node_new");
+    TRACE_LEAVE("llist_node_new")
 
     return node;
 }
@@ -67,7 +67,7 @@ struct llist_node *llist_node_new()
 */
 struct llist_node *llist_node_string_data_new()
 {
-    TRACE_ENTER("llist_node_string_data_new");
+    TRACE_ENTER("llist_node_string_data_new")
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
     node->data = (struct string_data *)malloc_zero(1, sizeof(struct string_data));
@@ -75,7 +75,7 @@ struct llist_node *llist_node_string_data_new()
     node->id = next_llist_node_id;
     next_llist_node_id++;
 
-    TRACE_LEAVE("llist_node_string_data_new");
+    TRACE_LEAVE("llist_node_string_data_new")
 
     return node;
 }
@@ -89,7 +89,7 @@ struct llist_node *llist_node_string_data_new()
 */
 void set_string_data(struct string_data *sd, char *text, size_t len)
 {
-    TRACE_ENTER("set_string_data");
+    TRACE_ENTER("set_string_data")
 
     // string is always non-null but can be empty, is that a problem?
     sd->text = (char*)malloc_zero(1, len + 1);
@@ -97,7 +97,7 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
     // no need for explicit '\0' since memcpy is one less than malloc_zero
     sd->len = len;
 
-    TRACE_LEAVE("set_string_data");
+    TRACE_LEAVE("set_string_data")
 }
 
 /**
@@ -106,7 +106,7 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
 */
 void string_data_free(struct string_data *sd)
 {
-    TRACE_ENTER("string_data_free");
+    TRACE_ENTER("string_data_free")
 
     if (sd == NULL)
     {
@@ -121,7 +121,7 @@ void string_data_free(struct string_data *sd)
 
     free(sd);
 
-    TRACE_LEAVE("string_data_free");
+    TRACE_LEAVE("string_data_free")
 }
 
 /**
@@ -129,7 +129,7 @@ void string_data_free(struct string_data *sd)
 */
 void llist_node_string_data_print(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_string_data_print");
+    TRACE_ENTER("llist_node_string_data_print")
 
     struct llist_node *node = root->root;
     while (node != NULL)
@@ -143,7 +143,7 @@ void llist_node_string_data_print(struct llist_root *root)
         node = node->next;
     }
 
-    TRACE_LEAVE("llist_node_string_data_print");
+    TRACE_LEAVE("llist_node_string_data_print")
 }
 
 /**
@@ -159,7 +159,7 @@ void llist_node_string_data_print(struct llist_root *root)
 */
 void llist_node_free(struct llist_root *root, struct llist_node *node)
 {
-    TRACE_ENTER("llist_node_free");
+    TRACE_ENTER("llist_node_free")
 
     if (node == NULL)
     {
@@ -207,7 +207,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
         }
     }
 
-    TRACE_LEAVE("llist_node_free");
+    TRACE_LEAVE("llist_node_free")
 }
 
 /**
@@ -219,7 +219,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 */
 void llist_node_root_free_children(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_root_free_children");
+    TRACE_ENTER("llist_node_root_free_children")
 
     if (root == NULL)
     {
@@ -240,7 +240,7 @@ void llist_node_root_free_children(struct llist_root *root)
     root->tail = NULL;
     root->count = 0;
 
-    TRACE_LEAVE("llist_node_root_free_children");
+    TRACE_LEAVE("llist_node_root_free_children")
 }
 
 /**
@@ -251,7 +251,7 @@ void llist_node_root_free_children(struct llist_root *root)
 */
 void llist_node_free_string_data(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_free_string_data");
+    TRACE_ENTER("llist_node_free_string_data")
 
     if (root == NULL)
     {
@@ -279,7 +279,7 @@ void llist_node_free_string_data(struct llist_root *root)
         node = node->next;
     }
 
-    TRACE_LEAVE("llist_node_free_string_data");
+    TRACE_LEAVE("llist_node_free_string_data")
 }
 
 /**
@@ -291,7 +291,7 @@ void llist_node_free_string_data(struct llist_root *root)
 */
 void llist_node_root_free(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_root_free");
+    TRACE_ENTER("llist_node_root_free")
 
     if (root == NULL)
     {
@@ -314,5 +314,5 @@ void llist_node_root_free(struct llist_root *root)
 
     free(root);
 
-    TRACE_LEAVE("llist_node_root_free");
+    TRACE_LEAVE("llist_node_root_free")
 }

@@ -38,7 +38,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
     p->chunk_count = chunk_count;
     p->chunks = (void*)malloc_zero(chunk_count, sizeof(void*));
 
-    TRACE_LEAVE("AdpcmAifcFile_new_simple");
+    TRACE_LEAVE("AdpcmAifcFile_new_simple")
 
     return p;
 }
@@ -76,7 +76,7 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi
 
     file_info_fread(fi, &p->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN, 1);
 
-    TRACE_LEAVE("AdpcmAifcCommChunk_new_from_file");
+    TRACE_LEAVE("AdpcmAifcCommChunk_new_from_file")
 
     return p;
 }
@@ -179,7 +179,7 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
         stderr_exit(EXIT_CODE_GENERAL, "Unsupported APPL chunk: %.*s\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
     }
 
-    TRACE_LEAVE("AdpcmAifcApplicationChunk_new_from_file");
+    TRACE_LEAVE("AdpcmAifcApplicationChunk_new_from_file")
 
     return ret;
 }
@@ -212,7 +212,7 @@ struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *
     p->sound_data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
     file_info_fread(fi, p->sound_data, (size_t)(ck_data_size - 8), 1);
 
-    TRACE_LEAVE("AdpcmAifcSoundChunk_new_from_file");
+    TRACE_LEAVE("AdpcmAifcSoundChunk_new_from_file")
 
     return p;
 }
@@ -499,7 +499,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
         stderr_exit(EXIT_CODE_GENERAL, "Expected to allocate %d chunks, but only allocated %d. Sound %s, bank %s\n", expected_chunk_count, alloc_chunk_count, sound->text_id, bank->text_id);
     }
 
-    TRACE_LEAVE("AdpcmAifcFile_new_full");
+    TRACE_LEAVE("AdpcmAifcFile_new_full")
 
     return aaf;
 }
@@ -522,7 +522,7 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new()
     // no terminating zero
     memcpy(p->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
     
-    TRACE_LEAVE("AdpcmAifcCommChunk_new");
+    TRACE_LEAVE("AdpcmAifcCommChunk_new")
     
     return p;
 }
@@ -594,7 +594,7 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
         }
     }
 
-    TRACE_LEAVE("AdpcmAifcCodebookChunk_decode_aifc_codebook");
+    TRACE_LEAVE("AdpcmAifcCodebookChunk_decode_aifc_codebook")
 }
 
 /**
@@ -621,7 +621,7 @@ struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_
 
     p->table_data = (uint8_t *)malloc_zero(1, table_data_size_bytes);
 
-    TRACE_LEAVE("AdpcmAifcCodebookChunk_new");
+    TRACE_LEAVE("AdpcmAifcCodebookChunk_new")
 
     return p;
 }
@@ -641,7 +641,7 @@ struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes
 
     p->sound_data = (uint8_t *)malloc_zero(1, sound_data_size_bytes);
 
-    TRACE_LEAVE("AdpcmAifcSoundChunk_new");
+    TRACE_LEAVE("AdpcmAifcSoundChunk_new")
 
     return p;
 }
@@ -669,7 +669,7 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
 
     p->loop_data = (struct AdpcmAifcLoopData *)malloc_zero(1, loop_data_size_bytes);
 
-    TRACE_LEAVE("AdpcmAifcLoopChunk_new");
+    TRACE_LEAVE("AdpcmAifcLoopChunk_new")
 
     return p;
 }
@@ -798,7 +798,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
         aaf->ck_data_size += aaf->loop_chunk->base.ck_data_size;
     }
 
-    TRACE_LEAVE("load_aifc_from_sound");
+    TRACE_LEAVE("load_aifc_from_sound")
 }
 
 /**
@@ -821,7 +821,7 @@ void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_in
     file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
     file_info_fwrite_bswap(fi, chunk->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN, 1);
     
-    TRACE_LEAVE("AdpcmAifcCommChunk_frwrite");
+    TRACE_LEAVE("AdpcmAifcCommChunk_frwrite")
 }
 
 /**
@@ -840,7 +840,7 @@ void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, 
     file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
     file_info_fwrite_bswap(fi, chunk->code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
     
-    TRACE_LEAVE("AdpcmAifcApplicationChunk_frwrite");
+    TRACE_LEAVE("AdpcmAifcApplicationChunk_frwrite")
 }
 
 /**
@@ -865,7 +865,7 @@ void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct
 
     file_info_fwrite_bswap(fi, chunk->table_data, table_size, 1);
 
-    TRACE_LEAVE("AdpcmAifcCodebookChunk_frwrite");
+    TRACE_LEAVE("AdpcmAifcCodebookChunk_frwrite")
 }
 
 /**
@@ -891,7 +891,7 @@ void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_
         file_info_fwrite(fi, chunk->sound_data, table_size, 1);
     }
 
-    TRACE_LEAVE("AdpcmAifcSoundChunk_frwrite");
+    TRACE_LEAVE("AdpcmAifcSoundChunk_frwrite")
 }
 
 /**
@@ -909,7 +909,7 @@ void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info 
     file_info_fwrite_bswap(fi, &loop->count, 4, 1);
     file_info_fwrite_bswap(fi, &loop->state, 0x20, 1);
 
-    TRACE_LEAVE("AdpcmAifcLoopData_frwrite");
+    TRACE_LEAVE("AdpcmAifcLoopData_frwrite")
 }
 
 /**
@@ -934,7 +934,7 @@ void AdpcmAifcLoopChunk_frwrite(struct AdpcmAifcLoopChunk *chunk, struct file_in
         AdpcmAifcLoopData_frwrite(&chunk->loop_data[i], fi);
     }
 
-    TRACE_LEAVE("AdpcmAifcLoopChunk_frwrite");
+    TRACE_LEAVE("AdpcmAifcLoopChunk_frwrite")
 }
 
 /**
@@ -1010,7 +1010,7 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
         }
     }
 
-    TRACE_LEAVE("AdpcmAifcFile_frwrite");
+    TRACE_LEAVE("AdpcmAifcFile_frwrite")
 }
 
 /**
@@ -1031,7 +1031,7 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
     AdpcmAifcFile_frwrite(aaf, fi);
     AdpcmAifcFile_free(aaf);
 
-    TRACE_LEAVE("write_sound_to_aifc");
+    TRACE_LEAVE("write_sound_to_aifc")
 }
 
 /**
@@ -1071,7 +1071,7 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
         }
     }
 
-    TRACE_LEAVE("write_bank_to_aifc");
+    TRACE_LEAVE("write_bank_to_aifc")
 }
 
 /**
@@ -1086,7 +1086,7 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
 */
 void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
 {
-    TRACE_ENTER("AdpcmAifcFile_decode_frame");
+    TRACE_ENTER("AdpcmAifcFile_decode_frame")
 
     int32_t optimalp;
     int32_t scale;
@@ -1157,7 +1157,7 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
         }
     }
 
-    TRACE_LEAVE("AdpcmAifcFile_decode_frame");
+    TRACE_LEAVE("AdpcmAifcFile_decode_frame")
 }
 
 /**
@@ -1201,7 +1201,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
     free(frame_buffer);
 
-    TRACE_LEAVE("AdpcmAifcFile_decode");
+    TRACE_LEAVE("AdpcmAifcFile_decode")
 
     return write_len;
 }

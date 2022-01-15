@@ -25,7 +25,7 @@ struct WavDataChunk *WavDataChunk_new()
 
     p->ck_id = WAV_DATA_CHUNK_ID;
 
-    TRACE_LEAVE("WavDataChunk_new");
+    TRACE_LEAVE("WavDataChunk_new")
 
     return p;
 }
@@ -43,7 +43,7 @@ struct WavFmtChunk *WavFmtChunk_new()
     p->ck_id = WAV_FMT_CHUNK_ID;
     p->ck_data_size = WAV_FMT_CHUNK_BODY_SIZE;
 
-    TRACE_LEAVE("WavFmtChunk_new");
+    TRACE_LEAVE("WavFmtChunk_new")
 
     return p;
 }
@@ -65,7 +65,7 @@ struct WavFile *WavFile_new(size_t num_chunks)
     p->chunk_count = num_chunks;
     p->chunks = (void **)malloc_zero(num_chunks, sizeof(void *));
 
-    TRACE_LEAVE("WavFile_new");
+    TRACE_LEAVE("WavFile_new")
 
     return p;
 }

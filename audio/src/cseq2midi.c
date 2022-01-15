@@ -27,6 +27,7 @@ static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
 #define LONG_OPT_DEBUG   1003
+#define LONG_OPT_PARSE_DEBUG   1004
 
 static struct option long_options[] =
 {
@@ -36,6 +37,7 @@ static struct option long_options[] =
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
+    {"parsedebug",   no_argument,               NULL,   LONG_OPT_PARSE_DEBUG },
     {NULL, 0, NULL, 0}
 };
 
@@ -120,6 +122,10 @@ void read_opts(int argc, char **argv)
                 g_verbosity = VERBOSE_DEBUG;
                 break;
 
+            case LONG_OPT_PARSE_DEBUG:
+                g_midi_parse_debug = 1;
+                break;
+
             case '?':
                 print_help(argv[0]);
                 exit(0);
@@ -132,9 +138,9 @@ void read_opts(int argc, char **argv)
 int main(int argc, char **argv)
 {
     // struct WavFile *wav_file;
-    // struct AdpcmAifcFile *aifc_file;
+    struct CseqFile *cseq_file;
     struct file_info *input_file;
-    struct file_info *output_file;
+    //struct file_info *output_file;
 
     read_opts(argc, argv);
 
@@ -161,18 +167,28 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-    // input_file = file_info_fopen(input_filename, "rb");
-    // aifc_file = AdpcmAifcFile_new_from_file(input_file);
 
-    // // done with input file
-    // file_info_free(input_file);
-    // input_file = NULL;
+    // read cseq file into memory
+    // convert cseq to midi
+    // write midi to disk
+
+
+
+
+
+    input_file = file_info_fopen(input_filename, "rb");
+    cseq_file = CseqFile_new_from_file(input_file);
+
+    // done with input file
+    file_info_free(input_file);
+    input_file = NULL;
 
     // wav_file = WavFile_load_from_aifc(aifc_file);
+    parse_cseq_track(cseq_file->tracks[0]);
 
-    // // done with input aifc file
-    // AdpcmAifcFile_free(aifc_file);
-    // aifc_file = NULL;
+    // done with input cseq file
+    CseqFile_free(cseq_file);
+    cseq_file = NULL;
 
     // output_file = file_info_fopen(output_filename, "wb");
 
@@ -186,7 +202,3 @@ int main(int argc, char **argv)
     
     return 0;
 }
-
-// read seq file into memory
-// convert seq to midi
-// write midi to disk

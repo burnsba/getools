@@ -68,7 +68,7 @@ void *malloc_zero(size_t count, size_t item_size)
     }
     memset(outp, 0, malloc_size);
 
-    TRACE_LEAVE("malloc_zero");
+    TRACE_LEAVE("malloc_zero")
 
     return outp;
 }
@@ -135,7 +135,7 @@ int mkpath(const char* path)
         }
     }
 
-    TRACE_LEAVE("mkpath");
+    TRACE_LEAVE("mkpath")
 
     return 0;
 }
@@ -258,7 +258,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     // done with input file, it's in memory now.
     fclose(input);
 
-    TRACE_LEAVE("get_file_contents");
+    TRACE_LEAVE("get_file_contents")
 
     return input_filesize;
 }
@@ -434,7 +434,7 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
         exit(EXIT_CODE_IO);
     }
 
-    TRACE_LEAVE("file_info_fwrite");
+    TRACE_LEAVE("file_info_fwrite")
 
     return num_bytes;
 }
@@ -516,7 +516,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
         ret += (size * n);
     }
 
-    TRACE_LEAVE("file_info_fwrite_bswap");
+    TRACE_LEAVE("file_info_fwrite_bswap")
 
     return ret;
 }
@@ -538,7 +538,7 @@ int file_info_fclose(struct file_info *fi)
         fi->_fp_state = 0;
     }
 
-    TRACE_LEAVE("file_info_fclose");
+    TRACE_LEAVE("file_info_fclose")
 
     return ret;
 }
@@ -571,7 +571,7 @@ void file_info_free(struct file_info *fi)
 
     free(fi);
 
-    TRACE_LEAVE("file_info_free");
+    TRACE_LEAVE("file_info_free")
 }
 
 /**
@@ -607,7 +607,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
         ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)src)[i]);
     }
 
-    TRACE_LEAVE("bswap16_memcpy");
+    TRACE_LEAVE("bswap16_memcpy")
 }
 
 /**
@@ -643,7 +643,7 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
         ((uint32_t*)dest)[i] = BSWAP32_INLINE(((uint32_t*)src)[i]);
     }
 
-    TRACE_LEAVE("bswap32_memcpy");
+    TRACE_LEAVE("bswap32_memcpy")
 }
 
 /**
@@ -662,7 +662,7 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
 */
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
 {
-    TRACE_ENTER("parse_names");
+    TRACE_ENTER("parse_names")
 
     size_t i;
     int current_len = 0;
@@ -779,7 +779,7 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
     trailing_space = 0;
     state = 1;
 
-    TRACE_LEAVE("parse_names");
+    TRACE_LEAVE("parse_names")
 }
 
 /**
@@ -790,13 +790,12 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
 */
 void get_filename(char *string, char *filename, size_t max_len)
 {
-    TRACE_ENTER("get_filename");
+    TRACE_ENTER("get_filename")
 
     int i = 0;
     int last_pos = -1;
     char c;
     size_t len;
-    size_t ext_len;
     int new_len;
 
     if (string == NULL)
@@ -825,7 +824,7 @@ void get_filename(char *string, char *filename, size_t max_len)
     len = strlen(string);
 
     // make sure last_pos is within allowed limit for input.
-    if (last_pos > len)
+    if ((size_t)last_pos > len)
     {
         last_pos = len;
     }
@@ -833,14 +832,14 @@ void get_filename(char *string, char *filename, size_t max_len)
     new_len = (int)len - (int)last_pos;
 
     // now restrict new length to specified parameter
-    if (new_len > max_len)
+    if ((size_t)new_len > max_len)
     {
         new_len = max_len;
     }
 
     strncpy(filename, &string[last_pos], new_len);
 
-    TRACE_LEAVE("get_filename");
+    TRACE_LEAVE("get_filename")
 }
 
 /**
@@ -852,7 +851,7 @@ void get_filename(char *string, char *filename, size_t max_len)
 */
 void change_filename_extension(char *input_filename, char *output_filename, char *new_extension, size_t max_len)
 {
-    TRACE_ENTER("change_filename_extension");
+    TRACE_ENTER("change_filename_extension")
 
     int i = 0;
     int last_pos = -1;
@@ -904,5 +903,79 @@ void change_filename_extension(char *input_filename, char *output_filename, char
     strncpy(&output_filename[len], new_extension, ext_len);
     output_filename[len+ext_len] = '\0';
 
-    TRACE_LEAVE("change_filename_extension");
+    TRACE_LEAVE("change_filename_extension")
+}
+
+/**
+ * Converts a 32 bit integer to a variable length quantity integer.
+*/
+void int32_to_varint(int32_t in, struct var_length_int *varint)
+{
+    TRACE_ENTER("int32_to_varint")
+
+    int32_t out_result = 0;
+    int num_bytes = 0;
+
+    do {
+        int var7bits = in & 0x7f;
+        in >>= 7;
+        if (in > 0)
+        {
+            var7bits |= 0x80;
+        }
+        out_result |= var7bits;
+        num_bytes++;
+    } while (in > 0);
+    
+    varint->value = out_result;
+    varint->num_bytes = num_bytes;
+    varint->standard_value = in;
+
+    TRACE_LEAVE("int32_to_varint")
+}
+
+/**
+ * Reads an input buffer as variable length integer and parses
+ * into regular integer.
+ * @param buffer: byte buffer to read.
+ * @param max_bytes: max number of bytes to read from buffer.
+ * @param varint: out parameter. Will set standard_value and number bytes read.
+*/
+void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint)
+{
+    TRACE_ENTER("varint_value_to_int32")
+
+    int32_t ret = 0;
+    int done = 0;
+    int bytes_read = 0;
+
+    if (max_bytes < 1 || max_bytes > 4)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "varint_value_to_int32 parameter error, max_bytes=%d out of range.\n", max_bytes);
+    }
+
+    while (!done && bytes_read <= max_bytes)
+    {
+        int var7bits = buffer[bytes_read] & 0x7f;
+
+        if ((buffer[bytes_read] & 0x80) == 0)
+        {
+            done = 1;
+        }
+
+        ret <<= 7;
+        ret |= var7bits;
+
+        bytes_read++;
+    }
+
+    if (!done)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "varint_value_to_int32 parse error.\n");
+    }
+
+    varint->num_bytes = bytes_read;
+    varint->standard_value = ret;
+
+    TRACE_LEAVE("varint_value_to_int32")
 }

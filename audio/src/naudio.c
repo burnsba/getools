@@ -47,7 +47,7 @@ struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t
     // raw byte copy, no bswap
     memcpy(adpcm_loop->state, &ctl_file_contents[input_pos], ADPCM_STATE_SIZE);
 
-    TRACE_LEAVE("ALADPCMLoop_new_from_ctl");
+    TRACE_LEAVE("ALADPCMLoop_new_from_ctl")
 
     return adpcm_loop;
 }
@@ -84,7 +84,7 @@ struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t
         memcpy(adpcm_book->book, &ctl_file_contents[input_pos], book_bytes);
     }
 
-    TRACE_LEAVE("ALADPCMBook_new_from_ctl");
+    TRACE_LEAVE("ALADPCMBook_new_from_ctl")
 
     return adpcm_book;
 }
@@ -113,7 +113,7 @@ struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t loa
     raw_loop->count = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    TRACE_LEAVE("ALRawLoop_new_from_ctl");
+    TRACE_LEAVE("ALRawLoop_new_from_ctl")
 
     return raw_loop;
 }
@@ -157,7 +157,7 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
         printf("init envelope %d\n", envelope->id);
     }
 
-    TRACE_LEAVE("ALEnvelope_new_from_ctl");
+    TRACE_LEAVE("ALEnvelope_new_from_ctl")
 
     return envelope;
 }
@@ -215,7 +215,7 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALEnvelope_write_to_fp");
+    TRACE_LEAVE("ALEnvelope_write_to_fp")
 }
 
 /**
@@ -260,7 +260,7 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
         printf("init keymap %d\n", keymap->id);
     }
 
-    TRACE_LEAVE("ALKeyMap_new_from_ctl");
+    TRACE_LEAVE("ALKeyMap_new_from_ctl")
 
     return keymap;
 }
@@ -322,7 +322,7 @@ void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALKeyMap_write_to_fp");
+    TRACE_LEAVE("ALKeyMap_write_to_fp")
 }
 
 /**
@@ -424,7 +424,7 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
         }
     }
 
-    TRACE_LEAVE("ALWaveTable_new_from_ctl");
+    TRACE_LEAVE("ALWaveTable_new_from_ctl")
 
     return wavetable;
 }
@@ -486,7 +486,7 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
         sound->wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
     }
     
-    TRACE_LEAVE("ALSound_new_from_ctl");
+    TRACE_LEAVE("ALSound_new_from_ctl")
 
     return sound;
 }
@@ -599,7 +599,7 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALSound_write_to_fp");
+    TRACE_LEAVE("ALSound_write_to_fp")
 }
 
 /**
@@ -841,7 +841,7 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALInstrument_write_to_fp");
+    TRACE_LEAVE("ALInstrument_write_to_fp")
 }
 
 /**
@@ -961,7 +961,7 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALBank_write_to_fp");
+    TRACE_LEAVE("ALBank_write_to_fp")
 }
 
 /**
@@ -1023,7 +1023,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
         }
     }
 
-    TRACE_LEAVE("ALBankFile_new_from_ctl");
+    TRACE_LEAVE("ALBankFile_new_from_ctl")
 
     return bank_file;
 }
