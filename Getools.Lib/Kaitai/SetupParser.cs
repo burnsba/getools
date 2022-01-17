@@ -1502,7 +1502,17 @@ namespace Getools.Lib.Kaitai
             pad.Position = Convert(kaitaiObject.Pos);
             pad.Up = Convert(kaitaiObject.Up);
             pad.Look = Convert(kaitaiObject.Look);
-            pad.Name = kaitaiObject.Plink.Deref;
+
+            if (kaitaiObject.Plink.Offset > 0)
+            {
+                pad.Name = kaitaiObject.Plink.Deref;
+            }
+            else
+            {
+                // NULL
+                pad.Name = new BinPack.ClaimedStringPointer();
+            }
+
             pad.Unknown = (int)kaitaiObject.Unknown;
 
             return pad;
@@ -1515,7 +1525,17 @@ namespace Getools.Lib.Kaitai
             pad.Position = Convert(kaitaiObject.Pos);
             pad.Up = Convert(kaitaiObject.Up);
             pad.Look = Convert(kaitaiObject.Look);
-            pad.Name = kaitaiObject.Plink.Deref;
+
+            if (kaitaiObject.Plink.Offset > 0)
+            {
+                pad.Name = kaitaiObject.Plink.Deref;
+            }
+            else
+            {
+                // NULL
+                pad.Name = new BinPack.ClaimedStringPointer();
+            }
+
             pad.Unknown = (int)kaitaiObject.Unknown;
 
             pad.BoundingBox = Convert(kaitaiObject.Bbox);
@@ -1523,16 +1543,18 @@ namespace Getools.Lib.Kaitai
             return pad;
         }
 
-        private static BinPack.ClaimedStringPointer ConvertToClaimedStringPointer(Gen.Setup.StringPointer kaitaiObject)
-        {
-            var csp = new BinPack.ClaimedStringPointer(kaitaiObject.Deref);
-
-            return csp;
-        }
-
         private static BinPack.RodataString ConvertToRodataString(Gen.Setup.StringPointer kaitaiObject)
         {
-            var rs = new BinPack.RodataString(kaitaiObject.Deref);
+            BinPack.RodataString rs;
+
+            if (kaitaiObject.Offset > 0)
+            {
+                rs = new BinPack.RodataString(kaitaiObject.Deref);
+            }
+            else
+            {
+                rs = new BinPack.RodataString();
+            }
 
             return rs;
         }
