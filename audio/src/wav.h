@@ -47,7 +47,7 @@
 /**
  * wav file, size of "fmt " chunk including ck_id or ck_data_size.
 */
-#define WAV_FMT_CHUNK_FULL_SIZE 4 + 4 + WAV_FMT_CHUNK_BODY_SIZE
+#define WAV_FMT_CHUNK_FULL_SIZE (4 + 4 + WAV_FMT_CHUNK_BODY_SIZE)
 
 /**
  * wav file default audio format

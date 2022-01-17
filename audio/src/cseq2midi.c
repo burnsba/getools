@@ -137,10 +137,10 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    // struct WavFile *wav_file;
+    struct MidiFile *midi_file;
     struct CseqFile *cseq_file;
     struct file_info *input_file;
-    //struct file_info *output_file;
+    struct file_info *output_file;
 
     read_opts(argc, argv);
 
@@ -167,15 +167,6 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-
-    // read cseq file into memory
-    // convert cseq to midi
-    // write midi to disk
-
-
-
-
-
     input_file = file_info_fopen(input_filename, "rb");
     cseq_file = CseqFile_new_from_file(input_file);
 
@@ -183,22 +174,21 @@ int main(int argc, char **argv)
     file_info_free(input_file);
     input_file = NULL;
 
-    // wav_file = WavFile_load_from_aifc(aifc_file);
-    parse_cseq_track(cseq_file->tracks[0]);
+    midi_file = MidiFile_from_CseqFile(cseq_file);
 
     // done with input cseq file
     CseqFile_free(cseq_file);
     cseq_file = NULL;
 
-    // output_file = file_info_fopen(output_filename, "wb");
+    output_file = file_info_fopen(output_filename, "wb");
 
-    // WavFile_frwrite(wav_file, output_file);
+    MidiFile_frwrite(midi_file, output_file);
 
-    // // done with wav file
-    // WavFile_free(wav_file);
-    // wav_file = NULL;
+    // done with MIDI file
+    MidiFile_free(midi_file);
+    midi_file = NULL;
 
-    // file_info_free(output_file);
+    file_info_free(output_file);
     
     return 0;
 }

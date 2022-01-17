@@ -62,6 +62,21 @@ struct llist_node *llist_node_new()
 }
 
 /**
+ * Allocates memory for a new root.
+ * @returns: pointer to new root.
+*/
+struct llist_root *llist_root_new()
+{
+    TRACE_ENTER("llist_root_new")
+
+    struct llist_root *root = (struct llist_root *)malloc_zero(1, sizeof(struct llist_root));
+
+    TRACE_LEAVE("llist_root_new")
+
+    return root;
+}
+
+/**
  * Allocates memory for a new node, and for a {@code struct string_data} data node.
  * @returns: pointer to new node.
 */
@@ -315,4 +330,95 @@ void llist_node_root_free(struct llist_root *root)
     free(root);
 
     TRACE_LEAVE("llist_node_root_free")
+}
+
+/**
+ * Inserts a new node in the list immediately before the current node.
+ * @param root: parent list. Optional, but required to update count.
+ * @param current: current reference node.
+ * @param to_insert: new node to insert.
+*/
+void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert)
+{
+    TRACE_ENTER("llist_node_insert_before")
+
+    if (current == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: current is NULL\n");
+    }
+
+    if (to_insert == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: to_insert is NULL\n");
+    }
+
+    to_insert->next = current;
+    to_insert->prev = current->prev;
+
+    if (current->prev != NULL)
+    {
+        current->prev->next = to_insert;
+    }
+
+    current->prev = to_insert;
+
+    if (root != NULL)
+    {
+        root->count++;
+    }
+
+    TRACE_LEAVE("llist_node_insert_before")
+}
+
+/**
+ * Swaps two nodes, updating all pointers accordingly.
+ * @param first: first node to swap.
+ * @param second: second node to swap.
+*/
+void llist_node_swap(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER("llist_node_swap")
+
+    if (first == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_swap: first is NULL\n");
+    }
+
+    if (second == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_swap: second is NULL\n");
+    }
+
+    struct llist_node *first_prev = first->prev;
+    struct llist_node *first_next = first->next;
+    struct llist_node *second_prev = second->prev;
+    struct llist_node *second_next = second->next;
+
+    first->prev = second_prev;
+    first->next = second_next;
+
+    second->prev = first->prev;
+    second->next = first->next;
+
+    if (first_prev != NULL)
+    {
+        first_prev->next = second;
+    }
+
+    if (first_next != NULL)
+    {
+        first_next->prev = second;
+    }
+
+    if (second_prev != NULL)
+    {
+        second_prev->next = first;
+    }
+
+    if (second_next != NULL)
+    {
+        second_next->prev = first;
+    }
+
+    TRACE_LEAVE("llist_node_swap")
 }

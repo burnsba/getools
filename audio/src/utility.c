@@ -979,3 +979,19 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
 
     TRACE_LEAVE("varint_value_to_int32")
 }
+
+/**
+ * Copies values from one varint to another.
+ * @param dest: destination varint.
+ * @param source: source varint.
+*/
+void varint_copy(struct var_length_int *dest, struct var_length_int* source)
+{
+    TRACE_ENTER("varint_copy")
+
+    dest->standard_value = source->standard_value;
+    dest->value = source->value;
+    dest->num_bytes = source->num_bytes;
+
+    TRACE_LEAVE("varint_copy")
+}

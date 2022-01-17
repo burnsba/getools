@@ -72,10 +72,11 @@ struct llist_node *llist_node_string_data_new();
 void set_string_data(struct string_data *sd, char *text, size_t len);
 void string_data_free(struct string_data *sd);
 void llist_node_string_data_print(struct llist_root *root);
-void llist_node_free(struct llist_root *root, struct llist_node *node);
 void llist_node_root_free_children(struct llist_root *root);
 void llist_node_root_free(struct llist_root *root);
 void llist_node_free_string_data(struct llist_root *root);
 void llist_node_free(struct llist_root *root, struct llist_node *node);
+void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert);
+void llist_node_swap(struct llist_node *first, struct llist_node *second);
 
 #endif
