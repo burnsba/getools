@@ -27,16 +27,10 @@ namespace Getools.Lib.Game.Asset.Setup
         public int Offset { get; set; }
 
         /// <summary>
-        /// TODO: unknown.
+        /// Gets or sets pad id.
         /// Struct offset 0x0.
         /// </summary>
-        public UInt16 Unknown_00 { get; set; }
-
-        /// <summary>
-        /// TODO: unknown.
-        /// Struct offset 0x2.
-        /// </summary>
-        public UInt16 Unknown_02 { get; set; }
+        public UInt32 PadId { get; set; }
 
         /// <summary>
         /// Value pointed to from <see cref="EntryPointer"/>.
@@ -45,20 +39,21 @@ namespace Getools.Lib.Game.Asset.Setup
 
         /// <summary>
         /// Gets or sets pointer to <see cref="Entry"/>.
+        /// Struct offset 0x4.
         /// </summary>
         public PointerVariable EntryPointer { get; set; }
 
         /// <summary>
-        /// TODO: unknown.
+        /// Gets or sets group num.
         /// Struct offset 0x8.
         /// </summary>
-        public UInt32 Unknown_08 { get; set; }
+        public UInt32 GroupNum { get; set; }
 
         /// <summary>
-        /// TODO: unknown.
+        /// Gets or sets distance
         /// Struct offset 0xc.
         /// </summary>
-        public UInt32 Unknown_0C { get; set; }
+        public UInt32 Distance { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -89,15 +84,13 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sb.Append($"{prefix}{{ ");
 
-            sb.Append($"{Formatters.IntegralTypes.ToHex4(Unknown_00)}");
-            sb.Append($", ");
-            sb.Append($"{Formatters.IntegralTypes.ToHex4(Unknown_02)}");
+            sb.Append($"{Formatters.IntegralTypes.ToHex8(PadId)}");
             sb.Append($", ");
             sb.Append($"{Formatters.Strings.ToCPointerOrNull(Entry?.VariableName)}");
             sb.Append($", ");
-            sb.Append($"{Formatters.IntegralTypes.ToHex8(Unknown_08)}");
+            sb.Append($"{Formatters.IntegralTypes.ToHex8(GroupNum)}");
             sb.Append($", ");
-            sb.Append($"{Formatters.IntegralTypes.ToHex8(Unknown_0C)}");
+            sb.Append($"{Formatters.IntegralTypes.ToHex8(Distance)}");
 
             sb.Append(" }");
 
@@ -139,10 +132,7 @@ namespace Getools.Lib.Game.Asset.Setup
             int pos = 0;
             int pointerOffset = 0;
 
-            BitUtility.Insert32Big(bytes, pos, Unknown_00);
-            pos += Config.TargetWordSize;
-
-            BitUtility.Insert32Big(bytes, pos, Unknown_02);
+            BitUtility.Insert32Big(bytes, pos, (int)PadId);
             pos += Config.TargetWordSize;
 
             // need to save offset in struct to set the pointer baseaddress
@@ -152,10 +142,10 @@ namespace Getools.Lib.Game.Asset.Setup
             BitUtility.Insert32Big(bytes, pos, 0);
             pos += Config.TargetPointerSize;
 
-            BitUtility.Insert32Big(bytes, pos, (int)Unknown_08);
+            BitUtility.Insert32Big(bytes, pos, (int)GroupNum);
             pos += Config.TargetWordSize;
 
-            BitUtility.Insert32Big(bytes, pos, (int)Unknown_0C);
+            BitUtility.Insert32Big(bytes, pos, (int)Distance);
             pos += Config.TargetWordSize;
 
             var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);

@@ -73,8 +73,8 @@ s32 path_table_0[] = { 5, 39, 41, 42, -1 };
 
 
 struct s_pathTbl pathtbl[] = {
-    { 0x0000, 0x0149, &path_table_0, 0x00000000, 0x00000000 },
-    { 0xffff, 0xffff, NULL, 0x00000000, 0x00000000 }
+    { 0x00000149, &path_table_0, 0x00000000, 0x00000000 },
+    { 0xffffffff, NULL, 0x00000000, 0x00000000 }
 };
 
 
@@ -87,8 +87,8 @@ s32 path_set_0[] = { 148, 149, 150, -1 };
 
 
 struct s_pathSet paths[] = {
-    { &path_set_0, 0x00010000 },
-    { NULL, 0x00000000 }
+    { &path_set_0, 0x00, 0x01, 0x0000 },
+    { NULL, 0x00, 0x00, 0x0000 }
 };
 
 

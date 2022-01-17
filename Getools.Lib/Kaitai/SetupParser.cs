@@ -372,13 +372,12 @@ namespace Getools.Lib.Kaitai
         {
             var spte = new SetupPathTableEntry();
 
-            spte.Unknown_00 = kaitaiObject.Unknown00;
-            spte.Unknown_02 = kaitaiObject.Unknown02;
+            spte.PadId = kaitaiObject.PadId;
             spte.EntryPointer = new BinPack.PointerVariable();
-            spte.EntryPointer.PointedToOffset = (int)kaitaiObject.UnknownPointer;
+            spte.EntryPointer.PointedToOffset = (int)kaitaiObject.Neighbors;
 
-            spte.Unknown_08 = kaitaiObject.Unknown08;
-            spte.Unknown_0C = kaitaiObject.Unknown0c;
+            spte.GroupNum = kaitaiObject.Groupnum;
+            spte.Distance = kaitaiObject.Dist;
 
             if (!object.ReferenceEquals(null, kaitaiObject.Data))
             {
@@ -1448,7 +1447,9 @@ namespace Getools.Lib.Kaitai
 
             spse.EntryPointer = new BinPack.PointerVariable();
             spse.EntryPointer.PointedToOffset = (int)kaitaiObject.Pointer;
-            spse.Unknown_04 = kaitaiObject.Unknown04;
+            spse.PathId = kaitaiObject.PathId;
+            spse.Flags = kaitaiObject.Flags;
+            spse.PathLength = kaitaiObject.PathLen;
 
             if (!object.ReferenceEquals(null, kaitaiObject.Data))
             {

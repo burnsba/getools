@@ -30,6 +30,9 @@ namespace Getools.Verbs
                 Environment.Exit(1);
             }
 
+            // permute input to reflect run environment
+            opts.InputFilename = Path.Combine(System.IO.Directory.GetCurrentDirectory(), opts.InputFilename);
+
             if (!File.Exists(opts.InputFilename))
             {
                 ConsoleColor.ConsoleWriteLineRed($"File not found: {opts.InputFilename}");
@@ -104,6 +107,9 @@ namespace Getools.Verbs
                 DisplayHelp(result, null);
                 Environment.Exit(1);
             }
+
+            // permute output to reflect run environment
+            opts.OutputFilename = Path.Combine(System.IO.Directory.GetCurrentDirectory(), opts.OutputFilename);
         }
 
         /// <summary>

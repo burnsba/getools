@@ -333,8 +333,7 @@
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathTableEntry, Getools.Lib",
               "Offset": 0,
-              "Unknown_00": 0,
-              "Unknown_02": 329,
+              "PadId": 329,
               "Entry": {
                 "$type": "Getools.Lib.Game.Asset.Setup.PathTable, Getools.Lib",
                 "VariableName": "path_table_0",
@@ -354,22 +353,21 @@
                 "AddressOfVariableName": null,
                 "IsNull": false
               },
-              "Unknown_08": 0,
-              "Unknown_0C": 0
+              "GroupNum": 0,
+              "Distance": 0
             },
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathTableEntry, Getools.Lib",
               "Offset": 0,
-              "Unknown_00": 65535,
-              "Unknown_02": 65535,
+              "PadId": 4294967295,
               "Entry": null,
               "EntryPointer": {
                 "$type": "Getools.Lib.BinPack.PointerVariable, Getools.Lib",
                 "AddressOfVariableName": null,
                 "IsNull": true
               },
-              "Unknown_08": 0,
-              "Unknown_0C": 0
+              "GroupNum": 0,
+              "Distance": 0
             }
           ]
         },
@@ -421,7 +419,9 @@
                   ]
                 }
               },
-              "Unknown_04": 65536
+              "PathId": 0,
+              "Flags": 1,
+              "PathLength": 0
             },
             {
               "$type": "Getools.Lib.Game.Asset.Setup.SetupPathSetEntry, Getools.Lib",
@@ -431,7 +431,9 @@
                 "IsNull": true
               },
               "Entry": null,
-              "Unknown_04": 0
+              "PathId": 0,
+              "Flags": 0,
+              "PathLength": 0
             }
           ]
         },

@@ -172,21 +172,19 @@ types:
         repeat-until: _.value == 0xffffffff
   path_table_entry:
     seq:
-      - id: unknown_00
-        type: u2
-      - id: unknown_02
-        type: u2
-      - id: unknown_pointer
+      - id: pad_id
         type: u4
-      - id: unknown_08
+      - id: neighbors
         type: u4
-      - id: unknown_0c
+      - id: groupnum
+        type: u4
+      - id: dist
         type: u4
     instances:
       data:
-        if: unknown_pointer > 0
+        if: neighbors > 0
         io: _root._io
-        pos: unknown_pointer
+        pos: neighbors
         type: ff_list_item
         repeat: until
         repeat-until: _.value == 0xffffffff
@@ -194,8 +192,12 @@ types:
     seq:
       - id: pointer
         type: u4
-      - id: unknown_04
-        type: u4
+      - id: path_id
+        type: u1
+      - id: flags
+        type: u1
+      - id: path_len
+        type: u2
     instances:
       data:
         if: pointer > 0
@@ -1151,7 +1153,7 @@ types:
       - id: data
         type: path_table_entry
         repeat: until
-        repeat-until: _.unknown_00 == 0xffff and _.unknown_02 == 0xffff
+        repeat-until: _.pad_id == 0xffffffff
     instances:
       type:
         value: section_id::path_table_section

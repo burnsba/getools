@@ -32,10 +32,19 @@ namespace Getools.Lib.Game.Asset.Setup
         public PathSet Entry { get; set; }
 
         /// <summary>
-        /// TODO: Unknown.
-        /// Struct offset 0x4.
+        /// Gets or sets path id.
         /// </summary>
-        public uint Unknown_04 { get; set; }
+        public byte PathId { get; set; }
+
+        /// <summary>
+        /// Gets or sets path flags.
+        /// </summary>
+        public byte Flags { get; set; }
+
+        /// <summary>
+        /// Gets or sets path length.
+        /// </summary>
+        public UInt16 PathLength { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -68,7 +77,11 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sb.Append($"{Formatters.Strings.ToCPointerOrNull(Entry?.VariableName)}");
             sb.Append($", ");
-            sb.Append($"{Formatters.IntegralTypes.ToHex8(Unknown_04)}");
+            sb.Append($"{Formatters.IntegralTypes.ToHex2(PathId)}");
+            sb.Append($", ");
+            sb.Append($"{Formatters.IntegralTypes.ToHex2(Flags)}");
+            sb.Append($", ");
+            sb.Append($"{Formatters.IntegralTypes.ToHex4(PathLength)}");
 
             sb.Append(" }");
 
@@ -117,8 +130,14 @@ namespace Getools.Lib.Game.Asset.Setup
             BitUtility.Insert32Big(bytes, pos, 0);
             pos += Config.TargetPointerSize;
 
-            BitUtility.Insert32Big(bytes, pos, (int)Unknown_04);
-            pos += Config.TargetWordSize;
+            bytes[pos] = PathId;
+            pos++;
+
+            bytes[pos] = Flags;
+            pos++;
+
+            BitUtility.InsertShortBig(bytes, pos, PathLength);
+            pos += 2;
 
             var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
             BaseDataOffset = result.DataStartAddress;

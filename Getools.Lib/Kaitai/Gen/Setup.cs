@@ -624,7 +624,7 @@ namespace Getools.Lib.Kaitai.Gen
                         M_ = new PathTableEntry(m_io, this, m_root);
                         _data.Add(M_);
                         i++;
-                    } while (!(((M_.Unknown00 == 65535) && (M_.Unknown02 == 65535))));
+                    } while (!(((M_.PadId == System.UInt32.MaxValue))));
                 }
             }
             private bool f_type;
@@ -2966,7 +2966,9 @@ namespace Getools.Lib.Kaitai.Gen
             private void _read()
             {
                 _pointer = m_io.ReadU4be();
-                _unknown04 = m_io.ReadU4be();
+                _pathId = m_io.ReadU1();
+                _flags = m_io.ReadU1();
+                _pathLen = m_io.ReadU2be();
             }
             private bool f_data;
             private List<FfListItem> _data;
@@ -2999,11 +3001,15 @@ namespace Getools.Lib.Kaitai.Gen
                 }
             }
             private uint _pointer;
-            private uint _unknown04;
+            private byte _pathId;
+            private byte _flags;
+            private ushort _pathLen;
             private Setup m_root;
             private Setup.PathSetsSection m_parent;
             public uint Pointer { get { return _pointer; } }
-            public uint Unknown04 { get { return _unknown04; } }
+            public byte PathId { get { return _pathId; } }
+            public byte Flags { get { return _flags; } }
+            public ushort PathLen { get { return _pathLen; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.PathSetsSection M_Parent { get { return m_parent; } }
         }
@@ -3422,11 +3428,10 @@ namespace Getools.Lib.Kaitai.Gen
             }
             private void _read()
             {
-                _unknown00 = m_io.ReadU2be();
-                _unknown02 = m_io.ReadU2be();
-                _unknownPointer = m_io.ReadU4be();
-                _unknown08 = m_io.ReadU4be();
-                _unknown0c = m_io.ReadU4be();
+                _padId = m_io.ReadU4be();
+                _neighbors = m_io.ReadU4be();
+                _groupnum = m_io.ReadU4be();
+                _dist = m_io.ReadU4be();
             }
             private bool f_data;
             private List<FfListItem> _data;
@@ -3436,11 +3441,11 @@ namespace Getools.Lib.Kaitai.Gen
                 {
                     if (f_data)
                         return _data;
-                    if (UnknownPointer > 0)
+                    if (Neighbors > 0)
                     {
                         KaitaiStream io = M_Root.M_Io;
                         long _pos = io.Pos;
-                        io.Seek(UnknownPointer);
+                        io.Seek(Neighbors);
                         _data = new List<FfListItem>();
                         {
                             var i = 0;
@@ -3458,18 +3463,16 @@ namespace Getools.Lib.Kaitai.Gen
                     return _data;
                 }
             }
-            private ushort _unknown00;
-            private ushort _unknown02;
-            private uint _unknownPointer;
-            private uint _unknown08;
-            private uint _unknown0c;
+            private uint _padId;
+            private uint _neighbors;
+            private uint _groupnum;
+            private uint _dist;
             private Setup m_root;
             private Setup.PathTableSection m_parent;
-            public ushort Unknown00 { get { return _unknown00; } }
-            public ushort Unknown02 { get { return _unknown02; } }
-            public uint UnknownPointer { get { return _unknownPointer; } }
-            public uint Unknown08 { get { return _unknown08; } }
-            public uint Unknown0c { get { return _unknown0c; } }
+            public uint PadId { get { return _padId; } }
+            public uint Neighbors { get { return _neighbors; } }
+            public uint Groupnum { get { return _groupnum; } }
+            public uint Dist { get { return _dist; } }
             public Setup M_Root { get { return m_root; } }
             public Setup.PathTableSection M_Parent { get { return m_parent; } }
         }
