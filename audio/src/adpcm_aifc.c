@@ -807,9 +807,9 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi)
+void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcCommChunk_frwrite")
+    TRACE_ENTER("AdpcmAifcCommChunk_fwrite")
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
@@ -821,7 +821,7 @@ void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_in
     file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
     file_info_fwrite_bswap(fi, chunk->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN, 1);
     
-    TRACE_LEAVE("AdpcmAifcCommChunk_frwrite")
+    TRACE_LEAVE("AdpcmAifcCommChunk_fwrite")
 }
 
 /**
@@ -830,9 +830,9 @@ void AdpcmAifcCommChunk_frwrite(struct AdpcmAifcCommChunk *chunk, struct file_in
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi)
+void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcApplicationChunk_frwrite")
+    TRACE_ENTER("AdpcmAifcApplicationChunk_fwrite")
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
@@ -840,7 +840,7 @@ void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, 
     file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
     file_info_fwrite_bswap(fi, chunk->code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
     
-    TRACE_LEAVE("AdpcmAifcApplicationChunk_frwrite")
+    TRACE_LEAVE("AdpcmAifcApplicationChunk_fwrite")
 }
 
 /**
@@ -849,13 +849,13 @@ void AdpcmAifcApplicationChunk_frwrite(struct AdpcmAifcApplicationChunk *chunk, 
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi)
+void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcCodebookChunk_frwrite")
+    TRACE_ENTER("AdpcmAifcCodebookChunk_fwrite")
 
     size_t table_size;
 
-    AdpcmAifcApplicationChunk_frwrite(&chunk->base, fi);
+    AdpcmAifcApplicationChunk_fwrite(&chunk->base, fi);
 
     file_info_fwrite_bswap(fi, &chunk->version, 2, 1);
     file_info_fwrite_bswap(fi, &chunk->order, 2, 1);
@@ -865,7 +865,7 @@ void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct
 
     file_info_fwrite_bswap(fi, chunk->table_data, table_size, 1);
 
-    TRACE_LEAVE("AdpcmAifcCodebookChunk_frwrite")
+    TRACE_LEAVE("AdpcmAifcCodebookChunk_fwrite")
 }
 
 /**
@@ -874,9 +874,9 @@ void AdpcmAifcCodebookChunk_frwrite(struct AdpcmAifcCodebookChunk *chunk, struct
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi)
+void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcSoundChunk_frwrite")
+    TRACE_ENTER("AdpcmAifcSoundChunk_fwrite")
 
     size_t table_size;
 
@@ -891,7 +891,7 @@ void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_
         file_info_fwrite(fi, chunk->sound_data, table_size, 1);
     }
 
-    TRACE_LEAVE("AdpcmAifcSoundChunk_frwrite")
+    TRACE_LEAVE("AdpcmAifcSoundChunk_fwrite")
 }
 
 /**
@@ -900,16 +900,16 @@ void AdpcmAifcSoundChunk_frwrite(struct AdpcmAifcSoundChunk *chunk, struct file_
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi)
+void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcLoopData_frwrite")
+    TRACE_ENTER("AdpcmAifcLoopData_fwrite")
 
     file_info_fwrite_bswap(fi, &loop->start, 4, 1);
     file_info_fwrite_bswap(fi, &loop->end, 4, 1);
     file_info_fwrite_bswap(fi, &loop->count, 4, 1);
     file_info_fwrite_bswap(fi, &loop->state, 0x20, 1);
 
-    TRACE_LEAVE("AdpcmAifcLoopData_frwrite")
+    TRACE_LEAVE("AdpcmAifcLoopData_fwrite")
 }
 
 /**
@@ -918,23 +918,23 @@ void AdpcmAifcLoopData_frwrite(struct AdpcmAifcLoopData *loop, struct file_info 
  * @param chunk: object to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcLoopChunk_frwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi)
+void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcLoopChunk_frwrite")
+    TRACE_ENTER("AdpcmAifcLoopChunk_fwrite")
 
     int i;
 
-    AdpcmAifcApplicationChunk_frwrite(&chunk->base, fi);
+    AdpcmAifcApplicationChunk_fwrite(&chunk->base, fi);
 
     file_info_fwrite_bswap(fi, &chunk->version, 2, 1);
     file_info_fwrite_bswap(fi, &chunk->nloops, 2, 1);
 
     for (i=0; i<chunk->nloops; i++)
     {
-        AdpcmAifcLoopData_frwrite(&chunk->loop_data[i], fi);
+        AdpcmAifcLoopData_fwrite(&chunk->loop_data[i], fi);
     }
 
-    TRACE_LEAVE("AdpcmAifcLoopChunk_frwrite")
+    TRACE_LEAVE("AdpcmAifcLoopChunk_fwrite")
 }
 
 /**
@@ -943,9 +943,9 @@ void AdpcmAifcLoopChunk_frwrite(struct AdpcmAifcLoopChunk *chunk, struct file_in
  * @param aaf: .aifc in-memory file to write.
  * @param fi: file_info to write to. Uses current seek position.
 */
-void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
+void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
 {
-    TRACE_ENTER("AdpcmAifcFile_frwrite")
+    TRACE_ENTER("AdpcmAifcFile_fwrite")
 
     int i;
 
@@ -961,14 +961,14 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
             case ADPCM_AIFC_COMMON_CHUNK_ID: // COMM
             {
                 struct AdpcmAifcCommChunk *chunk = (struct AdpcmAifcCommChunk *)aaf->chunks[i];
-                AdpcmAifcCommChunk_frwrite(chunk, fi);
+                AdpcmAifcCommChunk_fwrite(chunk, fi);
             }
             break;
 
             case ADPCM_AIFC_SOUND_CHUNK_ID: // SSND
             {
                 struct AdpcmAifcSoundChunk *chunk = (struct AdpcmAifcSoundChunk *)aaf->chunks[i];
-                AdpcmAifcSoundChunk_frwrite(chunk, fi);
+                AdpcmAifcSoundChunk_fwrite(chunk, fi);
             }
             break;
 
@@ -979,12 +979,12 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
                 if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     struct AdpcmAifcCodebookChunk *chunk = (struct AdpcmAifcCodebookChunk *)basechunk;
-                    AdpcmAifcCodebookChunk_frwrite(chunk, fi);
+                    AdpcmAifcCodebookChunk_fwrite(chunk, fi);
                 }
                 else if (strncmp(basechunk->code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
                 {
                     struct AdpcmAifcLoopChunk *chunk = (struct AdpcmAifcLoopChunk *)basechunk;
-                    AdpcmAifcLoopChunk_frwrite(chunk, fi);
+                    AdpcmAifcLoopChunk_fwrite(chunk, fi);
                 }
                 // else, ignore unsupported
                 else
@@ -992,7 +992,7 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
                     if (g_verbosity >= 2)
                     {
                         // no terminating zero, requires explicit length
-                        printf("AdpcmAifcFile_frwrite: APPL ignore code_string '%.*s'\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, basechunk->code_string);
+                        printf("AdpcmAifcFile_fwrite: APPL ignore code_string '%.*s'\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, basechunk->code_string);
                     }
                 }
             }
@@ -1003,14 +1003,14 @@ void AdpcmAifcFile_frwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
             {
                 if (g_verbosity >= 2)
                 {
-                    printf("AdpcmAifcFile_frwrite: ignore ck_id 0x%08x\n", ck_id);
+                    printf("AdpcmAifcFile_fwrite: ignore ck_id 0x%08x\n", ck_id);
                 }
             }
             break;
         }
     }
 
-    TRACE_LEAVE("AdpcmAifcFile_frwrite")
+    TRACE_LEAVE("AdpcmAifcFile_fwrite")
 }
 
 /**
@@ -1028,7 +1028,7 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
 
     load_aifc_from_sound(aaf, sound, tbl_file_contents, bank);
 
-    AdpcmAifcFile_frwrite(aaf, fi);
+    AdpcmAifcFile_fwrite(aaf, fi);
     AdpcmAifcFile_free(aaf);
 
     TRACE_LEAVE("write_sound_to_aifc")

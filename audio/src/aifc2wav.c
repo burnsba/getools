@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 
     output_file = file_info_fopen(output_filename, "wb");
 
-    WavFile_frwrite(wav_file, output_file);
+    WavFile_fwrite(wav_file, output_file);
 
     // done with wav file
     WavFile_free(wav_file);

@@ -42,7 +42,7 @@ struct var_length_int {
     /**
      * Variable length byte value.
     */
-    int32_t value;
+    uint32_t value;
 
     /**
      * Standard int value.

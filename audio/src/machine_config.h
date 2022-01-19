@@ -37,6 +37,7 @@
  * Arbitrary.
 */
 #define MAX_INPUT_FILESIZE  20000000
+#define MAX_MALLOC_SIZE     50000000
 
 /**
  * Default path seperator.

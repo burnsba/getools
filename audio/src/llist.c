@@ -282,7 +282,6 @@ void llist_node_free_string_data(struct llist_root *root)
             struct string_data *sd = (struct string_data *)node->data;
             if (sd->text != NULL)
             {
-                fflush(stdout);
                 free(sd->text);
                 sd->text = NULL;
             }
@@ -352,6 +351,11 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: to_insert is NULL\n");
     }
 
+    if (to_insert == current)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: cant insert before self\n");
+    }
+
     to_insert->next = current;
     to_insert->prev = current->prev;
 
@@ -377,7 +381,7 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
 */
 void llist_node_swap(struct llist_node *first, struct llist_node *second)
 {
-    TRACE_ENTER("llist_node_swap")
+    TRACE_ENTER(__func__)
 
     if (first == NULL)
     {
@@ -389,6 +393,12 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_swap: second is NULL\n");
     }
 
+    if (first == second)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
     struct llist_node *first_prev = first->prev;
     struct llist_node *first_next = first->next;
     struct llist_node *second_prev = second->prev;
@@ -397,8 +407,8 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
     first->prev = second_prev;
     first->next = second_next;
 
-    second->prev = first->prev;
-    second->next = first->next;
+    second->prev = first_prev;
+    second->next = first_next;
 
     if (first_prev != NULL)
     {
@@ -421,4 +431,118 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
     }
 
     TRACE_LEAVE("llist_node_swap")
+}
+
+static void llist_node_split(struct llist_node *head, struct llist_node **firstptr, struct llist_node **secondptr)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *fast;
+    struct llist_node *slow;
+   
+    slow = head;
+    fast = head->next;
+   
+    while (fast != NULL)
+    {
+        fast = fast->next;
+        if (fast != NULL)
+        {
+            slow = slow->next;
+            fast = fast->next;
+        }
+    }
+   
+    *firstptr = head;
+    *secondptr = slow->next;
+    slow->next = NULL;
+
+    TRACE_LEAVE(__func__)
+}
+
+static struct llist_node *llist_node_merge(struct llist_node *first, struct llist_node *second, f_llist_node_compare compare_callback)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *result;
+   
+    if (first == NULL && second != NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return second;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return first;
+    }
+    else if (first == NULL && second == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: second is NULL\n", __func__);
+    }
+   
+    int compare = compare_callback(first, second);
+   
+    if (compare == 0 || compare == -1)
+    {
+        result = first;
+        result->next = llist_node_merge(first->next, second, compare_callback);
+    }
+    else
+    {
+        result = second;
+        result->next = llist_node_merge(first, second->next, compare_callback);
+    }
+
+    TRACE_LEAVE(__func__)
+   
+    return result;
+}
+
+static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_compare compare_callback)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *head = *headptr;
+    struct llist_node *firstptr;
+    struct llist_node *secondptr;
+   
+    if (head == NULL || head->next == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+   
+    llist_node_split(head, &firstptr, &secondptr);
+   
+    llist_node_merge_sort(&firstptr, compare_callback);
+    llist_node_merge_sort(&secondptr, compare_callback);
+   
+    *headptr = llist_node_merge(firstptr, secondptr, compare_callback);
+
+    TRACE_LEAVE(__func__)
+}
+
+void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+    struct llist_node *prev;
+   
+    llist_node_merge_sort(&root->root, compare_callback);
+   
+    // pointers to `prev` and root->tail are now broken, iterate the list and fix those
+    node = root->root;
+    prev = NULL;
+    while (node != NULL)
+    {
+        node->prev = prev;
+        prev = node;
+        node = node->next;
+    }
+   
+    root->tail = prev;
+
+    TRACE_LEAVE(__func__)
 }

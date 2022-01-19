@@ -66,9 +66,12 @@ struct string_data
     char *text;
 };
 
+typedef int (*f_llist_node_compare)(struct llist_node *, struct llist_node *);
+
 void llist_root_append_node(struct llist_root *root, struct llist_node *node);
 struct llist_node *llist_node_new();
 struct llist_node *llist_node_string_data_new();
+struct llist_root *llist_root_new();
 void set_string_data(struct string_data *sd, char *text, size_t len);
 void string_data_free(struct string_data *sd);
 void llist_node_string_data_print(struct llist_root *root);
@@ -78,5 +81,7 @@ void llist_node_free_string_data(struct llist_root *root);
 void llist_node_free(struct llist_root *root, struct llist_node *node);
 void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert);
 void llist_node_swap(struct llist_node *first, struct llist_node *second);
+
+void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback);
 
 #endif

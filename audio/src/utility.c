@@ -60,6 +60,17 @@ void *malloc_zero(size_t count, size_t item_size)
     size_t malloc_size;
 
     malloc_size = count * item_size;
+
+    if (malloc_size == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "malloc_zero: malloc_size is zero.\n");
+    }
+
+    if (malloc_size > MAX_MALLOC_SIZE)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "malloc_zero: malloc_size=%ld exceeds sanity check max malloc size %d.\n", malloc_size, MAX_MALLOC_SIZE);
+    }
+
     outp = malloc(malloc_size);
     if (outp == NULL)
     {
@@ -274,6 +285,8 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 {
     TRACE_ENTER("file_info_fopen")
 
+    struct stat st;
+
     size_t filename_len = strlen(filename);
 
     struct file_info *fi = (struct file_info *)malloc_zero(1, sizeof(struct file_info));
@@ -293,6 +306,9 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
         stderr_exit(EXIT_CODE_IO, "Cannot open file: %s\n", filename);
     }
 
+    stat(filename, &st);
+    fi->len = st.st_size;
+
     fi->_fp_state = 1;
 
     if(fseek(fi->fp, 0, SEEK_END) != 0)
@@ -301,8 +317,6 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
-
-    fi->len = ftell(fi->fp);
 
     if (g_verbosity > 2)
     {
@@ -423,6 +437,11 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
     if (fi->_fp_state != 1)
     {
         stderr_exit(EXIT_CODE_IO, "file_info_fwrite error, fi->fp not valid\n");
+    }
+
+    if (size == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite: element size is zero.\n");
     }
 
     ret = fwrite(data, size, n, fi->fp);
@@ -916,20 +935,24 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
     int32_t out_result = 0;
     int num_bytes = 0;
 
+    varint->standard_value = in;
+
     do {
         int var7bits = in & 0x7f;
         in >>= 7;
+        out_result |= var7bits;
+
         if (in > 0)
         {
-            var7bits |= 0x80;
+            out_result <<= 8;
+            out_result |= 0x80;
         }
-        out_result |= var7bits;
+
         num_bytes++;
     } while (in > 0);
     
     varint->value = out_result;
     varint->num_bytes = num_bytes;
-    varint->standard_value = in;
 
     TRACE_LEAVE("int32_to_varint")
 }
@@ -949,6 +972,8 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
     int done = 0;
     int bytes_read = 0;
 
+    varint->value = 0;
+
     if (max_bytes < 1 || max_bytes > 4)
     {
         stderr_exit(EXIT_CODE_GENERAL, "varint_value_to_int32 parameter error, max_bytes=%d out of range.\n", max_bytes);
@@ -962,6 +987,9 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
         {
             done = 1;
         }
+
+        varint->value <<= 8;
+        varint->value |= buffer[bytes_read];
 
         ret <<= 7;
         ret |= var7bits;

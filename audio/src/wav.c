@@ -209,9 +209,9 @@ void WavFile_free(struct WavFile *wav_file)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
+void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("WavDataChunk_frwrite")
+    TRACE_ENTER("WavDataChunk_fwrite")
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -221,7 +221,7 @@ void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
         file_info_fwrite(fi, chunk->data, (size_t)chunk->ck_data_size, 1);
     }
 
-    TRACE_LEAVE("WavDataChunk_frwrite")
+    TRACE_LEAVE("WavDataChunk_fwrite")
 }
 
 /**
@@ -229,9 +229,9 @@ void WavDataChunk_frwrite(struct WavDataChunk *chunk, struct file_info *fi)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
+void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("WavFmtChunk_frwrite")
+    TRACE_ENTER("WavFmtChunk_fwrite")
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -242,7 +242,7 @@ void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
     file_info_fwrite(fi, &chunk->block_align, 2, 1);
     file_info_fwrite(fi, &chunk->bits_per_sample, 2, 1);
 
-    TRACE_LEAVE("WavFmtChunk_frwrite")
+    TRACE_LEAVE("WavFmtChunk_fwrite")
 }
 
 /**
@@ -251,9 +251,9 @@ void WavFmtChunk_frwrite(struct WavFmtChunk *chunk, struct file_info *fi)
  * @param wav_file: wav to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi)
+void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
 {
-    TRACE_ENTER("WavFile_frwrite")
+    TRACE_ENTER("WavFile_fwrite")
 
     int i;
 
@@ -269,14 +269,14 @@ void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi)
             case WAV_FMT_CHUNK_ID: // "fmt "
             {
                 struct WavFmtChunk *chunk = (struct WavFmtChunk *)wav_file->chunks[i];
-                WavFmtChunk_frwrite(chunk, fi);
+                WavFmtChunk_fwrite(chunk, fi);
             }
             break;
 
             case WAV_DATA_CHUNK_ID: // data
             {
                 struct WavDataChunk *chunk = (struct WavDataChunk *)wav_file->chunks[i];
-                WavDataChunk_frwrite(chunk, fi);
+                WavDataChunk_fwrite(chunk, fi);
             }
             break;
 
@@ -285,12 +285,12 @@ void WavFile_frwrite(struct WavFile *wav_file, struct file_info *fi)
             {
                 if (g_verbosity >= 2)
                 {
-                    printf("WavFile_frwrite: ignore ck_id 0x%08x\n", ck_id);
+                    printf("WavFile_fwrite: ignore ck_id 0x%08x\n", ck_id);
                 }
             }
             break;
         }
     }
 
-    TRACE_LEAVE("WavFile_frwrite")
+    TRACE_LEAVE("WavFile_fwrite")
 }

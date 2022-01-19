@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
+#include "common.h"
 #include "machine_config.h"
 #include "utility.h"
 #include "midi.h"
@@ -13,22 +14,118 @@
 
 int g_midi_parse_debug = 0;
 
-/**
- * Allocates memory for a {@code struct CseqTrack}.
- * @param track_index: Track index in parent {@code struct CseqFile}.
- * @returns: pointer to new object.
-*/
-struct CseqTrack *CseqTrack_new(int32_t track_index)
+int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_node *second)
 {
-    TRACE_ENTER("CseqTrack_new")
+    TRACE_ENTER("llist_node_gmidevent_compare_larger")
 
-    struct CseqTrack *p = (struct CseqTrack *)malloc_zero(1, sizeof(struct CseqTrack));
+    int ret;
 
-    p->track_index = track_index;
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct GmidEvent *gmidevent_first = (struct GmidEvent *)first->data;
+        struct GmidEvent *gmidevent_second = (struct GmidEvent *)second->data;
+       
+        if (gmidevent_first == NULL && gmidevent_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (gmidevent_first == NULL && gmidevent_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (gmidevent_first != NULL && gmidevent_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (gmidevent_first->absolute_time < gmidevent_second->absolute_time)
+            {
+                ret = 1;
+            }
+            else if (gmidevent_first->absolute_time > gmidevent_second->absolute_time)
+            {
+                ret = -1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
 
-    TRACE_LEAVE("CseqTrack_new")
+    TRACE_LEAVE("llist_node_gmidevent_compare_larger")
 
-    return p;
+    return ret;
+}
+
+int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER("llist_node_gmidevent_compare_smaller")
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct GmidEvent *gmidevent_first = (struct GmidEvent *)first->data;
+        struct GmidEvent *gmidevent_second = (struct GmidEvent *)second->data;
+       
+        if (gmidevent_first == NULL && gmidevent_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (gmidevent_first == NULL && gmidevent_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (gmidevent_first != NULL && gmidevent_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (gmidevent_first->absolute_time < gmidevent_second->absolute_time)
+            {
+                ret = -1;
+            }
+            else if (gmidevent_first->absolute_time > gmidevent_second->absolute_time)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE("llist_node_gmidevent_compare_smaller")
+
+    return ret;
 }
 
 /**
@@ -119,6 +216,7 @@ struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
     TRACE_ENTER("CseqFile_new_from_file")
 
     int i, j;
+    size_t data_len = 0;
 
     struct CseqFile *p = (struct CseqFile *)malloc_zero(1, sizeof(struct CseqFile));
 
@@ -129,30 +227,31 @@ struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
     {
         file_info_fread(fi, &p->track_offset[i], 4, 1);
         BSWAP32(p->track_offset[i]);
-
-        // allocate memory now, but don't load contents until all offsets have been read from file.
-        p->tracks[i] = CseqTrack_new(i);
     }
 
     file_info_fread(fi, &p->division, 4, 1);
     BSWAP32(p->division);
 
+    data_len = fi->len - CSEQ_FILE_HEADER_SIZE_BYTES;
+
+    p->compressed_data = (uint8_t *)malloc_zero(1, data_len);
+    file_info_fread(fi, p->compressed_data, data_len, 1);
+
     // Now load track contents.
-    // This will seek around the file.
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
     {
         if (p->track_offset[i] == 0)
         {
+            p->track_lengths[i] = 0;
+
             continue;
         }
 
         p->non_empty_num_tracks++;
 
-        struct CseqTrack *cur_track = p->tracks[i];
-
         int32_t my_offset = p->track_offset[i];
         int32_t next_offset = INT32_MAX;
-        size_t data_len = 0;
+        data_len = 0;
 
         // If the list of tracks were longer it might make sense to sort these.
         // For now, there's only 16 items, so just iterate them all to find the next offset.
@@ -173,7 +272,7 @@ struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
         // Set the data length as distance to end of the file.
         if (next_offset == INT32_MAX)
         {
-            data_len = fi->len - my_offset - CSEQ_FILE_HEADER_SIZE_BYTES;
+            data_len = fi->len - my_offset;
         }
         else
         {
@@ -181,11 +280,12 @@ struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
             data_len = next_offset - my_offset;
         }
 
-        cur_track->data_len = data_len;
-        cur_track->data = (uint8_t *)malloc_zero(1, data_len);
-        
-        file_info_fseek(fi, my_offset, SEEK_SET);
-        file_info_fread(fi, cur_track->data, cur_track->data_len, 1);
+        p->track_lengths[i] = data_len;
+    }
+
+    if (p->non_empty_num_tracks > CSEQ_FILE_NUM_TRACKS)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "CseqFile_new_from_file: non_empty_num_tracks %d exceeds %d.\n", p->non_empty_num_tracks, CSEQ_FILE_NUM_TRACKS);
     }
 
     TRACE_LEAVE("CseqFile_new_from_file")
@@ -200,10 +300,10 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack)
     struct MidiTrack *p = (struct MidiTrack *)malloc_zero(1, sizeof(struct MidiTrack));
 
     p->ck_id = MIDI_TRACK_CHUNK_ID;
-    p->track_index = gtrack->track_index;
+    p->track_index = gtrack->midi_track_index;
 
-    p->data = (uint8_t *)malloc_zero(1, gtrack->track_size_bytes);
-    GmidTrack_write_to_midi_buffer(gtrack, p->data, gtrack->track_size_bytes);
+    p->data = (uint8_t *)malloc_zero(1, gtrack->midi_track_size_bytes);
+    p->ck_data_size = GmidTrack_write_to_midi_buffer(gtrack, p->data, gtrack->midi_track_size_bytes);
 
     TRACE_LEAVE("MidiTrack_new_from_GmidTrack")
 
@@ -223,13 +323,24 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq)
 
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
     {
-        if (cseq->tracks[i] == NULL || cseq->track_offset[i] == 0)
+        if (cseq->track_offset[i] == 0)
         {
             continue;
         }
 
-        struct GmidTrack *gtrack = parse_cseq_track(cseq->tracks[i]);
-        gtrack->track_index = allocated_tracks;
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("MidiFile_from_CseqFile: parse track %d\n", i);
+        }
+
+        struct GmidTrack *gtrack = GmidTrack_new();
+
+        gtrack->midi_track_index = allocated_tracks;
+        gtrack->cseq_track_index = i;
+
+        CseqFile_unroll(cseq, gtrack);
+        GmidTrack_parse_CseqTrack(gtrack);
+
         midi->tracks[allocated_tracks] = MidiTrack_new_from_GmidTrack(gtrack);
         allocated_tracks++;
 
@@ -285,6 +396,13 @@ void GmidEvent_free(struct GmidEvent *event)
         return;
     }
 
+    // If there's an associated dual event update the other
+    // pointer and set it to NULL.
+    if (event->dual != NULL)
+    {
+        event->dual->dual = NULL;
+    }
+
     free(event);
 
     TRACE_LEAVE("GmidEvent_free")
@@ -307,20 +425,19 @@ void GmidTrack_free(struct GmidTrack *track)
     {
         struct GmidEvent *data;
         struct llist_node *node;
-        struct llist_node *next;
 
         node = track->events->root;
+
         while (node != NULL)
         {
             data = (struct GmidEvent *)node->data;
             if (data != NULL)
             {
                 GmidEvent_free(data);
+                node->data = NULL;
             }
 
-            next = node->next;
-            llist_node_free(NULL, node);
-            node = next;
+            node = node->next;
         }
 
         track->events->root = NULL;
@@ -328,39 +445,15 @@ void GmidTrack_free(struct GmidTrack *track)
         track->events = NULL;
     }
 
+    if (track->cseq_data != NULL)
+    {
+        free(track->cseq_data);
+        track->cseq_data = NULL;
+    }
+
     free(track);
 
     TRACE_LEAVE("GmidTrack_free")
-}
-
-/**
- * Frees memory allocated to track.
- * @param track: object to free.
-*/
-void CseqTrack_free(struct CseqTrack *track)
-{
-    TRACE_ENTER("CseqTrack_new")
-
-    if (track == NULL)
-    {
-        return;
-    }
-
-    if (track->data_len > 0 && track->data != NULL)
-    {
-        free(track->data);
-        track->data = NULL;
-    }
-
-    if (track->unrolled_data_len > 0 && track->unrolled_data != NULL)
-    {
-        free(track->unrolled_data);
-        track->unrolled_data = NULL;
-    }
-
-    free(track);
-
-    TRACE_LEAVE("CseqTrack_new")
 }
 
 /**
@@ -371,20 +464,15 @@ void CseqFile_free(struct CseqFile *cseq)
 {
     TRACE_ENTER("CseqFile_free")
 
-    int i;
-
     if (cseq == NULL)
     {
         return;
     }
 
-    for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
+    if (cseq->compressed_data != NULL)
     {
-        if (cseq->tracks[i] != NULL)
-        {
-            CseqTrack_free(cseq->tracks[i]);
-            cseq->tracks[i] = NULL;
-        }
+        free(cseq->compressed_data);
+        cseq->compressed_data = NULL;
     }
 
     free(cseq);
@@ -453,24 +541,29 @@ void MidiFile_free(struct MidiFile *midi)
  * {@code struct CseqTrack.unrolled_data_len} accordingly.
  * @param track: compressed track to parse.
 */
-void CseqTrack_unroll(struct CseqTrack *track)
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
 {
-    TRACE_ENTER("CseqTrack_unroll")
+    TRACE_ENTER("CseqFile_unroll")
 
     size_t pos = 0;
     size_t unrolled_pos = 0;
+    size_t cseq_len = 0;
     uint8_t *temp_ptr;
+    size_t compressed_read_len = 0;
 
-    if (track->unrolled_data != NULL)
+    if (track->cseq_data != NULL)
     {
-        free(track->unrolled_data);
+        free(track->cseq_data);
     }
 
     // rough guess here, might resize during iteration, will adjust at the end too.
-    size_t new_size = (size_t)((float)track->data_len * 1.5f);
-    track->unrolled_data = (uint8_t *)malloc_zero(1, new_size);
+    size_t new_size = (size_t)((float)cseq->track_lengths[track->cseq_track_index] * 1.5f);
+    track->cseq_data = (uint8_t *)malloc_zero(1, new_size);
 
-    while (pos < track->data_len)
+    pos = cseq->track_offset[track->cseq_track_index] - CSEQ_FILE_HEADER_SIZE_BYTES;
+    cseq_len = cseq->track_lengths[track->cseq_track_index];
+
+    while (compressed_read_len < cseq_len)
     {
         int diff;
         int length;
@@ -481,69 +574,77 @@ void CseqTrack_unroll(struct CseqTrack *track)
         {
             new_size = (size_t)((float)new_size * 1.5f);
             temp_ptr = (uint8_t *)malloc_zero(1, new_size);
-            memcpy(temp_ptr, track->unrolled_data, unrolled_pos);
-            free(track->unrolled_data);
-            track->unrolled_data = temp_ptr;
+            memcpy(temp_ptr, track->cseq_data, unrolled_pos);
+            free(track->cseq_data);
+            track->cseq_data = temp_ptr;
         }
 
-        if (track->data[pos] != 0xfe)
+        if (cseq->compressed_data[pos] != 0xfe)
         {
-            track->unrolled_data[unrolled_pos] = track->data[pos];
+            track->cseq_data[unrolled_pos] = cseq->compressed_data[pos];
             pos++;
+            compressed_read_len++;
             unrolled_pos++;
             continue;
         }
 
         // escape sequence
-        if (track->data[pos+1] == 0xfe)
+        if (cseq->compressed_data[pos+1] == 0xfe)
         {
-            track->unrolled_data[unrolled_pos] = track->data[pos];
+            track->cseq_data[unrolled_pos] = cseq->compressed_data[pos];
             
             pos += 2;
+            compressed_read_len += 2;
             unrolled_pos++;
             continue;
         }
 
         // else, pattern marker.
         diff = 0;
-        diff |= track->data[pos + 1];
+        diff |= cseq->compressed_data[pos + 1];
         diff <<= 8;
-        diff |= track->data[pos + 2];
+        diff |= cseq->compressed_data[pos + 2];
 
-        length = track->data[pos + 3];
+        length = cseq->compressed_data[pos + 3];
+
+        if ((int)pos - diff < 0)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "CseqTrack_unroll: cseq_track %d references diff %d before start of file, position %ld.\n", track->cseq_track_index, diff, pos);
+        }
 
         // now check size for longer segment
         if (unrolled_pos + length >= new_size)
         {
             new_size = (size_t)((float)new_size * 1.5f);
             temp_ptr = (uint8_t *)malloc_zero(1, new_size);
-            memcpy(temp_ptr, track->unrolled_data, unrolled_pos);
-            free(track->unrolled_data);
-            track->unrolled_data = temp_ptr;
+            memcpy(temp_ptr, track->cseq_data, unrolled_pos);
+            free(track->cseq_data);
+            track->cseq_data = temp_ptr;
         }
 
         for (i=0; i<length; i++)
         {
-            track->unrolled_data[unrolled_pos] = track->data[pos - diff + i];
+            track->cseq_data[unrolled_pos] = cseq->compressed_data[pos - diff + i];
             unrolled_pos++;
         }
 
         pos += 4;
+        compressed_read_len += 4;
     }
 
     // resize to actual data length.
     temp_ptr = (uint8_t *)malloc_zero(1, unrolled_pos);
-    memcpy(temp_ptr, track->unrolled_data, unrolled_pos);
-    free(track->unrolled_data);
-    track->unrolled_data = temp_ptr;
-    track->unrolled_data_len = unrolled_pos;
+    memcpy(temp_ptr, track->cseq_data, unrolled_pos);
+    free(track->cseq_data);
+    track->cseq_data = temp_ptr;
+    track->cseq_data_len = unrolled_pos;
 
-    TRACE_LEAVE("CseqTrack_unroll")
+    TRACE_LEAVE("CseqFile_unroll")
 }
 
-struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
+void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
 {
-    TRACE_ENTER("parse_cseq_track")
+    TRACE_ENTER("GmidTrack_parse_CseqTrack")
 
     size_t pos = 0;
     uint8_t b;
@@ -562,30 +663,27 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
     int append_event = 0;
     long absolute_time = 0;
     int fix_delta_times = 0;
-    int i, j;
 
-    struct GmidTrack *result = GmidTrack_new();
     struct llist_node *node;
     struct GmidEvent *event = NULL;
-    struct GmidEvent *event_dual = NULL;
 
-    if (track->unrolled_data == NULL)
+    if (gtrack->cseq_data == NULL)
     {
-        CseqTrack_unroll(track);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "GmidTrack_parse_CseqTrack: gtrack->cseq_data is NULL (call CseqFile_unroll first). cseq_track index=%d\n", gtrack->cseq_track_index);
     }
 
     memset(&varint, 0, sizeof(struct var_length_int));
 
-    while (!done && pos < track->unrolled_data_len)
+    while (!done && pos < gtrack->cseq_data_len)
     {
         append_event = 0;
 
         // command/status message
-        if (need_delta_time == 0 && (track->unrolled_data[pos] & 0x80))
+        if (need_delta_time == 0 && (gtrack->cseq_data[pos] & 0x80))
         {
             need_delta_time = 0;
 
-            b = track->unrolled_data[pos++];
+            b = gtrack->cseq_data[pos++];
             message_type = b & 0xf0;
             command_channel = b & 0x0f;
 
@@ -595,7 +693,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 current_command = -1;
                 need_delta_time = 1;
 
-                b = track->unrolled_data[pos++];
+                b = gtrack->cseq_data[pos++];
                 
                 if (b == CSEQ_COMMAND_BYTE_TEMPO)
                 {
@@ -603,18 +701,18 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
 
                     if (event == NULL)
                     {
-                        stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                        stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                     }
 
                     // copy raw value in same endian, other values set at end.
-                    memcpy(event->command_parameters_raw, &track->unrolled_data[pos], CSEQ_COMMAND_PARAM_BYTE_TEMPO);
+                    memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], CSEQ_COMMAND_PARAM_BYTE_TEMPO);
 
                     // parse command values.
-                    tempo |= track->unrolled_data[pos++];
+                    tempo |= gtrack->cseq_data[pos++];
                     tempo <<= 8;
-                    tempo |= track->unrolled_data[pos++];
+                    tempo |= gtrack->cseq_data[pos++];
                     tempo <<= 8;
-                    tempo |= track->unrolled_data[pos++];
+                    tempo |= gtrack->cseq_data[pos++];
 
                     // optional debug print
                     if (g_midi_parse_debug)
@@ -625,13 +723,26 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                         fflush_printf(stdout, "%s\n", print_buffer);
                     }
 
-                    // save parsed data into common format.
-                    event->command = 0xff00 | CSEQ_COMMAND_BYTE_TEMPO;
-                    event->command_len = CSEQ_COMMAND_LEN_TEMPO;
-                    event->command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_TEMPO;
-                    event->command_parameters[0] = tempo;
-                    event->command_parameters_len = CSEQ_COMMAND_NUM_PARAM_TEMPO;
+                    // save parsed data
                     event->dual = NULL;
+                    event->command = 0xff00 | CSEQ_COMMAND_BYTE_TEMPO;
+                    event->cseq_valid = 1;
+                    event->midi_valid = 1;
+
+                    // cseq format
+                    event->cseq_command_len = CSEQ_COMMAND_LEN_TEMPO;
+                    event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_TEMPO;
+                    event->cseq_command_parameters[0] = tempo;
+                    event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_TEMPO;
+
+                    // convert to MIDI format
+                    event->midi_command_len = MIDI_COMMAND_LEN_TEMPO;
+                    event->midi_command_parameters_raw[0] = 3; // len
+                    memcpy(&event->midi_command_parameters_raw[1], event->cseq_command_parameters_raw, CSEQ_COMMAND_PARAM_BYTE_TEMPO);
+                    event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_TEMPO;
+                    event->cseq_command_parameters[0] = 3; // len
+                    event->cseq_command_parameters[1] = tempo;
+                    event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_TEMPO;
                 }
                 else if (b == CSEQ_COMMAND_BYTE_LOOP_START)
                 {
@@ -639,18 +750,18 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
 
                     if (event == NULL)
                     {
-                        stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                        stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                     }
 
                     // copy raw value in same endian, other values set at end.
-                    memcpy(event->command_parameters_raw, &track->unrolled_data[pos], CSEQ_COMMAND_PARAM_BYTE_LOOP_START);
+                    memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], CSEQ_COMMAND_PARAM_BYTE_LOOP_START);
 
                     // parse command values.
-                    loop_number = track->unrolled_data[pos++];
-                    b = track->unrolled_data[pos++];
+                    loop_number = gtrack->cseq_data[pos++];
+                    b = gtrack->cseq_data[pos++];
                     if (b != 0xff)
                     {
-                        stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: %s: expected end of command byte 0xff but read '0x%x', track index=%d, pos=%d.\n", CSEQ_COMMAND_NAME_LOOP_START, b, track->track_index, pos);
+                        stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: %s: expected end of command byte 0xff but read '0x%x', track index=%d, pos=%d.\n", CSEQ_COMMAND_NAME_LOOP_START, b, gtrack->cseq_track_index, pos);
                     }
 
                     // optional debug print
@@ -662,14 +773,21 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                         fflush_printf(stdout, "%s\n", print_buffer);
                     }
 
-                    // save parsed data into common format.
+                    // save parsed data
                     event->command = 0xff00 | CSEQ_COMMAND_BYTE_LOOP_START;
-                    event->command_len = CSEQ_COMMAND_LEN_LOOP_START;
-                    event->command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_START;
-                    event->command_parameters[0] = loop_number;
-                    event->command_parameters[1] = b;
-                    event->command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_START;
                     event->dual = NULL;
+                    event->cseq_valid = 1;
+                    event->midi_valid = 0;
+
+                    // cseq format
+                    event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_START;
+                    event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_START;
+                    event->cseq_command_parameters[0] = loop_number;
+                    event->cseq_command_parameters[1] = b;
+                    event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_START;
+
+                    // convert to MIDI format
+                    // not supported
                 }
                 else if (b == CSEQ_COMMAND_BYTE_LOOP_END)
                 {
@@ -679,23 +797,23 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
 
                     if (event == NULL)
                     {
-                        stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                        stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                     }
 
                     // copy raw value in same endian, other values set at end.
-                    memcpy(event->command_parameters_raw, &track->unrolled_data[pos], CSEQ_COMMAND_PARAM_BYTE_LOOP_END);
+                    memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], CSEQ_COMMAND_PARAM_BYTE_LOOP_END);
 
                     // parse command values.
-                    loop_count = track->unrolled_data[pos++];
-                    current_loop_count = track->unrolled_data[pos++];
+                    loop_count = gtrack->cseq_data[pos++];
+                    current_loop_count = gtrack->cseq_data[pos++];
 
-                    loop_difference = track->unrolled_data[pos++];
+                    loop_difference = gtrack->cseq_data[pos++];
                     loop_difference <<= 8;
-                    loop_difference = track->unrolled_data[pos++];
+                    loop_difference = gtrack->cseq_data[pos++];
                     loop_difference <<= 8;
-                    loop_difference = track->unrolled_data[pos++];
+                    loop_difference = gtrack->cseq_data[pos++];
                     loop_difference <<= 8;
-                    loop_difference = track->unrolled_data[pos++];
+                    loop_difference = gtrack->cseq_data[pos++];
 
                     // optional debug print
                     if (g_midi_parse_debug)
@@ -706,21 +824,28 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                         fflush_printf(stdout, "%s\n", print_buffer);
                     }
 
-                    // save parsed data into common format.
+                    // save parsed data
                     event->command = 0xff00 | CSEQ_COMMAND_BYTE_LOOP_END;
-                    event->command_len = CSEQ_COMMAND_LEN_LOOP_END;
-                    event->command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
-                    event->command_parameters[0] = loop_count;
-                    event->command_parameters[1] = current_loop_count;
-                    event->command_parameters[2] = loop_difference;
-                    event->command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_END;
                     event->dual = NULL;
+                    event->cseq_valid = 1;
+                    event->midi_valid = 0;
+
+                    // cseq format
+                    event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_END;
+                    event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
+                    event->cseq_command_parameters[0] = loop_count;
+                    event->cseq_command_parameters[1] = current_loop_count;
+                    event->cseq_command_parameters[2] = loop_difference;
+                    event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_END;
+
+                    // convert to MIDI format
+                    // not supported
                 }
                 else if (b == CSEQ_COMMAND_BYTE_END_OF_TRACK)
                 {
                     if (event == NULL)
                     {
-                        stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                        stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                     }
 
                     // no parameters to copy.
@@ -736,22 +861,31 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                         fflush_printf(stdout, "%s\n", print_buffer);
                     }
 
-                    // save parsed data into common format.
+                    // save parsed data
                     event->command = 0xff00 | CSEQ_COMMAND_BYTE_END_OF_TRACK;
-                    event->command_len = CSEQ_COMMAND_LEN_END_OF_TRACK;
-                    event->command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_END_OF_TRACK;
-                    event->command_parameters_len = CSEQ_COMMAND_NUM_PARAM_END_OF_TRACK;
                     event->dual = NULL;
+                    event->cseq_valid = 1;
+                    event->midi_valid = 1;
+
+                    // cseq format
+                    event->cseq_command_len = CSEQ_COMMAND_LEN_END_OF_TRACK;
+                    event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_END_OF_TRACK;
+                    event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_END_OF_TRACK;
+
+                    // convert to MIDI format
+                    event->midi_command_len = MIDI_COMMAND_LEN_END_OF_TRACK;
+                    event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_END_OF_TRACK;
+                    event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_END_OF_TRACK;
                 }
                 else
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error (system command), track index=%d, pos=%d.\n", track->track_index, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error (system command), track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
                 }
 
                 // append common format as new node into result list, reset for next event.
                 node = llist_node_new();
                 node->data = event;
-                llist_root_append_node(result, node);
+                llist_root_append_node(gtrack->events, node);
                 node = NULL;
                 event = NULL;
 
@@ -762,11 +896,11 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 int32_t pattern_difference = 0;
                 int pattern_length = 0;
 
-                pattern_difference = track->unrolled_data[pos++];
+                pattern_difference = gtrack->cseq_data[pos++];
                 pattern_difference <<= 8;
-                pattern_difference = track->unrolled_data[pos++];
+                pattern_difference = gtrack->cseq_data[pos++];
                 
-                pattern_length = track->unrolled_data[pos++];
+                pattern_length = gtrack->cseq_data[pos++];
 
                 if (g_midi_parse_debug)
                 {
@@ -776,12 +910,12 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error -- invalid compressed MIDI, \"pattern\" command not allowed. Track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error -- invalid compressed MIDI, \"pattern\" command not allowed. Track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
             else if (message_type == MIDI_COMMAND_BYTE_NOTE_OFF)
             {
                 // note off
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error -- invalid compressed MIDI, \"note off\" command not allowed. Track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error -- invalid compressed MIDI, \"note off\" command not allowed. Track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
             else if (message_type == MIDI_COMMAND_BYTE_NOTE_ON)
             {
@@ -803,7 +937,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_NOTE_ON, command_channel);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_POLYPHONIC_PRESSURE, command_channel);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
             }
@@ -815,7 +949,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_NOTE_ON, command_channel);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_CONTROL_CHANGE, command_channel);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
             }
@@ -827,7 +961,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_NOTE_ON, command_channel);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_PROGRAM_CHANGE, command_channel);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
             }
@@ -839,18 +973,18 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_NOTE_ON, command_channel);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_CHANNEL_PRESSURE, command_channel);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
             }
             else if (message_type == MIDI_COMMAND_BYTE_PITCH_BEND)
             {
                 // Pitch Bend
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: Pitch Bend not implemented, track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: Pitch Bend not implemented, track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
             else
             {
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error (command), track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error (command), track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
         }
         
@@ -866,28 +1000,28 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
 
            if (event == NULL)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
             }
 
             if (current_command == MIDI_COMMAND_BYTE_NOTE_OFF)
             {
                 // note off
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error -- invalid compressed MIDI, \"note off\" command not allowed. Track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error -- invalid compressed MIDI, \"note off\" command not allowed. Track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
             else if (current_command == MIDI_COMMAND_BYTE_NOTE_ON)
             {
                 // parse command values.
-                note = track->unrolled_data[pos++];
-                velocity = track->unrolled_data[pos++];
+                note = gtrack->cseq_data[pos++];
+                velocity = gtrack->cseq_data[pos++];
 
                 memset(&varint, 0, sizeof(struct var_length_int));
-                varint_value_to_int32(&track->unrolled_data[pos], 4, &varint);
+                varint_value_to_int32(&gtrack->cseq_data[pos], 4, &varint);
                 pos += varint.num_bytes;
 
                 param_len = 2 + varint.num_bytes;
 
                 // copy raw value in same endian, other values set at end.
-                memcpy(event->command_parameters_raw, &track->unrolled_data[pos - param_len], param_len);
+                memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos - param_len], param_len);
 
                 // optional debug print
                 if (g_midi_parse_debug)
@@ -900,16 +1034,29 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                // save parsed data into common format.
+                // save parsed data
                 event->command = MIDI_COMMAND_BYTE_NOTE_ON;
-                event->command_channel = command_channel;
-                event->command_len = MIDI_COMMAND_LEN_NOTE_ON;
-                event->command_parameters_raw_len = param_len;
-                event->command_parameters[0] = note;
-                event->command_parameters[1] = velocity;
-                event->command_parameters[2] = varint.standard_value; // duration
-                event->command_parameters_len = CSEQ_COMMAND_NUM_PARAM_NOTE_ON;
                 event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 1;
+
+                // cseq format
+                event->command_channel = command_channel;
+                event->cseq_command_len = CSEQ_COMMAND_LEN_NOTE_ON;
+                event->cseq_command_parameters_raw_len = param_len;
+                event->cseq_command_parameters[0] = note;
+                event->cseq_command_parameters[1] = velocity;
+                event->cseq_command_parameters[2] = varint.standard_value; // duration
+                event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_NOTE_ON;
+
+                // convert to MIDI format
+                event->midi_command_parameters_raw[0] = note;
+                event->midi_command_parameters_raw[1] = velocity;
+                event->midi_command_len = MIDI_COMMAND_LEN_NOTE_ON;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON;
+                event->midi_command_parameters[0] = note;
+                event->midi_command_parameters[1] = velocity;
+                event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
 
                 append_event = 1;
             }
@@ -917,15 +1064,15 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             {
                 if (event == NULL)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                 }
 
                 // copy raw value in same endian, other values set at end.
-                memcpy(event->command_parameters_raw, &track->unrolled_data[pos], MIDI_COMMAND_PARAM_BYTE_POLYPHONIC_PRESSURE);
+                memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], MIDI_COMMAND_PARAM_BYTE_POLYPHONIC_PRESSURE);
                 
                 // parse command values.
-                note = track->unrolled_data[pos++];
-                int pressure = track->unrolled_data[pos++];
+                note = gtrack->cseq_data[pos++];
+                int pressure = gtrack->cseq_data[pos++];
 
                 // optional debug print
                 if (g_midi_parse_debug)
@@ -938,15 +1085,27 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                // save parsed data into common format.
+                // save parsed data
                 event->command = MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE;
-                event->command_channel = command_channel;
-                event->command_len = MIDI_COMMAND_LEN_POLYPHONIC_PRESSURE;
-                event->command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_POLYPHONIC_PRESSURE;
-                event->command_parameters[0] = note;
-                event->command_parameters[1] = pressure;
-                event->command_parameters_len = MIDI_COMMAND_NUM_PARAM_POLYPHONIC_PRESSURE;
                 event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 1;
+
+                // cseq format
+                event->command_channel = command_channel;
+                event->cseq_command_len = MIDI_COMMAND_LEN_POLYPHONIC_PRESSURE;
+                event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_POLYPHONIC_PRESSURE;
+                event->cseq_command_parameters[0] = note;
+                event->cseq_command_parameters[1] = pressure;
+                event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_POLYPHONIC_PRESSURE;
+
+                // convert to MIDI format (same as above)
+                memcpy(event->midi_command_parameters_raw, event->cseq_command_parameters_raw, MIDI_COMMAND_PARAM_BYTE_POLYPHONIC_PRESSURE);
+                event->midi_command_len = MIDI_COMMAND_LEN_NOTE_ON;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON;
+                event->midi_command_parameters[0] = note;
+                event->midi_command_parameters[1] = velocity;
+                event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
 
                 append_event = 1;
             }
@@ -954,15 +1113,15 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             {
                 if (event == NULL)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                 }
 
                 // copy raw value in same endian, other values set at end.
-                memcpy(event->command_parameters_raw, &track->unrolled_data[pos], MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE);
+                memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE);
                 
                 // parse command values.
-                int controller = track->unrolled_data[pos++];
-                int new_value = track->unrolled_data[pos++];
+                int controller = gtrack->cseq_data[pos++];
+                int new_value = gtrack->cseq_data[pos++];
 
                 // optional debug print
                 if (g_midi_parse_debug)
@@ -975,15 +1134,27 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                // save parsed data into common format.
+                // save parsed data
                 event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                event->command_channel = command_channel;
-                event->command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
-                event->command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
-                event->command_parameters[0] = controller;
-                event->command_parameters[1] = new_value;
-                event->command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
                 event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 1;
+
+                // cseq format
+                event->command_channel = command_channel;
+                event->cseq_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
+                event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
+                event->cseq_command_parameters[0] = controller;
+                event->cseq_command_parameters[1] = new_value;
+                event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
+
+                // convert to MIDI format (same as above)
+                memcpy(event->midi_command_parameters_raw, event->cseq_command_parameters_raw, MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE);
+                event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
+                event->midi_command_parameters[0] = controller;
+                event->midi_command_parameters[1] = new_value;
+                event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
 
                 append_event = 1;
             }
@@ -991,14 +1162,14 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             {
                 if (event == NULL)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                 }
 
                 // copy raw value in same endian, other values set at end.
-                memcpy(event->command_parameters_raw, &track->unrolled_data[pos], MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE);
+                memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE);
                 
                 // parse command values.
-                int program = track->unrolled_data[pos++];
+                int program = gtrack->cseq_data[pos++];
 
                 // optional debug print
                 if (g_midi_parse_debug)
@@ -1009,14 +1180,25 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                // save parsed data into common format.
+                // save parsed data
                 event->command = MIDI_COMMAND_BYTE_PROGRAM_CHANGE;
-                event->command_channel = command_channel;
-                event->command_len = MIDI_COMMAND_LEN_PROGRAM_CHANGE;
-                event->command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE;
-                event->command_parameters[0] = program;
-                event->command_parameters_len = MIDI_COMMAND_NUM_PARAM_PROGRAM_CHANGE;
                 event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 1;
+
+                // cseq format
+                event->command_channel = command_channel;
+                event->cseq_command_len = MIDI_COMMAND_LEN_PROGRAM_CHANGE;
+                event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE;
+                event->cseq_command_parameters[0] = program;
+                event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_PROGRAM_CHANGE;
+
+                // convert to MIDI format (same as above)
+                memcpy(event->midi_command_parameters_raw, event->cseq_command_parameters_raw, MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE);
+                event->midi_command_len = MIDI_COMMAND_LEN_PROGRAM_CHANGE;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_PROGRAM_CHANGE;
+                event->midi_command_parameters[0] = program;
+                event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_PROGRAM_CHANGE;
 
                 append_event = 1;
             }
@@ -1024,14 +1206,14 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             {
                 if (event == NULL)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%ld parse_cseq_track: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, track->track_index, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%ld GmidTrack_parse_CseqTrack: parse error, event is NULL. track index=%d, pos=%d.\n", __LINE__, gtrack->cseq_track_index, pos);
                 }
 
                 // copy raw value in same endian, other values set at end.
-                memcpy(event->command_parameters_raw, &track->unrolled_data[pos], MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE);
+                memcpy(event->cseq_command_parameters_raw, &gtrack->cseq_data[pos], MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE);
                 
                 // parse command values.
-                int pressure = track->unrolled_data[pos++];
+                int pressure = gtrack->cseq_data[pos++];
 
                 // optional debug print
                 if (g_midi_parse_debug)
@@ -1042,25 +1224,36 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                // save parsed data into common format.
+                // save parsed data
                 event->command = MIDI_COMMAND_BYTE_CHANNEL_PRESSURE;
-                event->command_channel = command_channel;
-                event->command_len = MIDI_COMMAND_LEN_CHANNEL_PRESSURE;
-                event->command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE;
-                event->command_parameters[0] = pressure;
-                event->command_parameters_len = MIDI_COMMAND_NUM_PARAM_CHANNEL_PRESSURE;
                 event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 1;
+
+                // cseq format
+                event->command_channel = command_channel;
+                event->cseq_command_len = MIDI_COMMAND_LEN_CHANNEL_PRESSURE;
+                event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE;
+                event->cseq_command_parameters[0] = pressure;
+                event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CHANNEL_PRESSURE;
+
+                // convert to MIDI format (same as above)
+                memcpy(event->midi_command_parameters_raw, event->cseq_command_parameters_raw, MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE);
+                event->midi_command_len = MIDI_COMMAND_LEN_CHANNEL_PRESSURE;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE;
+                event->midi_command_parameters[0] = pressure;
+                event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CHANNEL_PRESSURE;
 
                 append_event = 1;
             }
             else if (current_command == MIDI_COMMAND_BYTE_PITCH_BEND)
             {
                 // Pitch Bend
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: Pitch Bend not implemented, track index=%d, pos=%d.\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: Pitch Bend not implemented, track index=%d, pos=%d.\n", gtrack->cseq_track_index, pos);
             }
             else
             {
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error (command=%d), track index=%d, pos=%d.\n", current_command, track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error (command=%d), track index=%d, pos=%d.\n", current_command, gtrack->cseq_track_index, pos);
             }
 
             if (append_event)
@@ -1070,7 +1263,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
                 // append common format as new node into result list, reset for next event.
                 node = llist_node_new();
                 node->data = event;
-                llist_root_append_node(result, node);
+                llist_root_append_node(gtrack->events, node);
                 node = NULL;
                 event = NULL;
             }
@@ -1081,15 +1274,15 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
 
             if (event != NULL)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error, reading delta time before previous delta time was processed. Track index=%d, pos=%ld\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error, reading delta time before previous delta time was processed. Track index=%d, pos=%ld\n", gtrack->cseq_track_index, pos);
             }
 
             memset(&varint, 0, sizeof(struct var_length_int));
-            varint_value_to_int32(&track->unrolled_data[pos], 4, &varint);
+            varint_value_to_int32(&gtrack->cseq_data[pos], 4, &varint);
 
             if (varint.num_bytes < 1)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error, could not read variable length integer. Track index=%d, pos=%ld\n", track->track_index, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error, could not read variable length integer. Track index=%d, pos=%ld\n", gtrack->cseq_track_index, pos);
             }
 
             pos += varint.num_bytes;
@@ -1098,7 +1291,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             {
                 memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                snprintf(print_buffer, MIDI_DESCRIPTION_TEXT_BUFFER_LEN, "delta time: %d (varint=%d)", varint.standard_value, varint.value);
+                snprintf(print_buffer, MIDI_DESCRIPTION_TEXT_BUFFER_LEN, "delta time: %d (varint=0x%06x)", varint.standard_value, varint.value);
                 fflush_printf(stdout, "%s\n", print_buffer);
             }
 
@@ -1111,47 +1304,57 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
         }
     }   
 
-    if (pos > track->unrolled_data_len)
+    if (pos > gtrack->cseq_data_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: exceeded track length during parse. Track index=%d\n", track->track_index);
+        stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: exceeded track length during parse. Track index=%d, pos=%ld, length=%ld\n", gtrack->cseq_track_index, pos, gtrack->cseq_data_len);
     }
 
     if (event != NULL)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "parse_cseq_track: parse error, unresolved event. Track index=%d\n", track->track_index);
+        stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_parse_CseqTrack: parse error, unresolved event. Track index=%d\n", gtrack->cseq_track_index);
     }
 
-    result->track_size_bytes = 0;
-
     // create Note Off events from Note On events.
-    // This also counts the midi_track_size_bytes.
-    node = result->events->root;
+    node = gtrack->events->root;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
 
-        result->track_size_bytes += event->varint_delta_time.num_bytes + event->command_len + event->command_parameters_raw_len;
-
-        if (event->command == (0xff00 | MIDI_COMMAND_BYTE_NOTE_ON))
+        if (event->command == MIDI_COMMAND_BYTE_NOTE_ON)
         {
             struct GmidEvent *noteoff = GmidEvent_new();
             struct llist_node *temp_node;
 
             noteoff->id = event_id++;
-            noteoff->absolute_time = event->absolute_time + (long)event->command_parameters[2];
+
+            // duration was decoded from varint when it was saved into command_parameters[2]
+            noteoff->absolute_time = event->absolute_time + (long)event->cseq_command_parameters[2];
+
             // delta event time is now broken, will fix after all new nodes have been created.
 
-            noteoff->command = MIDI_COMMAND_BYTE_NOTE_OFF;
-            noteoff->command_channel = command_channel;
-            noteoff->command_len = MIDI_COMMAND_LEN_NOTE_OFF;
-            noteoff->command_parameters_raw_len = param_len;
-            noteoff->command_parameters[0] = event->command_parameters[0]; // note
-            noteoff->command_parameters[1] = noteoff->command_parameters[1]; // velocity
-            noteoff->command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_OFF;
+            // this is adding a Note Off command, using implicit format (Note On with zero velocity).
+            noteoff->command = MIDI_COMMAND_BYTE_NOTE_ON;
+            noteoff->command_channel = event->command_channel;
 
-            // add to total track byte size count
-            result->track_size_bytes += noteoff->varint_delta_time.num_bytes + noteoff->command_len + noteoff->command_parameters_raw_len;
-            
+            noteoff->cseq_command_len = MIDI_COMMAND_LEN_NOTE_ON;
+            noteoff->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON;
+            noteoff->cseq_command_parameters[0] = event->cseq_command_parameters[0]; // note
+            noteoff->cseq_command_parameters[1] = 0; // velocity
+            noteoff->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
+            noteoff->cseq_command_parameters_raw[0] = event->cseq_command_parameters_raw[0]; // note
+            noteoff->cseq_command_parameters_raw[1] = 0; // velocity
+
+            noteoff->midi_command_len = MIDI_COMMAND_LEN_NOTE_ON;
+            noteoff->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON;
+            noteoff->midi_command_parameters[0] = event->midi_command_parameters[0]; // note
+            noteoff->midi_command_parameters[1] = 0; // velocity
+            noteoff->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
+            noteoff->midi_command_parameters_raw[0] = event->cseq_command_parameters_raw[0]; // note
+            noteoff->midi_command_parameters_raw[1] = 0; // velocity
+
+            noteoff->cseq_valid = 1;
+            noteoff->midi_valid = 1;
+
             noteoff->dual = event;
             event->dual = noteoff;
 
@@ -1160,7 +1363,7 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
             
             // Don't want to append the temp_node anywhere forward in the list since
             // that's still being iterated. Therefore just insert before current.
-            llist_node_insert_before(result, node, temp_node);
+            llist_node_insert_before(gtrack->events, node, temp_node);
 
             fix_delta_times = 1;
         }
@@ -1171,60 +1374,53 @@ struct GmidTrack *parse_cseq_track(struct CseqTrack *track)
     // Now would be a good time to resolve the loop start <-> loop end dual pointers.
     // Maybe one day.
 
-    // Now sort the events by absolute time and set delta times to correct values.
+    // Now sort the events by absolute times.
+    // Recalculate the delta event times due to inserting events above.
     if (fix_delta_times)
     {
-        struct llist_node *next_node;
-        struct llist_node *best_node;
-        struct llist_node *t;
-        long best_absolute_time;
+        llist_root_merge_sort(gtrack->events, llist_node_gmidevent_compare_smaller);
 
-        node = result->events->root;
-        for (i=0; i<result->events->count && node != NULL; i++)
+        node = gtrack->events->root;
+        while (node != NULL)
         {
-            next_node = node->next;
-            event = (struct GmidEvent *)node->data;
-
-            best_node = node;
-            best_absolute_time = event->absolute_time;
-
-            t = best_node;
-            for (j=i; j<result->events->count && t!= NULL; j++)
-            {
-                struct GmidEvent *tevent = (struct GmidEvent *)t->data;
-
-                if (tevent->absolute_time < best_absolute_time)
-                {
-                    best_node = t;
-                    best_absolute_time = tevent->absolute_time;
-                }
-
-                t = t->next;
-            }
-
-            if (node->id != best_node->id)
-            {
-                llist_node_swap(node, best_node);
-            }
-
             // Fix the current node's delta time.
             // Assume the previous node is correct (don't change the first node in the list)
-            if (best_node->prev != NULL)
+            if (node->prev != NULL)
             {
-                struct GmidEvent *current_node_event = (struct GmidEvent *)best_node->data;
-                struct GmidEvent *prev_node_event = (struct GmidEvent *)best_node->prev->data;
+                struct GmidEvent *current_node_event = (struct GmidEvent *)node->data;
+                struct GmidEvent *prev_node_event = (struct GmidEvent *)node->prev->data;
                 int time_delta = (int)(current_node_event->absolute_time - prev_node_event->absolute_time);
 
                 int32_to_varint(time_delta, &current_node_event->varint_delta_time);
             }
 
-            node = next_node;
+            node = node->next;
         }
     }
 
-    return result;
+    // now that all events have been created/written/updated,
+    // calculate the total size of the regular MIDI track in bytes.
+    gtrack->cseq_track_size_bytes = 0;
+    gtrack->midi_track_size_bytes = 0;
 
-    TRACE_LEAVE("parse_cseq_track")
+    node = gtrack->events->root;
+    for (; node != NULL; node = node->next)
+    {
+        event = (struct GmidEvent *)node->data;
+
+        if (event->cseq_valid)
+        {
+            gtrack->cseq_track_size_bytes += event->varint_delta_time.num_bytes + event->cseq_command_len + event->cseq_command_parameters_raw_len;
+        }
+
+        if (event->midi_valid)
+        {
+            gtrack->midi_track_size_bytes += event->varint_delta_time.num_bytes + event->midi_command_len + event->midi_command_parameters_raw_len;
+        }
+
+    }
+
+    TRACE_LEAVE("GmidTrack_parse_CseqTrack")
 }
 
 /**
@@ -1338,129 +1534,132 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
 {
     TRACE_ENTER("GmidEvent_get_midi_command")
 
+    int upper = (0xff00 & event->command) >> 8;
+
     if (event->command == MIDI_COMMAND_BYTE_NOTE_OFF)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_NOTE_OFF | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_NOTE_ON)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_NOTE_ON | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_CONTROL_CHANGE)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_CONTROL_CHANGE | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_PROGRAM_CHANGE)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_PROGRAM_CHANGE | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_CHANNEL_PRESSURE)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_CHANNEL_PRESSURE | event->command_channel;
     }
     else if (event->command == MIDI_COMMAND_BYTE_PITCH_BEND)
     {
+        TRACE_LEAVE("GmidEvent_get_midi_command")
         return MIDI_COMMAND_BYTE_PITCH_BEND | event->command_channel;
     }
-    else if (event->command == CSEQ_COMMAND_BYTE_TEMPO)
+    else if (upper == 0xff)
     {
-        return 0xff00 | CSEQ_COMMAND_BYTE_TEMPO;
-    }
-    else if (event->command == CSEQ_COMMAND_BYTE_LOOP_END)
-    {
-        return 0xff00 | CSEQ_COMMAND_BYTE_LOOP_END;
-    }
-    else if (event->command == CSEQ_COMMAND_BYTE_LOOP_START)
-    {
-        return 0xff00 | CSEQ_COMMAND_BYTE_LOOP_START;
-    }
-    else if (event->command == CSEQ_COMMAND_BYTE_END_OF_TRACK)
-    {
-        return 0xff00 | CSEQ_COMMAND_BYTE_END_OF_TRACK;
-    }
-    else
-    {
-        stderr_exit(EXIT_CODE_GENERAL, "GmidEvent_get_midi_command: command not supported: 0x%04x.\n", event->command);
-    }
+        int lower = 0xff & event->command;
 
-    TRACE_LEAVE("GmidEvent_get_midi_command")
-}
-
-int GmidEvent_get_midi_command_parameters(struct GmidEvent *event, uint8_t *buffer, size_t buffer_len)
-{
-    TRACE_ENTER("GmidEvent_get_midi_command")
-
-    memset(buffer, 0, buffer_len);
-    int write_len = 0;
-
-    if (event->command == MIDI_COMMAND_BYTE_NOTE_ON)
-    {
-        if (buffer_len >= 2)
+        switch (lower)
         {
-            buffer[0] = (uint8_t)event->command_parameters[0];
-            buffer[1] = (uint8_t)event->command_parameters[1];
+            /**
+             * System command 0xff followed by single byte:
+            */
+            case CSEQ_COMMAND_BYTE_TEMPO:
+            case CSEQ_COMMAND_BYTE_LOOP_END:
+            case CSEQ_COMMAND_BYTE_LOOP_START:
+            TRACE_LEAVE("GmidEvent_get_midi_command")
+            return event->command;
 
-            write_len = 2;
-        }
-        else
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "GmidEvent_get_midi_command_parameters: buffer too small, command: 0x%04x.\n", event->command);
+            // translate from cseq to MIDI
+            case CSEQ_COMMAND_BYTE_END_OF_TRACK:
+            TRACE_LEAVE("GmidEvent_get_midi_command")
+            return MIDI_COMMAND_FULL_END_OF_TRACK;
         }
     }
-    else
-    {
-        if (buffer_len >= event->command_parameters_raw_len)
-        {
-            memcpy(buffer, event->command_parameters_raw, event->command_parameters_raw_len);
-            write_len = event->command_parameters_raw_len;
-        }
-        else
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "GmidEvent_get_midi_command_parameters: buffer too small, command: 0x%04x.\n", event->command);
-        }
-    }
+
+    stderr_exit(EXIT_CODE_GENERAL, "GmidEvent_get_midi_command: command not supported: 0x%04x.\n", event->command);
 
     TRACE_LEAVE("GmidEvent_get_midi_command")
 
-    return write_len;
+    // be quiet gcc
+    return -1;
 }
 
-void GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len)
+size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len)
 {
     TRACE_ENTER("GmidTrack_write_to_midi_buffer")
 
     size_t write_len = 0;
+    int32_t previous_command = 0;
     struct llist_node *node = gtrack->events->root;
-    while (node != NULL && write_len < max_len)
+    uint8_t rev[4];
+    int32_t command;
+
+    for (; node != NULL && write_len < max_len; node = node->next)
     {
         struct GmidEvent *event = (struct GmidEvent *)node->data;
-        int32_t command = GmidEvent_get_midi_command(event);
-        uint8_t command_param_buffer[GMID_EVENT_PARAMTER_BYTE_LEN];
-        int command_len;
 
-        memcpy(buffer, &event->varint_delta_time.value, event->varint_delta_time.num_bytes);
+        if (!event->midi_valid)
+        {
+            continue;
+        }
+
+        command = GmidEvent_get_midi_command(event);
+
+        // write varint delta time value
+        memcpy(&buffer[write_len], &event->varint_delta_time.value, event->varint_delta_time.num_bytes);
         write_len += event->varint_delta_time.num_bytes;
 
-        memcpy(buffer, &command, event->command_len);
-        write_len += event->command_len;
+        // if this is a "running status" then no need to write command, else write command bytes
+        if (previous_command != command)
+        {
+            memset(rev, 0, 4);
+            memcpy(rev, &command, event->midi_command_len);
+            // byte swap
+            reverse_inplace(rev, event->midi_command_len);
+            memcpy(&buffer[write_len], rev, event->midi_command_len);
+            write_len += event->midi_command_len;
+            previous_command = command;
+        }
 
-        command_len = GmidEvent_get_midi_command_parameters(event, command_param_buffer, GMID_EVENT_PARAMTER_BYTE_LEN);
-        memcpy(buffer, command_param_buffer, command_len);
-        write_len += command_len;
+        // only allow running status for the "regular" MIDI commands
+        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        {
+            previous_command = 0;
+        }
 
-        node = node->next;
+        // write command parameters
+        if (event->midi_command_parameters_raw_len > 0)
+        {
+            memcpy(&buffer[write_len], event->midi_command_parameters_raw, event->midi_command_parameters_raw_len);
+            write_len += event->midi_command_parameters_raw_len;
+        }
     }
 
     if (write_len > max_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%ld: GmidTrack_write_to_midi_buffer: exceeded max_len when writing to buffer.\n", __LINE__);
+        stderr_exit(EXIT_CODE_GENERAL, "GmidTrack_write_to_midi_buffer: write_len %ld exceeded max_len %ld when writing to buffer.\n", write_len, max_len);
     }
 
     TRACE_LEAVE("GmidTrack_write_to_midi_buffer")
+
+    return write_len;
 }
 
 /**
@@ -1468,18 +1667,16 @@ void GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, s
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
-void MidiTrack_frwrite(struct MidiTrack *track, struct file_info *fi)
+void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi)
 {
-    TRACE_ENTER("MidiTrack_frwrite")
-
-    int i;
+    TRACE_ENTER("MidiTrack_fwrite")
 
     file_info_fwrite_bswap(fi, &track->ck_id, 4, 1);
     file_info_fwrite_bswap(fi, &track->ck_data_size, 4, 1);
 
-    file_info_fwrite(fi, &track->data, track->ck_data_size, 1);
+    file_info_fwrite(fi, track->data, track->ck_data_size, 1);
 
-    TRACE_LEAVE("MidiTrack_frwrite")
+    TRACE_LEAVE("MidiTrack_fwrite")
 }
 
 /**
@@ -1487,9 +1684,9 @@ void MidiTrack_frwrite(struct MidiTrack *track, struct file_info *fi)
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
-void MidiFile_frwrite(struct MidiFile *midi_file, struct file_info *fi)
+void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi)
 {
-    TRACE_ENTER("MidiFile_frwrite")
+    TRACE_ENTER("MidiFile_fwrite")
 
     int i;
 
@@ -1501,8 +1698,8 @@ void MidiFile_frwrite(struct MidiFile *midi_file, struct file_info *fi)
 
     for (i=0; i<midi_file->num_tracks; i++)
     {
-        MidiTrack_frwrite(midi_file->tracks[i], fi);
+        MidiTrack_fwrite(midi_file->tracks[i], fi);
     }
 
-    TRACE_LEAVE("MidiFile_frwrite")
+    TRACE_LEAVE("MidiFile_fwrite")
 }

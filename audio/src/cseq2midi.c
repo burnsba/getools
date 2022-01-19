@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 
     output_file = file_info_fopen(output_filename, "wb");
 
-    MidiFile_frwrite(midi_file, output_file);
+    MidiFile_fwrite(midi_file, output_file);
 
     // done with MIDI file
     MidiFile_free(midi_file);
