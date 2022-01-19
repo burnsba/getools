@@ -301,7 +301,9 @@ struct GmidEvent {
     /**
      * Delta time of event.
     */
-    struct var_length_int varint_delta_time;
+    struct var_length_int cseq_delta_time;
+    
+    struct var_length_int midi_delta_time;
 
     /**
      * Absolute time of event, since start of track.

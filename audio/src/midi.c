@@ -662,7 +662,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
     int param_len = 0;
     int append_event = 0;
     long absolute_time = 0;
-    int fix_delta_times = 0;
+    int need_sort = 0;
 
     struct llist_node *node;
     struct GmidEvent *event = NULL;
@@ -1300,7 +1300,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
             event = GmidEvent_new();
             event->id = event_id++;
             event->absolute_time = absolute_time;
-            varint_copy(&event->varint_delta_time, &varint);
+            varint_copy(&event->cseq_delta_time, &varint);
         }
     }   
 
@@ -1365,7 +1365,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
             // that's still being iterated. Therefore just insert before current.
             llist_node_insert_before(gtrack->events, node, temp_node);
 
-            fix_delta_times = 1;
+            need_sort = 1;
         }
 
         node = node->next;
@@ -1375,23 +1375,41 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
     // Maybe one day.
 
     // Now sort the events by absolute times.
-    // Recalculate the delta event times due to inserting events above.
-    if (fix_delta_times)
+    if (need_sort)
     {
         llist_root_merge_sort(gtrack->events, llist_node_gmidevent_compare_smaller);
+    }
+
+    // If nodes were inserted above then the delta event times are wrong.
+    // MIDI event times need to be calculated anyway, since the cseq loop events
+    // won't be included in MIDI output but they have delta times.
+    // Note: list must be sorted first!
+    {
+        long cseq_prev_absolute_time = 0;
+        long midi_prev_absolute_time = 0;
+        int time_delta;
 
         node = gtrack->events->root;
         while (node != NULL)
         {
-            // Fix the current node's delta time.
-            // Assume the previous node is correct (don't change the first node in the list)
-            if (node->prev != NULL)
-            {
-                struct GmidEvent *current_node_event = (struct GmidEvent *)node->data;
-                struct GmidEvent *prev_node_event = (struct GmidEvent *)node->prev->data;
-                int time_delta = (int)(current_node_event->absolute_time - prev_node_event->absolute_time);
+            struct GmidEvent *current_node_event = (struct GmidEvent *)node->data;
 
-                int32_to_varint(time_delta, &current_node_event->varint_delta_time);
+            time_delta = 0;
+
+            // set the event cseq event time
+            if (current_node_event->cseq_valid)
+            {
+                time_delta = (int)(current_node_event->absolute_time - cseq_prev_absolute_time);
+                int32_to_varint(time_delta, &current_node_event->cseq_delta_time);
+                cseq_prev_absolute_time = current_node_event->absolute_time;
+            }
+
+            // set the event MIDI event time
+            if (current_node_event->midi_valid)
+            {
+                time_delta = (int)(current_node_event->absolute_time - midi_prev_absolute_time);
+                int32_to_varint(time_delta, &current_node_event->midi_delta_time);
+                midi_prev_absolute_time = current_node_event->absolute_time;
             }
 
             node = node->next;
@@ -1410,14 +1428,13 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
 
         if (event->cseq_valid)
         {
-            gtrack->cseq_track_size_bytes += event->varint_delta_time.num_bytes + event->cseq_command_len + event->cseq_command_parameters_raw_len;
+            gtrack->cseq_track_size_bytes += event->cseq_delta_time.num_bytes + event->cseq_command_len + event->cseq_command_parameters_raw_len;
         }
 
         if (event->midi_valid)
         {
-            gtrack->midi_track_size_bytes += event->varint_delta_time.num_bytes + event->midi_command_len + event->midi_command_parameters_raw_len;
+            gtrack->midi_track_size_bytes += event->midi_delta_time.num_bytes + event->midi_command_len + event->midi_command_parameters_raw_len;
         }
-
     }
 
     TRACE_LEAVE("GmidTrack_parse_CseqTrack")
@@ -1623,8 +1640,8 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
         command = GmidEvent_get_midi_command(event);
 
         // write varint delta time value
-        memcpy(&buffer[write_len], &event->varint_delta_time.value, event->varint_delta_time.num_bytes);
-        write_len += event->varint_delta_time.num_bytes;
+        memcpy(&buffer[write_len], &event->midi_delta_time.value, event->midi_delta_time.num_bytes);
+        write_len += event->midi_delta_time.num_bytes;
 
         // if this is a "running status" then no need to write command, else write command bytes
         if (previous_command != command)
