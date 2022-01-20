@@ -19,7 +19,7 @@ static int32_t next_llist_node_id = 0;
 */
 void llist_root_append_node(struct llist_root *root, struct llist_node *node)
 {
-    TRACE_ENTER("llist_root_append_node")
+    TRACE_ENTER(__func__)
 
     root->count++;
 
@@ -32,7 +32,7 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
     {
         if (root->tail == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_root_append_node: tail is NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: tail is NULL\n", __func__);
         }
 
         node->prev = root->tail;
@@ -40,7 +40,7 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
         root->tail = node;
     }
 
-    TRACE_LEAVE("llist_root_append_node")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -49,14 +49,14 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
 */
 struct llist_node *llist_node_new()
 {
-    TRACE_ENTER("llist_node_new")
+    TRACE_ENTER(__func__)
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
 
     node->id = next_llist_node_id;
     next_llist_node_id++;
 
-    TRACE_LEAVE("llist_node_new")
+    TRACE_LEAVE(__func__)
 
     return node;
 }
@@ -67,11 +67,11 @@ struct llist_node *llist_node_new()
 */
 struct llist_root *llist_root_new()
 {
-    TRACE_ENTER("llist_root_new")
+    TRACE_ENTER(__func__)
 
     struct llist_root *root = (struct llist_root *)malloc_zero(1, sizeof(struct llist_root));
 
-    TRACE_LEAVE("llist_root_new")
+    TRACE_LEAVE(__func__)
 
     return root;
 }
@@ -82,7 +82,7 @@ struct llist_root *llist_root_new()
 */
 struct llist_node *llist_node_string_data_new()
 {
-    TRACE_ENTER("llist_node_string_data_new")
+    TRACE_ENTER(__func__)
 
     struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
     node->data = (struct string_data *)malloc_zero(1, sizeof(struct string_data));
@@ -90,7 +90,7 @@ struct llist_node *llist_node_string_data_new()
     node->id = next_llist_node_id;
     next_llist_node_id++;
 
-    TRACE_LEAVE("llist_node_string_data_new")
+    TRACE_LEAVE(__func__)
 
     return node;
 }
@@ -104,7 +104,7 @@ struct llist_node *llist_node_string_data_new()
 */
 void set_string_data(struct string_data *sd, char *text, size_t len)
 {
-    TRACE_ENTER("set_string_data")
+    TRACE_ENTER(__func__)
 
     // string is always non-null but can be empty, is that a problem?
     sd->text = (char*)malloc_zero(1, len + 1);
@@ -112,7 +112,7 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
     // no need for explicit '\0' since memcpy is one less than malloc_zero
     sd->len = len;
 
-    TRACE_LEAVE("set_string_data")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -121,7 +121,7 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
 */
 void string_data_free(struct string_data *sd)
 {
-    TRACE_ENTER("string_data_free")
+    TRACE_ENTER(__func__)
 
     if (sd == NULL)
     {
@@ -136,7 +136,7 @@ void string_data_free(struct string_data *sd)
 
     free(sd);
 
-    TRACE_LEAVE("string_data_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -144,7 +144,7 @@ void string_data_free(struct string_data *sd)
 */
 void llist_node_string_data_print(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_string_data_print")
+    TRACE_ENTER(__func__)
 
     struct llist_node *node = root->root;
     while (node != NULL)
@@ -158,7 +158,7 @@ void llist_node_string_data_print(struct llist_root *root)
         node = node->next;
     }
 
-    TRACE_LEAVE("llist_node_string_data_print")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -174,7 +174,7 @@ void llist_node_string_data_print(struct llist_root *root)
 */
 void llist_node_free(struct llist_root *root, struct llist_node *node)
 {
-    TRACE_ENTER("llist_node_free")
+    TRACE_ENTER(__func__)
 
     if (node == NULL)
     {
@@ -222,7 +222,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
         }
     }
 
-    TRACE_LEAVE("llist_node_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -234,7 +234,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 */
 void llist_node_root_free_children(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_root_free_children")
+    TRACE_ENTER(__func__)
 
     if (root == NULL)
     {
@@ -255,7 +255,7 @@ void llist_node_root_free_children(struct llist_root *root)
     root->tail = NULL;
     root->count = 0;
 
-    TRACE_LEAVE("llist_node_root_free_children")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -266,7 +266,7 @@ void llist_node_root_free_children(struct llist_root *root)
 */
 void llist_node_free_string_data(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_free_string_data")
+    TRACE_ENTER(__func__)
 
     if (root == NULL)
     {
@@ -293,7 +293,7 @@ void llist_node_free_string_data(struct llist_root *root)
         node = node->next;
     }
 
-    TRACE_LEAVE("llist_node_free_string_data")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -305,7 +305,7 @@ void llist_node_free_string_data(struct llist_root *root)
 */
 void llist_node_root_free(struct llist_root *root)
 {
-    TRACE_ENTER("llist_node_root_free")
+    TRACE_ENTER(__func__)
 
     if (root == NULL)
     {
@@ -328,7 +328,7 @@ void llist_node_root_free(struct llist_root *root)
 
     free(root);
 
-    TRACE_LEAVE("llist_node_root_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -339,21 +339,21 @@ void llist_node_root_free(struct llist_root *root)
 */
 void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert)
 {
-    TRACE_ENTER("llist_node_insert_before")
+    TRACE_ENTER(__func__)
 
     if (current == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: current is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: current is NULL\n", __func__);
     }
 
     if (to_insert == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: to_insert is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: to_insert is NULL\n", __func__);
     }
 
     if (to_insert == current)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_insert_before: cant insert before self\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: cant insert before self\n", __func__);
     }
 
     to_insert->next = current;
@@ -371,7 +371,7 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
         root->count++;
     }
 
-    TRACE_LEAVE("llist_node_insert_before")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -385,12 +385,12 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
 
     if (first == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_swap: first is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: first is NULL\n", __func__);
     }
 
     if (second == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "llist_node_swap: second is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: second is NULL\n", __func__);
     }
 
     if (first == second)
@@ -430,9 +430,17 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
         second_next->prev = first;
     }
 
-    TRACE_LEAVE("llist_node_swap")
+    TRACE_LEAVE(__func__)
 }
 
+/**
+ * Merge sort helper function.
+ * Starting from head, iterates to the end of the list, splitting in to two lists.
+ * For off length lists, the extra node goes into the first list.
+ * @param head: first node.
+ * @param firstptr: out parameter. Will contain pointer to first node in first half of the list (head node).
+ * @param secondptr: out parameter. Will contain pointer to first node in second half of the list.
+*/
 static void llist_node_split(struct llist_node *head, struct llist_node **firstptr, struct llist_node **secondptr)
 {
     TRACE_ENTER(__func__)
@@ -460,6 +468,15 @@ static void llist_node_split(struct llist_node *head, struct llist_node **firstp
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Merge sort helper function.
+ * Compares two nodes, recursively setting the next node.
+ * Returns comparison "winner".
+ * @param first: first node to compare
+ * @param second: second node to compare
+ * @param compare_callback: function that accepts two nodes and returns comparison result (1, 0, -1).
+ * @returns: comparison winner.
+*/
 static struct llist_node *llist_node_merge(struct llist_node *first, struct llist_node *second, f_llist_node_compare compare_callback)
 {
     TRACE_ENTER(__func__)
@@ -499,6 +516,12 @@ static struct llist_node *llist_node_merge(struct llist_node *first, struct llis
     return result;
 }
 
+/**
+ * Merge sort helper.
+ * Entry to sort.
+ * @param headptr: reference to pointer to node at start of list to sort.
+ * @param compare_callback: function that accepts two nodes and returns comparison result (1, 0, -1).
+*/
 static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_compare compare_callback)
 {
     TRACE_ENTER(__func__)
@@ -523,6 +546,13 @@ static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_comp
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Sorts the list using merge sort.
+ * @param root: list to sort.
+ * @param compare_callback: function that accepts two nodes and returns comparison result
+ *     (1, 0, -1). Value of -1 prefers the accepts the first node, value of zero means the nodes
+ *     should be considered equal, and a value of 1 accepts the second node.
+*/
 void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback)
 {
     TRACE_ENTER(__func__)

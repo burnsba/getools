@@ -24,12 +24,12 @@ int32_t dot_product_i32(int32_t *arr1, int32_t *arr2, size_t len)
 
     if (arr1 == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "dot_product_i32: arr1 is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: arr1 is NULL\n", __func__);
     }
 
     if (arr2 == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "dot_product_i32: arr2 is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: arr2 is NULL\n", __func__);
     }
 
     for (i=0; i<len; i++)

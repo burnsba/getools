@@ -334,7 +334,7 @@ void read_opts(int argc, char **argv)
 */
 void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 {
-    TRACE_ENTER("wavetable_init_set_aifc_path")
+    TRACE_ENTER(__func__)
 
     static struct llist_node *name_node = NULL;
     size_t len = 0;
@@ -380,7 +380,7 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     strncpy(wavetable->aifc_path, g_write_buffer, len);
     // no need for explicit '\0' since strncpy is one less than malloc_zero
 
-    TRACE_LEAVE("wavetable_init_set_aifc_path")
+    TRACE_LEAVE(__func__)
 }
 
 

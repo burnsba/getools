@@ -19,13 +19,13 @@
 */
 struct WavDataChunk *WavDataChunk_new()
 {
-    TRACE_ENTER("WavDataChunk_new")
+    TRACE_ENTER(__func__)
 
     struct WavDataChunk *p = (struct WavDataChunk *)malloc_zero(1, sizeof(struct WavDataChunk));
 
     p->ck_id = WAV_DATA_CHUNK_ID;
 
-    TRACE_LEAVE("WavDataChunk_new")
+    TRACE_LEAVE(__func__)
 
     return p;
 }
@@ -36,14 +36,14 @@ struct WavDataChunk *WavDataChunk_new()
 */
 struct WavFmtChunk *WavFmtChunk_new()
 {
-    TRACE_ENTER("WavFmtChunk_new")
+    TRACE_ENTER(__func__)
 
     struct WavFmtChunk *p = (struct WavFmtChunk *)malloc_zero(1, sizeof(struct WavFmtChunk));
 
     p->ck_id = WAV_FMT_CHUNK_ID;
     p->ck_data_size = WAV_FMT_CHUNK_BODY_SIZE;
 
-    TRACE_LEAVE("WavFmtChunk_new")
+    TRACE_LEAVE(__func__)
 
     return p;
 }
@@ -55,7 +55,7 @@ struct WavFmtChunk *WavFmtChunk_new()
 */
 struct WavFile *WavFile_new(size_t num_chunks)
 {
-    TRACE_ENTER("WavFile_new")
+    TRACE_ENTER(__func__)
 
     struct WavFile *p = (struct WavFile *)malloc_zero(1, sizeof(struct WavFile));
 
@@ -65,7 +65,7 @@ struct WavFile *WavFile_new(size_t num_chunks)
     p->chunk_count = num_chunks;
     p->chunks = (void **)malloc_zero(num_chunks, sizeof(void *));
 
-    TRACE_LEAVE("WavFile_new")
+    TRACE_LEAVE(__func__)
 
     return p;
 }
@@ -81,7 +81,7 @@ struct WavFile *WavFile_new(size_t num_chunks)
 */
 struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 {
-    TRACE_ENTER("WavFile_load_from_aifc")
+    TRACE_ENTER(__func__)
 
     struct WavFile *wav = WavFile_new(WAV_DEFAULT_NUM_CHUNKS);
 
@@ -111,7 +111,7 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
         WAV_FMT_CHUNK_FULL_SIZE + /* "fmt " chunk is const size */
         8 + wav->data_chunk->ck_data_size; /* "data" chunk header, then data size*/
 
-    TRACE_LEAVE("WavFile_load_from_aifc")
+    TRACE_LEAVE(__func__)
 
     return wav;
 }
@@ -122,7 +122,7 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
 */
 void WavDataChunk_free(struct WavDataChunk *chunk)
 {
-    TRACE_ENTER("WavDataChunk_free")
+    TRACE_ENTER(__func__)
 
     if (chunk == NULL)
     {
@@ -136,7 +136,7 @@ void WavDataChunk_free(struct WavDataChunk *chunk)
 
     free(chunk);
 
-    TRACE_LEAVE("WavDataChunk_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -145,7 +145,7 @@ void WavDataChunk_free(struct WavDataChunk *chunk)
 */
 void WavFmtChunk_free(struct WavFmtChunk *chunk)
 {
-    TRACE_ENTER("WavFmtChunk_free")
+    TRACE_ENTER(__func__)
 
     if (chunk == NULL)
     {
@@ -154,7 +154,7 @@ void WavFmtChunk_free(struct WavFmtChunk *chunk)
 
     free(chunk);
 
-    TRACE_LEAVE("WavFmtChunk_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -163,7 +163,7 @@ void WavFmtChunk_free(struct WavFmtChunk *chunk)
 */
 void WavFile_free(struct WavFile *wav_file)
 {
-    TRACE_ENTER("WavFile_free")
+    TRACE_ENTER(__func__)
 
     int i;
 
@@ -201,7 +201,7 @@ void WavFile_free(struct WavFile *wav_file)
 
     free(wav_file);
 
-    TRACE_LEAVE("WavFile_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -211,7 +211,7 @@ void WavFile_free(struct WavFile *wav_file)
 */
 void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("WavDataChunk_fwrite")
+    TRACE_ENTER(__func__)
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -221,7 +221,7 @@ void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
         file_info_fwrite(fi, chunk->data, (size_t)chunk->ck_data_size, 1);
     }
 
-    TRACE_LEAVE("WavDataChunk_fwrite")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -231,7 +231,7 @@ void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
 */
 void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
 {
-    TRACE_ENTER("WavFmtChunk_fwrite")
+    TRACE_ENTER(__func__)
 
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -242,7 +242,7 @@ void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
     file_info_fwrite(fi, &chunk->block_align, 2, 1);
     file_info_fwrite(fi, &chunk->bits_per_sample, 2, 1);
 
-    TRACE_LEAVE("WavFmtChunk_fwrite")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -253,7 +253,7 @@ void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
 */
 void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
 {
-    TRACE_ENTER("WavFile_fwrite")
+    TRACE_ENTER(__func__)
 
     int i;
 
@@ -292,5 +292,5 @@ void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
         }
     }
 
-    TRACE_LEAVE("WavFile_fwrite")
+    TRACE_LEAVE(__func__)
 }

@@ -27,7 +27,7 @@ wavetable_init_callback wavetable_init_callback_ptr = NULL;
 */
 struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALADPCMLoop_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     int32_t input_pos = load_from_offset;
 
@@ -47,7 +47,7 @@ struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t
     // raw byte copy, no bswap
     memcpy(adpcm_loop->state, &ctl_file_contents[input_pos], ADPCM_STATE_SIZE);
 
-    TRACE_LEAVE("ALADPCMLoop_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return adpcm_loop;
 }
@@ -61,7 +61,7 @@ struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 */
 struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALADPCMBook_new_from_ctl")
+    TRACE_ENTER(__func__)
     
     int32_t input_pos = load_from_offset;
     int book_bytes;
@@ -84,7 +84,7 @@ struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t
         memcpy(adpcm_book->book, &ctl_file_contents[input_pos], book_bytes);
     }
 
-    TRACE_LEAVE("ALADPCMBook_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return adpcm_book;
 }
@@ -98,7 +98,7 @@ struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 */
 struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALRawLoop_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     int32_t input_pos = load_from_offset;
 
@@ -113,7 +113,7 @@ struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t loa
     raw_loop->count = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    TRACE_LEAVE("ALRawLoop_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return raw_loop;
 }
@@ -127,7 +127,7 @@ struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t loa
 */
 struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALEnvelope_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t envelope_id = 0;
     int32_t input_pos = load_from_offset;
@@ -157,7 +157,7 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
         printf("init envelope %d\n", envelope->id);
     }
 
-    TRACE_LEAVE("ALEnvelope_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return envelope;
 }
@@ -170,7 +170,7 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
 */
 void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
 {
-    TRACE_ENTER("ALEnvelope_write_to_fp")
+    TRACE_ENTER(__func__)
 
     int len;
 
@@ -215,7 +215,7 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALEnvelope_write_to_fp")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -227,7 +227,7 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
 */
 struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALKeyMap_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t keymap_id = 0;
     int32_t input_pos = load_from_offset;
@@ -260,7 +260,7 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
         printf("init keymap %d\n", keymap->id);
     }
 
-    TRACE_LEAVE("ALKeyMap_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return keymap;
 }
@@ -273,7 +273,7 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
 */
 void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
 {
-    TRACE_ENTER("ALKeyMap_write_to_fp")
+    TRACE_ENTER(__func__)
 
     int len;
 
@@ -322,7 +322,7 @@ void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALKeyMap_write_to_fp")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -333,7 +333,7 @@ void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
 */
 void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 {
-    TRACE_ENTER("ALWaveTable_init_default_set_aifc_path")
+    TRACE_ENTER(__func__)
 
     size_t len;
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
@@ -343,7 +343,7 @@ void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
     wavetable->aifc_path = (char *)malloc_zero(len, 1);
     strncpy(wavetable->aifc_path, g_write_buffer, len);
 
-    TRACE_LEAVE("ALWaveTable_init_default_set_aifc_path")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -355,7 +355,7 @@ void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 */
 struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALWaveTable_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t wavetable_id = 0;
     int32_t input_pos = load_from_offset;
@@ -424,7 +424,7 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
         }
     }
 
-    TRACE_LEAVE("ALWaveTable_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return wavetable;
 }
@@ -438,7 +438,7 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 */
 struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALSound_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t sound_id = 0;
     int32_t input_pos = load_from_offset;
@@ -486,7 +486,7 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
         sound->wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
     }
     
-    TRACE_LEAVE("ALSound_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return sound;
 }
@@ -499,7 +499,7 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
 */
 void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 {
-    TRACE_ENTER("ALSound_write_to_fp")
+    TRACE_ENTER(__func__)
 
     int len;
 
@@ -599,7 +599,7 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALSound_write_to_fp")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -611,7 +611,7 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 */
 struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALInstrument_new_from_ctl")
+    TRACE_ENTER(__func__)
     
     static int32_t instrument_id = 0;
     int32_t input_pos = load_from_offset;
@@ -671,7 +671,7 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
 
     if (instrument->sound_count < 1)
     {
-        TRACE_LEAVE("ALInstrument_new_from_ctl")
+        TRACE_LEAVE(__func__)
 
         return instrument;
     }
@@ -690,7 +690,7 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
         }
     }
 
-    TRACE_LEAVE("ALInstrument_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return instrument;
 }
@@ -703,7 +703,7 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
 */
 void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi)
 {
-    TRACE_ENTER("ALInstrument_write_to_fp")
+    TRACE_ENTER(__func__)
 
     int len;
     int i;
@@ -841,7 +841,7 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALInstrument_write_to_fp")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -853,7 +853,7 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
 */
 struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
-    TRACE_ENTER("ALBank_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t bank_id = 0;
     int32_t input_pos = load_from_offset;
@@ -886,7 +886,7 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
 
     if (bank->inst_count < 1)
     {
-        TRACE_LEAVE("ALBank_new_from_ctl")
+        TRACE_LEAVE(__func__)
 
         return bank;
     }
@@ -905,7 +905,7 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
         }
     }
 
-    TRACE_LEAVE("ALBank_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return bank;
 }
@@ -918,7 +918,7 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
 */
 void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 {
-    TRACE_ENTER("ALBank_write_to_fp")
+    TRACE_ENTER(__func__)
 
     int len;
     int i;
@@ -961,7 +961,7 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    TRACE_LEAVE("ALBank_write_to_fp")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -974,7 +974,7 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 */
 struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 {
-    TRACE_ENTER("ALBankFile_new_from_ctl")
+    TRACE_ENTER(__func__)
 
     static int32_t bank_file_id = 0;
 
@@ -1023,7 +1023,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
         }
     }
 
-    TRACE_LEAVE("ALBankFile_new_from_ctl")
+    TRACE_LEAVE(__func__)
 
     return bank_file;
 }
@@ -1037,7 +1037,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 */
 void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 {
-    TRACE_ENTER("write_inst")
+    TRACE_ENTER(__func__)
 
     struct file_info *output;
     int i;
@@ -1051,7 +1051,7 @@ void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 
     file_info_free(output);
 
-    TRACE_LEAVE("write_inst")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1060,7 +1060,7 @@ void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 */
 void ALADPCMLoop_free(struct ALADPCMLoop *loop)
 {
-    TRACE_ENTER("ALADPCMLoop_free")
+    TRACE_ENTER(__func__)
 
     if (loop == NULL)
     {
@@ -1069,7 +1069,7 @@ void ALADPCMLoop_free(struct ALADPCMLoop *loop)
 
     free(loop);
 
-    TRACE_LEAVE("ALADPCMLoop_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1078,7 +1078,7 @@ void ALADPCMLoop_free(struct ALADPCMLoop *loop)
 */
 void ALADPCMBook_free(struct ALADPCMBook *book)
 {
-    TRACE_ENTER("ALADPCMBook_free")
+    TRACE_ENTER(__func__)
 
     if (book == NULL)
     {
@@ -1092,7 +1092,7 @@ void ALADPCMBook_free(struct ALADPCMBook *book)
 
     free(book);
 
-    TRACE_LEAVE("ALADPCMBook_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1101,7 +1101,7 @@ void ALADPCMBook_free(struct ALADPCMBook *book)
 */
 void ALRawLoop_free(struct ALRawLoop *loop)
 {
-    TRACE_ENTER("ALRawLoop_free")
+    TRACE_ENTER(__func__)
 
     if (loop == NULL)
     {
@@ -1110,7 +1110,7 @@ void ALRawLoop_free(struct ALRawLoop *loop)
 
     free(loop);
 
-    TRACE_LEAVE("ALRawLoop_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1119,7 +1119,7 @@ void ALRawLoop_free(struct ALRawLoop *loop)
 */
 void ALEnvelope_free(struct ALEnvelope *envelope)
 {
-    TRACE_ENTER("ALEnvelope_free")
+    TRACE_ENTER(__func__)
 
     if (envelope == NULL)
     {
@@ -1128,7 +1128,7 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
 
     free(envelope);
 
-    TRACE_LEAVE("ALEnvelope_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1137,7 +1137,7 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
 */
 void ALKeyMap_free(struct ALKeyMap *keymap)
 {
-    TRACE_ENTER("ALKeyMap_free")
+    TRACE_ENTER(__func__)
 
     if (keymap == NULL)
     {
@@ -1146,7 +1146,7 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
 
     free(keymap);
 
-    TRACE_LEAVE("ALKeyMap_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1155,7 +1155,7 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
 */
 void ALWaveTable_free(struct ALWaveTable *wavetable)
 {
-    TRACE_ENTER("ALWaveTable_free")
+    TRACE_ENTER(__func__)
 
     if (wavetable == NULL)
     {
@@ -1192,7 +1192,7 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
 
     free(wavetable);
 
-    TRACE_LEAVE("ALWaveTable_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1201,7 +1201,7 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
 */
 void ALSound_free(struct ALSound *sound)
 {
-    TRACE_ENTER("ALSound_free")
+    TRACE_ENTER(__func__)
 
     if (sound == NULL)
     {
@@ -1228,7 +1228,7 @@ void ALSound_free(struct ALSound *sound)
 
     free(sound);
 
-    TRACE_LEAVE("ALSound_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1237,7 +1237,7 @@ void ALSound_free(struct ALSound *sound)
 */
 void ALInstrument_free(struct ALInstrument *instrument)
 {
-    TRACE_ENTER("ALInstrument_free")
+    TRACE_ENTER(__func__)
 
     int i;
 
@@ -1268,7 +1268,7 @@ void ALInstrument_free(struct ALInstrument *instrument)
 
     free(instrument);
 
-    TRACE_LEAVE("ALInstrument_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1277,7 +1277,7 @@ void ALInstrument_free(struct ALInstrument *instrument)
 */
 void ALBank_free(struct ALBank *bank)
 {
-    TRACE_ENTER("ALBank_free")
+    TRACE_ENTER(__func__)
 
     int i;
 
@@ -1308,7 +1308,7 @@ void ALBank_free(struct ALBank *bank)
 
     free(bank);
 
-    TRACE_LEAVE("ALBank_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1317,7 +1317,7 @@ void ALBank_free(struct ALBank *bank)
 */
 void ALBankFile_free(struct ALBankFile *bank_file)
 {
-    TRACE_ENTER("ALBankFile_free")
+    TRACE_ENTER(__func__)
 
     int i;
 
@@ -1348,5 +1348,5 @@ void ALBankFile_free(struct ALBankFile *bank_file)
 
     free(bank_file);
 
-    TRACE_LEAVE("ALBankFile_free")
+    TRACE_LEAVE(__func__)
 }

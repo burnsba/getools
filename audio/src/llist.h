@@ -66,6 +66,11 @@ struct string_data
     char *text;
 };
 
+/**
+ * function that accepts two nodes and returns comparison result
+ * (1, 0, -1). Value of -1 prefers the accepts the first node, value of zero means the nodes
+ * should be considered equal, and a value of 1 accepts the second node.
+*/
 typedef int (*f_llist_node_compare)(struct llist_node *, struct llist_node *);
 
 void llist_root_append_node(struct llist_root *root, struct llist_node *node);

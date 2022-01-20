@@ -281,28 +281,38 @@ struct GmidEvent {
     int command;
 
     /**
-     * Length in bytes of command.
+     * Length in bytes of compressed MIDI format command.
     */
     int cseq_command_len;
 
     /**
-     * Length in bytes of command.
+     * Length in bytes of standard MIDI command.
     */
     int midi_command_len;
 
+    /**
+     * Flag to indicate this is a valid event for compressed MIDI.
+    */
     uint8_t cseq_valid;
+
+    /**
+     * Flag to indicate this is a valid event for standard MIDI.
+    */
     uint8_t midi_valid;
 
     /**
-     * MIDI channel command applies to.
+     * The MIDI channel the command applies to.
     */
     int command_channel;
 
     /**
-     * Delta time of event.
+     * Delta time of event when the event is used in compressed MIDI format track.
     */
     struct var_length_int cseq_delta_time;
     
+    /**
+     * Delta time of event when the event is used in standard MIDI track.
+    */
     struct var_length_int midi_delta_time;
 
     /**
@@ -311,42 +321,42 @@ struct GmidEvent {
     long absolute_time;
 
     /**
-     * Command parameters / values.
+     * Command parameters / values for compressed MIDI format command.
     */
     uint8_t cseq_command_parameters_raw[GMID_EVENT_PARAMTER_BYTE_LEN];
 
     /**
-     * Length in bytes of raw command parameters.
+     * Length in bytes of raw command parameters for compressed MIDI format command.
     */
     int cseq_command_parameters_raw_len;
 
     /**
-     * Decoded / processed command parameters.
+     * Decoded / processed command parameters for compressed MIDI format command.
     */
     int cseq_command_parameters[GMID_EVENT_PARAMTER_LEN];
 
     /**
-     * Number of command parameters.
+     * Number of command parameters for compressed MIDI format command.
     */
     int cseq_command_parameters_len;
 
     /**
-     * Command parameters / values.
+     * Command parameters / values for standard MIDI command.
     */
     uint8_t midi_command_parameters_raw[GMID_EVENT_PARAMTER_BYTE_LEN];
 
     /**
-     * Length in bytes of raw command parameters.
+     * Length in bytes of raw command parameters for standard MIDI command.
     */
     int midi_command_parameters_raw_len;
 
     /**
-     * Decoded / processed command parameters.
+     * Decoded / processed command parameters for standard MIDI command.
     */
     int midi_command_parameters[GMID_EVENT_PARAMTER_LEN];
 
     /**
-     * Number of command parameters.
+     * Number of command parameters for standard MIDI command.
     */
     int midi_command_parameters_len;
 
@@ -363,25 +373,29 @@ struct GmidEvent {
 */
 struct GmidTrack {
     /**
-     * Track index in MIDI file.
+     * Track index in standard MIDI file.
      * MIDI track listing will not include empty/missing tracks.
     */
     int midi_track_index;
 
     /**
-     * Track index, if cseq.
+     * Track index in compressed MIDI file.
      * cseq track listing can have NULL/empty tracks.
     */
     int cseq_track_index;
 
     /**
-     * Size in bytes of events list if it were written as MIDI track data.
+     * Size in bytes of events list if it were written as compressed MIDI track data.
     */
     int cseq_track_size_bytes;
+
+    /**
+     * Size in bytes of events list if it were written as standard MIDI track data.
+    */
     int midi_track_size_bytes;
 
     /**
-     * List of MIDI events.
+     * List of cseq/MIDI events.
     */
     struct llist_root *events;
 
@@ -391,7 +405,7 @@ struct GmidTrack {
     size_t cseq_data_len;
 
     /**
-     * cseq format MIDI contents.
+     * Compressed MIDI format contents as raw bytes.
      * Data is in Nintendo Compressed MIDI format, but without any compression.
     */
     uint8_t *cseq_data;
@@ -401,26 +415,29 @@ struct GmidTrack {
 extern int g_midi_parse_debug;
 
 struct CseqFile *CseqFile_new();
+struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
+void CseqFile_free(struct CseqFile *cseq);
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
+
 struct MidiTrack *MidiTrack_new(int32_t track_index);
+struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
-struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
-struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq);
-struct GmidEvent *GmidEvent_new();
-struct GmidTrack *GmidTrack_new();
-void GmidEvent_free(struct GmidEvent *event);
-void GmidTrack_free(struct GmidTrack *track);
-void CseqFile_free(struct CseqFile *cseq);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
-void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack);
-void midi_controller_to_name(int controller, char *result, size_t max_length);
-void midi_note_to_name(int note, char* result, size_t max_length);
-int32_t GmidEvent_get_midi_command(struct GmidEvent *event);
-size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi);
 void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi);
+
+struct GmidEvent *GmidEvent_new();
+struct GmidTrack *GmidTrack_new();
+void GmidTrack_free(struct GmidTrack *track);
+void GmidEvent_free(struct GmidEvent *event);
+int32_t GmidEvent_get_midi_command(struct GmidEvent *event);
+void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack);
+size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
+
+void midi_controller_to_name(int controller, char *result, size_t max_length);
+void midi_note_to_name(int note, char* result, size_t max_length);
 
 #endif

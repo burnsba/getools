@@ -54,7 +54,7 @@ void fflush_printf(FILE *stream, const char *format, ...)
 */
 void *malloc_zero(size_t count, size_t item_size)
 {
-    TRACE_ENTER("malloc_zero")
+    TRACE_ENTER(__func__)
 
     void *outp;
     size_t malloc_size;
@@ -63,12 +63,12 @@ void *malloc_zero(size_t count, size_t item_size)
 
     if (malloc_size == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "malloc_zero: malloc_size is zero.\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: malloc_size is zero.\n", __func__);
     }
 
     if (malloc_size > MAX_MALLOC_SIZE)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "malloc_zero: malloc_size=%ld exceeds sanity check max malloc size %d.\n", malloc_size, MAX_MALLOC_SIZE);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: malloc_size=%ld exceeds sanity check max malloc size %d.\n", __func__, malloc_size, MAX_MALLOC_SIZE);
     }
 
     outp = malloc(malloc_size);
@@ -79,7 +79,7 @@ void *malloc_zero(size_t count, size_t item_size)
     }
     memset(outp, 0, malloc_size);
 
-    TRACE_LEAVE("malloc_zero")
+    TRACE_LEAVE(__func__)
 
     return outp;
 }
@@ -92,7 +92,7 @@ void *malloc_zero(size_t count, size_t item_size)
 */
 int mkpath(const char* path)
 {
-    TRACE_ENTER("mkpath")
+    TRACE_ENTER(__func__)
 
     size_t len = strlen(path);
     char local_path[MAX_FILENAME_LEN];
@@ -146,7 +146,7 @@ int mkpath(const char* path)
         }
     }
 
-    TRACE_LEAVE("mkpath")
+    TRACE_LEAVE(__func__)
 
     return 0;
 }
@@ -207,7 +207,7 @@ void reverse_inplace(uint8_t *arr, size_t len)
 */
 size_t get_file_contents(char *path, uint8_t **buffer)
 {
-    TRACE_ENTER("get_file_contents")
+    TRACE_ENTER(__func__)
 
     FILE *input;
 
@@ -269,7 +269,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     // done with input file, it's in memory now.
     fclose(input);
 
-    TRACE_LEAVE("get_file_contents")
+    TRACE_LEAVE(__func__)
 
     return input_filesize;
 }
@@ -283,7 +283,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
 */
 struct file_info *file_info_fopen(char *filename, const char *mode)
 {
-    TRACE_ENTER("file_info_fopen")
+    TRACE_ENTER(__func__)
 
     struct stat st;
 
@@ -344,7 +344,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
         exit(EXIT_CODE_GENERAL);
     }
 
-    TRACE_LEAVE("file_info_fopen")
+    TRACE_LEAVE(__func__)
 
     return fi;
 }
@@ -359,7 +359,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 */
 size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, size_t n)
 {
-    TRACE_ENTER("file_info_fread")
+    TRACE_ENTER(__func__)
 
     size_t num_bytes = size*n;
 
@@ -382,7 +382,7 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
         exit(EXIT_CODE_IO);
     }
 
-    TRACE_LEAVE("file_info_fread")
+    TRACE_LEAVE(__func__)
 
     return num_bytes;
 }
@@ -396,7 +396,7 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 */
 int file_info_fseek(struct file_info *fi, long __off, int __whence)
 {
-    TRACE_ENTER("file_info_fseek")
+    TRACE_ENTER(__func__)
 
     int ret = fseek(fi->fp, __off, __whence);
 
@@ -407,7 +407,7 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
         exit(EXIT_CODE_IO);
     }
 
-    TRACE_LEAVE("file_info_fseek")
+    TRACE_LEAVE(__func__)
 
     return ret;
 }
@@ -422,7 +422,7 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 */
 size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, size_t n)
 {
-    TRACE_ENTER("file_info_fwrite")
+    TRACE_ENTER(__func__)
 
     size_t ret;
     size_t num_bytes;
@@ -453,7 +453,7 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
         exit(EXIT_CODE_IO);
     }
 
-    TRACE_LEAVE("file_info_fwrite")
+    TRACE_LEAVE(__func__)
 
     return num_bytes;
 }
@@ -471,7 +471,7 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 */
 size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n)
 {
-    TRACE_ENTER("file_info_fwrite_bswap")
+    TRACE_ENTER(__func__)
     
     size_t i;
     size_t ret = 0;
@@ -535,7 +535,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
         ret += (size * n);
     }
 
-    TRACE_LEAVE("file_info_fwrite_bswap")
+    TRACE_LEAVE(__func__)
 
     return ret;
 }
@@ -547,7 +547,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 */
 int file_info_fclose(struct file_info *fi)
 {
-    TRACE_ENTER("file_info_fclose")
+    TRACE_ENTER(__func__)
 
     int ret = 0;
 
@@ -557,7 +557,7 @@ int file_info_fclose(struct file_info *fi)
         fi->_fp_state = 0;
     }
 
-    TRACE_LEAVE("file_info_fclose")
+    TRACE_LEAVE(__func__)
 
     return ret;
 }
@@ -570,7 +570,7 @@ int file_info_fclose(struct file_info *fi)
 */
 void file_info_free(struct file_info *fi)
 {
-    TRACE_ENTER("file_info_free")
+    TRACE_ENTER(__func__)
 
     if (fi == NULL)
     {
@@ -590,7 +590,7 @@ void file_info_free(struct file_info *fi)
 
     free(fi);
 
-    TRACE_LEAVE("file_info_free")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -602,7 +602,7 @@ void file_info_free(struct file_info *fi)
 */
 void bswap16_memcpy(void *dest, const void *src, size_t num)
 {
-    TRACE_ENTER("bswap16_memcpy")
+    TRACE_ENTER(__func__)
 
     size_t i;
 
@@ -613,12 +613,12 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap16_memcpy error, dest is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, dest is NULL\n", __func__);
     }
 
     if (src == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap16_memcpy error, src is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, src is NULL\n", __func__);
     }
 
     for (i=0; i<num; i++)
@@ -626,7 +626,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
         ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)src)[i]);
     }
 
-    TRACE_LEAVE("bswap16_memcpy")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -638,7 +638,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
 */
 void bswap32_memcpy(void *dest, const void *src, size_t num)
 {
-    TRACE_ENTER("bswap32_memcpy")
+    TRACE_ENTER(__func__)
 
     size_t i;
     
@@ -649,12 +649,12 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap32_memcpy error, dest is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, dest is NULL\n", __func__);
     }
 
     if (src == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "bswap32_memcpy error, src is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, src is NULL\n", __func__);
     }
 
     for (i=0; i<num; i++)
@@ -662,7 +662,7 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
         ((uint32_t*)dest)[i] = BSWAP32_INLINE(((uint32_t*)src)[i]);
     }
 
-    TRACE_LEAVE("bswap32_memcpy")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -681,7 +681,7 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
 */
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
 {
-    TRACE_ENTER("parse_names")
+    TRACE_ENTER(__func__)
 
     size_t i;
     int current_len = 0;
@@ -798,7 +798,7 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
     trailing_space = 0;
     state = 1;
 
-    TRACE_LEAVE("parse_names")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -809,7 +809,7 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
 */
 void get_filename(char *string, char *filename, size_t max_len)
 {
-    TRACE_ENTER("get_filename")
+    TRACE_ENTER(__func__)
 
     int i = 0;
     int last_pos = -1;
@@ -858,7 +858,7 @@ void get_filename(char *string, char *filename, size_t max_len)
 
     strncpy(filename, &string[last_pos], new_len);
 
-    TRACE_LEAVE("get_filename")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -870,7 +870,7 @@ void get_filename(char *string, char *filename, size_t max_len)
 */
 void change_filename_extension(char *input_filename, char *output_filename, char *new_extension, size_t max_len)
 {
-    TRACE_ENTER("change_filename_extension")
+    TRACE_ENTER(__func__)
 
     int i = 0;
     int last_pos = -1;
@@ -915,14 +915,14 @@ void change_filename_extension(char *input_filename, char *output_filename, char
 
     if (len + ext_len > max_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "change_filename_extension: can't change extension, output_filename buffer too short.\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: can't change extension, output_filename buffer too short.\n", __func__);
     }
 
     strncpy(output_filename, input_filename, len);
     strncpy(&output_filename[len], new_extension, ext_len);
     output_filename[len+ext_len] = '\0';
 
-    TRACE_LEAVE("change_filename_extension")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -930,7 +930,7 @@ void change_filename_extension(char *input_filename, char *output_filename, char
 */
 void int32_to_varint(int32_t in, struct var_length_int *varint)
 {
-    TRACE_ENTER("int32_to_varint")
+    TRACE_ENTER(__func__)
 
     int32_t out_result = 0;
     int num_bytes = 0;
@@ -954,7 +954,7 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
     varint->value = out_result;
     varint->num_bytes = num_bytes;
 
-    TRACE_LEAVE("int32_to_varint")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -966,17 +966,27 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
 */
 void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint)
 {
-    TRACE_ENTER("varint_value_to_int32")
+    TRACE_ENTER(__func__)
 
     int32_t ret = 0;
     int done = 0;
     int bytes_read = 0;
 
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: buffer is NULL.\n", __func__);
+    }
+
+    if (varint == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
+    }
+
     varint->value = 0;
 
     if (max_bytes < 1 || max_bytes > 4)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "varint_value_to_int32 parameter error, max_bytes=%d out of range.\n", max_bytes);
+        stderr_exit(EXIT_CODE_GENERAL, "%s parameter error, max_bytes=%d out of range.\n", __func__, max_bytes);
     }
 
     while (!done && bytes_read <= max_bytes)
@@ -999,13 +1009,13 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
 
     if (!done)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "varint_value_to_int32 parse error.\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s parse error.\n", __func__);
     }
 
     varint->num_bytes = bytes_read;
     varint->standard_value = ret;
 
-    TRACE_LEAVE("varint_value_to_int32")
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1015,11 +1025,21 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
 */
 void varint_copy(struct var_length_int *dest, struct var_length_int* source)
 {
-    TRACE_ENTER("varint_copy")
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+    }
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+    }
 
     dest->standard_value = source->standard_value;
     dest->value = source->value;
     dest->num_bytes = source->num_bytes;
 
-    TRACE_LEAVE("varint_copy")
+    TRACE_LEAVE(__func__)
 }

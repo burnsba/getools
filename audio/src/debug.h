@@ -33,18 +33,18 @@ extern int _trace_depth;
 /**
  * prints a message indicating control flow entered a function.
 */
-#define TRACE_ENTER(s)  if (DEBUG_TRACE) \
+#define TRACE_ENTER(function_name)  if (DEBUG_TRACE) \
     { \
         _trace_depth++; \
-        printf("[%d] enter " s "\n", _trace_depth); \
+        printf("[%d] enter %s\n", _trace_depth, function_name); \
         fflush(stdout); \
     }
 /**
  * prints a message indicating control flow exited a function.
 */
-#define TRACE_LEAVE(s)  if (DEBUG_TRACE) \
+#define TRACE_LEAVE(function_name)  if (DEBUG_TRACE) \
     { \
-        printf("[%d] <- " s "\n", _trace_depth); \
+        printf("[%d] <- %s\n", _trace_depth, function_name); \
         _trace_depth--; \
         fflush(stdout); \
     }
