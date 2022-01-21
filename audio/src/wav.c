@@ -100,8 +100,7 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
     wav->data_chunk = WavDataChunk_new();
     wav->chunks[1] = wav->data_chunk;
 
-    // this should be using ~4:1 compression, overestimate a bit by taking x5.
-    size_t buffer_len = aifc_file->sound_chunk->ck_data_size * 5;
+    size_t buffer_len = AdpcmAifcFile_estimate_inflate_size(aifc_file);
     wav->data_chunk->data = (uint8_t *)malloc_zero(1, buffer_len);
 
     wav->data_chunk->ck_data_size = AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, buffer_len);

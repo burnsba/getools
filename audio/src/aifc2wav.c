@@ -4,6 +4,7 @@
 #include <string.h>
 #include <limits.h>
 #include <getopt.h>
+#include <errno.h>
 #include "debug.h"
 #include "machine_config.h"
 #include "common.h"
@@ -27,16 +28,20 @@
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
+static int opt_loop_count = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
 #define LONG_OPT_DEBUG   1003
+
+#define AIFC2WAV_DEFAULT_INF_LOOP_TIMES 0
 
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
     {"in",     required_argument,               NULL,  'n' },
     {"out",    required_argument,               NULL,  'o' },
+    {"loop",   required_argument,               NULL,  'l' },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
@@ -58,6 +63,9 @@ void print_help(const char * invoke)
     printf("    -n,--in=FILE                  input .aifc file to convert\n");
     printf("    -o,--out=FILE                 output file. Optional. If not provided, will\n");
     printf("                                  reuse the input file name but change extension.\n");
+    printf("    -l,--loop=NUMBER              This specifies the number of times an ADPCM Loop\n");
+    printf("                                  should be repeated. Only applies to infinite loops.\n");
+    printf("                                  Default=%d.\n", AIFC2WAV_DEFAULT_INF_LOOP_TIMES);
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -112,6 +120,31 @@ void read_opts(int argc, char **argv)
             }
             break;
 
+            case 'l':
+            {
+                int res;
+                char *pend = NULL;
+
+                opt_loop_count = 1;
+
+                res = strtol(optarg, &pend, 0);
+                
+                if (pend != NULL && *pend == '\0')
+                {
+                    if (errno == ERANGE)
+                    {
+                        stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse loop count as integer: %s\n", optarg);
+                    }
+
+                    g_AdpcmLoopInfiniteExportCount = res;
+                }
+                else
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse loop count as integer: %s\n", optarg);
+                }                
+            }
+            break;
+
             case 'q':
                 g_verbosity = 0;
                 break;
@@ -161,6 +194,8 @@ int main(int argc, char **argv)
         printf("opt_output_file: %d\n", opt_output_file);
         printf("input_filename: %s\n", input_filename);
         printf("output_filename: %s\n", output_filename);
+        printf("opt_loop_count: %d\n", opt_loop_count);
+        printf("g_AdpcmLoopInfiniteExportCount: %d\n", g_AdpcmLoopInfiniteExportCount);
         fflush(stdout);
     }
 

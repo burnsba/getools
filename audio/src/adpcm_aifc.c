@@ -15,6 +15,12 @@
  * This contains code to convert from other formats to aifc.
 */
 
+/**
+ * When converting .aifc, this specifies the number of times an ADPCM Loop
+ * with repeat=infinite should be repeated in the export.
+*/
+int g_AdpcmLoopInfiniteExportCount = 0;
+
 // forward declarations
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);
@@ -144,6 +150,7 @@ struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct
         ret = (struct AdpcmAifcApplicationChunk *)p;
         p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
         p->base.ck_data_size = ck_data_size;
+        p->version = ADPCM_AIFC_VADPCM_LOOP_VERSION;
         p->base.application_signature = application_signature;
         p->base.unknown = unknown;
         
@@ -659,6 +666,7 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
     struct AdpcmAifcLoopChunk *p = (struct AdpcmAifcLoopChunk *)malloc_zero(1, sizeof(struct AdpcmAifcLoopChunk));
     p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
     p->base.ck_data_size = 4 + 1 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN + 2 + 2 + loop_data_size_bytes;
+    p->version = ADPCM_AIFC_VADPCM_LOOP_VERSION;
     p->base.application_signature = ADPCM_AIFC_APPLICATION_SIGNATURE;
     p->base.unknown = 0xb;
     
@@ -1184,8 +1192,17 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
     int32_t *frame_buffer = (int32_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int32_t));
 
-    if (aaf->loop_chunk == NULL)
+    // there's no loop chunk
+    if (aaf->loop_chunk == NULL
+        // there is a loop chunk, but nloops is zero
+        || (aaf->loop_chunk != NULL && aaf->loop_chunk->nloops == 0)
+        // there is a loop, but it's an infinite loop, and user option is to ignore
+        || (aaf->loop_chunk != NULL && aaf->loop_chunk->loop_data != NULL && aaf->loop_chunk->loop_data->count == -1 && g_AdpcmLoopInfiniteExportCount == 0)
+        )
     {
+        /**
+         * No loops, just decode the frames and writeout result until end of ssnd.
+        */
         while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
@@ -1196,7 +1213,133 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     }
     else
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: loop not supported\n", __func__);
+        /**
+         * Otherwise there are loops. Well, only one loop since the N64 only supports one loop.
+         * The logic here is roughly:
+         * - decode frames as above but only until the loop end offset.
+         * - seek to loop start point in ssnd, and load state into framebuffer
+         * - decode frames again until loop end point
+         * - decode frames until end of ssnd
+         * 
+         * The other main difference from above is that these loop points are not necessarily
+         * on a multiple of 16. That means the first and last decode in each of the listed
+         * steps will need to check the size to write to output buffer.
+        */
+        struct AdpcmAifcLoopData *loop_data;
+        size_t interval16_offset;
+        size_t interval16_delta;
+        size_t loop_pos;
+
+        if (aaf->loop_chunk->nloops != 1)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
+        }
+
+        loop_data = &aaf->loop_chunk->loop_data[0];
+
+        if (loop_data == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
+        }
+
+        if (loop_data->start < 0)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
+        }
+
+        if (loop_data->end < 0)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
+        }
+
+        if (loop_data->start > ssnd_data_size)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %d is after end of ssnd data offset %d\n", __func__, loop_data->start, ssnd_data_size);
+        }
+
+        if (loop_data->end > ssnd_data_size)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %d is after end of ssnd data offset %d\n", __func__, loop_data->end, ssnd_data_size);
+        }
+
+        interval16_offset = (loop_data->end >> 4) << 4;
+        interval16_delta = loop_data->end - interval16_offset;
+
+        // decode frames until the loop end offset (closest multiple of 16)
+        while (end_of_ssnd == 0 && ssnd_chunk_pos < interval16_offset && write_len < max_len)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
+            write_len += 16 * 2;
+            buffer_pos += 16 * 2;
+        }
+
+        // now decode one more entire frame (if required), but only write delta bytes.
+        if (interval16_delta > 0)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
+            write_len += interval16_delta * 2;
+            buffer_pos += interval16_delta * 2;
+        }
+
+        // load initial loop state
+        memcpy(frame_buffer, loop_data->state, ADPCM_AIFC_LOOP_STATE_LEN);
+        interval16_delta = loop_data->start & 0xf;
+
+        // write preliminary loop framebuffer data
+        write_frame_output(&buffer[buffer_pos], &frame_buffer[interval16_delta], 16 - interval16_delta);
+        write_len += (16 - interval16_delta) * 2;
+        buffer_pos += (16 - interval16_delta) * 2;
+
+        // start on the next decode frame
+        loop_pos = ((loop_data->start >> 4) + 1) << 4;
+        
+        // seek input ssnd position to loop start frame
+        ssnd_chunk_pos = ((loop_data->start >> 4) + 1) * 9;
+
+        // write loop data until end of loop
+        while (end_of_ssnd == 0
+            && ssnd_chunk_pos < (size_t)(ssnd_data_size)
+            && write_len < max_len
+            && loop_pos < interval16_offset)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
+            write_len += 16 * 2;
+            buffer_pos += 16 * 2;
+            loop_pos += 16 * 2;
+        }
+
+        // decode one more entire frame (if required), but only write delta bytes.
+        if (interval16_delta > 0)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
+            write_len += interval16_delta * 2;
+            buffer_pos += interval16_delta * 2;
+        }
+
+        // now just regular decode until end of file
+        interval16_offset = (ssnd_data_size >> 4) << 4;
+        interval16_delta = ssnd_data_size - interval16_offset;
+
+        while (end_of_ssnd == 0 && ssnd_chunk_pos < interval16_offset && write_len < max_len)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
+            write_len += 16 * 2;
+            buffer_pos += 16 * 2;
+        }
+
+        // decode last delta bytes.
+        if (interval16_delta > 0)
+        {
+            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
+            write_len += interval16_delta * 2;
+            buffer_pos += interval16_delta * 2;
+        }
     }
 
     free(frame_buffer);
@@ -1407,6 +1550,77 @@ void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
 }
 
 /**
+ * Estimates the number of bytes required to inflate the AIFC ssnd data.
+ * This should always be larger than the actual number of bytes required.
+ * @param aifc_file: file to estimate.
+ * @returns: size in bytes.
+*/
+size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
+{
+    TRACE_ENTER(__func__)
+
+    size_t estimate;
+    int i;
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aifc_file is NULL\n", __func__);
+    }
+
+    if (aifc_file->sound_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aifc_file->sound_chunk is NULL\n", __func__);
+    }
+
+    // start with regular ssnd chunk size
+    estimate = aifc_file->sound_chunk->ck_data_size;
+
+    if (g_AdpcmLoopInfiniteExportCount > 0 && aifc_file->loop_chunk != NULL)
+    {
+        int nloops = aifc_file->loop_chunk->nloops;
+        struct AdpcmAifcLoopData *loop_data;
+        int32_t loop_size = 0;
+
+        // there should only be one loop, but don't worry about that here.
+        for (i=0; i<nloops; i++)
+        {
+            int32_t current_loop_size;
+            loop_data = &aifc_file->loop_chunk->loop_data[i];
+
+            if (loop_data == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data is NULL\n", __func__);
+            }
+
+            current_loop_size = loop_data->end - loop_data->start;
+
+            if (current_loop_size < 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop size: %d\n", __func__, current_loop_size);
+            }
+
+            if (aifc_file->loop_chunk->loop_data->count > 0)
+            {
+                loop_size += current_loop_size * aifc_file->loop_chunk->loop_data->count;
+            }
+            else
+            {
+                loop_size += current_loop_size * g_AdpcmLoopInfiniteExportCount;
+            }
+        }
+        
+        estimate += loop_size;
+    }
+
+    // this should be using ~4:1 compression, overestimate a bit by taking x5.
+    estimate *= 5;
+
+    TRACE_LEAVE(__func__)
+
+    return estimate;
+}
+
+/**
  * Reads the next byte from the sound chunk. If the end of the chunk has been reached
  * then zero is returned.
  * @param aaf: container file.
@@ -1418,16 +1632,23 @@ void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
 */
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof)
 {
+    TRACE_ENTER(__func__)
+
     // careful with the comparison, valgrind will confirm if reading past allocated size though.
     if (*ssnd_chunk_pos >= (size_t)(aaf->sound_chunk->ck_data_size - 8))
     {
         *eof = 1;
+
+        TRACE_LEAVE(__func__)
         return 0;
     }
 
     *eof = 0;
     uint8_t ret = aaf->sound_chunk->sound_data[*ssnd_chunk_pos];
     *ssnd_chunk_pos = *ssnd_chunk_pos + 1;
+
+    TRACE_LEAVE(__func__)
+
     return ret;
 }
 
@@ -1440,6 +1661,8 @@ static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chun
 */
 static void write_frame_output(uint8_t *out, int32_t *data, size_t size)
 {
+    TRACE_ENTER(__func__)
+
     size_t i;
     for (i=0; i<size; i++)
     {
@@ -1447,4 +1670,6 @@ static void write_frame_output(uint8_t *out, int32_t *data, size_t size)
 
         ((int16_t *)out)[i] = val;
     }
+
+    TRACE_LEAVE(__func__)
 }

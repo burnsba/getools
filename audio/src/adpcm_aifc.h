@@ -88,6 +88,11 @@
 #define FRAME_DECODE_BUFFER_LEN 16
 
 /**
+ * Loops version number, required to be 1 by some applications.
+*/
+#define ADPCM_AIFC_VADPCM_LOOP_VERSION 1
+
+/**
  * aifc container for sound chunk.
 */
 struct AdpcmAifcSoundChunk {
@@ -214,6 +219,11 @@ struct AdpcmAifcCodebookChunk {
 
 /**
  * Describes loop element stored in loop_data array in loop chunk.
+ * 
+ * Loop data is used to repeat a section of a sound. Only one loop
+ * is supported, so this is most commonly used to explain how to repeat a "tail"
+ * section of the sound so the sound can be played indefinitely.
+ * 
  * The n64 programming manual says:
  *     "state defines the internal state of the ADPCM decoder at
  *     the start of the loop and is necessary for smooth playback
@@ -416,6 +426,8 @@ struct AdpcmAifcFile {
     struct AdpcmAifcLoopChunk *loop_chunk;
 };
 
+extern int g_AdpcmLoopInfiniteExportCount;
+
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count);
 struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);
 struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank);
@@ -441,5 +453,6 @@ void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk);
 void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk);
 void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk);
 void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file);
+size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
 
 #endif
