@@ -679,7 +679,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
 /**
  * This parses a compressed MIDI track from the internal raw data buffer
  * and converts to {@code struct GmidEvent}, storing the events
- * intnerally. This allocates memory. This method can't parse pattern markers,
+ * internally. This allocates memory. This method can't parse pattern markers,
  * {@code CseqFile_unroll} must have been called previously.
  * @param gtrack: track to convert to events.
 */
@@ -950,6 +950,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
                     event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_END_OF_TRACK;
 
                     // convert to MIDI format
+                    // NOTE: command is wrong for MIDI, correct command is retrieved via `GmidEvent_get_midi_command`
                     event->midi_command_len = MIDI_COMMAND_LEN_END_OF_TRACK;
                     event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_END_OF_TRACK;
                     event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_END_OF_TRACK;
@@ -1629,7 +1630,7 @@ void midi_note_to_name(int note, char* result, size_t max_length)
  * (The stored command doesn't include channel in the command.)
  * Maybe refactor this to split yet another parameter into two properties ...
  * But for now, the command paramter evaluated is the "full" compressed MIDI command (without channel),
- * this contains logic to adjust differences.
+ * this contains logic to adjust differences from cseq to MIDI.
  * @param event: event to build MIDI command from.
  * @returns: standard MIDI command with channel.
 */

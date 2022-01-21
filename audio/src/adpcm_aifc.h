@@ -93,6 +93,17 @@
 #define ADPCM_AIFC_VADPCM_LOOP_VERSION 1
 
 /**
+ * The number of bytes written to output wav file,
+ * for each input data.
+*/
+#define ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES 2
+
+/**
+ * Size in bytes of each element in the loop state array.
+*/
+#define ADPCM_LOOP_STATE_ELEMENT_SIZE 2
+
+/**
  * aifc container for sound chunk.
 */
 struct AdpcmAifcSoundChunk {

@@ -1182,7 +1182,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     size_t write_len = 0;
     size_t ssnd_chunk_pos = 0;
     int end_of_ssnd = 0;
-    size_t buffer_pos = 0;
+    int i;
 
     int32_t ssnd_data_size = aaf->sound_chunk->ck_data_size - 8;
     if (ssnd_data_size < 0)
@@ -1206,9 +1206,14 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
         while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
-            write_len += 16 * 2;
-            buffer_pos += 16 * 2;
+            write_frame_output(&buffer[write_len], frame_buffer, 16);
+            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+        }
+
+        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
         }
     }
     else
@@ -1217,8 +1222,9 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
          * Otherwise there are loops. Well, only one loop since the N64 only supports one loop.
          * The logic here is roughly:
          * - decode frames as above but only until the loop end offset.
-         * - seek to loop start point in ssnd, and load state into framebuffer
-         * - decode frames again until loop end point
+         * - for each loop:
+         *     - seek to loop start point in ssnd, and load state into framebuffer
+         *     - decode frames again until loop end point
          * - decode frames until end of ssnd
          * 
          * The other main difference from above is that these loop points are not necessarily
@@ -1226,9 +1232,24 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
          * steps will need to check the size to write to output buffer.
         */
         struct AdpcmAifcLoopData *loop_data;
+
+        // offset, in bytes
         size_t interval16_offset;
+
+        // count of remaining bytes in partial frame
         size_t interval16_delta;
-        size_t loop_pos;
+
+        // number of frames
+        size_t interval16_times;
+
+        // loop counter (0,1,2,3 ...)
+        size_t interval16_counter;
+
+        // byte offset into ssnd chunk
+        size_t loop_start_position;
+
+        // number of times to decode loop data
+        int loop_times;
 
         if (aaf->loop_chunk->nloops != 1)
         {
@@ -1252,93 +1273,198 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
         }
 
-        if (loop_data->start > ssnd_data_size)
+        loop_start_position = ((loop_data->start >> 4) + 1) * 9;
+
+        if (loop_start_position > (size_t)ssnd_data_size)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %d is after end of ssnd data offset %d\n", __func__, loop_data->start, ssnd_data_size);
+            stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
         }
 
-        if (loop_data->end > ssnd_data_size)
+        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %d is after end of ssnd data offset %d\n", __func__, loop_data->end, ssnd_data_size);
+            printf("%s %d: loop_start_position=0x%08lx, loop_data->end=0x%08x\n", __func__, __LINE__, loop_start_position, loop_data->end);
         }
 
-        interval16_offset = (loop_data->end >> 4) << 4;
+        interval16_times = loop_data->end >> 4;
+        interval16_offset = interval16_times << 4;
         interval16_delta = loop_data->end - interval16_offset;
 
+        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
+        }
+
         // decode frames until the loop end offset (closest multiple of 16)
-        while (end_of_ssnd == 0 && ssnd_chunk_pos < interval16_offset && write_len < max_len)
+        interval16_counter = 0;
+        while (end_of_ssnd == 0
+            && ssnd_chunk_pos < (size_t)(ssnd_data_size)
+            && write_len < max_len
+            && interval16_counter < interval16_times)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
-            write_len += 16 * 2;
-            buffer_pos += 16 * 2;
+            write_frame_output(&buffer[write_len], frame_buffer, 16);
+            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+            interval16_counter++;
+        }
+
+        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
         }
 
         // now decode one more entire frame (if required), but only write delta bytes.
         if (interval16_delta > 0)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
-            write_len += interval16_delta * 2;
-            buffer_pos += interval16_delta * 2;
+            write_frame_output(&buffer[write_len], frame_buffer, interval16_delta);
+            write_len += interval16_delta * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
         }
 
-        // load initial loop state
-        memcpy(frame_buffer, loop_data->state, ADPCM_AIFC_LOOP_STATE_LEN);
-        interval16_delta = loop_data->start & 0xf;
-
-        // write preliminary loop framebuffer data
-        write_frame_output(&buffer[buffer_pos], &frame_buffer[interval16_delta], 16 - interval16_delta);
-        write_len += (16 - interval16_delta) * 2;
-        buffer_pos += (16 - interval16_delta) * 2;
-
-        // start on the next decode frame
-        loop_pos = ((loop_data->start >> 4) + 1) << 4;
-        
-        // seek input ssnd position to loop start frame
-        ssnd_chunk_pos = ((loop_data->start >> 4) + 1) * 9;
-
-        // write loop data until end of loop
-        while (end_of_ssnd == 0
-            && ssnd_chunk_pos < (size_t)(ssnd_data_size)
-            && write_len < max_len
-            && loop_pos < interval16_offset)
+        // Determine number of loops to decode. If this is an infinite loop then
+        // fallback to user specification.
+        loop_times = loop_data->count;
+        if (loop_times == -1)
         {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
-            write_len += 16 * 2;
-            buffer_pos += 16 * 2;
-            loop_pos += 16 * 2;
+            loop_times = g_AdpcmLoopInfiniteExportCount;
         }
 
-        // decode one more entire frame (if required), but only write delta bytes.
-        if (interval16_delta > 0)
+        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
         {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
-            write_len += interval16_delta * 2;
-            buffer_pos += interval16_delta * 2;
+            printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
+        }
+
+        for (i=0; i<loop_times; i++)
+        {
+            int state_frame_buffer_index;
+            int state_loop_data_index;
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: loop i=%d\n", __func__, __LINE__, i);
+            }
+            
+            // Load initial loop state.
+            // This copies values from array of type int16_t
+            // to array of type int32_t.
+            memset(frame_buffer, 0, ADPCM_AIFC_LOOP_STATE_LEN);
+            state_frame_buffer_index = 0;
+            state_loop_data_index = 0;
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: frame_buffer: \n", __func__, __LINE__);
+            }
+
+            while (state_frame_buffer_index < (ADPCM_AIFC_LOOP_STATE_LEN / ADPCM_LOOP_STATE_ELEMENT_SIZE))
+            {
+                // loop state is stored big endian
+                int16_t t;
+                memcpy(&t, &loop_data->state[state_loop_data_index], ADPCM_LOOP_STATE_ELEMENT_SIZE);
+                BSWAP16(t);
+
+                // implicit cast for sign extend.
+                frame_buffer[state_frame_buffer_index] = t;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("0x%08x ", frame_buffer[state_frame_buffer_index]);
+                }
+
+                state_frame_buffer_index++;
+                state_loop_data_index += ADPCM_LOOP_STATE_ELEMENT_SIZE;
+            }
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("\n");
+            }
+
+            interval16_delta = loop_data->start & 0xf;
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
+            }
+
+            // Write preliminary loop framebuffer data.
+            // This is index zero for the count of frames written.
+            write_frame_output(&buffer[write_len], &frame_buffer[interval16_delta], 16 - interval16_delta);
+            write_len += (16 - interval16_delta) * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
+
+            // Calculate number of (full) frames to decode.
+            interval16_times = (loop_data->end >> 4) - (loop_data->start >> 4);
+            
+            // seek input ssnd position to loop start
+            ssnd_chunk_pos = loop_start_position;
+
+            // Any prequel for the start of the loop frame was already written above, which
+            // is considered counter index zero. Therefore, the main loop needs to start
+            // counting on frame 1.
+            interval16_counter = 1;
+
+            // write loop data until end of loop
+            while (end_of_ssnd == 0
+                && ssnd_chunk_pos < (size_t)(ssnd_data_size)
+                && write_len < max_len
+                && interval16_counter < interval16_times)
+            {
+                interval16_counter++;
+
+                AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                write_frame_output(&buffer[write_len], frame_buffer, 16);
+                write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            }
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
+
+            // Decode any remainder data after the last full frame.
+            interval16_delta = (loop_data->end - loop_data->start) - (interval16_times << 4);
+            if (interval16_delta > 0)
+            {
+                AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                write_frame_output(&buffer[write_len], frame_buffer, interval16_delta);
+                write_len += interval16_delta * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                }
+            }
+        }
+
+        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
         }
 
         // now just regular decode until end of file
-        interval16_offset = (ssnd_data_size >> 4) << 4;
-        interval16_delta = ssnd_data_size - interval16_offset;
-
-        while (end_of_ssnd == 0 && ssnd_chunk_pos < interval16_offset && write_len < max_len)
+        while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
         {
             AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, 16);
-            write_len += 16 * 2;
-            buffer_pos += 16 * 2;
+            write_frame_output(&buffer[write_len], frame_buffer, 16);
+            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
         }
 
-        // decode last delta bytes.
-        if (interval16_delta > 0)
+        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+        if (g_verbosity >= VERBOSE_DEBUG)
         {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[buffer_pos], frame_buffer, interval16_delta);
-            write_len += interval16_delta * 2;
-            buffer_pos += interval16_delta * 2;
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
         }
     }
 
@@ -1551,9 +1677,8 @@ void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
 
 /**
  * Estimates the number of bytes required to inflate the AIFC ssnd data.
- * This should always be larger than the actual number of bytes required.
  * @param aifc_file: file to estimate.
- * @returns: size in bytes.
+ * @returns: size in bytes. This should always be larger than the actual number of bytes required.
 */
 size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
 {

@@ -10,16 +10,28 @@
 #define VERBOSE_DEBUG 3
 
 /**
+ * Trace debug flag.
+ * If enabled, will print when entering and leaving functions.
+*/
+#define DEBUG_TRACE 0
+
+// Begin section: debug flags for individual programs/files/methods
+
+/**
  * naudio debug flag.
  * If enabled, will print file offsets to the console when loading .tbl file.
 */
 #define DEBUG_OFFSET_CONSOLE 0
 
 /**
- * Trace debug flag.
- * If enabled, will print when entering and leaving functions.
+ * aifc2wav debug flag.
+ * If enabled, will print debug information about loop position/offsets when decoing .aifc
+ * ssnd chunk to wave file.
+ * Only applies to loops.
 */
-#define DEBUG_TRACE 0
+#define DEBUG_ADPCMAIFCFILE_DECODE 0
+
+// end section: debug flags for individual programs/files/methods
 
 /**
  * control flow flag, supposed to be used to mark "not implemented"
