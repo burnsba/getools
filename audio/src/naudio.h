@@ -656,5 +656,6 @@ void ALSound_free(struct ALSound *sound);
 void ALInstrument_free(struct ALInstrument *instrument);
 void ALBank_free(struct ALBank *bank);
 void ALBankFile_free(struct ALBankFile *bank_file);
+double detune_frequency(double hw_sample_rate, int keybase, int detune);
 
 #endif

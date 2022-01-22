@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "debug.h"
 #include "common.h"
 #include "utility.h"
@@ -1347,6 +1348,53 @@ void ALBankFile_free(struct ALBankFile *bank_file)
     }
 
     free(bank_file);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Calculates new frequency based on detune and keybase parameters.
+ * @param keybase: keybase (MIDI note).
+ * @param detune: value in cents (1200 cents per octave).
+ * @returns: adjusted frequency
+*/
+double detune_frequency(double hw_sample_rate, int keybase, int detune)
+{
+    TRACE_ENTER(__func__)
+
+    if (detune < 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: 0-100\n", __func__, detune);
+    }
+
+    if (detune > 100)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: 0-100\n", __func__, detune);
+    }
+
+    if (keybase < 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: keybase=%d out of range. Valid range: 0-127\n", __func__, keybase);
+    }
+
+    if (keybase > 127)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: keybase=%d out of range. Valid range: 0-127\n", __func__, keybase);
+    }
+
+    if (hw_sample_rate < 1.0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: invalid hw_sample_rate=%f\n", __func__, hw_sample_rate);
+    }
+
+    // formula is:
+    // hw_sample_rate / 2^( (60 - (keybase + detune/100))/12 )
+
+    // 60 = C4, 12 = notes per octave
+    double expon = (60.0 - (keybase + detune/100.0)) / 12.0;
+    double denom = pow(2.0, expon);
+
+    return hw_sample_rate / denom;
 
     TRACE_LEAVE(__func__)
 }

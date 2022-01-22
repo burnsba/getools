@@ -113,7 +113,7 @@ struct WavFmtChunk {
     int16_t num_channels;
 
     /**
-     * Sample rate.
+     * Sample rate, aka frequency.
      * little endian.
     */
     int32_t sample_rate;
@@ -198,5 +198,7 @@ void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi);
 void WavDataChunk_free(struct WavDataChunk *chunk);
 void WavFmtChunk_free(struct WavFmtChunk *chunk);
 void WavFile_free(struct WavFile *wav_file);
+double WavFile_get_frequency(struct WavFile *wav_file);
+void WavFile_set_frequency(struct WavFile *wav_file, double frequency);
 
 #endif

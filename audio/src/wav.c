@@ -284,12 +284,51 @@ void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
             {
                 if (g_verbosity >= 2)
                 {
-                    printf("WavFile_fwrite: ignore ck_id 0x%08x\n", ck_id);
+                    printf("%s: ignore ck_id 0x%08x\n", __func__, ck_id);
                 }
             }
             break;
         }
     }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Gets the frequency of the fmt chunk in the wav file.
+ * @param wav_file: wav to get frequency for.
+ * @returns: fmt chunk frequency.
+*/
+double WavFile_get_frequency(struct WavFile *wav_file)
+{
+    TRACE_ENTER(__func__)
+
+    if (wav_file->fmt_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: fmt chunk not found\n", __func__);
+    }
+
+    return (double)wav_file->fmt_chunk->sample_rate;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Sets the frequency of the fmt chunk in the wav file.
+ * Truncated to int.
+ * @param wav_file: wav file to set frequency.
+ * @param frequency: new frequency.
+*/
+void WavFile_set_frequency(struct WavFile *wav_file, double frequency)
+{
+    TRACE_ENTER(__func__)
+
+    if (wav_file->fmt_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: fmt chunk not found\n", __func__);
+    }
+
+    wav_file->fmt_chunk->sample_rate = (int32_t)frequency;
 
     TRACE_LEAVE(__func__)
 }
