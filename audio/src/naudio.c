@@ -1065,6 +1065,7 @@ void ALADPCMLoop_free(struct ALADPCMLoop *loop)
 
     if (loop == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1083,6 +1084,7 @@ void ALADPCMBook_free(struct ALADPCMBook *book)
 
     if (book == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1106,6 +1108,7 @@ void ALRawLoop_free(struct ALRawLoop *loop)
 
     if (loop == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1124,6 +1127,7 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
 
     if (envelope == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1142,6 +1146,7 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
 
     if (keymap == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1160,6 +1165,7 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
 
     if (wavetable == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1206,6 +1212,7 @@ void ALSound_free(struct ALSound *sound)
 
     if (sound == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1244,6 +1251,7 @@ void ALInstrument_free(struct ALInstrument *instrument)
 
     if (instrument == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1284,6 +1292,7 @@ void ALBank_free(struct ALBank *bank)
 
     if (bank == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1324,6 +1333,7 @@ void ALBankFile_free(struct ALBankFile *bank_file)
 
     if (bank_file == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1394,7 +1404,7 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
     double expon = (60.0 - (keybase + detune/100.0)) / 12.0;
     double denom = pow(2.0, expon);
 
-    return hw_sample_rate / denom;
-
     TRACE_LEAVE(__func__)
+
+    return hw_sample_rate / denom;
 }

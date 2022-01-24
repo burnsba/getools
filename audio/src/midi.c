@@ -419,6 +419,7 @@ void GmidEvent_free(struct GmidEvent *event)
 
     if (event == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -444,6 +445,7 @@ void GmidTrack_free(struct GmidTrack *track)
 
     if (track == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -491,6 +493,7 @@ void CseqFile_free(struct CseqFile *cseq)
 
     if (cseq == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -515,6 +518,7 @@ void MidiTrack_free(struct MidiTrack *track)
 
     if (track == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -541,6 +545,7 @@ void MidiFile_free(struct MidiFile *midi)
 
     if (midi == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 

@@ -1508,6 +1508,7 @@ void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1526,6 +1527,7 @@ void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1550,6 +1552,7 @@ void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1598,6 +1601,7 @@ void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -1624,6 +1628,7 @@ void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
 
     if (aifc_file == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 

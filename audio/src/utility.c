@@ -162,8 +162,11 @@ int mkpath(const char* path)
 */
 void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
 {
+    TRACE_ENTER(__func__)
+
     if (dest == NULL || src == NULL || len == 0)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -172,6 +175,8 @@ void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
     {
         dest[len - i - 1] = src[i];
     }
+
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -184,8 +189,11 @@ void reverse_into(uint8_t *dest, uint8_t *src, size_t len)
 */
 void reverse_inplace(uint8_t *arr, size_t len)
 {
+    TRACE_ENTER(__func__)
+
     if (arr == NULL || len == 0)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -196,6 +204,8 @@ void reverse_inplace(uint8_t *arr, size_t len)
         arr[len - i - 1] = arr[i];
         arr[i] = t;
     }
+
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -574,6 +584,7 @@ void file_info_free(struct file_info *fi)
 
     if (fi == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -608,6 +619,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
 
     if (num < 1)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -644,6 +656,7 @@ void bswap32_memcpy(void *dest, const void *src, size_t num)
     
     if (num < 1)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -819,6 +832,7 @@ void get_filename(char *string, char *filename, size_t max_len)
 
     if (string == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 

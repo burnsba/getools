@@ -125,6 +125,7 @@ void string_data_free(struct string_data *sd)
 
     if (sd == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -178,6 +179,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 
     if (node == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -238,6 +240,7 @@ void llist_node_root_free_children(struct llist_root *root)
 
     if (root == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -270,6 +273,7 @@ void llist_node_free_string_data(struct llist_root *root)
 
     if (root == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -309,6 +313,7 @@ void llist_node_root_free(struct llist_root *root)
 
     if (root == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 

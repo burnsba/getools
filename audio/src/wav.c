@@ -125,6 +125,7 @@ void WavDataChunk_free(struct WavDataChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -148,6 +149,7 @@ void WavFmtChunk_free(struct WavFmtChunk *chunk)
 
     if (chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
@@ -168,6 +170,7 @@ void WavFile_free(struct WavFile *wav_file)
 
     if (wav_file == NULL)
     {
+        TRACE_LEAVE(__func__)
         return;
     }
 
