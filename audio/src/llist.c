@@ -215,12 +215,12 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
 
         if (is_root)
         {
-            root->root = NULL;
+            root->root = next;
         }
 
         if (is_tail)
         {
-            root->tail = NULL;
+            root->tail = prev;
         }
     }
 
