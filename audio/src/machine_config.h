@@ -54,4 +54,7 @@
 */
 typedef __float80 f80;
 
+// gcc
+#define ATTR_INLINE __attribute__((always_inline))
+
 #endif

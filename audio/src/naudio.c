@@ -120,6 +120,26 @@ struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t loa
 }
 
 /**
+ * Base constructor. Only partially initializes envelope. This should
+ * only be called from other constructors.
+ * @returns: pointer to new envelope.
+*/
+struct ALEnvelope *ALEnvelope_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t envelope_id = 0;
+
+    struct ALEnvelope *envelope = (struct ALEnvelope *)malloc_zero(1, sizeof(struct ALEnvelope));
+
+    envelope->id = envelope_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return envelope;
+}
+
+/**
  * Reads a single {@code struct ALEnvelope} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
  * @param ctl_file_contents: .ctl file.
@@ -130,12 +150,10 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
 {
     TRACE_ENTER(__func__)
 
-    static int32_t envelope_id = 0;
     int32_t input_pos = load_from_offset;
 
-    struct ALEnvelope *envelope = (struct ALEnvelope *)malloc_zero(1, sizeof(struct ALEnvelope));
+    struct ALEnvelope *envelope = ALEnvelope_new();
 
-    envelope->id = envelope_id++;
     snprintf(envelope->text_id, INST_OBJ_ID_STRING_LEN, "Envelope%04d", envelope->id);
 
     envelope->attack_time = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
@@ -220,6 +238,26 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
 }
 
 /**
+ * Base constructor. Only partially initializes keymap. This should
+ * only be called from other constructors.
+ * @returns: pointer to new keymap.
+*/
+struct ALKeyMap *ALKeyMap_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t keymap_id = 0;
+
+    struct ALKeyMap *keymap = (struct ALKeyMap *)malloc_zero(1, sizeof(struct ALKeyMap));
+
+    keymap->id = keymap_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return keymap;
+}
+
+/**
  * Reads a single {@code struct ALKeyMap} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
  * @param ctl_file_contents: .ctl file.
@@ -230,12 +268,9 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
 {
     TRACE_ENTER(__func__)
 
-    static int32_t keymap_id = 0;
     int32_t input_pos = load_from_offset;
 
-    struct ALKeyMap *keymap = (struct ALKeyMap *)malloc_zero(1, sizeof(struct ALKeyMap));
-
-    keymap->id = keymap_id++;
+    struct ALKeyMap *keymap = ALKeyMap_new();
     snprintf(keymap->text_id, INST_OBJ_ID_STRING_LEN, "Keymap%04d", keymap->id);
 
     keymap->velocity_min = ctl_file_contents[input_pos];
@@ -431,6 +466,26 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 }
 
 /**
+ * Base constructor. Only partially initializes sound. This should
+ * only be called from other constructors.
+ * @returns: pointer to new sound.
+*/
+struct ALSound *ALSound_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t sound_id = 0;
+
+    struct ALSound *sound = (struct ALSound *)malloc_zero(1, sizeof(struct ALSound));
+
+    sound->id = sound_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return sound;
+}
+
+/**
  * Reads a single {@code struct ALSound} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for child envelope, keymap, wavetable if present.
  * @param ctl_file_contents: .ctl file.
@@ -441,12 +496,9 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
 {
     TRACE_ENTER(__func__)
 
-    static int32_t sound_id = 0;
     int32_t input_pos = load_from_offset;
 
-    struct ALSound *sound = (struct ALSound *)malloc_zero(1, sizeof(struct ALSound));
-
-    sound->id = sound_id++;
+    struct ALSound *sound = ALSound_new();
     snprintf(sound->text_id, INST_OBJ_ID_STRING_LEN, "Sound%04d", sound->id);
 
     sound->envelope_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
@@ -604,6 +656,26 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 }
 
 /**
+ * Base constructor. Only partially initializes instrument. This should
+ * only be called from other constructors.
+ * @returns: pointer to new instrument.
+*/
+struct ALInstrument *ALInstrument_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t instrument_id = 0;
+
+    struct ALInstrument *instrument = (struct ALInstrument *)malloc_zero(1, sizeof(struct ALInstrument));
+
+    instrument->id = instrument_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return instrument;
+}
+
+/**
  * Reads a single {@code struct ALInstrument} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for sounds and related if {@code sound_count} > 0.
  * @param instrument: object to write to.
@@ -614,13 +686,11 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
 {
     TRACE_ENTER(__func__)
     
-    static int32_t instrument_id = 0;
     int32_t input_pos = load_from_offset;
     int i;
 
-    struct ALInstrument *instrument = (struct ALInstrument *)malloc_zero(1, sizeof(struct ALInstrument));
+    struct ALInstrument *instrument = ALInstrument_new();
 
-    instrument->id = instrument_id++;
     snprintf(instrument->text_id, INST_OBJ_ID_STRING_LEN, "Instrument%04d", instrument->id);
 
     instrument->volume = ctl_file_contents[input_pos];
@@ -846,6 +916,26 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
 }
 
 /**
+ * Base constructor. Only partially initializes bank. This should
+ * only be called from other constructors.
+ * @returns: pointer to new bank.
+*/
+struct ALBank *ALBank_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t bank_id = 0;
+
+    struct ALBank *bank = (struct ALBank *)malloc_zero(1, sizeof(struct ALBank));
+
+    bank->id = bank_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return bank;
+}
+
+/**
  * Reads a single {@code struct ALBank} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for instruments and related if {@code inst_count} > 0.
  * @param ctl_file_contents: .ctl file.
@@ -856,13 +946,11 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
 {
     TRACE_ENTER(__func__)
 
-    static int32_t bank_id = 0;
     int32_t input_pos = load_from_offset;
     int i;
 
-    struct ALBank *bank = (struct ALBank *)malloc_zero(1, sizeof(struct ALBank));
+    struct ALBank *bank = ALBank_new();
 
-    bank->id = bank_id++;
     snprintf(bank->text_id, INST_OBJ_ID_STRING_LEN, "Bank%04d", bank->id);
 
     bank->inst_count = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));
@@ -966,6 +1054,25 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 }
 
 /**
+ * Base constructor. Only partially initializes bankfile. This should
+ * only be called from other constructors.
+ * @returns: pointer to new bank file.
+*/
+struct ALBankFile *ALBankFile_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t bank_file_id = 0;
+
+    struct ALBankFile *bank_file = (struct ALBankFile *)malloc_zero(1, sizeof(struct ALBankFile));
+    bank_file->id = bank_file_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return bank_file;
+}
+
+/**
  * This is the main entry point for reading a .ctl file.
  * Reads a single {@code struct ALBankFile} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for banks and related if {@code bank_count} > 0.
@@ -977,15 +1084,11 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 {
     TRACE_ENTER(__func__)
 
-    static int32_t bank_file_id = 0;
-
     int32_t input_pos = 0;
     int i;
 
-    struct ALBankFile *bank_file = (struct ALBankFile *)malloc_zero(1, sizeof(struct ALBankFile));
-    memset(bank_file, 0, sizeof(struct ALBankFile));
+    struct ALBankFile *bank_file = ALBankFile_new();
 
-    bank_file->id = bank_file_id++;
     snprintf(bank_file->text_id, INST_OBJ_ID_STRING_LEN, "BankFile%04d", bank_file->id);
 
     bank_file->revision = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));

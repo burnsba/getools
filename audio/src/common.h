@@ -24,6 +24,11 @@
 */
 #define  WRITE_BUFFER_LEN      MAX_FILENAME_LEN
 
+/**
+ * Preprocessor macro to get length of array.
+*/
+#define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
+
 extern int g_verbosity;
 extern int g_output_mode;
 extern char g_write_buffer[WRITE_BUFFER_LEN];
