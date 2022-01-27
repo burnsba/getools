@@ -10,10 +10,82 @@
 #include "llist.h"
 #include "string_hash.h"
 #include "md5.h"
+#include "naudio.h"
 
 /**
  * This file contains simple unit tests.
 */
+
+struct TestKeyValue {
+    int key;
+    void *data;
+};
+
+struct TestKeyValue *TestKeyValue_new()
+{
+    return (struct TestKeyValue *)malloc_zero(1, sizeof(struct TestKeyValue));
+}
+
+void TestKeyValue_free(struct TestKeyValue *tkvp)
+{
+    if (tkvp != NULL)
+    {
+        free(tkvp);
+    }
+}
+
+int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second)
+{
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct TestKeyValue *kvp_first = (struct TestKeyValue *)first->data;
+        struct TestKeyValue *kvp_second = (struct TestKeyValue *)second->data;
+       
+        if (kvp_first == NULL && kvp_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (kvp_first == NULL && kvp_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (kvp_first != NULL && kvp_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (kvp_first->key < kvp_second->key)
+            {
+                ret = -1;
+            }
+            else if (kvp_first->key > kvp_second->key)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    return ret;
+}
 
 void print16(char *arr)
 {
@@ -262,6 +334,62 @@ void linked_list_all(int *run_count, int *pass_count, int *fail_count)
             *fail_count = *fail_count + 1;
         }
     }
+
+    {
+        printf("llist test: sort\n");
+        *run_count = *run_count + 1;
+        int check = 0;
+        struct llist_node *node;
+        struct TestKeyValue *tkvp;
+
+        struct llist_root *root = llist_root_new();
+
+        node = llist_node_new();
+        tkvp = TestKeyValue_new();
+        tkvp->key = 2;
+        node->data = tkvp;
+        llist_root_append_node(root, node);
+
+        node = llist_node_new();
+        tkvp = TestKeyValue_new();
+        tkvp->key = 0;
+        node->data = tkvp;
+        llist_root_append_node(root, node);
+
+        node = llist_node_new();
+        tkvp = TestKeyValue_new();
+        tkvp->key = 1;
+        node->data = tkvp;
+        llist_root_append_node(root, node);
+
+        llist_root_merge_sort(root, llist_node_TestKeyValue_compare_smaller_key);
+
+        check = 1;
+        check &= root->count == 3;
+        check &= (((struct TestKeyValue *)root->root->data)->key == 0);
+        check &= (((struct TestKeyValue *)root->root->next->data)->key == 1);
+        check &= (((struct TestKeyValue *)root->root->next->next->data)->key == 2);
+
+        node = root->root;
+        while (node != NULL)
+        {
+            TestKeyValue_free(node->data);
+            node = node->next;
+        }
+
+        llist_node_root_free(root);
+
+        if (check == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
 }
 
 void string_hash_all(int *run_count, int *pass_count, int *fail_count)
@@ -479,6 +607,794 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
     }
 }
 
+/**
+ * Parses file as first described in `0002.inst`
+*/
+int parse_inst_default(struct file_info *fi)
+{
+    struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+    struct ALBank *bank;
+    struct ALInstrument *instrument;
+    struct ALSound *sound;
+    struct ALWaveTable *wavetable;
+    struct ALKeyMap *keymap;
+    struct ALEnvelope *envelope;
+    int i;
+
+    int pass = 1;
+    if (bank_file == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (bank_file->bank_count != 1)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank_file->bank_count=%d, expected 1\n", __func__, __LINE__, bank_file->bank_count);
+    }
+
+    if (bank_file->banks == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank_file->banks is NULL\n", __func__, __LINE__);
+    }
+
+    bank = bank_file->banks[0];
+
+    if (bank == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank is NULL\n", __func__, __LINE__);
+    }
+
+    if (bank->inst_count != 1)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank->inst_count=%d, expected 1\n", __func__, __LINE__, bank->inst_count);
+    }
+
+    if (bank->instruments == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: bank->instruments is NULL\n", __func__, __LINE__);
+    }
+
+    instrument = bank->instruments[0];
+
+    if (instrument == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: instrument is NULL\n", __func__, __LINE__);
+    }
+
+    if (instrument->sound_count != 3)
+    {
+        pass = 0;
+        printf("%s %d>fail: instrument->sound_count=%d, expected 3\n", __func__, __LINE__, instrument->sound_count);
+    }
+
+    if (instrument->volume != 70)
+    {
+        pass = 0;
+        printf("%s %d>fail: instrument->volume=%d, expected 70\n", __func__, __LINE__, instrument->volume);
+    }
+
+    if (instrument->pan != 49)
+    {
+        pass = 0;
+        printf("%s %d>fail: instrument->pan=%d, expected 49\n", __func__, __LINE__, instrument->pan);
+    }
+
+    if (instrument->sounds == NULL)
+    {
+        pass = 0;
+        printf("%s %d>fail: instrument->sounds is NULL\n", __func__, __LINE__);
+    }
+
+    int seen_sound_index_0 = 0;
+    int seen_sound_index_1 = 0;
+    int seen_sound_index_2 = 0;
+
+    for (i=0; i<instrument->sound_count; i++)
+    {
+        sound = instrument->sounds[i];
+
+        if (sound == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
+        }
+
+        if (strcmp(sound->text_id, "sound1") == 0)
+        {
+            seen_sound_index_0++;
+
+            if (sound->sample_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_volume=%d, expected 127\n", __func__, __LINE__, sound->sample_volume);
+            }
+
+            if (sound->sample_pan != 64)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_pan=%d, expected 64\n", __func__, __LINE__, sound->sample_pan);
+            }
+            
+            wavetable = sound->wavetable;
+
+            if (wavetable == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+            }
+
+            if (strcmp(wavetable->aifc_path, "../sounds/thunk.aifc") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable->aifc_path=\"%s\", expected \"%s\"\n", __func__, __LINE__, wavetable->aifc_path, "../sounds/thunk.aifc");
+            }
+
+            envelope = sound->envelope;
+
+            if (envelope == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+            }
+
+            if (envelope->attack_time != 5000)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_time=%d, expected %d\n", __func__, __LINE__, envelope->attack_time, 5000);
+            }
+
+            if (envelope->attack_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_volume=%d, expected %d\n", __func__, __LINE__, envelope->attack_volume, 127);
+            }
+
+            if (envelope->decay_time != 364920)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_time=%d, expected %d\n", __func__, __LINE__, envelope->decay_time, 364920);
+            }
+
+            if (envelope->decay_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_volume=%d, expected %d\n", __func__, __LINE__, envelope->decay_volume, 127);
+            }
+
+            if (envelope->release_time != 1234)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->release_time=%d, expected %d\n", __func__, __LINE__, envelope->release_time, 1234);
+            }
+
+            keymap = sound->keymap;
+
+            if (keymap == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+            }
+
+            if (keymap->velocity_min != 1)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_min=%d, expected %d\n", __func__, __LINE__, keymap->velocity_min, 1);
+            }
+
+            if (keymap->velocity_max != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_max=%d, expected %d\n", __func__, __LINE__, keymap->velocity_max, 127);
+            }
+
+            if (keymap->key_min != 41)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_min=%d, expected %d\n", __func__, __LINE__, keymap->key_min, 41);
+            }
+
+            if (keymap->key_max != 42)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_max=%d, expected %d\n", __func__, __LINE__, keymap->key_max, 42);
+            }
+
+            if (keymap->key_base != 43)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_base=%d, expected %d\n", __func__, __LINE__, keymap->key_base, 43);
+            }
+
+            if (keymap->detune != 5)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->detune=%d, expected %d\n", __func__, __LINE__, keymap->detune, 5);
+            }
+        }
+        else if (strcmp(sound->text_id, "glass_sound") == 0)
+        {
+            seen_sound_index_1++;
+            
+            if (sound->sample_volume != 120)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_volume=%d, expected 120\n", __func__, __LINE__, sound->sample_volume);
+            }
+
+            if (sound->sample_pan != 60)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_pan=%d, expected 60\n", __func__, __LINE__, sound->sample_pan);
+            }
+            
+            wavetable = sound->wavetable;
+
+            if (wavetable == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+            }
+
+            if (strcmp(wavetable->aifc_path, "../sounds/glass.aifc") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable->aifc_path=\"%s\", expected \"%s\"\n", __func__, __LINE__, wavetable->aifc_path, "../sounds/glass.aifc");
+            }
+
+            envelope = sound->envelope;
+
+            if (envelope == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+            }
+
+            if (envelope->attack_time != 5000)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_time=%d, expected %d\n", __func__, __LINE__, envelope->attack_time, 5000);
+            }
+
+            if (envelope->attack_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_volume=%d, expected %d\n", __func__, __LINE__, envelope->attack_volume, 127);
+            }
+
+            if (envelope->decay_time != -1)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_time=%d, expected %d\n", __func__, __LINE__, envelope->decay_time, -1);
+            }
+
+            if (envelope->decay_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_volume=%d, expected %d\n", __func__, __LINE__, envelope->decay_volume, 127);
+            }
+
+            if (envelope->release_time != 5000)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->release_time=%d, expected %d\n", __func__, __LINE__, envelope->release_time, 5000);
+            }
+
+            keymap = sound->keymap;
+
+            if (keymap == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+            }
+
+            if (keymap->velocity_min != 1)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_min=%d, expected %d\n", __func__, __LINE__, keymap->velocity_min, 1);
+            }
+
+            if (keymap->velocity_max != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_max=%d, expected %d\n", __func__, __LINE__, keymap->velocity_max, 127);
+            }
+
+            if (keymap->key_min != 41)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_min=%d, expected %d\n", __func__, __LINE__, keymap->key_min, 41);
+            }
+
+            if (keymap->key_max != 41)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_max=%d, expected %d\n", __func__, __LINE__, keymap->key_max, 41);
+            }
+
+            if (keymap->key_base != 41)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_base=%d, expected %d\n", __func__, __LINE__, keymap->key_base, 41);
+            }
+
+            if (keymap->detune != 5)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->detune=%d, expected %d\n", __func__, __LINE__, keymap->detune, 5);
+            }
+        }
+        else if (strcmp(sound->text_id, "Sound0138") == 0)
+        {
+            seen_sound_index_2++;
+            
+            if (sound->sample_volume != 110)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_volume=%d, expected 110\n", __func__, __LINE__, sound->sample_volume);
+            }
+
+            if (sound->sample_pan != 72)
+            {
+                pass = 0;
+                printf("%s %d>fail: sound->sample_pan=%d, expected 72\n", __func__, __LINE__, sound->sample_pan);
+            }
+            
+            wavetable = sound->wavetable;
+
+            if (wavetable == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+            }
+
+            if (strcmp(wavetable->aifc_path, "hit.aifc") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: wavetable->aifc_path=\"%s\", expected \"%s\"\n", __func__, __LINE__, wavetable->aifc_path, "hit.aifc");
+            }
+
+            envelope = sound->envelope;
+
+            if (envelope == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+            }
+
+            if (envelope->attack_time != 11)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_time=%d, expected %d\n", __func__, __LINE__, envelope->attack_time, 11);
+            }
+
+            if (envelope->attack_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->attack_volume=%d, expected %d\n", __func__, __LINE__, envelope->attack_volume, 127);
+            }
+
+            if (envelope->decay_time != 117913)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_time=%d, expected %d\n", __func__, __LINE__, envelope->decay_time, 117913);
+            }
+
+            if (envelope->decay_volume != 127)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->decay_volume=%d, expected %d\n", __func__, __LINE__, envelope->decay_volume, 127);
+            }
+
+            if (envelope->release_time != 2000)
+            {
+                pass = 0;
+                printf("%s %d>fail: envelope->release_time=%d, expected %d\n", __func__, __LINE__, envelope->release_time, 2000);
+            }
+
+            keymap = sound->keymap;
+
+            if (keymap == NULL)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+            }
+
+            if (keymap->velocity_min != 9)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_min=%d, expected %d\n", __func__, __LINE__, keymap->velocity_min, 9);
+            }
+
+            if (keymap->velocity_max != 15)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->velocity_max=%d, expected %d\n", __func__, __LINE__, keymap->velocity_max, 15);
+            }
+
+            if (keymap->key_min != 4)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_min=%d, expected %d\n", __func__, __LINE__, keymap->key_min, 4);
+            }
+
+            if (keymap->key_max != 2)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_max=%d, expected %d\n", __func__, __LINE__, keymap->key_max, 2);
+            }
+
+            if (keymap->key_base != 48)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->key_base=%d, expected %d\n", __func__, __LINE__, keymap->key_base, 48);
+            }
+
+            if (keymap->detune != 19)
+            {
+                pass = 0;
+                printf("%s %d>fail: keymap->detune=%d, expected %d\n", __func__, __LINE__, keymap->detune, 19);
+            }
+        }
+    }
+
+    if (seen_sound_index_0 != 1)
+    {
+        pass = 0;
+        printf("%s %d>fail: seen_sound_index_0=%d, expected 1\n", __func__, __LINE__, seen_sound_index_0);
+    }
+
+    if (seen_sound_index_1 != 1)
+    {
+        pass = 0;
+        printf("%s %d>fail: seen_sound_index_1=%d, expected 1\n", __func__, __LINE__, seen_sound_index_1);
+    }
+
+    if (seen_sound_index_2 != 1)
+    {
+        pass = 0;
+        printf("%s %d>fail: seen_sound_index_2=%d, expected 1\n", __func__, __LINE__, seen_sound_index_2);
+    }
+
+    ALBankFile_free(bank_file);
+
+    return pass;
+}
+
+void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
+{
+    {
+        /**
+         * simple parse test
+        */
+        printf("parse inst test: 0001 - basic read\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0001.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        struct ALBank *bank;
+        struct ALInstrument *instrument;
+        struct ALSound *sound;
+        struct ALWaveTable *wavetable;
+        struct ALKeyMap *keymap;
+        struct ALEnvelope *envelope;
+
+        pass = 1;
+        if (bank_file == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank_file is NULL\n", __func__, __LINE__);
+        }
+
+        if (bank_file->bank_count != 1)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank_file->bank_count=%d, expected 1\n", __func__, __LINE__, bank_file->bank_count);
+        }
+
+        if (bank_file->banks == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank_file->banks is NULL\n", __func__, __LINE__);
+        }
+
+        bank = bank_file->banks[0];
+
+        if (bank == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank is NULL\n", __func__, __LINE__);
+        }
+
+        if (bank->inst_count != 1)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank->inst_count=%d, expected 1\n", __func__, __LINE__, bank->inst_count);
+        }
+
+        if (bank->instruments == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: bank->instruments is NULL\n", __func__, __LINE__);
+        }
+
+        instrument = bank->instruments[0];
+
+        if (instrument == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: instrument is NULL\n", __func__, __LINE__);
+        }
+
+        if (instrument->sound_count != 1)
+        {
+            pass = 0;
+            printf("%s %d>fail: instrument->sound_count=%d, expected 1\n", __func__, __LINE__, instrument->sound_count);
+        }
+
+        if (instrument->sounds == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: instrument->sounds is NULL\n", __func__, __LINE__);
+        }
+
+        sound = instrument->sounds[0];
+
+        if (sound == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
+        }
+
+        wavetable = sound->wavetable;
+
+        if (wavetable == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+        }
+
+        if (strcmp(wavetable->aifc_path, "sound_effect_0001.aifc") != 0)
+        {
+            pass = 0;
+            printf("%s %d>fail: wavetable->aifc_path=\"%s\", expected \"%s\"\n", __func__, __LINE__, wavetable->aifc_path, "sound_effect_0001.aifc");
+        }
+
+        envelope = sound->envelope;
+
+        if (envelope == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+        }
+
+        if (envelope->attack_volume != 127)
+        {
+            pass = 0;
+            printf("%s %d>fail: envelope->attack_volume=%d, expected %d\n", __func__, __LINE__, envelope->attack_volume, 127);
+        }
+
+        keymap = sound->keymap;
+
+        if (keymap == NULL)
+        {
+            pass = 0;
+            printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+        }
+
+        if (keymap->key_min != 1)
+        {
+            pass = 0;
+            printf("%s %d>fail: keymap->key_min=%d, expected %d\n", __func__, __LINE__, keymap->key_min, 1);
+        }
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        /**
+         * test all supported values
+        */
+        printf("parse inst test: 0002 - read all supported values\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0002.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        pass = parse_inst_default(fi);
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        /**
+         * parse test for whitespace and comments
+        */
+        printf("parse inst test: 0003 - whitespace and comments\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0003.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        pass = parse_inst_default(fi);
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        /**
+         * test (class) elements out of order
+        */
+        printf("parse inst test: 0004 - re-ordered class elements\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0004.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        pass = parse_inst_default(fi);
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        /**
+         * test sorting instrument->sound array elements (default)
+        */
+        printf("parse inst test: 0005 (0002.inst)- sort instrument->sound by .inst array index\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0002.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        pass = parse_inst_default(fi);
+
+        if (pass)
+        {
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[0]->text_id, "sound1") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[0]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[0]->text_id, "sound1");
+            }
+
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[1]->text_id, "glass_sound") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[1]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[1]->text_id, "glass_sound");
+            }
+
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[2]->text_id, "Sound0138") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[2]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[2]->text_id, "Sound0138");
+            }
+        }
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        /**
+         * test sorting instrument->sound array elements
+        */
+        printf("parse inst test: 0006 - sort instrument->sound by .inst array index\n");
+        int pass;
+        *run_count = *run_count + 1;
+
+        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0006.inst", "rb");
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
+
+        pass = parse_inst_default(fi);
+
+        if (pass)
+        {
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[0]->text_id, "sound1") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[0]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[0]->text_id, "sound1");
+            }
+
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[1]->text_id, "glass_sound") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[1]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[1]->text_id, "glass_sound");
+            }
+
+            if (strcmp(bank_file->banks[0]->instruments[0]->sounds[2]->text_id, "Sound0138") != 0)
+            {
+                pass = 0;
+                printf("%s %d>fail: sounds[2]->text_id=\"%s\", expected \"%s\"\n", __func__, __LINE__, bank_file->banks[0]->instruments[0]->sounds[2]->text_id, "Sound0138");
+            }
+        }
+
+        ALBankFile_free(bank_file);
+        file_info_free(fi);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     int pass_count = 0;
@@ -491,6 +1407,8 @@ int main(int argc, char **argv)
         // be quiet gcc
     }
 
+    //g_verbosity = VERBOSE_DEBUG;
+
     sub_count = 0;
     test_md5_all(&sub_count, &pass_count, &fail_count);
     total_run_count += sub_count;
@@ -501,6 +1419,10 @@ int main(int argc, char **argv)
 
     sub_count = 0;
     string_hash_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
+
+    sub_count = 0;
+    parse_inst_all(&sub_count, &pass_count, &fail_count);
     total_run_count += sub_count;
 
     printf("%d tests run, %d pass, %d fail\n", total_run_count, pass_count, fail_count);

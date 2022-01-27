@@ -429,6 +429,7 @@ int main(int argc, char **argv)
     struct WavFile *wav_file;
     struct AdpcmAifcFile *aifc_file;
     struct file_info *input_file;
+    struct file_info *inst_file;
     struct file_info *output_file;
 
     read_opts(argc, argv);
@@ -489,7 +490,12 @@ int main(int argc, char **argv)
 
     if (freq_adjust_mode == FREQ_ADJUST_SEARCH)
     {
+        inst_file = file_info_fopen(inst_filename, "rb");
+
         // parse .inst file.
+        struct ALBankFile *bank_file = ALBankFile_new_from_inst(inst_file);
+     
+        return 0;
     }
 
     input_file = file_info_fopen(input_filename, "rb");

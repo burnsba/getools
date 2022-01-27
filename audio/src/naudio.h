@@ -20,7 +20,7 @@
  * The .inst file needs named references for objects. This is the max
  * name length, including trailing '\0'.
 */
-#define INST_OBJ_ID_STRING_LEN 25
+#define INST_OBJ_ID_STRING_LEN 30
 
 /**
  * The .ctl file must begin with this two byte sequence (big endian).
@@ -639,6 +639,7 @@ void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi);
 struct ALKeyMap *ALKeyMap_new();
 struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
 void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi);
+struct ALWaveTable *ALWaveTable_new();
 struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
 struct ALSound *ALSound_new();
 struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
@@ -663,6 +664,7 @@ void ALInstrument_free(struct ALInstrument *instrument);
 void ALBank_free(struct ALBank *bank);
 void ALBankFile_free(struct ALBankFile *bank_file);
 double detune_frequency(double hw_sample_rate, int keybase, int detune);
+
 struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi);
 
 #endif

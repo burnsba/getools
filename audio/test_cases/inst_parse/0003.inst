@@ -1,0 +1,131 @@
+
+
+envelope
+thunk_envelope
+{attackTime=5000;attackVolume=127;
+
+
+
+
+decayTime
+
+=
+
+
+364920
+
+;
+
+decayVolume
+=
+127
+;
+
+releaseTime
+=
+1234
+;
+}
+
+keymap thunk_key#thunk_key
+{#$%^&*()_~!@#$%^&*()_asdffffffffffffffffffffffffffffffffffff
+
+    velocityMin = # 2;
+                    1;
+                    
+    velocityMax = 127;
+    keyMin      = 41;
+    keyMax      = 42;
+    keyBase     = 43;
+    detune      = 5;
+}
+
+sound sound1
+{
+#
+    use#
+    (#
+    "../sounds/thunk.aifc"#
+    )#
+    ;#
+    
+    keymap = thunk_key;
+    pan    = 64;
+    volume = 127;
+    envelope = thunk_envelope;
+}
+# comments here 
+# envelope glass { attackTime		= 5000; }
+#
+#
+envelope glass { attackTime = 5000; attackVolume = 127; decayTime = -1; decayVolume = 127; releaseTime = 5000; }
+
+keymap glasskey
+{
+    velocityMin = 1;        # 
+    velocityMax = 127;      # 
+    keyMin      = 41;       # 
+    keyMax      = 41;       # 
+    keyBase     = 41;       # 
+    detune      = 5;        # 
+}
+
+sound glass_sound
+{
+    use ("../sounds/glass.aifc");
+    
+    keymap = glasskey;
+    pan    = 60;
+    volume = 120;
+    envelope = glass;
+}
+
+envelope Envelope0138 {
+    attackTime = 11;
+    attackVolume = 127;
+    decayTime = 117913;
+    decayVolume = 127;
+    releaseTime = 2000;
+}keymap Keymap0138{velocityMin=9;velocityMax=15;keyMin=4;keyMax=2;keyBase=48;detune=19;}
+
+sound Sound0138{
+    use ("hit.aifc");
+    pan = 72;
+    volume = 110;
+    envelope = Envelope0138;
+    keymap = Keymap0138;
+}
+
+instrument inst1
+{
+    volume = 70;
+    pan    = 49
+    
+    
+    
+    
+    
+    
+    ;
+
+    sound [             0               ] = sound1;
+    sound [1                            ] = glass_sound;
+    sound
+    [
+    2
+    ]
+    =
+    Sound0138
+    ;
+}
+
+bank Wave1
+{
+    instrument#
+    [#
+    0#
+    ]#
+    =#
+    inst1
+    ;
+}

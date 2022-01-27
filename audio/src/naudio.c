@@ -383,6 +383,30 @@ void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 }
 
 /**
+ * Base constructor. Only partially initializes wavetable. This should
+ * only be called from other constructors.
+ * @returns: pointer to new wavetable.
+*/
+struct ALWaveTable *ALWaveTable_new()
+{
+    TRACE_ENTER(__func__)
+
+    static int32_t wavetable_id = 0;
+
+    struct ALWaveTable *wavetable = (struct ALWaveTable *)malloc_zero(1, sizeof(struct ALWaveTable));
+
+    wavetable->id = wavetable_id++;
+
+    // unlike the other properties with a base constructor, this doesn't have a named
+    // reference saved/loaded from .inst file, so go ahead and set the text_id.
+    snprintf(wavetable->text_id, INST_OBJ_ID_STRING_LEN, "Wavetable%04d", wavetable->id);
+
+    TRACE_LEAVE(__func__)
+
+    return wavetable;
+}
+
+/**
  * Reads a single {@code struct ALWaveTable} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for child book and loop if present.
  * @param ctl_file_contents: .ctl file.
@@ -392,14 +416,10 @@ void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
-
-    static int32_t wavetable_id = 0;
+    
     int32_t input_pos = load_from_offset;
 
-    struct ALWaveTable *wavetable = (struct ALWaveTable *)malloc_zero(1, sizeof(struct ALWaveTable));
-
-    wavetable->id = wavetable_id++;
-    snprintf(wavetable->text_id, INST_OBJ_ID_STRING_LEN, "Wavetable%04d", wavetable->id);
+    struct ALWaveTable *wavetable = ALWaveTable_new();
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
 

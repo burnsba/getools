@@ -381,6 +381,75 @@ void *StringHashTable_pop(struct StringHashTable *root, char *key)
 }
 
 /**
+ * Iterates hash table and returns key of first entry found.
+ * No memory is allocated (returns pointer of key, do not free).
+ * @param root: hash table to iterate.
+ * @returns: first found key, or NULL.
+*/
+const char *StringHashTable_peek_next_key(struct StringHashTable *root)
+{
+    TRACE_ENTER(__func__)
+
+    struct StringHashTable_internal *ht;
+    struct StringHashBucket *bucket;
+    struct StringHashBucketEntry *entry;
+    struct llist_node *node;
+    uint32_t bucket_index;
+    uint32_t hash;
+    void *result;
+    int i;
+
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+    }
+
+    ht = (struct StringHashTable_internal *)root->internal;
+
+    if (ht == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+    }
+
+    // if hashtable is empty, exit
+    if (ht->num_entries == 0)
+    {
+        return NULL;
+    }
+
+    for (i=0; i<ht->bucket_count; i++)
+    {
+        bucket = ht->buckets[i];
+
+        if (bucket != NULL)
+        {
+            node = bucket->entry_list->root;
+            while (node != NULL)
+            {
+                entry = (struct StringHashBucketEntry *)node->data;
+
+                if (entry == NULL)
+                {
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL\n", __func__);
+                }
+
+                if (entry->key != NULL)
+                {
+                    TRACE_LEAVE(__func__)
+                    return entry->key;
+                }
+
+                node = node->next;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return NULL;
+}
+
+/**
  * Allocates memory for a new hash table internal.
  * @returns: pointer to new object.
 */

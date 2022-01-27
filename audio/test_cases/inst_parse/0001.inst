@@ -1,0 +1,17 @@
+envelope Envelope0000 {
+    attackVolume = 127;
+}
+keymap Keymap0000 {
+    keyMin = 1;
+}
+sound Sound0000 {
+    use ("sound_effect_0001.aifc");
+    envelope = Envelope0000;
+    keymap = Keymap0000;
+}
+instrument Instrument0000 {
+    sound [0] = Sound0000;
+}
+bank Bank0000 {
+    instrument [0] = Instrument0000;
+}
