@@ -59,28 +59,45 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi
 {
     TRACE_ENTER(__func__)
 
+    int remaining_bytes;
+
     struct AdpcmAifcCommChunk *p = (struct AdpcmAifcCommChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCommChunk));
     p->ck_id = ADPCM_AIFC_COMMON_CHUNK_ID;
     p->ck_data_size = ck_data_size;
+    remaining_bytes = ck_data_size;
 
     file_info_fread(fi, &p->num_channels, 2, 1);
     BSWAP16(p->num_channels);
+    remaining_bytes -= 2;
 
     file_info_fread(fi, &p->num_sample_frames, 4, 1);
     BSWAP32(p->num_sample_frames);
+    remaining_bytes -= 4;
 
     file_info_fread(fi, &p->sample_size, 2, 1);
     BSWAP16(p->sample_size);
+    remaining_bytes -= 2;
 
     file_info_fread(fi, &p->sample_rate, 10, 1);
     reverse_inplace(p->sample_rate, 10);
+    remaining_bytes -= 10;
 
     file_info_fread(fi, &p->compression_type, 4, 1);
-    BSWAP16(p->compression_type);
+    BSWAP32(p->compression_type);
+    remaining_bytes -= 4;
     
     file_info_fread(fi, &p->unknown, 1, 1);
+    remaining_bytes -= 1;
 
-    file_info_fread(fi, &p->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN, 1);
+    if (remaining_bytes > 0)
+    {
+        if (remaining_bytes > ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN)
+        {
+            remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
+        }
+
+        file_info_fread(fi, &p->compression_name, remaining_bytes, 1);
+    }
 
     TRACE_LEAVE(__func__)
 
@@ -430,10 +447,14 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
     int alloc_chunk_count = 0;
     int need_loop = 0;
 
+    uint32_t compression_type = 0;
+
     if (sound->wavetable != NULL)
     {
         if (sound->wavetable->type == AL_ADPCM_WAVE)
         {
+            compression_type = ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID;
+
             if (sound->wavetable->wave_info.adpcm_wave.book != NULL)
             {
                 expected_chunk_count++;
@@ -447,6 +468,8 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
         }
         else if (sound->wavetable->type == AL_RAW16_WAVE)
         {
+            compression_type = ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID;
+
             if (sound->wavetable->wave_info.raw_wave.loop != NULL)
             {
                 need_loop = 1;
@@ -457,7 +480,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
 
     struct AdpcmAifcFile *aaf = AdpcmAifcFile_new_simple(expected_chunk_count);
 
-    aaf->chunks[alloc_chunk_count] = AdpcmAifcCommChunk_new();
+    aaf->chunks[alloc_chunk_count] = AdpcmAifcCommChunk_new(compression_type);
     aaf->comm_chunk = aaf->chunks[alloc_chunk_count];
     alloc_chunk_count++;
 
@@ -513,21 +536,49 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
 
 /**
  * Allocates memory for a new {@code struct AdpcmAifcCommChunk} and sets default values.
+ * @param compression_type: Should be big endian 32-bit id of compression type used.
  * @returns: pointer to new {@code struct AdpcmAifcCommChunk}.
 */
-struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new()
+struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type)
 {
     TRACE_ENTER(__func__)
+
+    // everything except the name string.
+    const int base_chunk_size = 2 + 4 + 2 + 10 + 4 + 1;
 
     struct AdpcmAifcCommChunk *p = (struct AdpcmAifcCommChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCommChunk));
     p->ck_id = ADPCM_AIFC_COMMON_CHUNK_ID;
     p->num_channels = DEFAULT_NUM_CHANNELS;
-    p->ck_data_size = 2 + 4 + 2 + 10 + 4 + 1 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN;
     p->unknown = 0xb;
-    p->compression_type = ADPCM_AIFC_COMPRESSION_TYPE_ID;
-    
-    // no terminating zero
-    memcpy(p->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
+
+    switch (compression_type)
+    {
+        case ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID:
+        {
+            p->ck_data_size = base_chunk_size + ADPCM_AIFC_VADPCM_APPL_NAME_LEN;
+            p->compression_type = ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID;
+            
+            // no terminating zero
+            memcpy(p->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
+        }
+        break;
+
+        case ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID:
+        {
+            p->ck_data_size = base_chunk_size + ADPCM_AIFC_NONE_COMPRESSION_NAME_LEN;
+            p->compression_type = ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID;
+            
+            // no terminating zero
+            memcpy(p->compression_name, ADPCM_AIFC_NONE_COMPRESSION_NAME, ADPCM_AIFC_NONE_COMPRESSION_NAME_LEN);
+        }
+        break;
+        
+        default:
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> unsupported compression type 0x%08x\n", __func__, __LINE__, compression_type);
+        }
+        break;
+    }
     
     TRACE_LEAVE(__func__)
     
@@ -819,15 +870,38 @@ void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_inf
 {
     TRACE_ENTER(__func__)
 
+    int remaining_bytes = chunk->ck_data_size;
+
     file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
+
     file_info_fwrite_bswap(fi, &chunk->num_channels, 2, 1);
+    remaining_bytes -= 2;
+
     file_info_fwrite_bswap(fi, &chunk->num_sample_frames, 4, 1);
+    remaining_bytes -= 4;
+
     file_info_fwrite_bswap(fi, &chunk->sample_size, 2, 1);
+    remaining_bytes -= 2;
+
     file_info_fwrite_bswap(fi, chunk->sample_rate, 10, 1);
+    remaining_bytes -= 10;
+
     file_info_fwrite_bswap(fi, &chunk->compression_type, 4, 1);
+    remaining_bytes -= 4;
+
     file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
-    file_info_fwrite_bswap(fi, chunk->compression_name, ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN, 1);
+    remaining_bytes -= 1;
+
+    if (remaining_bytes > 0)
+    {
+        if (remaining_bytes > ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN)
+        {
+            remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
+        }
+
+        file_info_fwrite_bswap(fi, chunk->compression_name, remaining_bytes, 1);
+    }
     
     TRACE_LEAVE(__func__)
 }
@@ -1169,7 +1243,8 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
 }
 
 /**
- * Decode .aifc compressed audio and write to output buffer.
+ * Decode .aifc audio and write to output buffer.
+ * If the audio is compressed, this is the top level entry into decompressing it.
  * @param aaf: input source
  * @param buffer: output buffer. Must be previously allocated.
  * @param max_len: max number of bytes to write to output buffer.
@@ -1183,248 +1258,302 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     size_t ssnd_chunk_pos = 0;
     int end_of_ssnd = 0;
     int i;
+    int no_loop_chunk;
 
+    // determine max size in bytes to read from input .aifc
     int32_t ssnd_data_size = aaf->sound_chunk->ck_data_size - 8;
     if (ssnd_data_size < 0)
     {
         ssnd_data_size = 0;
     }
 
-    int32_t *frame_buffer = (int32_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int32_t));
+    if ((size_t)ssnd_data_size > max_len)
+    {
+        ssnd_data_size = (int32_t)max_len;
+    }
 
-    // there's no loop chunk
-    if (aaf->loop_chunk == NULL
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
+    }
+
+    if (aaf->comm_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf->comm_chunk is NULL\n", __func__);
+    }
+
+    no_loop_chunk = aaf->loop_chunk == NULL
         // there is a loop chunk, but nloops is zero
         || (aaf->loop_chunk != NULL && aaf->loop_chunk->nloops == 0)
         // there is a loop, but it's an infinite loop, and user option is to ignore
-        || (aaf->loop_chunk != NULL && aaf->loop_chunk->loop_data != NULL && aaf->loop_chunk->loop_data->count == -1 && g_AdpcmLoopInfiniteExportCount == 0)
-        )
+        || (aaf->loop_chunk != NULL && aaf->loop_chunk->loop_data != NULL && aaf->loop_chunk->loop_data->count == -1 && g_AdpcmLoopInfiniteExportCount == 0);
+
+    /**
+     * If this is uncompressed audio then there's no codebook.
+    */
+    if (aaf->comm_chunk->compression_type == ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID)
     {
-        /**
-         * No loops, just decode the frames and writeout result until end of ssnd.
-        */
-        while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
+        if (ssnd_data_size & 0x1)
         {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[write_len], frame_buffer, 16);
-            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            printf("warning, ssnd_data_size is odd, truncating last byte (required for bswap)\n");
+            ssnd_data_size--;
         }
 
-        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
-        if (g_verbosity >= VERBOSE_DEBUG)
+        if (no_loop_chunk)
         {
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            bswap16_memcpy(buffer, aaf->sound_chunk->sound_data, ssnd_data_size);
+
+            // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%d\n", __func__, __LINE__, ssnd_data_size);
+            }
+
+            TRACE_LEAVE(__func__)
+            return ssnd_data_size;
         }
-    }
-    else
-    {
-        /**
-         * Otherwise there are loops. Well, only one loop since the N64 only supports one loop.
-         * The logic here is roughly:
-         * - decode frames as above but only until the loop end offset.
-         * - for each loop:
-         *     - seek to loop start point in ssnd, and load state into framebuffer
-         *     - decode frames again until loop end point
-         * - decode frames until end of ssnd
-         * 
-         * The other main difference from above is that these loop points are not necessarily
-         * on a multiple of 16. That means the first and last decode in each of the listed
-         * steps will need to check the size to write to output buffer.
-        */
-        struct AdpcmAifcLoopData *loop_data;
-
-        // offset, in bytes
-        size_t interval16_offset;
-
-        // count of remaining bytes in partial frame
-        size_t interval16_delta;
-
-        // number of frames
-        size_t interval16_times;
-
-        // loop counter (0,1,2,3 ...)
-        size_t interval16_counter;
-
-        // byte offset into ssnd chunk
-        size_t loop_start_position;
-
-        // number of times to decode loop data
-        int loop_times;
-
-        if (aaf->loop_chunk->nloops != 1)
+        else
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
-        }
+            /**
+             * (slightly different from AL_ADPCM_WAVE)
+             * Otherwise there are loops. Well, only one loop since the N64 only supports one loop.
+             * The logic here is roughly:
+             * - copy samples up to loop start
+             * - copy loop data for the specified number of times
+             * - copy any remaining samples after loop end marker
+            */
 
-        loop_data = &aaf->loop_chunk->loop_data[0];
+            struct AdpcmAifcLoopData *loop_data;
 
-        if (loop_data == NULL)
-        {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
-        }
+            // byte offset into ssnd chunk
+            size_t loop_start_position;
 
-        if (loop_data->start < 0)
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
-        }
+            // byte offset into ssnd chunk
+            size_t loop_end_position;
 
-        if (loop_data->end < 0)
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
-        }
+            size_t loop_size_bytes;
 
-        loop_start_position = ((loop_data->start >> 4) + 1) * 9;
+            size_t after_loop_bytes;
 
-        if (loop_start_position > (size_t)ssnd_data_size)
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
-        }
+            // number of times to decode loop data
+            int loop_times;
 
-        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: loop_start_position=0x%08lx, loop_data->end=0x%08x\n", __func__, __LINE__, loop_start_position, loop_data->end);
-        }
+            if (aaf->loop_chunk->nloops != 1)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
+            }
 
-        interval16_times = loop_data->end >> 4;
-        interval16_offset = interval16_times << 4;
-        interval16_delta = loop_data->end - interval16_offset;
+            loop_data = &aaf->loop_chunk->loop_data[0];
 
-        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
-        }
+            if (loop_data == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
+            }
 
-        // decode frames until the loop end offset (closest multiple of 16)
-        interval16_counter = 0;
-        while (end_of_ssnd == 0
-            && ssnd_chunk_pos < (size_t)(ssnd_data_size)
-            && write_len < max_len
-            && interval16_counter < interval16_times)
-        {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[write_len], frame_buffer, 16);
-            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            if (loop_data->start < 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
+            }
 
-            interval16_counter++;
-        }
+            if (loop_data->end < 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
+            }
 
-        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
-        }
+            // `start` is the starting sample, samples are 16 bits, so multiply by 2 to get offset into buffer.
+            loop_start_position = loop_data->start * 2;
 
-        // now decode one more entire frame (if required), but only write delta bytes.
-        if (interval16_delta > 0)
-        {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[write_len], frame_buffer, interval16_delta);
-            write_len += interval16_delta * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            if (loop_start_position > (size_t)ssnd_data_size)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
+            }
+
+            // same as above
+            loop_end_position = loop_data->end * 2;
+
+            if (loop_end_position > (size_t)ssnd_data_size)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %ld is after end of ssnd data offset %d\n", __func__, loop_end_position, ssnd_data_size);
+            }
+
+            if (loop_start_position > loop_end_position)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %ld is before loop start offset %d\n", __func__, loop_end_position, loop_start_position);
+            }
+
+            // checks above should ensure this is valid.
+            loop_size_bytes = loop_end_position - loop_start_position;
+            after_loop_bytes = ssnd_data_size - loop_end_position;
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: loop_start_position=0x%08lx, loop_end_position=0x%08lx\n", __func__, __LINE__, loop_start_position, loop_end_position);
+            }
+
+            // copy samples up to one (sample) less than the start loop position
+            if (loop_start_position > 2)
+            {
+                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[0], loop_start_position - 2);
+                write_len += loop_start_position - 2;
+                ssnd_chunk_pos += loop_start_position - 2;
+            }
+
+            // Determine number of loops to decode. If this is an infinite loop then
+            // fallback to user specification.
+            loop_times = loop_data->count;
+            if (loop_times == -1)
+            {
+                loop_times = g_AdpcmLoopInfiniteExportCount;
+            }
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
+            }
+
+            /**
+             * ADPCM mode copies up to the loop end point before considering looping, but this only
+             * copies up to the start, so use `<=` here.
+            */
+            for (i=0; i<=loop_times; i++)
+            {
+                ssnd_chunk_pos = loop_start_position;
+                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], loop_size_bytes);
+                write_len += loop_size_bytes;
+                ssnd_chunk_pos += loop_size_bytes;
+            }
+
+            if (after_loop_bytes > 0)
+            {
+                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], after_loop_bytes);
+                write_len += after_loop_bytes;
+                ssnd_chunk_pos += after_loop_bytes;
+            }
+
+            // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
+
+            TRACE_LEAVE(__func__)
+            return write_len;
+        }
+    }
+    else if (aaf->comm_chunk->compression_type == ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID)
+    {
+        int32_t *frame_buffer = (int32_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int32_t));
+
+        // there's no loop chunk
+        if (no_loop_chunk)
+        {
+            /**
+             * No loops, just decode the frames and writeout result until end of ssnd.
+            */
+            while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
+            {
+                AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                write_frame_output(&buffer[write_len], frame_buffer, 16);
+                write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            }
+
+            // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
             }
         }
-
-        // Determine number of loops to decode. If this is an infinite loop then
-        // fallback to user specification.
-        loop_times = loop_data->count;
-        if (loop_times == -1)
+        else
         {
-            loop_times = g_AdpcmLoopInfiniteExportCount;
-        }
+            /**
+             * (slightly different from AL_RAW16_WAVE)
+             * Otherwise there are loops. Well, only one loop since the N64 only supports one loop.
+             * The logic here is roughly:
+             * - decode frames as above but only until the loop end offset.
+             * - for each loop:
+             *     - seek to loop start point in ssnd, and load state into framebuffer
+             *     - decode frames again until loop end point
+             * - decode frames until end of ssnd
+             * 
+             * The other main difference from above is that these loop points are not necessarily
+             * on a multiple of 16. That means the first and last decode in each of the listed
+             * steps will need to check the size to write to output buffer.
+            */
+            struct AdpcmAifcLoopData *loop_data;
 
-        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
-        }
+            // offset, in bytes
+            size_t interval16_offset;
 
-        for (i=0; i<loop_times; i++)
-        {
-            int state_frame_buffer_index;
-            int state_loop_data_index;
+            // count of remaining bytes in partial frame
+            size_t interval16_delta;
+
+            // number of frames
+            size_t interval16_times;
+
+            // loop counter (0,1,2,3 ...)
+            size_t interval16_counter;
+
+            // byte offset into ssnd chunk
+            size_t loop_start_position;
+
+            // number of times to decode loop data
+            int loop_times;
+
+            if (aaf->loop_chunk->nloops != 1)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
+            }
+
+            loop_data = &aaf->loop_chunk->loop_data[0];
+
+            if (loop_data == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
+            }
+
+            if (loop_data->start < 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
+            }
+
+            if (loop_data->end < 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
+            }
+
+            loop_start_position = ((loop_data->start >> 4) + 1) * 9;
+
+            if (loop_start_position > (size_t)ssnd_data_size)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
+            }
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: loop i=%d\n", __func__, __LINE__, i);
-            }
-            
-            // Load initial loop state.
-            // This copies values from array of type int16_t
-            // to array of type int32_t.
-            memset(frame_buffer, 0, ADPCM_AIFC_LOOP_STATE_LEN);
-            state_frame_buffer_index = 0;
-            state_loop_data_index = 0;
-
-            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-            {
-                printf("%s %d: frame_buffer: \n", __func__, __LINE__);
+                printf("%s %d: loop_start_position=0x%08lx, loop_data->end=0x%08x\n", __func__, __LINE__, loop_start_position, loop_data->end);
             }
 
-            while (state_frame_buffer_index < (ADPCM_AIFC_LOOP_STATE_LEN / ADPCM_LOOP_STATE_ELEMENT_SIZE))
-            {
-                // loop state is stored big endian
-                int16_t t;
-                memcpy(&t, &loop_data->state[state_loop_data_index], ADPCM_LOOP_STATE_ELEMENT_SIZE);
-                BSWAP16(t);
-
-                // implicit cast for sign extend.
-                frame_buffer[state_frame_buffer_index] = t;
-
-                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-                {
-                    printf("0x%08x ", frame_buffer[state_frame_buffer_index]);
-                }
-
-                state_frame_buffer_index++;
-                state_loop_data_index += ADPCM_LOOP_STATE_ELEMENT_SIZE;
-            }
-
-            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-            {
-                printf("\n");
-            }
-
-            interval16_delta = loop_data->start & 0xf;
+            interval16_times = loop_data->end >> 4;
+            interval16_offset = interval16_times << 4;
+            interval16_delta = loop_data->end - interval16_offset;
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
                 printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
             }
 
-            // Write preliminary loop framebuffer data.
-            // This is index zero for the count of frames written.
-            write_frame_output(&buffer[write_len], &frame_buffer[interval16_delta], 16 - interval16_delta);
-            write_len += (16 - interval16_delta) * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
-
-            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-            {
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
-            }
-
-            // Calculate number of (full) frames to decode.
-            interval16_times = (loop_data->end >> 4) - (loop_data->start >> 4);
-            
-            // seek input ssnd position to loop start
-            ssnd_chunk_pos = loop_start_position;
-
-            // Any prequel for the start of the loop frame was already written above, which
-            // is considered counter index zero. Therefore, the main loop needs to start
-            // counting on frame 1.
-            interval16_counter = 1;
-
-            // write loop data until end of loop
+            // decode frames until the loop end offset (closest multiple of 16)
+            interval16_counter = 0;
             while (end_of_ssnd == 0
                 && ssnd_chunk_pos < (size_t)(ssnd_data_size)
                 && write_len < max_len
                 && interval16_counter < interval16_times)
             {
-                interval16_counter++;
-
                 AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
                 write_frame_output(&buffer[write_len], frame_buffer, 16);
                 write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+                interval16_counter++;
             }
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
@@ -1433,8 +1562,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
                 printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
             }
 
-            // Decode any remainder data after the last full frame.
-            interval16_delta = (loop_data->end - loop_data->start) - (interval16_times << 4);
+            // now decode one more entire frame (if required), but only write delta bytes.
             if (interval16_delta > 0)
             {
                 AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
@@ -1446,33 +1574,163 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
                     printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
                 }
             }
+
+            // Determine number of loops to decode. If this is an infinite loop then
+            // fallback to user specification.
+            loop_times = loop_data->count;
+            if (loop_times == -1)
+            {
+                loop_times = g_AdpcmLoopInfiniteExportCount;
+            }
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
+            }
+
+            for (i=0; i<loop_times; i++)
+            {
+                int state_frame_buffer_index;
+                int state_loop_data_index;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: loop i=%d\n", __func__, __LINE__, i);
+                }
+                
+                // Load initial loop state.
+                // This copies values from array of type int16_t
+                // to array of type int32_t.
+                memset(frame_buffer, 0, ADPCM_AIFC_LOOP_STATE_LEN);
+                state_frame_buffer_index = 0;
+                state_loop_data_index = 0;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: frame_buffer: \n", __func__, __LINE__);
+                }
+
+                while (state_frame_buffer_index < (ADPCM_AIFC_LOOP_STATE_LEN / ADPCM_LOOP_STATE_ELEMENT_SIZE))
+                {
+                    // loop state is stored big endian
+                    int16_t t;
+                    memcpy(&t, &loop_data->state[state_loop_data_index], ADPCM_LOOP_STATE_ELEMENT_SIZE);
+                    BSWAP16(t);
+
+                    // implicit cast for sign extend.
+                    frame_buffer[state_frame_buffer_index] = t;
+
+                    if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                    {
+                        printf("0x%08x ", frame_buffer[state_frame_buffer_index]);
+                    }
+
+                    state_frame_buffer_index++;
+                    state_loop_data_index += ADPCM_LOOP_STATE_ELEMENT_SIZE;
+                }
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("\n");
+                }
+
+                interval16_delta = loop_data->start & 0xf;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
+                }
+
+                // Write preliminary loop framebuffer data.
+                // This is index zero for the count of frames written.
+                write_frame_output(&buffer[write_len], &frame_buffer[interval16_delta], 16 - interval16_delta);
+                write_len += (16 - interval16_delta) * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                }
+
+                // Calculate number of (full) frames to decode.
+                interval16_times = (loop_data->end >> 4) - (loop_data->start >> 4);
+                
+                // seek input ssnd position to loop start
+                ssnd_chunk_pos = loop_start_position;
+
+                // Any prequel for the start of the loop frame was already written above, which
+                // is considered counter index zero. Therefore, the main loop needs to start
+                // counting on frame 1.
+                interval16_counter = 1;
+
+                // write loop data until end of loop
+                while (end_of_ssnd == 0
+                    && ssnd_chunk_pos < (size_t)(ssnd_data_size)
+                    && write_len < max_len
+                    && interval16_counter < interval16_times)
+                {
+                    interval16_counter++;
+
+                    AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                    write_frame_output(&buffer[write_len], frame_buffer, 16);
+                    write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+                }
+
+                if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
+                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                }
+
+                // Decode any remainder data after the last full frame.
+                interval16_delta = (loop_data->end - loop_data->start) - (interval16_times << 4);
+                if (interval16_delta > 0)
+                {
+                    AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                    write_frame_output(&buffer[write_len], frame_buffer, interval16_delta);
+                    write_len += interval16_delta * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+
+                    if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+                    {
+                        printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                    }
+                }
+            }
+
+            if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
+
+            // now just regular decode until end of file
+            while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
+            {
+                AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
+                write_frame_output(&buffer[write_len], frame_buffer, 16);
+                write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
+            }
+
+            // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            }
         }
 
-        if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
-        }
+        free(frame_buffer);
 
-        // now just regular decode until end of file
-        while (end_of_ssnd == 0 && ssnd_chunk_pos < (size_t)(ssnd_data_size) && write_len < max_len)
-        {
-            AdpcmAifcFile_decode_frame(aaf, frame_buffer, &ssnd_chunk_pos, &end_of_ssnd);
-            write_frame_output(&buffer[write_len], frame_buffer, 16);
-            write_len += 16 * ADPCM_WAV_OUTPUT_SAMPLE_NUM_BYTES;
-        }
+        TRACE_LEAVE(__func__)
 
-        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
-        if (g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
-        }
+        return write_len;
     }
-
-    free(frame_buffer);
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> unsupported compression type 0x%08x\n", __func__, __LINE__, aaf->comm_chunk->compression_type);
+    }
 
     TRACE_LEAVE(__func__)
 
-    return write_len;
+    // be quiet gcc
+    return 0;
 }
 
 /**
@@ -1681,7 +1939,10 @@ void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file)
 }
 
 /**
- * Estimates the number of bytes required to inflate the AIFC ssnd data.
+ * Estimates the number of bytes required to inflate the AIFC ssnd data including
+ * space required for looping.
+ * This always assumes the file is compressed; this will over allocate a little
+ * for AL_ADPCM_WAVE and over allocate a lot for AL_RAW16_WAVE.
  * @param aifc_file: file to estimate.
  * @returns: size in bytes. This should always be larger than the actual number of bytes required.
 */

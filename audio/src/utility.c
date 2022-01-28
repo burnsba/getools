@@ -940,6 +940,28 @@ void change_filename_extension(char *input_filename, char *output_filename, char
 }
 
 /**
+ * Checks whether a string ends in a suffix.
+ * @param str: base string.
+ * @param suffix: suffix to find at end of string.
+ * @returns: 1 if `str` ends with `suffix`, zero otherwise.
+*/
+int string_ends_with(const char * str, const char * suffix)
+{
+    TRACE_ENTER(__func__)
+
+    if (str == NULL || suffix == NULL)
+    {
+        return 0;
+    }
+    
+    int str_len = strlen(str);
+    int suffix_len = strlen(suffix);
+
+    TRACE_LEAVE(__func__)
+    return (str_len >= suffix_len) && (0 == strcmp(str + (str_len - suffix_len), suffix));
+}
+
+/**
  * Converts a 32 bit integer to a variable length quantity integer.
 */
 void int32_to_varint(int32_t in, struct var_length_int *varint)

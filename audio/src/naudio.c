@@ -1531,3 +1531,157 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
 
     return hw_sample_rate / denom;
 }
+
+struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_index;
+    int instrument_index;
+    int sound_index;
+
+    if (bank_file == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return NULL;
+    }
+
+    for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_index];
+
+        if (bank != NULL)
+        {
+            for (instrument_index=0; instrument_index<bank->inst_count; instrument_index++)
+            {
+                struct ALInstrument *instrument = bank->instruments[instrument_index];
+
+                if (instrument != NULL)
+                {
+                    for (sound_index=0; sound_index<instrument->sound_count; sound_index++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_index];
+
+                        if (sound != NULL)
+                        {
+                            struct ALKeyMap *keymap = sound->keymap;
+
+                            if (keymap != NULL)
+                            {
+                                if (strcmp(keymap->text_id, keymap_text_id) == 0)
+                                {
+                                    TRACE_LEAVE(__func__)
+                                    return keymap;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+    return NULL;
+}
+
+struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_index;
+    int instrument_index;
+    int sound_index;
+
+    if (bank_file == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return NULL;
+    }
+
+    for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_index];
+
+        if (bank != NULL)
+        {
+            for (instrument_index=0; instrument_index<bank->inst_count; instrument_index++)
+            {
+                struct ALInstrument *instrument = bank->instruments[instrument_index];
+
+                if (instrument != NULL)
+                {
+                    for (sound_index=0; sound_index<instrument->sound_count; sound_index++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_index];
+
+                        if (sound != NULL)
+                        {
+                            if (strcmp(sound->text_id, sound_text_id) == 0)
+                            {
+                                TRACE_LEAVE(__func__)
+                                return sound;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+    return NULL;
+}
+
+struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_index;
+    int instrument_index;
+    int sound_index;
+
+    if (bank_file == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return NULL;
+    }
+
+    for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_index];
+
+        if (bank != NULL)
+        {
+            for (instrument_index=0; instrument_index<bank->inst_count; instrument_index++)
+            {
+                struct ALInstrument *instrument = bank->instruments[instrument_index];
+
+                if (instrument != NULL)
+                {
+                    for (sound_index=0; sound_index<instrument->sound_count; sound_index++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_index];
+
+                        if (sound != NULL)
+                        {
+                            struct ALWaveTable *wavetable = sound->wavetable;
+
+                            if (wavetable != NULL)
+                            {
+                                if (string_ends_with(wavetable->aifc_path, search_filename))
+                                {
+                                    TRACE_LEAVE(__func__)
+                                    return sound;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+    return NULL;
+}

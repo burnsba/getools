@@ -91,6 +91,15 @@ enum InstInstrumentPropertyId {
     INST_INSTRUMENT_PROPERTY_VOLUME = 1,
     INST_INSTRUMENT_PROPERTY_PAN,
     INST_INSTRUMENT_PROPERTY_PRIORITY,
+    INST_INSTRUMENT_PROPERTY_FLAGS,
+    INST_INSTRUMENT_PROPERTY_TREM_TYPE,
+    INST_INSTRUMENT_PROPERTY_TREM_RATE,
+    INST_INSTRUMENT_PROPERTY_TREM_DEPTH,
+    INST_INSTRUMENT_PROPERTY_TREM_DELAY,
+    INST_INSTRUMENT_PROPERTY_VIB_TYPE,
+    INST_INSTRUMENT_PROPERTY_VIB_RATE,
+    INST_INSTRUMENT_PROPERTY_VIB_DEPTH,
+    INST_INSTRUMENT_PROPERTY_VIB_DELAY,
     INST_INSTRUMENT_PROPERTY_BENDRANGE,
     INST_INSTRUMENT_PROPERTY_SOUND_ARR_ENTRY
 };
@@ -141,6 +150,15 @@ static struct TypeInfo InstInstrumentProperties[] = {
     { INST_INSTRUMENT_PROPERTY_VOLUME, "volume", TYPE_ID_INT },
     { INST_INSTRUMENT_PROPERTY_PAN, "pan", TYPE_ID_INT },
     { INST_INSTRUMENT_PROPERTY_PRIORITY, "priority", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_FLAGS, "flags", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_TREM_TYPE, "tremType", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_TREM_RATE, "tremRate", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_TREM_DEPTH, "tremDepth", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_TREM_DELAY, "tremDelay", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_VIB_TYPE, "vibType", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_VIB_RATE, "vibRate", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_VIB_DEPTH, "vibDepth", TYPE_ID_INT },
+    { INST_INSTRUMENT_PROPERTY_VIB_DELAY, "vibDelay", TYPE_ID_INT },
     { INST_INSTRUMENT_PROPERTY_BENDRANGE, "bendRange", TYPE_ID_INT },
     { INST_INSTRUMENT_PROPERTY_SOUND_ARR_ENTRY, "sound", TYPE_ID_ARRAY_TEXT_REF_ID }
 };
@@ -776,6 +794,123 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
             }
             
             instrument->priority = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_FLAGS:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d flags=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->flags = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_TREM_TYPE:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d trem_type=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->trem_type = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_TREM_RATE:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d trem_rate=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->trem_rate = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_TREM_DEPTH:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d trem_depth=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->trem_depth = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_TREM_DELAY:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d trem_delay=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->trem_delay = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_VIB_TYPE:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d vib_type=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->vib_type = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_VIB_RATE:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d vib_rate=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->vib_rate = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_VIB_DEPTH:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d vib_depth=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->vib_depth = (uint8_t)context->current_value_int;
+        }
+        break;
+
+        case INST_INSTRUMENT_PROPERTY_VIB_DELAY:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set instrument id=%d vib_delay=%d\n", instrument->id, context->current_value_int);
+            }
+            
+            instrument->vib_delay = (uint8_t)context->current_value_int;
         }
         break;
 

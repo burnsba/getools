@@ -42,9 +42,14 @@
 #define ADPCM_AIFC_COMMON_CHUNK_ID 0x434F4D4D /* 0x434F4D4D = "COMM" */
 
 /**
- * aifc file, common chunk, compression type.
+ * aifc file, common chunk, "VAPC" compression type (AL_ADPCM_WAVE).
 */
-#define ADPCM_AIFC_COMPRESSION_TYPE_ID 0x56415043 /* 0x56415043 = "VAPC" */
+#define ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID 0x56415043 /* 0x56415043 = "VAPC" */
+
+/**
+ * aifc file, common chunk, type when no compression is used (AL_RAW16_WAVE).
+*/
+#define ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID 0x4E4F4E45 /* 0x4E4F4E45 = "NONE" */
 
 /**
  * aifc file, common chunk, compression name.
@@ -57,6 +62,25 @@
  * There is no terminating '\0'.
 */
 #define ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN 11
+
+/**
+ * aifc file, common chunk, compression name.
+ * There is no terminating '\0'.
+ * ref: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/AIFF.html
+*/
+#define ADPCM_AIFC_NONE_COMPRESSION_NAME "not compressed"
+
+/**
+ * Length of ADPCM_AIFC_NONE_COMPRESSION_NAME.
+ * There is no terminating '\0'.
+*/
+#define ADPCM_AIFC_NONE_COMPRESSION_NAME_LEN 14
+
+/**
+ * Length of static char array to hold compression name.
+ * Should be max of any possible names above.
+*/
+#define ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN 14
 
 /**
  * aifc file, application chunk, codebook chunk/name (code string).
@@ -309,6 +333,7 @@ struct AdpcmAifcLoopChunk {
 */
 struct AdpcmAifcCommChunk {
     /* begin file format (write elements to disk in order declared according to endianess) */
+
     /**
      * Chunk id.
      * big endian.
@@ -352,7 +377,7 @@ struct AdpcmAifcCommChunk {
 
     /**
      * Compression type used by the audio.
-     * Should always be ADPCM_AIFC_COMPRESSION_TYPE_ID.
+     * Audio compressed with the Nintendo tools should be ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID.
      * big endian. 
     */
     uint32_t compression_type;
@@ -369,7 +394,7 @@ struct AdpcmAifcCommChunk {
      * "VADPCM ~4-1".
      * no terminating '\0'
     */
-    char compression_name[ADPCM_AIFC_VADPCM_COMPRESSION_NAME_LEN];
+    char compression_name[ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN];
 
     /* end file format ------------------------------------------------------------------- */
 };
@@ -379,6 +404,7 @@ struct AdpcmAifcCommChunk {
 */
 struct AdpcmAifcFile {
     /* begin file format (write elements to disk in order declared according to endianess) */
+
     /**
      * Chunk id.
      * Always ADPCM_AIFC_FORM_CHUNK_ID.
@@ -420,7 +446,7 @@ struct AdpcmAifcFile {
 
     /**
      * Convenience pointer to the only/last codebook chunk.
-     * Should always exist.
+     * Only set for AL_ADPCM_WAVE.
     */
     struct AdpcmAifcCodebookChunk *codes_chunk;
 
@@ -442,7 +468,7 @@ extern int g_AdpcmLoopInfiniteExportCount;
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count);
 struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);
 struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank);
-struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new();
+struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type);
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries);
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes);
 struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new();

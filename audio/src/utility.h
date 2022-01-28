@@ -77,6 +77,7 @@ void file_info_free(struct file_info *fi);
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names);
 void get_filename(char *string, char *filename, size_t max_len);
 void change_filename_extension(char *input_filename, char *output_filename, char *new_extension, size_t max_len);
+int string_ends_with(const char * str, const char * suffix);
 
 void int32_to_varint(int32_t in, struct var_length_int *varint);
 void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint);

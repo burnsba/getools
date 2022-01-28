@@ -394,10 +394,7 @@ const char *StringHashTable_peek_next_key(struct StringHashTable *root)
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
     struct llist_node *node;
-    uint32_t bucket_index;
-    uint32_t hash;
-    void *result;
-    int i;
+    uint32_t i;
 
     if (root == NULL)
     {
@@ -414,6 +411,7 @@ const char *StringHashTable_peek_next_key(struct StringHashTable *root)
     // if hashtable is empty, exit
     if (ht->num_entries == 0)
     {
+        TRACE_LEAVE(__func__)
         return NULL;
     }
 

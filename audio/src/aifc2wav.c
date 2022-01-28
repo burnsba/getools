@@ -61,6 +61,7 @@ static int opt_detune = 0;
 static int opt_inst_file = 0;
 static int opt_inst_search = 0;
 static int opt_inst_val = 0;
+static int opt_force_freq_adjust = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 static char inst_filename[MAX_FILENAME_LEN] = {0};
@@ -71,6 +72,7 @@ static int keybase = 0;
 static int detune = 0;
 
 #define LONG_OPT_DEBUG        1003
+#define LONG_OPT_FORCE_FREQ_ADJUST        1004
 #define LONG_OPT_INST_FILE    1200
 #define LONG_OPT_INST_SEARCH  1210
 #define LONG_OPT_INST_VAL     1220
@@ -98,6 +100,7 @@ static struct option long_options[] =
     {"inst-file",   required_argument,            NULL, LONG_OPT_INST_FILE },
     {"inst-search", required_argument,            NULL, LONG_OPT_INST_SEARCH },
     {"inst-val",    required_argument,            NULL, LONG_OPT_INST_VAL },
+    {"force-freq-adjust",   no_argument,        NULL,  LONG_OPT_FORCE_FREQ_ADJUST },
 
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
@@ -145,15 +148,18 @@ void print_help(const char * invoke)
     printf("    Keybase and detune parameters loaded from .inst file. Setting any value\n");
     printf("    implicitly toggles this mode. These options are incompatible with `explicit` mode.\n");
     printf("\n");
-    printf("    --inst-file=FILE              Input .inst file to search\n");
-    printf("    --inst-search=MODE            Search method to use. Available options are:\n");
-    printf("                                  \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_USE]);
-    printf("                                  Finds `sound` based on trailing text of \"use\" value.\n");
-    printf("                                  \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_SOUND]);
-    printf("                                  Finds `sound` with same name\n");
-    printf("                                  \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_KEYMAP]);
-    printf("                                  Finds `keymap` with same name\n");
-    printf("    --inst-val=TEXT               Text parameter of search.\n");
+    printf("    --inst-file=FILE              Input .inst file to search. Required.\n");
+    printf("    --inst-search=MODE            Search method to use. Required. Available options are:\n");
+    printf("                                  - \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_USE]);
+    printf("                                    Finds `sound` based on trailing text of \"use\" value.\n");
+    printf("                                  - \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_SOUND]);
+    printf("                                    Finds `sound` with same name\n");
+    printf("                                  - \"%s\"\n", INST_FILE_SEARCH_NAMES[INST_FILE_SEARCH_KEYMAP]);
+    printf("                                    Finds `keymap` with same name\n");
+    printf("    --inst-val=TEXT               Text parameter of search. Required.\n");
+    printf("    --force-freq-adjust           By default, frequency adjustments will only be applied on\n");
+    printf("                                  audio of type AL_ADPCM_WAVE. This flag will force\n");
+    printf("                                  AL_RAW16_WAVE to be adjusted as well.\n");
 
     printf("\n");
     fflush(stdout);
@@ -412,6 +418,10 @@ void read_opts(int argc, char **argv)
                 g_verbosity = 2;
                 break;
 
+            case LONG_OPT_FORCE_FREQ_ADJUST:
+                opt_force_freq_adjust = 1;
+                break;
+
             case LONG_OPT_DEBUG:
                 g_verbosity = VERBOSE_DEBUG;
                 break;
@@ -431,6 +441,7 @@ int main(int argc, char **argv)
     struct file_info *input_file;
     struct file_info *inst_file;
     struct file_info *output_file;
+    int skip_freq_adjust = 0;
 
     read_opts(argc, argv);
 
@@ -449,7 +460,7 @@ int main(int argc, char **argv)
 
         if (!opt_inst_search)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "error, inst search mode be specified in freq_adjust_mode=%s\n", FREQ_ADJUST_MODE_NAMES[freq_adjust_mode]);
+            stderr_exit(EXIT_CODE_GENERAL, "error, inst search mode must be specified in freq_adjust_mode=%s\n", FREQ_ADJUST_MODE_NAMES[freq_adjust_mode]);
         }
 
         if (!opt_inst_val)
@@ -474,6 +485,7 @@ int main(int argc, char **argv)
         printf("output_filename: %s\n", output_filename);
         printf("opt_loop_count: %d\n", opt_loop_count);
         printf("g_AdpcmLoopInfiniteExportCount: %d\n", g_AdpcmLoopInfiniteExportCount);
+        printf("opt_force_freq_adjust: %d\n", opt_force_freq_adjust);
         printf("opt_inst_file: %d\n", opt_inst_file);
         printf("opt_inst_search: %d\n", opt_inst_search);
         printf("opt_inst_val: %d\n", opt_inst_val);
@@ -494,8 +506,62 @@ int main(int argc, char **argv)
 
         // parse .inst file.
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(inst_file);
+        struct ALKeyMap *keymap;
+        struct ALSound  *sound;
      
-        return 0;
+        if (inst_search_mode == INST_FILE_SEARCH_USE)
+        {
+            sound = ALBankFile_find_sound_by_aifc_filename(bank_file, inst_val);
+
+            if (sound == NULL)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", cannot find wavetable referencing file \"%s\"\n", inst_filename, inst_val);
+            }
+
+            keymap = sound->keymap;
+
+            if (keymap == NULL)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", sound->keymap is NULL\n", inst_filename);
+            }
+        }
+        else if (inst_search_mode == INST_FILE_SEARCH_SOUND)
+        {
+            sound = ALBankFile_find_sound_with_name(bank_file, inst_val);
+
+            if (sound == NULL)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", cannot find sound with id \"%s\"\n", inst_filename, inst_val);
+            }
+
+            keymap = sound->keymap;
+
+            if (keymap == NULL)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", sound->keymap is NULL\n", inst_filename);
+            }
+        }
+        else if (inst_search_mode == INST_FILE_SEARCH_KEYMAP)
+        {
+            keymap = ALBankFile_find_keymap_with_name(bank_file, inst_val);
+
+            if (keymap == NULL)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", cannot find keymap with id \"%s\"\n", inst_filename, inst_val);
+            }
+        }
+
+        keybase = keymap->key_base;
+        detune = keymap->detune;
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("search> keybase=%d, detune=%d\n", keybase, detune);
+        }
+
+        ALBankFile_free(bank_file);
+        file_info_free(inst_file);
+        inst_file = NULL;
     }
 
     input_file = file_info_fopen(input_filename, "rb");
@@ -507,12 +573,36 @@ int main(int argc, char **argv)
 
     wav_file = WavFile_load_from_aifc(aifc_file);
 
+    /**
+     * It seems the AL_RAW16_WAVE .aifc files don't adjust the frequency, maybe?
+     * So check for that here.
+    */
+    if (aifc_file->comm_chunk != NULL
+        && aifc_file->comm_chunk->compression_type == ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID)
+    {
+        skip_freq_adjust = 1;
+    }
+
     // done with input aifc file
     AdpcmAifcFile_free(aifc_file);
     aifc_file = NULL;
 
     // check if freq adjustment is necessary
-    if (freq_adjust_mode == FREQ_ADJUST_SEARCH || freq_adjust_mode == FREQ_ADJUST_EXPLICIT)
+    if (
+        /**
+         * if the user passed explicit detune parameters
+        */
+        (freq_adjust_mode == FREQ_ADJUST_EXPLICIT)
+        /**
+         * Or, the user is automating this and said to search .inst file for
+         * detune parameters.
+        */
+        || (freq_adjust_mode == FREQ_ADJUST_SEARCH &&
+            /**
+             * And the user said to always adjust the frequency,
+             * or to automatically adjust if this is ADPCM compression but skip `NONE`.
+            */
+            (opt_force_freq_adjust == 1 || skip_freq_adjust == 0)))
     {
         double freq = WavFile_get_frequency(wav_file);
         double new_freq = detune_frequency(freq, keybase, detune);

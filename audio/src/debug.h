@@ -34,7 +34,7 @@
 /**
  * print state info and values read when parsing .inst file.
 */
-#define DEBUG_PARSE_INST 1
+#define DEBUG_PARSE_INST 0
 
 // end section: debug flags for individual programs/files/methods
 

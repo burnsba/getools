@@ -1,9 +1,21 @@
 programs:
 
 aifc2wav
+cseq2midi
 sbksplit
-seq2midi
 tbl2aifc
+
+-----
+
+.inst parse support:
+
+- instrument-sounds and bank->instruments are sorted by array index.
+- An evelope maps one-to-one to sound. The devkit example has multiple sounds using the same envelope, this is not supported.
+- Array indeces are required. The devkit example seems to make these optional.
+
+-----
+
+Add "further reading" or "references" section for the file spec stuff.
 
 -----
 
@@ -31,3 +43,18 @@ done
 ```
 
 for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/seq/' ; done
+
+-----
+
+todo:
+
+- all the compilation/rebuild stuff to build matching rom
+
+- wav loop point SMPL
+
+- readme writeup
+
+- encode/decode algorithm writeup
+
+- if only one input is required, and one input provided, assume it's the `--in` parameter
+- cseq2wav -- convert midi to wav but automatically apply the correct instrument sounds

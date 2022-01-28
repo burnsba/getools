@@ -667,4 +667,8 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune);
 
 struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi);
 
+struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id);
+struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);
+struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename);
+
 #endif
