@@ -1495,14 +1495,14 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
 {
     TRACE_ENTER(__func__)
 
-    if (detune < 0)
+    if (detune < -100)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: 0-100\n", __func__, detune);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: (-100) - 100\n", __func__, detune);
     }
 
     if (detune > 100)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: 0-100\n", __func__, detune);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: (-100) - 100\n", __func__, detune);
     }
 
     if (keybase < 0)
