@@ -10,128 +10,519 @@
 #include "string_hash.h"
 #include "llist.h"
 #include "naudio.h"
+#include "kvp.h"
 
+/**
+ * This file implements a finite state machine to parse a text .inst file
+ * into an ALBankFile. There is a .graphml (and .svg) listing valid
+ * state transitions.
+*/
+
+/**
+ * The .inst file is split into blocks, roughly:
+ * 
+ *     type instance_name {
+ *         property property_value;
+ *     }
+ * 
+ * Each block begins with the type name, followed by instance name. Properties of this instance
+ * are then listed between curly braces. The `type` and `property` are described by enums below.
+ * 
+ * A "newline character" is considered either a '\r' or '\n'.
+ * 
+ * The parsing algorithm is designed to ignore whitespace (including newlines) whenever possible.
+ * 
+ * Comments begin with `#` character. All text is then discarded until reading a newline character.
+ * 
+ * Blocks can be listed in any order; properties can reference a block that has not been declared yet.
+ * 
+ * Array items can be listed in any order; these will be sorted according to
+ * array index listed in .inst file. Array indeces are required. The devkit example seems
+ * to make these optional.
+ * 
+ * An evelope maps one-to-one to sound. The devkit example has multiple sounds using the
+ * same envelope, this is not supported.
+*/
+
+/**
+ * Max length in bytes to accept as token length.
+*/
 #define IDENTIFIER_MAX_LEN 50
 
-inline static int is_whitespace(char c) ATTR_INLINE ;
-inline static int is_newline(char c) ATTR_INLINE ;
-inline static int is_alpha(char c) ATTR_INLINE ;
-inline static int is_alphanumeric(char c) ATTR_INLINE ;
-inline static int is_numeric(char c) ATTR_INLINE ;
-inline static int is_numeric_int(char c) ATTR_INLINE ;
-inline static int is_comment(char c) ATTR_INLINE ;
-
+/**
+ * Local struct to desribe properties or "classes".
+ * Set at compile time.
+*/
 struct TypeInfo {
+    /**
+     * Unique identifier corresponding to property within "class".
+    */
     int key;
+
+    /**
+     * Property name.
+    */
     char *value;
+
+    /**
+     * Property type (another enum, corresponds to "integer" or similar).
+    */
     int type_id;
 };
 
+/**
+ * Container for resolved type info.
+*/
 struct RuntimeTypeInfo {
+    /**
+     * Unique identifier corresponding to property within "class".
+    */
     int key;
+
+    /**
+     * Property type (another enum, corresponds to "integer" or similar).
+    */
     int type_id;
 };
 
-struct KeyValue {
-    int key;
-    char *value;
-};
-
+/**
+ * Local singleton containing the parser context.
+*/
 struct InstParseContext {
+    /**
+     * Each block is parsed and then stored in the appropiate "orphan"
+     * hashtable. Once the file is done parsing, references are resolved.
+     * This allows the .inst file to use a reference before it has
+     * been declared.
+     * 
+     * Some of these blocks also abuse the `struct AL-` and store a list
+     * of unmet dependencies (llist_root) on a pointer in the object.
+     * This is resolved and removed once parsing is complete.
+    */
+
+    /**
+     * Most recently resolved or current type desriptor.
+    */
     struct RuntimeTypeInfo *current_type;
+
+    /**
+     * Most recently resolved or current property desriptor.
+    */
     struct RuntimeTypeInfo *current_property;
 
+    /**
+     * Text buffer to store name of container type.
+    */
     char *type_name_buffer;
+
+    /**
+     * Current position in `type_name_buffer`.
+    */
     int type_name_buffer_pos;
+
+    /**
+     * Text buffer to store instance name.
+    */
     char *instance_name_buffer;
+
+    /**
+     * Current position in `instance_name_buffer`.
+    */
     int instance_name_buffer_pos;
+
+    /**
+     * Text buffer to store property type name.
+    */
     char *property_name_buffer;
+
+    /**
+     * Current position in `property_name_buffer`.
+    */
     int property_name_buffer_pos;
+
+    /**
+     * Text buffer to store array index as it's being read.
+    */
     char *array_index_value;
+
+    /**
+     * Current position in `array_index_value`.
+    */
     int array_index_value_pos;
+
+    /**
+     * Text buffer to store property value as it's being read.
+    */
     char *property_value_buffer;
+
+    /**
+     * Current position in `property_value_buffer`.
+    */
     int property_value_buffer_pos;
 
+    /**
+     * Reference to property after it's instantiated.
+     * This will be a struct ALBank, ALEnvelope, etc.
+    */
     void *current_instance;
 
+    /**
+     * After array index value is finished being read,
+     * it's converted to an integer and stored in this
+     * property.
+    */
     int array_index_int;
+
+    /**
+     * After property value is finished being read,
+     * if it's an integer it will be converted
+     * and stored in this property.
+    */
     int current_value_int;
 
+    /**
+     * Hash table of ALBank.
+    */
     struct StringHashTable *orphaned_banks;
+
+    /**
+     * Hash table of ALInstrument.
+    */
     struct StringHashTable *orphaned_instruments;
+
+    /**
+     * Hash table of ALSound.
+    */
     struct StringHashTable *orphaned_sounds;
+
+    /**
+     * Hash table of ALKeyMap.
+    */
     struct StringHashTable *orphaned_keymaps;
+
+    /**
+     * Hash table of ALEnvelope.
+    */
     struct StringHashTable *orphaned_envelopes;
 };
 
+/**
+ * Describes a "base" type like integer.
+ * This is used for the properties, not parent block type.
+ * This sort of corresponds to a line in the block.
+*/
 enum TYPE_ID {
+    /**
+     * Default / unset / unknown.
+    */
     TYPE_ID_NONE = 0,
+
+    /**
+     * Integer type, signed/unsigned and bitsize
+     * are context dependent (based on property).
+    */
     TYPE_ID_INT = 1,
+
+    /**
+     * Property such as:
+     *     use ("filename.aifc");
+    */
     TYPE_ID_USE_STRING,
+
+    /**
+     * An unquoted string, gives an id of another block
+     * within the instance file.
+    */
     TYPE_ID_TEXT_REF_ID,
+
+    /**
+     * An unquoted string, gives an id of another block
+     * within the instance file. Base property is an array
+     * and array index is required.
+    */
     TYPE_ID_ARRAY_TEXT_REF_ID,
 };
 
+/**
+ * These are the block level types allowed within the .inst file.
+*/
 enum BANK_CLASS_TYPE {
+    /**
+     * Default / unset / unknown.
+    */
     INST_TYPE_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: bank
+     * class: struct ALBank
+    */
     INST_TYPE_BANK = 1,
+
+    /**
+     * .inst name: instrument
+     * class: struct ALInstrument
+    */
     INST_TYPE_INSTRUMENT,
+
+    /**
+     * .inst name: sound
+     * class: struct ALSound
+    */
     INST_TYPE_SOUND,
+
+    /**
+     * .inst name: keymap
+     * class: struct ALKeyMap
+    */
     INST_TYPE_KEYMAP,
+
+    /**
+     * .inst name: envelope
+     * class: struct ALEnvelope
+    */
     INST_TYPE_ENVELOPE
 };
 
+/**
+ * Properties supported under `bank`.
+*/
 enum InstBankPropertyId {
+    /**
+     * Default / unset / unknown.
+    */
     INST_BANK_PROPERTY_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: instrument
+     * class: struct ALBank->instruments
+    */
     INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY = 1
 };
 
+/**
+ * Properties supported under `instrument`.
+*/
 enum InstInstrumentPropertyId {
+    /**
+     * Default / unset / unknown.
+    */
     INST_INSTRUMENT_PROPERTY_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: volume
+     * class: struct ALInstrument->volume
+    */
     INST_INSTRUMENT_PROPERTY_VOLUME = 1,
+
+    /**
+     * .inst name: pan
+     * class: struct ALInstrument->pan
+    */
     INST_INSTRUMENT_PROPERTY_PAN,
+
+    /**
+     * .inst name: priority
+     * class: struct ALInstrument->priority
+    */
     INST_INSTRUMENT_PROPERTY_PRIORITY,
+
+    /**
+     * (I don't think this needs to be supported ...)
+     * .inst name: flags
+     * class: struct ALInstrument->flags
+    */
     INST_INSTRUMENT_PROPERTY_FLAGS,
+
+    /**
+     * .inst name: tremType
+     * class: struct ALInstrument->trem_type
+    */
     INST_INSTRUMENT_PROPERTY_TREM_TYPE,
+
+    /**
+     * .inst name: tremRate
+     * class: struct ALInstrument->trem_rate
+    */
     INST_INSTRUMENT_PROPERTY_TREM_RATE,
+
+    /**
+     * .inst name: tremDepth
+     * class: struct ALInstrument->trem_depth
+    */
     INST_INSTRUMENT_PROPERTY_TREM_DEPTH,
+
+    /**
+     * .inst name: tremDelay
+     * class: struct ALInstrument->trem_delay
+    */
     INST_INSTRUMENT_PROPERTY_TREM_DELAY,
+
+    /**
+     * .inst name: vibType
+     * class: struct ALInstrument->vib_type
+    */
     INST_INSTRUMENT_PROPERTY_VIB_TYPE,
+
+    /**
+     * .inst name: vibRate
+     * class: struct ALInstrument->vib_rate
+    */
     INST_INSTRUMENT_PROPERTY_VIB_RATE,
+
+    /**
+     * .inst name: vibDepth
+     * class: struct ALInstrument->vib_depth
+    */
     INST_INSTRUMENT_PROPERTY_VIB_DEPTH,
+
+    /**
+     * .inst name: vibDelay
+     * class: struct ALInstrument->vib_delay
+    */
     INST_INSTRUMENT_PROPERTY_VIB_DELAY,
+
+    /**
+     * .inst name: bendRange
+     * class: struct ALInstrument->bend_range
+    */
     INST_INSTRUMENT_PROPERTY_BENDRANGE,
+
+    /**
+     * .inst name: sound
+     * class: struct ALInstrument->sounds
+    */
     INST_INSTRUMENT_PROPERTY_SOUND_ARR_ENTRY
 };
 
+/**
+ * Properties supported under `sound`.
+*/
 enum InstSoundPropertyId {
+    /**
+     * Default / unset / unknown.
+    */
     INST_SOUND_PROPERTY_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: use
+     * class: struct ALSound->wavetable->aifc_path
+    */
     INST_SOUND_PROPERTY_USE = 1,
+
+    /**
+     * .inst name: pan
+     * class: struct ALSound->sample_pan
+    */
     INST_SOUND_PROPERTY_PAN,
+
+    /**
+     * .inst name: volume
+     * class: struct ALSound->sample_volume
+    */
     INST_SOUND_PROPERTY_VOLUME,
+
+    /**
+     * .inst name: envelope
+     * class: struct ALSound->envelope
+    */
     INST_SOUND_PROPERTY_ENVELOPE,
+
+    /**
+     * .inst name: keymap
+     * class: struct ALSound->keymap
+    */
     INST_SOUND_PROPERTY_KEYMAP
 };
 
+/**
+ * Properties supported under `keymap`.
+*/
 enum InstKeyMapPropertyId {
+    /**
+     * Default / unset / unknown.
+    */
     INST_KEYMAP_PROPERTY_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: velocityMin
+     * class: struct ALKeyMap->velocity_min
+    */
     INST_KEYMAP_PROPERTY_VELOCITY_MIN = 1,
+
+    /**
+     * .inst name: velocityMax
+     * class: struct ALKeyMap->velocity_max
+    */
     INST_KEYMAP_PROPERTY_VELOCITY_MAX,
+
+    /**
+     * .inst name: keyMin
+     * class: struct ALKeyMap->key_min
+    */
     INST_KEYMAP_PROPERTY_KEY_MIN,
+
+    /**
+     * .inst name: keyMax
+     * class: struct ALKeyMap->key_max
+    */
     INST_KEYMAP_PROPERTY_KEY_MAX,
+
+    /**
+     * .inst name: keyBase
+     * class: struct ALKeyMap->key_base
+    */
     INST_KEYMAP_PROPERTY_KEY_BASE,
+
+    /**
+     * .inst name: detune
+     * class: struct ALKeyMap->detune
+    */
     INST_KEYMAP_PROPERTY_DETUNE
 };
 
+/**
+ * Properties supported under `envelope`.
+*/
 enum InstEnvelopePropertyId {
+    /**
+     * Default / unset / unknown.
+    */
     INST_ENVELOPE_PROPERTY_DEFAULT_UNKNOWN = 0,
+
+    /**
+     * .inst name: attackTime
+     * class: struct ALEnvelope->attack_time
+    */
     INST_ENVELOPE_PROPERTY_ATTACK_TIME = 1,
+
+    /**
+     * .inst name: attackVolume
+     * class: struct ALEnvelope->attack_volume
+    */
     INST_ENVELOPE_PROPERTY_ATTACK_VOLUME,
+
+    /**
+     * .inst name: decayTime
+     * class: struct ALEnvelope->decay_time
+    */
     INST_ENVELOPE_PROPERTY_DECAY_TIME,
+
+    /**
+     * .inst name: decayVolume
+     * class: struct ALEnvelope->decay_volume
+    */
     INST_ENVELOPE_PROPERTY_DECAY_VOLUME,
+
+    /**
+     * .inst name: releaseTime
+     * class: struct ALEnvelope->release_time
+    */
     INST_ENVELOPE_PROPERTY_RELEASE_TIME
 };
 
+/**
+ * Describes top level types.
+*/
 static struct TypeInfo InstTypes[] = {
     { INST_TYPE_BANK, "bank", TYPE_ID_NONE },
     { INST_TYPE_INSTRUMENT, "instrument", TYPE_ID_NONE },
@@ -141,11 +532,17 @@ static struct TypeInfo InstTypes[] = {
 };
 static const int InstTypes_len = ARRAY_LENGTH(InstTypes);
 
+/**
+ * Describes properties of .inst `bank` type.
+*/
 static struct TypeInfo InstBankProperties[] = {
     { INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY, "instrument", TYPE_ID_ARRAY_TEXT_REF_ID }
 };
 static const int InstBankProperties_len = ARRAY_LENGTH(InstBankProperties);
 
+/**
+ * Describes properties of .inst `instrument` type.
+*/
 static struct TypeInfo InstInstrumentProperties[] = {
     { INST_INSTRUMENT_PROPERTY_VOLUME, "volume", TYPE_ID_INT },
     { INST_INSTRUMENT_PROPERTY_PAN, "pan", TYPE_ID_INT },
@@ -164,6 +561,9 @@ static struct TypeInfo InstInstrumentProperties[] = {
 };
 static const int InstInstrumentProperties_len = ARRAY_LENGTH(InstInstrumentProperties);
 
+/**
+ * Describes properties of .inst `sound` type.
+*/
 static struct TypeInfo InstSoundProperties[] = {
     { INST_SOUND_PROPERTY_USE, "use", TYPE_ID_USE_STRING },
     { INST_SOUND_PROPERTY_PAN, "pan", TYPE_ID_INT },
@@ -173,6 +573,9 @@ static struct TypeInfo InstSoundProperties[] = {
 };
 static const int InstSoundProperties_len = ARRAY_LENGTH(InstSoundProperties);
 
+/**
+ * Describes properties of .inst `keymap` type.
+*/
 static struct TypeInfo InstKeyMapProperties[] = {
     { INST_KEYMAP_PROPERTY_VELOCITY_MIN, "velocityMin", TYPE_ID_INT },
     { INST_KEYMAP_PROPERTY_VELOCITY_MAX, "velocityMax", TYPE_ID_INT },
@@ -183,6 +586,9 @@ static struct TypeInfo InstKeyMapProperties[] = {
 };
 static const int InstKeyMapProperties_len = ARRAY_LENGTH(InstKeyMapProperties);
 
+/**
+ * Describes properties of .inst `envelope` type.
+*/
 static struct TypeInfo InstEnvelopeProperties[] = {
     { INST_ENVELOPE_PROPERTY_ATTACK_TIME, "attackTime", TYPE_ID_INT },
     { INST_ENVELOPE_PROPERTY_ATTACK_VOLUME, "attackVolume", TYPE_ID_INT },
@@ -192,46 +598,183 @@ static struct TypeInfo InstEnvelopeProperties[] = {
 };
 static const int InstEnvelopeProperties_len = ARRAY_LENGTH(InstEnvelopeProperties);
 
+/**
+ * Parse states used by finite state machine.
+ * See graphml or svg for valid transitions.
+*/
 enum InstParseState {
+    /**
+     * Begin state.
+    */
     INST_PARSE_STATE_INITIAL = 1,
+
+    /**
+     * A '#' character was read.
+    */
     INST_PARSE_STATE_COMMENT,
+
+    /**
+     * Reading the type name.
+    */
     INST_PARSE_STATE_TYPE_NAME,
+
+    /**
+     * Type name has ended (whitespace etc), and
+     * now searching for a character to begin the
+     * instance name.
+    */
     INST_PARSE_STATE_INITIAL_INSTANCE_NAME,
+
+    /**
+     * Reading the instance name.
+    */
     INST_PARSE_STATE_INSTANCE_NAME,
+
+    /**
+     * Instance name has ended (whitespace etc),
+     * and now searching for '{'.
+    */
     INST_PARSE_STATE_SEARCH_OPEN_BRACKET,
+
+    /**
+     * Inside the block after '{', searching
+     * for text to begin a property name
+     * or closing '}'.
+    */
     INST_PARSE_STATE_INITIAL_INSTANCE_PROPERTY,
+
+    /**
+     * Reading the property name.
+    */
     INST_PARSE_STATE_PROPERTY_NAME,
+
+    /**
+     * The property requires an equal sign,
+     * so search for that.
+    */
     INST_PARSE_STATE_EQUAL_SIGN_INT,
+
+    /**
+     * The property requires an integer value,
+     * search for text of that kind.
+    */
     INST_PARSE_STATE_INITIAL_INT_VALUE,
+
+    /**
+     * Reading the property value as an integer.
+    */
     INST_PARSE_STATE_INT_VALUE,
+
+    /**
+     * The property requires `("filename")`,
+     * search for open '('.
+    */
     INST_PARSE_STATE_INITIAL_FILENAME_VALUE,
+
+    /**
+     * The property requires `("filename")`,
+     * search for open '"' after open '('.
+    */
     INST_PARSE_STATE_SEARCH_OPEN_QUOTE,
+
+    /**
+     * Read filename, all text until closing '"'.
+    */
     INST_PARSE_STATE_FILENAME,
+
+    /**
+     * The property requires `("filename")`,
+     * search for closing ')'.
+    */
     INST_PARSE_STATE_SEARCH_CLOSE_PAREN,
+
+    /**
+     * Done reading property assignment,
+     * search for ';'.
+    */
     INST_PARSE_STATE_SEARCH_SEMI_COLON,
+
+    /**
+     * The property is an array or list,
+     * search for opening '['.
+    */
     INST_PARSE_STATE_BEGIN_ARRAY_REF,
+
+    /**
+     * The property is an array or list,
+     * search for character that could be
+     * a number.
+    */
     INST_PARSE_STATE_INITIAL_ARRAY_INDEX,
+
+    /**
+     * Reading the array index value.
+    */
     INST_PARSE_STATE_ARRAY_INDEX,
+
+    /**
+     * Done reading array index value,
+     * search for closing ']'.
+    */
     INST_PARSE_STATE_ARRAY_INDEX_SEARCH_CLOSE_BRACKET,
+
+    /**
+     * The property value is a text ref, it's read
+     * with an equal sign so search for '='.
+    */
     INST_PARSE_STATE_EQUAL_SIGN_TEXT_REF_ID,
+
+    /**
+     * Search for character that could begin
+     * text reference id.
+    */
     INST_PARSE_STATE_INITIAL_TEXT_REF_ID,
-    INST_PARSE_STATE_TEXT_REF_ID,
 
-    INST_PARSE_STATE_EOF,
-
-    INST_PARSE_STATE_ERROR,
+    /**
+     * Read text reference id.
+    */
+    INST_PARSE_STATE_TEXT_REF_ID
 };
 
+
+// forward declarations.
+
+inline static int is_whitespace(char c) ATTR_INLINE ;
+inline static int is_newline(char c) ATTR_INLINE ;
+inline static int is_alpha(char c) ATTR_INLINE ;
+inline static int is_alphanumeric(char c) ATTR_INLINE ;
+inline static int is_numeric(char c) ATTR_INLINE ;
+inline static int is_numeric_int(char c) ATTR_INLINE ;
+inline static int is_comment(char c) ATTR_INLINE ;
+
+// end forward declarations
+
+/**
+ * Checks whether a character is whitespace or not.
+ * @param c: character.
+ * @returns: true if '\t' or ' ', false otherwise.
+*/
 inline static int is_whitespace(char c)
 {
     return c == ' ' || c == '\t';
 }
 
+/**
+ * Checks whether a character is a "newline" or not.
+ * @param c: character.
+ * @returns: true if '\r' or '\n', false otherwise.
+*/
 inline static int is_newline(char c)
 {
     return c == '\r' || c == '\n';
 }
 
+/**
+ * Checks whether a two character sequence is a windows neweline glyph.
+ * @param c: most recent character.
+ * @param previous_c: character before the most recent.
+ * @returns: true if '\r\n', false otherwise.
+*/
 static int is_windows_newline(int c, int previous_c)
 {
     if (c == '\n' && previous_c == '\r')
@@ -242,146 +785,62 @@ static int is_windows_newline(int c, int previous_c)
     return 0;
 }
 
+/**
+ * Checks whether a character is a valid leading token name character.
+ * @param c: character.
+ * @returns: true if (regex: [a-zA-z_] ), false otherwise.
+*/
 inline static int is_alpha(char c)
 {
     return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
+/**
+ * Checks whether a character is a valid token name character.
+ * @param c: character.
+ * @returns: true if (regex: [a-zA-z0-9_] ), false otherwise.
+*/
 inline static int is_alphanumeric(char c)
 {
     return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
+/**
+ * Checks whether a character is a number or not. This is more
+ * restrictive than {@code is_numeric_int}.
+ * @param c: character.
+ * @returns: true if (regex: [0-9] ), false otherwise.
+*/
 inline static int is_numeric(char c)
 {
     return  (c >= '0' && c <= '9');
 }
 
+/**
+ * Checks whether a character could be used to describe an integer;
+ * this allows hex representation.
+ * @param c: character.
+ * @returns: true if (regex: [0-9xX-] ), false otherwise.
+*/
 inline static int is_numeric_int(char c)
 {
     return  (c >= '0' && c <= '9') || c == 'x' || c == 'X' || c == '-';
 }
 
+/**
+ * Checks whether a character begins a comment.
+ * @param c: character.
+ * @returns: true if '#', false otherwise.
+*/
 inline static int is_comment(char c)
 {
     return c == '#';
 }
 
-struct KeyValue *KeyValue_new()
-{
-    TRACE_ENTER(__func__)
-
-    struct KeyValue *p = (struct KeyValue *)malloc_zero(1, sizeof(struct KeyValue));
-
-    TRACE_LEAVE(__func__)
-
-    return p;
-}
-
-struct KeyValue *KeyValue_new_value(char *value)
-{
-    TRACE_ENTER(__func__)
-
-    size_t len = strlen(value);
-
-    struct KeyValue *p = (struct KeyValue *)malloc_zero(1, sizeof(struct KeyValue));
-
-    if (len > 0)
-    {
-        p->value = (char *)malloc_zero(1, len + 1);
-        strncpy(p->value, value, len);
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return p;
-}
-
-void KeyValue_free(struct KeyValue *kvp)
-{
-    TRACE_ENTER(__func__)
-
-    if (kvp == NULL)
-    {
-        TRACE_LEAVE(__func__)
-        return;
-    }
-
-    if (kvp->value != NULL)
-    {
-        free(kvp->value);
-        kvp->value = NULL;
-    }
-
-    free(kvp);
-
-    TRACE_LEAVE(__func__)
-}
-
 /**
- * Merge sort comparison function.
- * Use this to sort smallest to largest.
- * @param first: first node
- * @param second: second node
- * @returns: comparison result
+ * Allocates memory for a new context.
+ * @returns: pointer to new context.
 */
-int llist_node_KeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second)
-{
-    TRACE_ENTER(__func__)
-
-    int ret;
-
-    if (first == NULL && second == NULL)
-    {
-        ret = 0;
-    }
-    else if (first == NULL && second != NULL)
-    {
-        ret = 1;
-    }
-    else if (first != NULL && second == NULL)
-    {
-        ret = -1;
-    }
-    else
-    {
-        struct KeyValue *kvp_first = (struct KeyValue *)first->data;
-        struct KeyValue *kvp_second = (struct KeyValue *)second->data;
-       
-        if (kvp_first == NULL && kvp_second == NULL)
-        {
-            ret = 0;
-        }
-        else if (kvp_first == NULL && kvp_second != NULL)
-        {
-            ret = 1;
-        }
-        else if (kvp_first != NULL && kvp_second == NULL)
-        {
-            ret = -1;
-        }
-        else
-        {
-            if (kvp_first->key < kvp_second->key)
-            {
-                ret = -1;
-            }
-            else if (kvp_first->key > kvp_second->key)
-            {
-                ret = 1;
-            }
-            else
-            {
-                ret = 0;
-            }
-        }
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return ret;
-}
-
 static struct InstParseContext *InstParseContext_new()
 {
     TRACE_ENTER(__func__)
@@ -403,6 +862,10 @@ static struct InstParseContext *InstParseContext_new()
     return context;
 }
 
+/**
+ * Frees all memory associated with context.
+ * @param context: object to free.
+*/
 static void InstParseContext_free(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -427,12 +890,25 @@ static void InstParseContext_free(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Appends character to buffer and increments position.
+ * No length / overflow checks are performed.
+ * @param buffer: buffer to append to.
+ * @param position: out parameter. Current position to place character. Will be incremented.
+ * @param c: character to add to bufer.
+*/
 static void buffer_append_inc(char *buffer, int *position, char c)
 {
     buffer[*position] = c;
     *position = *position + 1;
 }
 
+/**
+ * Resolves text to type.
+ * No memory is allocated.
+ * @param type_name: text to get type from.
+ * @param type: out paramater. Will have properties set explaining type.
+*/
 static void get_type(const char *type_name, struct RuntimeTypeInfo *type)
 {
     TRACE_ENTER(__func__)
@@ -458,6 +934,13 @@ static void get_type(const char *type_name, struct RuntimeTypeInfo *type)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * For a given type, resolves text to a property info.
+ * No memory is allocated.
+ * @param type: Type to get property for.
+ * @param property_name: text to get property from.
+ * @param property: out paramater. Will have properties set explaining type.
+*/
 static void get_property(struct RuntimeTypeInfo *type, const char *property_name, struct RuntimeTypeInfo *property)
 {
     TRACE_ENTER(__func__)
@@ -555,7 +1038,13 @@ static void get_property(struct RuntimeTypeInfo *type, const char *property_name
     TRACE_LEAVE(__func__)
 }
 
-void set_array_index_int(struct InstParseContext *context)
+/**
+ * Parses {@code context->array_index_value} as integer and sets
+ * {@code context->array_index_int} to the parsed value. If array
+ * is empty (position is zero), value is set to zero.
+ * @param context: context.
+*/
+static void set_array_index_int(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
 
@@ -589,7 +1078,13 @@ void set_array_index_int(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
-void set_current_property_value_int(struct InstParseContext *context)
+/**
+ * Parses {@code context->property_value_buffer} as integer and sets
+ * {@code context->current_value_int} to the parsed value. If array
+ * is empty (position is zero), value is set to zero.
+ * @param context: context.
+*/
+static void set_current_property_value_int(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
 
@@ -623,7 +1118,12 @@ void set_current_property_value_int(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
-void create_instance(struct InstParseContext *context)
+/**
+ * Constructs a new instance of `AL-` type using the {@code context->current_type->key}
+ * and sets {@code context->current_instance} to this new object.
+ * @param context: context.
+*/
+static void create_instance(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
 
@@ -698,7 +1198,16 @@ void create_instance(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
-void apply_property_on_instance_bank(struct InstParseContext *context)
+/**
+ * The {@code context->current_instance} has been resolved to {@code struct ALBank}.
+ * This resolves the current property info and sets the value from
+ * {@code context->property_value_buffer}.
+ * 
+ * Note: {@code bank->inst_offsets} is abused to store a
+ * linked list of dependencies (name ref ids).
+ * @param context: context.
+*/
+static void apply_property_on_instance_bank(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
 
@@ -745,6 +1254,15 @@ void apply_property_on_instance_bank(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * The {@code context->current_instance} has been resolved to {@code struct ALInstrument}.
+ * This resolves the current property info and sets the value from
+ * {@code context->property_value_buffer}.
+ * 
+ * Note: {@code instrument->sound_offsets} is abused to store a
+ * linked list of dependencies (name ref ids).
+ * @param context: context.
+*/
 void apply_property_on_instance_instrument(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -961,6 +1479,21 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * The {@code context->current_instance} has been resolved to {@code struct ALSound}.
+ * This resolves the current property info and sets the value from
+ * {@code context->property_value_buffer}.
+ * 
+ * Note: {@code INST_SOUND_PROPERTY_USE} creates a {@code struct ALWaveTable} and
+ * sets aifc_path.
+ * 
+ * Note: {@code sound->keymap} is abused to store a
+ * malloc'd text ref id dependency.
+ * 
+ * Note: {@code sound->envelope} is abused to store a
+ * malloc'd text ref id dependency.
+ * @param context: context.
+*/
 void apply_property_on_instance_sound(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -1064,6 +1597,12 @@ void apply_property_on_instance_sound(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * The {@code context->current_instance} has been resolved to {@code struct ALKeyMap}.
+ * This resolves the current property info and sets the value from
+ * {@code context->property_value_buffer}.
+ * @param context: context.
+*/
 void apply_property_on_instance_keymap(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -1156,6 +1695,12 @@ void apply_property_on_instance_keymap(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * The {@code context->current_instance} has been resolved to {@code struct ALEnvelope}.
+ * This resolves the current property info and sets the value from
+ * {@code context->property_value_buffer}.
+ * @param context: context.
+*/
 void apply_property_on_instance_envelope(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -1236,6 +1781,11 @@ void apply_property_on_instance_envelope(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * This is a pass through to resolve {@code context->current_type->key} to a known
+ * type and call the appropriate handler to set the property value.
+ * @param context: context.
+*/
 void apply_property_on_instance(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
@@ -1290,7 +1840,13 @@ void apply_property_on_instance(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
-void add_orphaned_instance(struct InstParseContext *context)
+/**
+ * The block has been terminated and no more properties will be added to
+ * {@code context->current_instance}. Resolve this to a type and
+ * add to the appropriate "orphaned" hash table.
+ * @param context: context.
+*/
+static void add_orphaned_instance(struct InstParseContext *context)
 {
     TRACE_ENTER(__func__)
 
@@ -1381,13 +1937,20 @@ void add_orphaned_instance(struct InstParseContext *context)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Fixes up the temporary repurposing of properties used during parsing.
+ * This resolves all text ref ids to objects from the related "orphaned"
+ * hash table.
+ * @param context: context.
+ * @param sound: sound object to resolve dependencies.
+*/
 static void resolve_references_sound(struct InstParseContext *context, struct ALSound *sound)
 {
     TRACE_ENTER(__func__)
 
     char *htkey;
 
-    // borrow envelope pointer property to store text ref string
+    // repurpose during parsing: borrow envelope pointer property to store text ref string
     htkey = (char *)(void*)sound->envelope;
 
     if (htkey != NULL)
@@ -1405,7 +1968,7 @@ static void resolve_references_sound(struct InstParseContext *context, struct AL
         sound->envelope = envelope;
     }
 
-    // borrow keymap pointer property to store text ref string
+    // repurpose during parsing: borrow keymap pointer property to store text ref string
     htkey = (char *)(void*)sound->keymap;
 
     if (htkey != NULL)
@@ -1426,6 +1989,13 @@ static void resolve_references_sound(struct InstParseContext *context, struct AL
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Fixes up the temporary repurposing of properties used during parsing.
+ * This resolves all text ref ids to objects from the related "orphaned"
+ * hash table.
+ * @param context: context.
+ * @param instrument: instrument object to resolve dependencies.
+*/
 static void resolve_references_instrument(struct InstParseContext *context, struct ALInstrument *instrument)
 {
     TRACE_ENTER(__func__)
@@ -1453,11 +2023,13 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
 
     if (count == 0)
     {
+        llist_node_root_free(need_names);
+
         TRACE_LEAVE(__func__)
         return;
     }
 
-    // sort nodes by array index read from .inst file, smallest to largest.
+    // sort nodes by array index ("key" property, not "value") read from .inst file, smallest to largest.
     llist_root_merge_sort(need_names, llist_node_KeyValue_compare_smaller_key);
 
     instrument->sounds = (struct ALSound **)malloc_zero(instrument->sound_count, sizeof(void*));
@@ -1502,6 +2074,13 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Fixes up the temporary repurposing of properties used during parsing.
+ * This resolves all text ref ids to objects from the related "orphaned"
+ * hash table.
+ * @param context: context.
+ * @param bank: bank object to resolve dependencies.
+*/
 static void resolve_references_bank(struct InstParseContext *context, struct ALBank *bank)
 {
     TRACE_ENTER(__func__)
@@ -1529,11 +2108,13 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
 
     if (count == 0)
     {
+        llist_node_root_free(need_names);
+
         TRACE_LEAVE(__func__)
         return;
     }
 
-    // sort nodes by array index read from .inst file, smallest to largest.
+    // sort nodes by array index ("key" property, not "value") read from .inst file, smallest to largest.
     llist_root_merge_sort(need_names, llist_node_KeyValue_compare_smaller_key);
 
     bank->instruments = (struct ALInstrument **)malloc_zero(bank->inst_count, sizeof(void*));
@@ -1578,6 +2159,14 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Fixes up the temporary repurposing of properties used during parsing.
+ * This iterates all child objects recursively and fixes them as well.
+ * This resolves all text ref ids to objects from the related "orphaned"
+ * hash table.
+ * @param context: context.
+ * @param bank_file: bank file object to resolve dependencies.
+*/
 static void resolve_references(struct InstParseContext *context, struct ALBankFile *bank_file)
 {
     TRACE_ENTER(__func__)
@@ -1619,22 +2208,88 @@ static void resolve_references(struct InstParseContext *context, struct ALBankFi
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Reads a .inst file and parses into a bank file.
+ * This allocates memory.
+ * This is the public parse entry point.
+ * @param fi: file info object of file to parse.
+ * @returns: new bank file parsed from .inst file.
+*/
 struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
+    /**
+     * Debug helper, contains text of current line.
+    */
     char line_buffer[MAX_FILENAME_LEN];
+
+    /**
+     * Debug helper, position in line_buffer.
+    */
     int line_buffer_pos;
+
+    /**
+     * Current character read or being processed.
+    */
     char c;
+
+    /**
+     * Character `c` as integer. Promoted to int to status as valid
+     * or invalid (equal to int32_t -1).
+    */
     int c_int;
+
+    /**
+     * Second most recent charactere read or being processed.
+     * Promoted to int to status as valid
+     * or invalid (equal to int32_t -1).
+    */
     int previous_c;
+
+    /**
+     * Previous state of parsing finite state machine.
+     * This is mostly used after finishing reading a comment
+     * to know which state to return to.
+    */
     int previous_state;
+
+    /**
+     * Current state of parsing finite state machine.
+    */
     int state;
+
+    /**
+     * Current line number as read from .inst file.
+    */
     int current_line_number;
+
+    /**
+     * Current position of .inst file in bytes.
+    */
     size_t pos;
+
+    /**
+     * Total length of .inst file in bytes.
+    */
     size_t len;
+
+    /**
+     * The entire .inst file is read into memory and stored
+     * in this buffer.
+    */
     char *file_contents;
+
+    /**
+     * Flag used in finite state machine to indicate the current state
+     * should process the current context in some way.
+    */
     int terminate;
+
+    /**
+     * Sanity check after parsing, counts entries in the "orphaned"
+     * hash tables.
+    */
     uint32_t hash_count;
 
     /**
@@ -1646,12 +2301,14 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     */
     int replay;
 
+    // begin initial setup.
+
     struct InstParseContext *context = InstParseContext_new();
 
     memset(line_buffer, 0, MAX_FILENAME_LEN);
 
+    // read .inst file into memory
     file_info_fseek(fi, 0, SEEK_SET);
-
     file_contents = (char *)malloc_zero(1, fi->len);
     len = file_info_fread(fi, file_contents, fi->len, 1);
 
@@ -1666,6 +2323,12 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     len = fi->len;
     replay = 0;
 
+    // done with initial setup.
+
+    /**
+     * This is the parsing finite state machine.
+     * Iterate until reaching end of file.
+    */
     while (pos < len)
     {
         if (replay)
@@ -1711,6 +2374,9 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         //     int aaa = 123;
         // }
 
+        /**
+         * See the graphml or svg for state transitions.
+        */
         switch (state)
         {
             case INST_PARSE_STATE_INITIAL:
@@ -1955,7 +2621,10 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
             case INST_PARSE_STATE_PROPERTY_NAME:
             {
-                // flag for comment state
+                /**
+                 * Flag for comment state. This will swap current and previous to
+                 * return to the correct state.
+                */
                 int terminate_is_comment = 0;
                 terminate = 0;
 
@@ -2001,6 +2670,15 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
                 if (terminate)
                 {
+                    /**
+                     * This will be the next state to transition to (or second next after comment).
+                     * The challenge is that this is context dependent and can't be decided
+                     * until after the current property type is known (which is what is
+                     * currently being parsed).
+                     * 
+                     * Note that the `replay` flag simplifies the number of states to consider,
+                     * otherwise (e.g.), would have to skip '=' and jump to state after that, etc.
+                    */
                     int terminate_state;
 
                     buffer_append_inc(context->property_name_buffer, &context->property_name_buffer_pos, '\0');
@@ -2019,7 +2697,7 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
                     context->property_name_buffer_pos = 0;
                     memset(context->property_name_buffer, 0, IDENTIFIER_MAX_LEN);
 
-                    // now that the it's known what needs to happen next, set the next state.
+                    // now that it's known what needs to happen next, set the next state.
                     if (context->current_property->type_id == TYPE_ID_INT)
                     {
                         terminate_state = INST_PARSE_STATE_EQUAL_SIGN_INT;
@@ -2514,11 +3192,17 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         }
     }
 
+    // Done with reading file, can release memory.
     free(file_contents);
 
+    /**
+     * Iterate all the "orphaned" hash tables and resolve text ref id
+     * to actual instances. This also fixes up properties that were
+     * borrowed during parsing.
+    */
     resolve_references(context, bank_file);
 
-    // sanity check
+    // sanity check. Make sure all orphaned instances were used.
 
     hash_count = StringHashTable_count(context->orphaned_banks);
 
@@ -2557,6 +3241,9 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
     // done with final sanity check
 
+    /**
+     * Done parsing, release context.
+    */
     InstParseContext_free(context);
 
     TRACE_LEAVE(__func__)

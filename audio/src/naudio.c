@@ -1532,6 +1532,12 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
     return hw_sample_rate / denom;
 }
 
+/**
+ * Searches a {@code ALBankFile}, returns the {@code ALKeyMap} with matching {@code text_id}.
+ * @param bank_file: bank file to search.
+ * @param keymap_text_id: text id of keymap to find.
+ * @returns: keymap or NULL.
+*/
 struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id)
 {
     TRACE_ENTER(__func__)
@@ -1585,6 +1591,12 @@ struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, 
     return NULL;
 }
 
+/**
+ * Searches a {@code ALBankFile}, returns the {@code ALSound} with matching {@code text_id}.
+ * @param bank_file: bank file to search.
+ * @param sound_text_id: text id of sound to find.
+ * @returns: sound or NULL.
+*/
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id)
 {
     TRACE_ENTER(__func__)
@@ -1633,6 +1645,14 @@ struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, co
     return NULL;
 }
 
+/**
+ * Searches a {@code ALBankFile}. Sounds are iterated and child wavetable searched. If
+ * the wavetable {@code aifc_path} ends with (or equals) {@code search_filename} then the parent
+ * {@code ALSound} is returned.
+ * @param bank_file: bank file to search.
+ * @param search_filename: filename in aifc_path.
+ * @returns: sound or NULL.
+*/
 struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename)
 {
     TRACE_ENTER(__func__)

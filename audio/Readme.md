@@ -48,7 +48,11 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
+- valgrind check
+
 - all the compilation/rebuild stuff to build matching rom
+
+- final valgrind check
 
 - wav loop point SMPL
 

@@ -88,5 +88,5 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
 void llist_node_swap(struct llist_node *first, struct llist_node *second);
 
 void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback);
-
+int llist_node_KeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second);
 #endif

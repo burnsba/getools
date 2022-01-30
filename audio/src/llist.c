@@ -4,6 +4,7 @@
 #include "machine_config.h"
 #include "utility.h"
 #include "llist.h"
+#include "kvp.h"
 
 /**
  * This file contains methods for a simple doubly linked list.
@@ -580,4 +581,69 @@ void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare
     root->tail = prev;
 
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on `key`, not value!
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+int llist_node_KeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct KeyValue *kvp_first = (struct KeyValue *)first->data;
+        struct KeyValue *kvp_second = (struct KeyValue *)second->data;
+       
+        if (kvp_first == NULL && kvp_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (kvp_first == NULL && kvp_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (kvp_first != NULL && kvp_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (kvp_first->key < kvp_second->key)
+            {
+                ret = -1;
+            }
+            else if (kvp_first->key > kvp_second->key)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
 }
