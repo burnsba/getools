@@ -56,6 +56,12 @@ void ALSound_free(struct ALSound *sound);
 void ALInstrument_free(struct ALInstrument *instrument);
 void ALBank_free(struct ALBank *bank);
 
+void ALEnvelope_notify_parents_null(struct ALEnvelope *envelope);
+void ALKeyMap_notify_parents_null(struct ALKeyMap *keymap);
+void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable);
+void ALSound_notify_parents_null(struct ALSound *sound);
+void ALInstrument_notify_parents_null(struct ALInstrument *instrument);
+
 static struct CtlParseContext *CtlParseContext_new();
 static void CtlParseContext_free(struct CtlParseContext *context);
 
@@ -235,6 +241,8 @@ void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
 
     int len;
 
+    envelope->visited = 1;
+
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "envelope %s", envelope->text_id);
     file_info_fwrite(fi, g_write_buffer, len, 1);
@@ -354,6 +362,8 @@ void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
     TRACE_ENTER(__func__)
 
     int len;
+
+    keymap->visited = 1;
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "keymap %s", keymap->text_id);
@@ -768,12 +778,16 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
 
     int len;
 
-    if (sound->envelope_offset > 0)
+    sound->visited = 1;
+
+    // don't write declaration more than once.
+    if (sound->envelope != NULL && sound->envelope->visited == 0)
     {
         ALEnvelope_write_inst(sound->envelope, fi);
     }
 
-    if (sound->key_map_offset > 0)
+    // don't write declaration more than once.
+    if (sound->keymap != NULL && sound->keymap->visited == 0)
     {
         ALKeyMap_write_inst(sound->keymap, fi);
     }
@@ -788,7 +802,8 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
 
     if (g_output_mode == OUTPUT_MODE_SFX)
     {
-        if (sound->wavetable_offfset != 0)
+        // allow writing reference more than once
+        if (sound->wavetable != NULL)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"use (\"%s\");\n", sound->wavetable->aifc_path);
@@ -827,7 +842,7 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
             file_info_fwrite(fi, g_write_buffer, len, 1);
         }
         
-        if (sound->envelope_offset > 0)
+        if (sound->envelope != NULL)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"envelope = %s;\n", sound->envelope->text_id);
@@ -841,7 +856,7 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
             }
         }
         
-        if (sound->key_map_offset > 0)
+        if (sound->keymap != NULL)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keymap = %s;\n", sound->keymap->text_id);
@@ -1005,9 +1020,15 @@ void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *
     int len;
     int i;
 
+    instrument->visited = 1;
+
     for (i=0; i<instrument->sound_count; i++)
     {
-        ALSound_write_inst(instrument->sounds[i], fi);
+        // don't write declaration more than once.
+        if (instrument->sounds[i]->visited == 0)
+        {
+            ALSound_write_inst(instrument->sounds[i], fi);
+        }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -1115,6 +1136,7 @@ void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
         file_info_fwrite(fi, g_write_buffer, len, 1);
         
+        // Skip writing declaration above, but always write references.
         for (i=0; i<instrument->sound_count; i++)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -1254,7 +1276,11 @@ void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
 
     for (i=0; i<bank->inst_count; i++)
     {
-        ALInstrument_write_inst(bank->instruments[i], fi);
+        // don't write declaration more than once.
+        if (bank->instruments[i]->visited == 0)
+        {
+            ALInstrument_write_inst(bank->instruments[i], fi);
+        }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -1267,6 +1293,7 @@ void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
 
     if (g_output_mode == OUTPUT_MODE_SFX)
     {
+        // Skip writing declaration above, but always write references.
         for (i=0; i<bank->inst_count; i++)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -1392,6 +1419,8 @@ void ALBankFile_write_inst(struct ALBankFile *bank_file, char* inst_filename)
     struct file_info *output;
     int i;
 
+    ALBankFile_clear_visited_flags(bank_file);
+
     output = file_info_fopen(inst_filename, "w");
 
     for (i=0; i<bank_file->bank_count; i++)
@@ -1467,6 +1496,44 @@ void ALRawLoop_free(struct ALRawLoop *loop)
 }
 
 /**
+ * Iterates all parent objects and any references pointing to this
+ * ALEnvelope are set to NULL.
+ * @param envelope: object to remove references to.
+*/
+void ALEnvelope_notify_parents_null(struct ALEnvelope *envelope)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+
+    if (envelope == NULL || envelope->parents == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    node = envelope->parents->root;
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+        struct ALSound *sound = node->data;
+
+        if (sound != NULL)
+        {
+            if (sound->envelope == envelope)
+            {
+                sound->envelope = NULL;
+                llist_node_free(envelope->parents, node);
+            }
+        }
+
+        node = next;
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
  * Frees memory allocated to envelope and all child objects.
  * @param envelope: object to free.
 */
@@ -1480,6 +1547,8 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
         return;
     }
 
+    ALEnvelope_notify_parents_null(envelope);
+
     if (envelope->parents != NULL)
     {
         llist_node_root_free(envelope->parents);
@@ -1487,6 +1556,44 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
     }
 
     free(envelope);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates all parent objects and any references pointing to this
+ * ALKeyMap are set to NULL.
+ * @param keymap: object to remove references to.
+*/
+void ALKeyMap_notify_parents_null(struct ALKeyMap *keymap)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+
+    if (keymap == NULL || keymap->parents == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    node = keymap->parents->root;
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+        struct ALSound *sound = node->data;
+
+        if (sound != NULL)
+        {
+            if (sound->keymap == keymap)
+            {
+                sound->keymap = NULL;
+                llist_node_free(keymap->parents, node);
+            }
+        }
+
+        node = next;
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -1505,6 +1612,8 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
         return;
     }
 
+    ALKeyMap_notify_parents_null(keymap);
+
     if (keymap->parents != NULL)
     {
         llist_node_root_free(keymap->parents);
@@ -1512,6 +1621,44 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
     }
 
     free(keymap);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates all parent objects and any references pointing to this
+ * ALWaveTable are set to NULL.
+ * @param wavetable: object to remove references to.
+*/
+void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+
+    if (wavetable == NULL || wavetable->parents == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    node = wavetable->parents->root;
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+        struct ALSound *sound = node->data;
+
+        if (sound != NULL)
+        {
+            if (sound->wavetable == wavetable)
+            {
+                sound->wavetable = NULL;
+                llist_node_free(wavetable->parents, node);
+            }
+        }
+
+        node = next;
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -1558,6 +1705,8 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
         free(wavetable->aifc_path);
     }
 
+    ALWaveTable_notify_parents_null(wavetable);
+
     if (wavetable->parents != NULL)
     {
         llist_node_root_free(wavetable->parents);
@@ -1565,6 +1714,63 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
     }
 
     free(wavetable);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates all parent objects and any references pointing to this
+ * ALSound are set to NULL.
+ * @param sound: object to remove references to.
+*/
+void ALSound_notify_parents_null(struct ALSound *sound)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+
+    if (sound == NULL || sound->parents == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    // Iterate each parent reference on `this`
+    node = sound->parents->root;
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+        struct ALInstrument *instrument = node->data;
+        int remove_flag = 0;
+
+        // If `this` parent is not null
+        if (instrument != NULL && instrument->sounds != NULL)
+        {
+            // Iterate all the child `ALSound` of the current parent.
+            int i;
+            for (i=0; i<instrument->sound_count; i++)
+            {
+                struct ALSound *instrument_sound = instrument->sounds[i];
+
+                // If the current `this->parent->child` points to `this`,
+                // set the pointer to NULL. Mark the llist_node for deletion,
+                // but it can't be removed yet in case there's another 
+                // reference to `this`.
+                if (instrument_sound == sound)
+                {
+                    instrument->sounds[i] = NULL;
+                    remove_flag = 1;
+                }
+            }
+        }
+
+        if (remove_flag)
+        {
+            llist_node_free(sound->parents, node);
+        }
+
+        node = next;
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -1601,6 +1807,8 @@ void ALSound_free(struct ALSound *sound)
         sound->wavetable = NULL;
     }
 
+    ALSound_notify_parents_null(sound);
+
     if (sound->parents != NULL)
     {
         llist_node_root_free(sound->parents);
@@ -1608,6 +1816,63 @@ void ALSound_free(struct ALSound *sound)
     }
 
     free(sound);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates all parent objects and any references pointing to this
+ * ALInstrument are set to NULL.
+ * @param instrument: object to remove references to.
+*/
+void ALInstrument_notify_parents_null(struct ALInstrument *instrument)
+{
+    TRACE_ENTER(__func__)
+
+    struct llist_node *node;
+
+    if (instrument == NULL || instrument->parents == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    // Iterate each parent reference on `this`
+    node = instrument->parents->root;
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+        struct ALBank *bank = node->data;
+        int remove_flag = 0;
+
+        // If `this` parent is not null
+        if (bank != NULL && bank->instruments != NULL)
+        {
+            // Iterate all the child `ALInstrument` of the current parent.
+            int i;
+            for (i=0; i<bank->inst_count; i++)
+            {
+                struct ALInstrument *bank_instrument = bank->instruments[i];
+
+                // If the current `this->parent->child` points to `this`,
+                // set the pointer to NULL. Mark the llist_node for deletion,
+                // but it can't be removed yet in case there's another 
+                // reference to `this`.
+                if (bank_instrument == instrument)
+                {
+                    bank->instruments[i] = NULL;
+                    remove_flag = 1;
+                }
+            }
+        }
+
+        if (remove_flag)
+        {
+            llist_node_free(instrument->parents, node);
+        }
+
+        node = next;
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -1647,6 +1912,8 @@ void ALInstrument_free(struct ALInstrument *instrument)
 
         free(instrument->sounds);
     }
+
+    ALInstrument_notify_parents_null(instrument);
 
     if (instrument->parents != NULL)
     {
@@ -1960,6 +2227,75 @@ struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_f
 
     TRACE_LEAVE(__func__)
     return NULL;
+}
+
+/**
+ * Visits all child elements and clears the `visited` flag.
+ * @param bank_file: bank file to clear.
+*/
+void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_count;
+
+    if (bank_file == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL)
+                {
+                    int sound_count;
+
+                    instrument->visited = 0;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL)
+                        {
+                            struct ALEnvelope *envelope = sound->envelope;
+                            struct ALKeyMap *keymap = sound->keymap;
+                            struct ALWaveTable *wavetable = sound->wavetable;
+
+                            sound->visited = 0;
+
+                            if (envelope != NULL)
+                            {
+                                envelope->visited = 0;
+                            }
+
+                            if (keymap != NULL)
+                            {
+                                keymap->visited = 0;
+                            }
+
+                            if (wavetable != NULL)
+                            {
+                                wavetable->visited = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
 }
 
 /**

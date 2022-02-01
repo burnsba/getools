@@ -716,6 +716,8 @@ struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, 
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);
 struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename);
 
+void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file);
+
 /**
  * The following prototypes should be treated as internal to naudio.
 */

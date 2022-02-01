@@ -8,6 +8,7 @@
 #include "math.h"
 #include "utility.h"
 #include "adpcm_aifc.h"
+#include "naudio.h"
 #include "llist.h"
 
 /**
@@ -1129,6 +1130,8 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
     struct file_info *output;
     int i,j,k;
 
+    ALBankFile_clear_visited_flags(bank_file);
+
     for (i=0; i<bank_file->bank_count; i++)
     {
         struct ALBank *bank = bank_file->banks[i];
@@ -1139,16 +1142,31 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
             {
                 struct ALSound *sound = inst->sounds[k];
 
-                if (g_verbosity >= VERBOSE_DEBUG)
+                if (sound == NULL)
                 {
-                    printf("opening sound file for output aifc: \"%s\"\n", sound->wavetable->aifc_path);
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound is NULL\n", __func__);
                 }
 
-                output = file_info_fopen(sound->wavetable->aifc_path, "w");
+                if (sound->wavetable == NULL)
+                {
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound->wavetable is NULL\n", __func__);
+                }
 
-                write_sound_to_aifc(sound, bank, tbl_file_contents, output);
+                if (sound->wavetable->visited == 0)
+                {
+                    sound->wavetable->visited = 1;
 
-                file_info_free(output);
+                    if (g_verbosity >= VERBOSE_DEBUG)
+                    {
+                        printf("opening sound file for output aifc: \"%s\"\n", sound->wavetable->aifc_path);
+                    }
+
+                    output = file_info_fopen(sound->wavetable->aifc_path, "w");
+
+                    write_sound_to_aifc(sound, bank, tbl_file_contents, output);
+
+                    file_info_free(output);
+                }
             }
         }
     }
