@@ -80,3 +80,57 @@ void KeyValue_free(struct KeyValue *kvp)
 
     TRACE_LEAVE(__func__)
 }
+
+/**
+ * Allocates memory for a new {@code struct KeyValuePointer}.
+ * No memory is allocated for the value.
+ * @returns: pointer to new object.
+*/
+struct KeyValuePointer *KeyValuePointer_new()
+{
+    TRACE_ENTER(__func__)
+
+    struct KeyValuePointer *p = (struct KeyValuePointer *)malloc_zero(1, sizeof(struct KeyValuePointer));
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Allocates memory for a new {@code struct KeyValuePointer} and
+ * copies pointer into value.
+ * @param value: pointer to copy.
+ * @returns: pointer to new object.
+*/
+struct KeyValuePointer *KeyValuePointer_new_value(void *value)
+{
+    TRACE_ENTER(__func__)
+
+    struct KeyValuePointer *p = (struct KeyValuePointer *)malloc_zero(1, sizeof(struct KeyValuePointer));
+    p->value = value;
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Frees memory associated with {@code struct KeyValuePointer}.
+ * The `value` is not freed.
+ * @param kvp: object to free.
+*/
+void KeyValuePointer_free(struct KeyValuePointer *kvp)
+{
+    TRACE_ENTER(__func__)
+
+    if (kvp == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    free(kvp);
+
+    TRACE_LEAVE(__func__)
+}

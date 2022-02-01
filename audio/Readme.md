@@ -48,17 +48,42 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
-- valgrind check
 
-- all the compilation/rebuild stuff to build matching rom
+-! child objects need a list of parent objects that reference them
+-! reading from .ctl needs to have a context, to track offsets read, so that duplicates can point to the same object
+- naudio_parse_inst needs to support duplicate references
+- writing to .inst needs to have a context so that the same object isn't written more than once (for objects referenced more than once)
+--- or flag items as visited?
+- writing to .ctl/.tbl needs to have a context so that the same object isn't written more than once (for objects referenced more than once)
+--- or flag items as visited?
+
+- tests for int_hash
 
 - final valgrind check
+- readme writeup
+- if only one input is required, and one input provided, assume it's the `--in` parameter
+
+
+feature roadmap:
+
+- app: gic -- convert .inst to .ctl+.tbl
+
+- decomp extract script
+--- extract sbk -> cseq -> midi
+--- extract instruments -> .tbl, .ctl -> .inst, .aifc -> .wav
+--- extract sounds -> .tbl, .ctl -> .inst, .aifc -> .wav
+
+- decomp build script
+--- pack cseq into cseq.rz and combine into .sbk
+--- sound .inst + .aifc -> .tbl, .ctl
+--- instrument .inst + .aifc -> .tbl, .ctl
 
 - wav loop point SMPL
 
-- readme writeup
+- app: wav2aifc -- convert wav to aifc
+--- encode/decode algorithm writeup
 
-- encode/decode algorithm writeup
+- app: midi2cseq -- convert midi to cseq
 
-- if only one input is required, and one input provided, assume it's the `--in` parameter
-- cseq2wav -- convert midi to wav but automatically apply the correct instrument sounds
+- app: ??? -- list controllers used by which midi tracks
+- app: cseq2wav -- convert midi to wav but automatically apply the correct instrument sounds

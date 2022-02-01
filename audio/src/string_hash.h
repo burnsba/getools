@@ -23,6 +23,7 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data);
 int StringHashTable_contains(struct StringHashTable *root, char *key);
 uint32_t StringHashTable_count(struct StringHashTable *root);
 void *StringHashTable_pop(struct StringHashTable *root, char *key);
+void *StringHashTable_get(struct StringHashTable *root, char *key);
 
 const char *StringHashTable_peek_next_key(struct StringHashTable *root);
 

@@ -260,13 +260,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
         exit(EXIT_CODE_IO);
     }
 
-    *buffer = (uint8_t *)malloc(input_filesize);
-    if (*buffer == NULL)
-    {
-        perror("malloc");
-		fclose(input);
-        exit(EXIT_CODE_MALLOC);
-    }
+    *buffer = (uint8_t *)malloc_zero(1, input_filesize);
 
     f_result = fread((void *)*buffer, 1, input_filesize, input);
     if(f_result != input_filesize || ferror(input))
@@ -282,6 +276,30 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     TRACE_LEAVE(__func__)
 
     return input_filesize;
+}
+
+/**
+ * Reads all contents of a file into a memory buffer.
+ * @param fi: file to read.
+ * @param buffer: pointer to memory array to store file contents. This should
+ * not point to any allocated memory; memory will be allocated in function.
+ * @returns: number of bytes read from file (also, length of buffer).
+*/
+size_t file_info_get_file_contents(struct file_info *fi, uint8_t **buffer)
+{
+    TRACE_ENTER(__func__)
+
+    size_t f_result;
+
+    file_info_fseek(fi, 0, SEEK_SET);
+
+    *buffer = (uint8_t *)malloc_zero(1, fi->len);
+
+    f_result = file_info_fread(fi, *buffer, fi->len, 1);
+
+    TRACE_LEAVE(__func__)
+
+    return f_result;
 }
 
 /**

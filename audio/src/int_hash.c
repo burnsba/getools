@@ -6,13 +6,13 @@
 #include "common.h"
 #include "machine_config.h"
 #include "utility.h"
-#include "string_hash.h"
+#include "int_hash.h"
 #include "llist.h"
 #include "md5.h"
 
 /**
  * This file contains implementation for a simple hash table designed
- * to use strings as keys. Considered a "bag" rather than dictionary
+ * to use (32-bit) int as keys. Considered a "bag" rather than dictionary
  * as duplicate keys are allowed.
 */
 
@@ -20,11 +20,11 @@
  * Private struct.
  * Single bucket entry in the hash table bucket.
 */
-struct StringHashBucketEntry {
+struct IntHashBucketEntry {
     /**
      * Key of object stored within this bucket.
     */
-    char *key;
+    uint32_t key;
 
     /**
      * Pointer to associated data.
@@ -36,7 +36,7 @@ struct StringHashBucketEntry {
  * Private struct.
  * Bucket to group hash table entries into a linked list.
 */
-struct StringHashBucket {
+struct IntHashBucket {
     /**
      * Array index of this bucket in the parent list of buckets.
     */
@@ -44,7 +44,7 @@ struct StringHashBucket {
 
     /**
      * Linked list of bucket entries.
-     * Type: `struct StringHashBucketEntry`.
+     * Type: `struct IntHashBucketEntry`.
     */
     struct llist_root *entry_list;
 };
@@ -53,7 +53,7 @@ struct StringHashBucket {
  * Private struct.
  * Main hash table object.
 */
-struct StringHashTable_internal {
+struct IntHashTable_internal {
 
     /**
      * Total number of items stored in the hash table.
@@ -68,21 +68,21 @@ struct StringHashTable_internal {
     /**
      * List of buckets.
     */
-    struct StringHashBucket **buckets;
+    struct IntHashBucket **buckets;
 };
 
 // forward declarations
 
-static void *StringHashTable_pop_common(struct StringHashTable *root, char *key, int pop);
-static struct StringHashTable_internal *StringHashTable_internal_new();
-static void StringHashTable_internal_free(struct StringHashTable_internal *root);
-static struct StringHashBucket *StringHashBucket_new();
-static void StringHashBucket_free(struct StringHashBucket *bucket);
-static struct StringHashBucketEntry *StringHashBucketEntry_new();
-static void StringHashBucketEntry_free(struct StringHashBucketEntry *entry);
+static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, int pop);
+static struct IntHashTable_internal *IntHashTable_internal_new();
+static void IntHashTable_internal_free(struct IntHashTable_internal *root);
+static struct IntHashBucket *IntHashBucket_new();
+static void IntHashBucket_free(struct IntHashBucket *bucket);
+static struct IntHashBucketEntry *IntHashBucketEntry_new();
+static void IntHashBucketEntry_free(struct IntHashBucketEntry *entry);
 
-static uint32_t StringHashTable_hash_key(char *key);
-static uint32_t StringHashTable_bucket_index_from_hash(struct StringHashTable_internal *internal, uint32_t hash);
+static uint32_t IntHashTable_hash_key(uint32_t key);
+static uint32_t IntHashTable_bucket_index_from_hash(struct IntHashTable_internal *internal, uint32_t hash);
 
 // end forward declarations
 
@@ -90,13 +90,13 @@ static uint32_t StringHashTable_bucket_index_from_hash(struct StringHashTable_in
  * Allocates memory for a new hash table.
  * @returns: pointer to new object.
 */
-struct StringHashTable *StringHashTable_new()
+struct IntHashTable *IntHashTable_new()
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable *p = (struct StringHashTable *)malloc_zero(1, sizeof(struct StringHashTable));
+    struct IntHashTable *p = (struct IntHashTable *)malloc_zero(1, sizeof(struct IntHashTable));
 
-    p->internal = StringHashTable_internal_new();
+    p->internal = IntHashTable_internal_new();
 
     TRACE_LEAVE(__func__)
 
@@ -109,7 +109,7 @@ struct StringHashTable *StringHashTable_new()
  * remain unmodified.
  * @param root: hash table to free.
 */
-void StringHashTable_free(struct StringHashTable *root)
+void IntHashTable_free(struct IntHashTable *root)
 {
     TRACE_ENTER(__func__)
 
@@ -121,7 +121,7 @@ void StringHashTable_free(struct StringHashTable *root)
 
     if (root->internal != NULL)
     {
-        StringHashTable_internal_free(root->internal);
+        IntHashTable_internal_free(root->internal);
         root->internal = NULL;
     }
 
@@ -138,13 +138,13 @@ void StringHashTable_free(struct StringHashTable *root)
  * @param key: lookup key.
  * @param data: pointer to data.
 */
-void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
+void IntHashTable_add(struct IntHashTable *root, uint32_t key, void *data)
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable_internal *ht;
-    struct StringHashBucket *bucket;
-    struct StringHashBucketEntry *entry;
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
     struct llist_node *node;
     uint32_t bucket_index;
     uint32_t hash;
@@ -154,29 +154,24 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
     }
 
-    if (key == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
-    }
-
-    ht = (struct StringHashTable_internal *)root->internal;
+    ht = (struct IntHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
     }
 
-    hash = StringHashTable_hash_key(key);
-    bucket_index = StringHashTable_bucket_index_from_hash(ht, hash);
+    hash = IntHashTable_hash_key(key);
+    bucket_index = IntHashTable_bucket_index_from_hash(ht, hash);
     bucket = ht->buckets[bucket_index];
 
     if (bucket == NULL)
     {
-        bucket = StringHashBucket_new();
+        bucket = IntHashBucket_new();
         ht->buckets[bucket_index] = bucket;
     }
 
-    entry = StringHashBucketEntry_new(key);
+    entry = IntHashBucketEntry_new(key);
     entry->data = data;
 
     node = llist_node_new();
@@ -195,13 +190,13 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
  * @param key: lookup key.
  * @returns: 1 if key is found, 0 otherwise.
 */
-int StringHashTable_contains(struct StringHashTable *root, char *key)
+int IntHashTable_contains(struct IntHashTable *root, uint32_t key)
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable_internal *ht;
-    struct StringHashBucket *bucket;
-    struct StringHashBucketEntry *entry;
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
     struct llist_node *node;
     uint32_t bucket_index;
     uint32_t hash;
@@ -210,13 +205,8 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
     }
-
-    if (key == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
-    }
     
-    ht = (struct StringHashTable_internal *)root->internal;
+    ht = (struct IntHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
@@ -230,8 +220,8 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
         return 0;
     }
 
-    hash = StringHashTable_hash_key(key);
-    bucket_index = StringHashTable_bucket_index_from_hash(ht, hash);
+    hash = IntHashTable_hash_key(key);
+    bucket_index = IntHashTable_bucket_index_from_hash(ht, hash);
     bucket = ht->buckets[bucket_index];
 
     // if bucket has never been setup, then it's not in the bucket
@@ -244,14 +234,14 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
     node = bucket->entry_list->root;
     while (node != NULL)
     {
-        entry = (struct StringHashBucketEntry *)node->data;
+        entry = (struct IntHashBucketEntry *)node->data;
 
         if (entry == NULL)
         {
             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, key);
         }
 
-        if (strcmp(key, entry->key) == 0)
+        if (key == entry->key)
         {
             TRACE_LEAVE(__func__)
             return 1;
@@ -270,18 +260,18 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
  * @param root: hash table.
  * @returns: total number of items.
 */
-uint32_t StringHashTable_count(struct StringHashTable *root)
+uint32_t IntHashTable_count(struct IntHashTable *root)
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable_internal *ht;
+    struct IntHashTable_internal *ht;
 
     if (root == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
     }
 
-    ht = (struct StringHashTable_internal *)root->internal;
+    ht = (struct IntHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
@@ -303,13 +293,13 @@ uint32_t StringHashTable_count(struct StringHashTable *root)
  * @param key: lookup key.
  * @returns: pointer to data.
 */
-void *StringHashTable_pop(struct StringHashTable *root, char *key)
+void *IntHashTable_pop(struct IntHashTable *root, uint32_t key)
 {
     TRACE_ENTER(__func__)
 
     TRACE_LEAVE(__func__)
 
-    return StringHashTable_pop_common(root, key, 1);
+    return IntHashTable_pop_common(root, key, 1);
 }
 
 /**
@@ -322,13 +312,80 @@ void *StringHashTable_pop(struct StringHashTable *root, char *key)
  * @param key: lookup key.
  * @returns: pointer to data.
 */
-void *StringHashTable_get(struct StringHashTable *root, char *key)
+void *IntHashTable_get(struct IntHashTable *root, uint32_t key)
 {
     TRACE_ENTER(__func__)
 
     TRACE_LEAVE(__func__)
 
-    return StringHashTable_pop_common(root, key, 0);
+    return IntHashTable_pop_common(root, key, 0);
+}
+
+/**
+ * Iterates hash table and returns key of first entry found.
+ * No memory is allocated (returns pointer of key, do not free).
+ * @param root: hash table to iterate.
+ * @param key: out parameter. First found key, or NULL.
+ * @returns: 1 if key found, zero otherwise.
+*/
+int IntHashTable_peek_next_key(struct IntHashTable *root, uint32_t *key)
+{
+    TRACE_ENTER(__func__)
+
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
+    struct llist_node *node;
+    uint32_t i;
+
+    *key = 0;
+
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+    }
+
+    ht = (struct IntHashTable_internal *)root->internal;
+
+    if (ht == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+    }
+
+    // if hashtable is empty, exit
+    if (ht->num_entries == 0)
+    {
+        TRACE_LEAVE(__func__)
+        return 0;
+    }
+
+    for (i=0; i<ht->bucket_count; i++)
+    {
+        bucket = ht->buckets[i];
+
+        if (bucket != NULL)
+        {
+            node = bucket->entry_list->root;
+            if (node != NULL)
+            {
+                entry = (struct IntHashBucketEntry *)node->data;
+
+                if (entry == NULL)
+                {
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL\n", __func__);
+                }
+
+                *key = entry->key;
+                
+                TRACE_LEAVE(__func__)
+                return 1;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return 0;
 }
 
 /**
@@ -338,13 +395,13 @@ void *StringHashTable_get(struct StringHashTable *root, char *key)
  * @param pop: flag to indicate whether item should be removed from the hash table or not.
  * @returns: pointer to data.
 */
-static void *StringHashTable_pop_common(struct StringHashTable *root, char *key, int pop)
+static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, int pop)
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable_internal *ht;
-    struct StringHashBucket *bucket;
-    struct StringHashBucketEntry *entry;
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
     struct llist_node *node;
     uint32_t bucket_index;
     uint32_t hash;
@@ -355,12 +412,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
     }
 
-    if (key == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
-    }
-    
-    ht = (struct StringHashTable_internal *)root->internal;
+    ht = (struct IntHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
@@ -373,8 +425,8 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
         stderr_exit(EXIT_CODE_GENERAL, "%s: hash table is empty, key=%s\n", __func__, key);
     }
 
-    hash = StringHashTable_hash_key(key);
-    bucket_index = StringHashTable_bucket_index_from_hash(ht, hash);
+    hash = IntHashTable_hash_key(key);
+    bucket_index = IntHashTable_bucket_index_from_hash(ht, hash);
     bucket = ht->buckets[bucket_index];
 
     // if bucket has never been setup, exit
@@ -386,22 +438,22 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
     node = bucket->entry_list->root;
     while (node != NULL)
     {
-        entry = (struct StringHashBucketEntry *)node->data;
+        entry = (struct IntHashBucketEntry *)node->data;
 
         if (entry == NULL)
         {
             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, key);
         }
 
-        if (strcmp(key, entry->key) == 0)
+        if (key == entry->key)
         {
             result = entry->data;
 
             if (pop)
             {
-                StringHashBucketEntry_free(entry);
+                IntHashBucketEntry_free(entry);
                 llist_node_free(bucket->entry_list, node);
-                
+
                 ht->num_entries--;
             }
 
@@ -421,85 +473,18 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
 }
 
 /**
- * Iterates hash table and returns key of first entry found.
- * No memory is allocated (returns pointer of key, do not free).
- * @param root: hash table to iterate.
- * @returns: first found key, or NULL.
-*/
-const char *StringHashTable_peek_next_key(struct StringHashTable *root)
-{
-    TRACE_ENTER(__func__)
-
-    struct StringHashTable_internal *ht;
-    struct StringHashBucket *bucket;
-    struct StringHashBucketEntry *entry;
-    struct llist_node *node;
-    uint32_t i;
-
-    if (root == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
-    }
-
-    ht = (struct StringHashTable_internal *)root->internal;
-
-    if (ht == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
-    }
-
-    // if hashtable is empty, exit
-    if (ht->num_entries == 0)
-    {
-        TRACE_LEAVE(__func__)
-        return NULL;
-    }
-
-    for (i=0; i<ht->bucket_count; i++)
-    {
-        bucket = ht->buckets[i];
-
-        if (bucket != NULL)
-        {
-            node = bucket->entry_list->root;
-            while (node != NULL)
-            {
-                entry = (struct StringHashBucketEntry *)node->data;
-
-                if (entry == NULL)
-                {
-                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL\n", __func__);
-                }
-
-                if (entry->key != NULL)
-                {
-                    TRACE_LEAVE(__func__)
-                    return entry->key;
-                }
-
-                node = node->next;
-            }
-        }
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return NULL;
-}
-
-/**
  * Allocates memory for a new hash table internal.
  * @returns: pointer to new object.
 */
-static struct StringHashTable_internal *StringHashTable_internal_new()
+static struct IntHashTable_internal *IntHashTable_internal_new()
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashTable_internal *p = (struct StringHashTable_internal *)malloc_zero(1, sizeof(struct StringHashTable_internal));
+    struct IntHashTable_internal *p = (struct IntHashTable_internal *)malloc_zero(1, sizeof(struct IntHashTable_internal));
 
-    p->bucket_count = STRING_HASH_TABLE_DEFAULT_BUCKET_COUNT;
+    p->bucket_count = INT_HASH_TABLE_DEFAULT_BUCKET_COUNT;
 
-    p->buckets = (struct StringHashBucket **)malloc_zero(p->bucket_count, sizeof(struct StringHashBucket *));
+    p->buckets = (struct IntHashBucket **)malloc_zero(p->bucket_count, sizeof(struct IntHashBucket *));
 
     TRACE_LEAVE(__func__)
 
@@ -511,7 +496,7 @@ static struct StringHashTable_internal *StringHashTable_internal_new()
  * objects.
  * @param root: hash table internal to free.
 */
-static void StringHashTable_internal_free(struct StringHashTable_internal *root)
+static void IntHashTable_internal_free(struct IntHashTable_internal *root)
 {
     TRACE_ENTER(__func__)
 
@@ -527,10 +512,10 @@ static void StringHashTable_internal_free(struct StringHashTable_internal *root)
     {
         for (i=0; i<root->bucket_count; i++)
         {
-            struct StringHashBucket *bucket = root->buckets[i];
+            struct IntHashBucket *bucket = root->buckets[i];
             if (bucket != NULL)
             {
-                StringHashBucket_free(bucket);
+                IntHashBucket_free(bucket);
                 root->buckets[i] = NULL;
             }
         }
@@ -548,11 +533,11 @@ static void StringHashTable_internal_free(struct StringHashTable_internal *root)
  * Allocates memory for a new bucket.
  * @returns: pointer to new object.
 */
-static struct StringHashBucket *StringHashBucket_new()
+static struct IntHashBucket *IntHashBucket_new()
 {
     TRACE_ENTER(__func__)
 
-    struct StringHashBucket *p = (struct StringHashBucket *)malloc_zero(1, sizeof(struct StringHashBucket));
+    struct IntHashBucket *p = (struct IntHashBucket *)malloc_zero(1, sizeof(struct IntHashBucket));
 
     p->entry_list = llist_root_new();
 
@@ -565,7 +550,7 @@ static struct StringHashBucket *StringHashBucket_new()
  * Frees memory associated with a bucket and all child entries.
  * @param bucket: object to free.
 */
-static void StringHashBucket_free(struct StringHashBucket *bucket)
+static void IntHashBucket_free(struct IntHashBucket *bucket)
 {
     TRACE_ENTER(__func__)
 
@@ -577,17 +562,17 @@ static void StringHashBucket_free(struct StringHashBucket *bucket)
 
     if (bucket->entry_list != NULL)
     {
-        struct StringHashBucketEntry *data;
+        struct IntHashBucketEntry *data;
         struct llist_node *node;
 
         node = bucket->entry_list->root;
 
         while (node != NULL)
         {
-            data = (struct StringHashBucketEntry *)node->data;
+            data = (struct IntHashBucketEntry *)node->data;
             if (data != NULL)
             {
-                StringHashBucketEntry_free(data);
+                IntHashBucketEntry_free(data);
                 node->data = NULL;
             }
 
@@ -607,25 +592,12 @@ static void StringHashBucket_free(struct StringHashBucket *bucket)
  * Allocates memory for a new bucket entry.
  * @returns: pointer to new object.
 */
-static struct StringHashBucketEntry *StringHashBucketEntry_new(char *key)
+static struct IntHashBucketEntry *IntHashBucketEntry_new(uint32_t key)
 {
     TRACE_ENTER(__func__)
 
-    if (key == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
-    }
-
-    size_t len;
-
-    struct StringHashBucketEntry *p = (struct StringHashBucketEntry*)malloc_zero(1, sizeof(struct StringHashBucketEntry));
-
-    // Allocate bytes for string, add one more byte for '\0'
-    len = strlen(key);
-    p->key = (char *)malloc_zero(len + 1, 1);
-
-    // copy key value. Terminating zero was set in malloc_zero call above.
-    memcpy(p->key, key, len);
+    struct IntHashBucketEntry *p = (struct IntHashBucketEntry*)malloc_zero(1, sizeof(struct IntHashBucketEntry));
+    p->key = key;
 
     TRACE_LEAVE(__func__)
 
@@ -636,7 +608,7 @@ static struct StringHashBucketEntry *StringHashBucketEntry_new(char *key)
  * Frees memory associated with an entry.
  * @param bucket: object to free.
 */
-static void StringHashBucketEntry_free(struct StringHashBucketEntry *entry)
+static void IntHashBucketEntry_free(struct IntHashBucketEntry *entry)
 {
     TRACE_ENTER(__func__)
 
@@ -644,12 +616,6 @@ static void StringHashBucketEntry_free(struct StringHashBucketEntry *entry)
     {
         TRACE_LEAVE(__func__)
         return;
-    }
-
-    if (entry->key != NULL)
-    {
-        free(entry->key);
-        entry->key = NULL;
     }
 
     free(entry);
@@ -662,13 +628,18 @@ static void StringHashBucketEntry_free(struct StringHashBucketEntry *entry)
  * @param key: string to hash.
  * @returns: hash result.
 */
-static uint32_t StringHashTable_hash_key(char *key)
+static uint32_t IntHashTable_hash_key(uint32_t key)
 {
     TRACE_ENTER(__func__)
 
     char digest[16];
     uint32_t hash;
-    md5_hash(key, strlen(key), digest);
+
+    char key_string[5];
+    memset(key_string, 0, 5);
+    memcpy(key_string, &key, 4);
+
+    md5_hash(key_string, 4, digest);
     // probably endianess
     memcpy(&hash, digest, 4);
 
@@ -683,7 +654,7 @@ static uint32_t StringHashTable_hash_key(char *key)
  * @param hash: hash to resolve to bucket
  * @returns: zero based index into bucket list.
 */
-static uint32_t StringHashTable_bucket_index_from_hash(struct StringHashTable_internal *internal, uint32_t hash)
+static uint32_t IntHashTable_bucket_index_from_hash(struct IntHashTable_internal *internal, uint32_t hash)
 {
     TRACE_ENTER(__func__)
 

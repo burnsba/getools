@@ -7,17 +7,59 @@
 #include "common.h"
 #include "utility.h"
 #include "naudio.h"
+#include "int_hash.h"
 
 /**
  * This file contains primary code for supporting Rare's audio structs,
  * and Nintendo's (libultra) audio structs.
 */
 
+struct CtlParseContext {
+    struct IntHashTable *seen_sound;
+    struct IntHashTable *seen_instrument;
+    struct IntHashTable *seen_envelope;
+    struct IntHashTable *seen_wavetable;
+    struct IntHashTable *seen_keymap;
+};
+
 /**
  * Callback to initialize wavetable object.
  * If not set externally, will be set to @see ALWaveTable_init_default_set_aifc_path.
 */
 wavetable_init_callback wavetable_init_callback_ptr = NULL;
+
+// forward declarations
+
+struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset);
+struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset);
+
+void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi);
+void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi);
+void ALSound_write_inst(struct ALSound *sound, struct file_info *fi);
+void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *fi);
+void ALBank_write_inst(struct ALBank *bank, struct file_info *fi);
+
+void ALADPCMLoop_free(struct ALADPCMLoop *loop);
+void ALADPCMBook_free(struct ALADPCMBook *book);
+void ALRawLoop_free(struct ALRawLoop *loop);
+void ALEnvelope_free(struct ALEnvelope *envelope);
+void ALKeyMap_free(struct ALKeyMap *keymap);
+void ALWaveTable_free(struct ALWaveTable *wavetable);
+void ALSound_free(struct ALSound *sound);
+void ALInstrument_free(struct ALInstrument *instrument);
+void ALBank_free(struct ALBank *bank);
+
+static struct CtlParseContext *CtlParseContext_new();
+static void CtlParseContext_free(struct CtlParseContext *context);
+
+// end forward declarations
 
 /**
  * Reads a single {@code struct ALADPCMLoop} from a .ctl file that has been loaded into memory.
@@ -187,7 +229,7 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
  * @param envelope: object to write.
  * @param fi: file_info.
 */
-void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi)
+void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -307,7 +349,7 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
  * @param keymap: object to write.
  * @param fi: file_info.
 */
-void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
+void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -357,6 +399,116 @@ void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi)
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a reference to an existing parent object.
+ * @param keymap: child object.
+ * @param parent: reference to add.
+*/
+void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent)
+{
+    TRACE_ENTER(__func__)
+
+    if (keymap->parents == NULL)
+    {
+        keymap->parents = llist_root_new();
+    }
+
+    struct llist_node *node = llist_node_new();
+    node->data = parent;
+
+    llist_root_append_node(keymap->parents, node);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a reference to an existing parent object.
+ * @param envelope: child object.
+ * @param parent: reference to add.
+*/
+void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent)
+{
+    TRACE_ENTER(__func__)
+
+    if (envelope->parents == NULL)
+    {
+        envelope->parents = llist_root_new();
+    }
+
+    struct llist_node *node = llist_node_new();
+    node->data = parent;
+
+    llist_root_append_node(envelope->parents, node);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a reference to an existing parent object.
+ * @param wavetable: child object.
+ * @param parent: reference to add.
+*/
+void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *parent)
+{
+    TRACE_ENTER(__func__)
+
+    if (wavetable->parents == NULL)
+    {
+        wavetable->parents = llist_root_new();
+    }
+
+    struct llist_node *node = llist_node_new();
+    node->data = parent;
+
+    llist_root_append_node(wavetable->parents, node);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a reference to an existing parent object.
+ * @param sound: child object.
+ * @param parent: reference to add.
+*/
+void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent)
+{
+    TRACE_ENTER(__func__)
+
+    if (sound->parents == NULL)
+    {
+        sound->parents = llist_root_new();
+    }
+
+    struct llist_node *node = llist_node_new();
+    node->data = parent;
+
+    llist_root_append_node(sound->parents, node);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a reference to an existing parent object.
+ * @param instrument: child object.
+ * @param parent: reference to add.
+*/
+void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *parent)
+{
+    TRACE_ENTER(__func__)
+
+    if (instrument->parents == NULL)
+    {
+        instrument->parents = llist_root_new();
+    }
+
+    struct llist_node *node = llist_node_new();
+    node->data = parent;
+
+    llist_root_append_node(instrument->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -508,11 +660,12 @@ struct ALSound *ALSound_new()
 /**
  * Reads a single {@code struct ALSound} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for child envelope, keymap, wavetable if present.
+ * @param context: context
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
  * @returns: pointer to new sound.
 */
-struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
 
@@ -546,17 +699,56 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
 
     if (sound->envelope_offset > 0)
     {
-        sound->envelope = ALEnvelope_new_from_ctl(ctl_file_contents, sound->envelope_offset);
+        struct ALEnvelope *envelope;
+
+        if (IntHashTable_contains(context->seen_envelope, sound->envelope_offset))
+        {
+            envelope = IntHashTable_get(context->seen_envelope, sound->envelope_offset);
+        }
+        else
+        {
+            envelope = ALEnvelope_new_from_ctl(ctl_file_contents, sound->envelope_offset);
+            IntHashTable_add(context->seen_envelope, sound->envelope_offset, envelope);
+        }
+
+        sound->envelope = envelope;
+        ALEnvelope_add_parent(envelope, sound);
     }
 
     if (sound->key_map_offset > 0)
     {
-        sound->keymap = ALKeyMap_new_from_ctl(ctl_file_contents, sound->key_map_offset);
+        struct ALKeyMap *key_map;
+
+        if (IntHashTable_contains(context->seen_keymap, sound->key_map_offset))
+        {
+            key_map = IntHashTable_get(context->seen_keymap, sound->key_map_offset);
+        }
+        else
+        {
+            key_map = ALKeyMap_new_from_ctl(ctl_file_contents, sound->key_map_offset);
+            IntHashTable_add(context->seen_keymap, sound->key_map_offset, key_map);
+        }
+
+        sound->keymap = key_map;
+        ALKeyMap_add_parent(key_map, sound);
     }
 
     if (sound->wavetable_offfset > 0)
     {
-        sound->wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
+        struct ALWaveTable *wavetable;
+
+        if (IntHashTable_contains(context->seen_wavetable, sound->wavetable_offfset))
+        {
+            wavetable = IntHashTable_get(context->seen_wavetable, sound->wavetable_offfset);
+        }
+        else
+        {
+            wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
+            IntHashTable_add(context->seen_wavetable, sound->wavetable_offfset, wavetable);
+        }
+
+        sound->wavetable = wavetable;
+        ALWaveTable_add_parent(wavetable, sound);
     }
     
     TRACE_LEAVE(__func__)
@@ -570,7 +762,7 @@ struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_fr
  * @param sound: object to write.
  * @param fi: file_info.
 */
-void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
+void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -578,12 +770,12 @@ void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi)
 
     if (sound->envelope_offset > 0)
     {
-        ALEnvelope_write_to_fp(sound->envelope, fi);
+        ALEnvelope_write_inst(sound->envelope, fi);
     }
 
     if (sound->key_map_offset > 0)
     {
-        ALKeyMap_write_to_fp(sound->keymap, fi);
+        ALKeyMap_write_inst(sound->keymap, fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -698,11 +890,12 @@ struct ALInstrument *ALInstrument_new()
 /**
  * Reads a single {@code struct ALInstrument} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for sounds and related if {@code sound_count} > 0.
+ * @param context: context
  * @param instrument: object to write to.
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
 */
-struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
     
@@ -777,7 +970,20 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
     {
         if (instrument->sound_offsets[i] > 0)
         {
-            instrument->sounds[i] = ALSound_new_from_ctl(ctl_file_contents, instrument->sound_offsets[i]);
+            struct ALSound *sound;
+
+            if (IntHashTable_contains(context->seen_sound, instrument->sound_offsets[i]))
+            {
+                sound = IntHashTable_get(context->seen_sound, instrument->sound_offsets[i]);
+            }
+            else
+            {
+                sound = ALSound_new_from_ctl(context, ctl_file_contents, instrument->sound_offsets[i]);
+                IntHashTable_add(context->seen_sound, instrument->sound_offsets[i], sound);
+            }
+
+            instrument->sounds[i] = sound;
+            ALSound_add_parent(sound, instrument);
         }
     }
 
@@ -792,7 +998,7 @@ struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32
  * @param instrument: object to write.
  * @param fi: file_info.
 */
-void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi)
+void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -801,7 +1007,7 @@ void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info 
 
     for (i=0; i<instrument->sound_count; i++)
     {
-        ALSound_write_to_fp(instrument->sounds[i], fi);
+        ALSound_write_inst(instrument->sounds[i], fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -958,11 +1164,12 @@ struct ALBank *ALBank_new()
 /**
  * Reads a single {@code struct ALBank} from a .ctl file that has been loaded into memory.
  * Allocates memory and calls _init_load for instruments and related if {@code inst_count} > 0.
+ * @param context: context
  * @param ctl_file_contents: .ctl file.
  * @param load_from_offset: position in .ctl file to read data from.
  * @returns: pointer to new bank.
 */
-struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
+struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
 
@@ -1010,7 +1217,20 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
     {
         if (bank->inst_offsets[i] > 0)
         {
-            bank->instruments[i] = ALInstrument_new_from_ctl(ctl_file_contents, bank->inst_offsets[i]);
+            struct ALInstrument *instrument;
+
+            if (IntHashTable_contains(context->seen_instrument, bank->inst_offsets[i]))
+            {
+                instrument = IntHashTable_get(context->seen_instrument, bank->inst_offsets[i]);
+            }
+            else
+            {
+                instrument = ALInstrument_new_from_ctl(context, ctl_file_contents, bank->inst_offsets[i]);
+                IntHashTable_add(context->seen_instrument, bank->inst_offsets[i], instrument);
+            }
+
+            bank->instruments[i] = instrument;
+            ALInstrument_add_parent(instrument, bank);
         }
     }
 
@@ -1025,7 +1245,7 @@ struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from
  * @param bank: object to write.
  * @param fi: file_info.
 */
-void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
+void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -1034,7 +1254,7 @@ void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi)
 
     for (i=0; i<bank->inst_count; i++)
     {
-        ALInstrument_write_to_fp(bank->instruments[i], fi);
+        ALInstrument_write_inst(bank->instruments[i], fi);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
@@ -1094,20 +1314,23 @@ struct ALBankFile *ALBankFile_new()
 
 /**
  * This is the main entry point for reading a .ctl file.
- * Reads a single {@code struct ALBankFile} from a .ctl file that has been loaded into memory.
+ * Reads a single {@code struct ALBankFile} from a .ctl file.
  * Allocates memory and calls _init_load for banks and related if {@code bank_count} > 0.
- * @param ctl_file_contents: .ctl file.
- * @param load_from_offset: position in .ctl file to read data from.
+ * @param ctl_file: .ctl file.
  * @returns: pointer to new bank file.
 */
-struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
+struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
 {
     TRACE_ENTER(__func__)
 
     int32_t input_pos = 0;
     int i;
 
+    uint8_t *ctl_file_contents;
+    file_info_get_file_contents(ctl_file, &ctl_file_contents);
+
     struct ALBankFile *bank_file = ALBankFile_new();
+    struct CtlParseContext *context = CtlParseContext_new();
 
     snprintf(bank_file->text_id, INST_OBJ_ID_STRING_LEN, "BankFile%04d", bank_file->id);
 
@@ -1143,9 +1366,12 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
     {
         if (bank_file->bank_offsets[i] > 0)
         {
-            bank_file->banks[i] = ALBank_new_from_ctl(ctl_file_contents, bank_file->bank_offsets[i]);
+            bank_file->banks[i] = ALBank_new_from_ctl(context, ctl_file_contents, bank_file->bank_offsets[i]);
         }
     }
+
+    free(ctl_file_contents);
+    CtlParseContext_free(context);
 
     TRACE_LEAVE(__func__)
 
@@ -1154,12 +1380,12 @@ struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents)
 
 /**
  * This is the main entry point for writing an .inst file.
- * Writes {@code struct ALEnvelope} to .inst file, using current file seek position.
+ * Writes {@code struct ALBankFile} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param bank_file: object to write.
  * @param inst_filename: path to write to.
 */
-void write_inst(struct ALBankFile *bank_file, char* inst_filename)
+void ALBankFile_write_inst(struct ALBankFile *bank_file, char* inst_filename)
 {
     TRACE_ENTER(__func__)
 
@@ -1170,7 +1396,7 @@ void write_inst(struct ALBankFile *bank_file, char* inst_filename)
 
     for (i=0; i<bank_file->bank_count; i++)
     {
-        ALBank_write_to_fp(bank_file->banks[i], output);
+        ALBank_write_inst(bank_file->banks[i], output);
     }
 
     file_info_free(output);
@@ -1254,6 +1480,12 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
         return;
     }
 
+    if (envelope->parents != NULL)
+    {
+        llist_node_root_free(envelope->parents);
+        envelope->parents= NULL;
+    }
+
     free(envelope);
 
     TRACE_LEAVE(__func__)
@@ -1271,6 +1503,12 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
     {
         TRACE_LEAVE(__func__)
         return;
+    }
+
+    if (keymap->parents != NULL)
+    {
+        llist_node_root_free(keymap->parents);
+        keymap->parents= NULL;
     }
 
     free(keymap);
@@ -1320,6 +1558,12 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
         free(wavetable->aifc_path);
     }
 
+    if (wavetable->parents != NULL)
+    {
+        llist_node_root_free(wavetable->parents);
+        wavetable->parents= NULL;
+    }
+
     free(wavetable);
 
     TRACE_LEAVE(__func__)
@@ -1355,6 +1599,12 @@ void ALSound_free(struct ALSound *sound)
     {
         ALWaveTable_free(sound->wavetable);
         sound->wavetable = NULL;
+    }
+
+    if (sound->parents != NULL)
+    {
+        llist_node_root_free(sound->parents);
+        sound->parents= NULL;
     }
 
     free(sound);
@@ -1396,6 +1646,12 @@ void ALInstrument_free(struct ALInstrument *instrument)
         }
 
         free(instrument->sounds);
+    }
+
+    if (instrument->parents != NULL)
+    {
+        llist_node_root_free(instrument->parents);
+        instrument->parents= NULL;
     }
 
     free(instrument);
@@ -1704,4 +1960,44 @@ struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_f
 
     TRACE_LEAVE(__func__)
     return NULL;
+}
+
+/**
+ * Allocates memory for a new context.
+ * @returns: pointer to new context.
+*/
+static struct CtlParseContext *CtlParseContext_new()
+{
+    TRACE_ENTER(__func__)
+
+    struct CtlParseContext *context = (struct CtlParseContext*)malloc_zero(1, sizeof(struct CtlParseContext));
+
+    context->seen_sound = IntHashTable_new();
+    context->seen_instrument = IntHashTable_new();
+    context->seen_envelope = IntHashTable_new();
+    context->seen_wavetable = IntHashTable_new();
+    context->seen_keymap = IntHashTable_new();
+
+    TRACE_LEAVE(__func__)
+
+    return context;
+}
+
+/**
+ * Frees all memory associated with context.
+ * @param context: object to free.
+*/
+static void CtlParseContext_free(struct CtlParseContext *context)
+{
+    TRACE_ENTER(__func__)
+
+    IntHashTable_free(context->seen_sound);
+    IntHashTable_free(context->seen_instrument);
+    IntHashTable_free(context->seen_envelope);
+    IntHashTable_free(context->seen_wavetable);
+    IntHashTable_free(context->seen_keymap);
+
+    free(context);
+
+    TRACE_LEAVE(__func__)
 }

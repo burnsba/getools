@@ -5,9 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "utility.h"
+#include "llist.h"
 
 /**
- * This file contains structs and defines for supporting Rare's audio structs,
+ * This file contains structs and defines for supporting Rare's audio structs (for Goldeneye),
  * and Nintendo's (libultra) audio structs.
 */
 
@@ -15,6 +16,16 @@
  * Default extension when creating a .aifc file.
 */
 #define NAUDIO_AIFC_OUT_DEFAULT_EXTENSION ".aifc"
+
+/**
+ * Default extension when creating a .tbl file.
+*/
+#define NAUDIO_TBL_DEFAULT_EXTENSION ".tbl"
+
+/**
+ * Default extension when creating a .ctl file.
+*/
+#define NAUDIO_CTL_DEFAULT_EXTENSION ".ctl"
 
 /**
  * The .inst file needs named references for objects. This is the max
@@ -244,6 +255,18 @@ struct ALWaveTable {
      * Filename with extension and path where aifc data is located.
     */
     char *aifc_path;
+
+    /**
+     * A list of all `ALSound` that are known to reference this object.
+    */
+    struct llist_root *parents;
+
+    /**
+     * Flag to indicate if this object has been written to destination yet.
+     * This is used during converstion to .inst or .ctl in case this
+     * object is referenced multiple times.
+    */
+    int visited;
 };
 
 /**
@@ -300,6 +323,18 @@ struct ALKeyMap {
      * inst file text id.
     */
     char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * A list of all `ALSound` that are known to reference this object.
+    */
+    struct llist_root *parents;
+
+    /**
+     * Flag to indicate if this object has been written to destination yet.
+     * This is used during converstion to .inst or .ctl in case this
+     * object is referenced multiple times.
+    */
+    int visited;
 };
 
 /**
@@ -349,6 +384,18 @@ struct ALEnvelope {
      * inst file text id.
     */
     char text_id[INST_OBJ_ID_STRING_LEN];
+
+    /**
+     * A list of all `ALSound` that are known to reference this object.
+    */
+    struct llist_root *parents;
+
+    /**
+     * Flag to indicate if this object has been written to destination yet.
+     * This is used during converstion to .inst or .ctl in case this
+     * object is referenced multiple times.
+    */
+    int visited;
 };
 
 /**
@@ -423,6 +470,18 @@ struct ALSound {
      * Pointer to wavetable.
     */
     struct ALWaveTable *wavetable;
+
+    /**
+     * A list of all `ALInstrument` that are known to reference this object.
+    */
+    struct llist_root *parents;
+
+    /**
+     * Flag to indicate if this object has been written to destination yet.
+     * This is used during converstion to .inst or .ctl in case this
+     * object is referenced multiple times.
+    */
+    int visited;
 };
 
 /**
@@ -500,6 +559,18 @@ struct ALInstrument {
      * Array of pointers to each sound.
     */
     struct ALSound **sounds;
+
+    /**
+     * A list of all `ALBank` that are known to reference this object.
+    */
+    struct llist_root *parents;
+
+    /**
+     * Flag to indicate if this object has been written to destination yet.
+     * This is used during converstion to .inst or .ctl in case this
+     * object is referenced multiple times.
+    */
+    int visited;
 };
 
 /**
@@ -630,38 +701,12 @@ typedef void (*wavetable_init_callback) (struct ALWaveTable *wavetable);
 
 extern wavetable_init_callback wavetable_init_callback_ptr;
 
-struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-struct ALEnvelope *ALEnvelope_new();
-struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-void ALEnvelope_write_to_fp(struct ALEnvelope *envelope, struct file_info *fi);
-struct ALKeyMap *ALKeyMap_new();
-struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-void ALKeyMap_write_to_fp(struct ALKeyMap *keymap, struct file_info *fi);
-struct ALWaveTable *ALWaveTable_new();
-struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-struct ALSound *ALSound_new();
-struct ALSound *ALSound_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-void ALSound_write_to_fp(struct ALSound *sound, struct file_info *fi);
-struct ALInstrument *ALInstrument_new();
-struct ALInstrument *ALInstrument_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-void ALInstrument_write_to_fp(struct ALInstrument *instrument, struct file_info *fi);
-struct ALBank *ALBank_new();
-struct ALBank *ALBank_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
-void ALBank_write_to_fp(struct ALBank *bank, struct file_info *fi);
-struct ALBankFile *ALBankFile_new();
-struct ALBankFile *ALBankFile_new_from_ctl(uint8_t *ctl_file_contents);
-void write_inst(struct ALBankFile *bank_file, char* inst_filename);
-void ALADPCMLoop_free(struct ALADPCMLoop *loop);
-void ALADPCMBook_free(struct ALADPCMBook *book);
-void ALRawLoop_free(struct ALRawLoop *loop);
-void ALEnvelope_free(struct ALEnvelope *envelope);
-void ALKeyMap_free(struct ALKeyMap *keymap);
-void ALWaveTable_free(struct ALWaveTable *wavetable);
-void ALSound_free(struct ALSound *sound);
-void ALInstrument_free(struct ALInstrument *instrument);
-void ALBank_free(struct ALBank *bank);
+/**
+ * Public prototypes.
+*/
+
+struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *fi);
+void ALBankFile_write_inst(struct ALBankFile *bank_file, char* inst_filename);
 void ALBankFile_free(struct ALBankFile *bank_file);
 double detune_frequency(double hw_sample_rate, int keybase, int detune);
 
@@ -670,5 +715,23 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi);
 struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id);
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);
 struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename);
+
+/**
+ * The following prototypes should be treated as internal to naudio.
+*/
+
+struct ALEnvelope *ALEnvelope_new();
+struct ALKeyMap *ALKeyMap_new();
+struct ALWaveTable *ALWaveTable_new();
+struct ALSound *ALSound_new();
+struct ALInstrument *ALInstrument_new();
+struct ALBank *ALBank_new();
+struct ALBankFile *ALBankFile_new();
+
+void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent);
+void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent);
+void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *parent);
+void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent);
+void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *parent);
 
 #endif

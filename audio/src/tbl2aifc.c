@@ -387,10 +387,7 @@ void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 int main(int argc, char **argv)
 {
     struct ALBankFile *bank_file;
-
-    // ctl and tbl contents will be malloc'd, these should fit in RAM
-    uint8_t *ctl_file_contents;
-    uint8_t *tbl_file_contents;
+    struct file_info *ctl_file;
     
     read_opts(argc, argv);
 
@@ -483,20 +480,22 @@ int main(int argc, char **argv)
         mkpath(g_output_dir);
     }
 
-    get_file_contents(ctl_filename, &ctl_file_contents);
-    
+    ctl_file = file_info_fopen(ctl_filename, "rb");
+
     // need to set the callback before any wavetable objects are instantiated.
     wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
 
-    bank_file = ALBankFile_new_from_ctl(ctl_file_contents);
+    bank_file = ALBankFile_new_from_ctl(ctl_file);
 
     if (generate_inst)
     {
-        write_inst(bank_file, inst_filename);
+        ALBankFile_write_inst(bank_file, inst_filename);
     }
 
     if (generate_aifc)
     {
+        uint8_t *tbl_file_contents;
+
         get_file_contents(tbl_filename, &tbl_file_contents);
         write_bank_to_aifc(bank_file, tbl_file_contents);
         free(tbl_file_contents);
@@ -507,7 +506,7 @@ int main(int argc, char **argv)
     
     ALBankFile_free(bank_file);
 
-    free(ctl_file_contents);
+    file_info_free(ctl_file);
 
     return 0;
 }
