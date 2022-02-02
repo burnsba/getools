@@ -8,6 +8,7 @@
 #include "machine_config.h"
 #include "utility.h"
 #include "string_hash.h"
+#include "int_hash.h"
 #include "llist.h"
 #include "naudio.h"
 #include "kvp.h"
@@ -86,6 +87,26 @@ struct RuntimeTypeInfo {
 };
 
 /**
+ * Container for tracking references that need to be resolved.
+*/
+struct MissingRef {
+    /**
+     * Unique id of `self`. Will be used as key into hash table.
+    */
+    int key;
+
+    /**
+     * Reference to object that is missing the reference.
+    */
+    void* self;
+
+    /**
+     * Text if that needs to be resolved.
+    */
+    char *ref_id;
+};
+
+/**
  * Local singleton containing the parser context.
 */
 struct InstParseContext {
@@ -98,6 +119,10 @@ struct InstParseContext {
      * Some of these blocks also abuse the `struct AL-` and store a list
      * of unmet dependencies (llist_root) on a pointer in the object.
      * This is resolved and removed once parsing is complete.
+     * 
+     * For objects that don't use a list (only have single child dependency),
+     * the context will store a list of items to be resolved, e.g.
+     * `sound_missing_envelope`.
     */
 
     /**
@@ -109,6 +134,11 @@ struct InstParseContext {
      * Most recently resolved or current property desriptor.
     */
     struct RuntimeTypeInfo *current_property;
+
+    /**
+     * Current line from input file.
+    */
+    int current_line;
 
     /**
      * Text buffer to store name of container type.
@@ -204,6 +234,16 @@ struct InstParseContext {
      * Hash table of ALEnvelope.
     */
     struct StringHashTable *orphaned_envelopes;
+
+    /**
+     * Hash table of ALSound that need to have envelope reference resolved.
+    */
+    struct IntHashTable *sound_missing_envelope;
+
+    /**
+     * Hash table of ALSound that need to have keymap reference resolved.
+    */
+    struct IntHashTable *sound_missing_keymap;
 };
 
 /**
@@ -906,6 +946,75 @@ static inline int StringHash_envelope_unvisited(void *vp)
 }
 
 /**
+ * Allocates memory for a new object.
+ * If {@code ref_id} has a positive length, memory will be allocated for that
+ * and the value copied to the new object.
+ * @param key: primary key.
+ * @param self: object missing reference.
+ * @param ref_id: text_id of object to get.
+ * @param len: length in bytes of string without terminating zero.
+ * @returns: pointer to new object.
+*/
+static struct MissingRef *MissingRef_new(int key, void *self, char *ref_id, size_t len)
+{
+    TRACE_ENTER(__func__)
+
+    struct MissingRef *p = (struct MissingRef *)malloc_zero(1, sizeof(struct MissingRef));
+    p->key = key;
+    p->self = self;
+
+    if (len > 0)
+    {
+        p->ref_id = (char *)malloc_zero(1, len + 1);
+        memcpy(p->ref_id, ref_id, len);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Frees all memory associated with object.
+ * @param ref: object to free.
+*/
+void MissingRef_free(struct MissingRef *ref)
+{
+    TRACE_ENTER(__func__)
+
+    if (ref == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    if (ref->ref_id != NULL)
+    {
+        free(ref->ref_id);
+        ref->ref_id = NULL;
+    }
+
+    free(ref);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Foreach iterator callback to free all associated memory.
+ * @param data: pointer to {@code struct MissingRef}.
+*/
+void MissingRef_hashcallback_free(void *data)
+{
+    TRACE_ENTER(__func__)
+
+    struct MissingRef *ref = (struct MissingRef *)data;
+
+    MissingRef_free(ref);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
  * Allocates memory for a new context.
  * @returns: pointer to new context.
 */
@@ -925,6 +1034,15 @@ static struct InstParseContext *InstParseContext_new()
     context->current_property = (struct RuntimeTypeInfo *)malloc_zero(1, sizeof(struct RuntimeTypeInfo));
     context->current_type = (struct RuntimeTypeInfo *)malloc_zero(1, sizeof(struct RuntimeTypeInfo));
 
+    context->orphaned_banks = StringHashTable_new();
+    context->orphaned_instruments = StringHashTable_new();
+    context->orphaned_sounds = StringHashTable_new();
+    context->orphaned_keymaps = StringHashTable_new();
+    context->orphaned_envelopes = StringHashTable_new();
+
+    context->sound_missing_envelope = IntHashTable_new();
+    context->sound_missing_keymap = IntHashTable_new();
+
     TRACE_LEAVE(__func__)
 
     return context;
@@ -943,6 +1061,18 @@ static void InstParseContext_free(struct InstParseContext *context)
     StringHashTable_free(context->orphaned_sounds);
     StringHashTable_free(context->orphaned_keymaps);
     StringHashTable_free(context->orphaned_envelopes);
+
+    if (context->sound_missing_envelope != NULL)
+    {
+        IntHashTable_foreach(context->sound_missing_envelope, MissingRef_hashcallback_free);
+        IntHashTable_free(context->sound_missing_envelope);
+    }
+
+    if (context->sound_missing_keymap != NULL)
+    {
+        IntHashTable_foreach(context->sound_missing_keymap, MissingRef_hashcallback_free);
+        IntHashTable_free(context->sound_missing_keymap);
+    }
 
     free(context->current_type);
     free(context->current_property);
@@ -1557,9 +1687,6 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
  * 
  * Note: {@code sound->keymap} is abused to store a
  * malloc'd text ref id dependency.
- * 
- * Note: {@code sound->envelope} is abused to store a
- * malloc'd text ref id dependency.
  * @param context: context.
 */
 void apply_property_on_instance_sound(struct InstParseContext *context)
@@ -1630,12 +1757,18 @@ void apply_property_on_instance_sound(struct InstParseContext *context)
                 printf("set sound id=%d envelope=\"%s\"\n", sound->id, context->property_value_buffer);
             }
 
-            // includes space for terminating zero
-            char *ref_id = (char*)malloc_zero(1, context->property_value_buffer_pos);
-            memcpy(ref_id, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+            struct MissingRef *ref;
 
-            // borrow envelope pointer property to store text ref string
-            sound->envelope = (struct ALEnvelope *)(void*)ref_id;
+            if (context->sound_missing_envelope == NULL)
+            {
+                context->sound_missing_envelope = IntHashTable_new();
+            }
+
+            if (!IntHashTable_contains(context->sound_missing_envelope, sound->id))
+            {
+                ref = MissingRef_new(sound->id, (void*)sound, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+                IntHashTable_add(context->sound_missing_envelope, ref->key, ref);
+            }
         }
         break;
 
@@ -1646,12 +1779,18 @@ void apply_property_on_instance_sound(struct InstParseContext *context)
                 printf("set sound id=%d keymap=\"%s\"\n", sound->id, context->property_value_buffer);
             }
 
-            // includes space for terminating zero
-            char *ref_id = (char*)malloc_zero(1, context->property_value_buffer_pos);
-            memcpy(ref_id, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+            struct MissingRef *ref;
 
-            // borrow keymap pointer property to store text ref string
-            sound->keymap = (struct ALKeyMap *)(void*)ref_id;
+            if (context->sound_missing_keymap == NULL)
+            {
+                context->sound_missing_keymap = IntHashTable_new();
+            }
+
+            if (!IntHashTable_contains(context->sound_missing_keymap, sound->id))
+            {
+                ref = MissingRef_new(sound->id, (void*)sound, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+                IntHashTable_add(context->sound_missing_keymap, ref->key, ref);
+            }
         }
         break;
 
@@ -1934,6 +2073,11 @@ static void add_orphaned_instance(struct InstParseContext *context)
                 context->orphaned_banks = StringHashTable_new();
             }
 
+            if (StringHashTable_contains(context->orphaned_banks, bank->text_id))
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error adding bank \"%s\" from line %d, this was previously defined.\n", __func__, __LINE__, bank->text_id, context->current_line);
+            }
+
             StringHashTable_add(context->orphaned_banks, bank->text_id, bank);
         }
         break;
@@ -1945,6 +2089,11 @@ static void add_orphaned_instance(struct InstParseContext *context)
             if (context->orphaned_instruments == NULL)
             {
                 context->orphaned_instruments = StringHashTable_new();
+            }
+
+            if (StringHashTable_contains(context->orphaned_instruments, instrument->text_id))
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error adding isntrument \"%s\" from line %d, this was previously defined.\n", __func__, __LINE__, instrument->text_id, context->current_line);
             }
 
             StringHashTable_add(context->orphaned_instruments, instrument->text_id, instrument);
@@ -1960,6 +2109,11 @@ static void add_orphaned_instance(struct InstParseContext *context)
                 context->orphaned_sounds = StringHashTable_new();
             }
 
+            if (StringHashTable_contains(context->orphaned_sounds, sound->text_id))
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error adding sound \"%s\" from line %d, this was previously defined.\n", __func__, __LINE__, sound->text_id, context->current_line);
+            }
+
             StringHashTable_add(context->orphaned_sounds, sound->text_id, sound);
         }
         break;
@@ -1973,6 +2127,11 @@ static void add_orphaned_instance(struct InstParseContext *context)
                 context->orphaned_keymaps = StringHashTable_new();
             }
 
+            if (StringHashTable_contains(context->orphaned_keymaps, keymap->text_id))
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error adding keymap \"%s\" from line %d, this was previously defined.\n", __func__, __LINE__, keymap->text_id, context->current_line);
+            }
+
             StringHashTable_add(context->orphaned_keymaps, keymap->text_id, keymap);
         }
         break;
@@ -1984,6 +2143,11 @@ static void add_orphaned_instance(struct InstParseContext *context)
             if (context->orphaned_envelopes == NULL)
             {
                 context->orphaned_envelopes = StringHashTable_new();
+            }
+
+            if (StringHashTable_contains(context->orphaned_envelopes, envelope->text_id))
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error adding envelope \"%s\" from line %d, this was previously defined.\n", __func__, __LINE__, envelope->text_id, context->current_line);
             }
 
             StringHashTable_add(context->orphaned_envelopes, envelope->text_id, envelope);
@@ -2016,46 +2180,81 @@ static void resolve_references_sound(struct InstParseContext *context, struct AL
 {
     TRACE_ENTER(__func__)
 
-    char *htkey;
-
-    // repurpose during parsing: borrow envelope pointer property to store text ref string
-    htkey = (char *)(void*)sound->envelope;
-
-    if (htkey != NULL)
+    if (context->sound_missing_envelope != NULL)
     {
-        struct ALEnvelope *envelope = StringHashTable_get(context->orphaned_envelopes, htkey);
-        ALEnvelope_add_parent(envelope, sound);
-        envelope->visited = 1;
-
-        if (envelope == NULL)
+        if (IntHashTable_contains(context->sound_missing_envelope, sound->id))
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->orphaned_envelopes hash table cannot resolve key \"%s\"\n", __func__, __LINE__, htkey);
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("resolving envelope reference for sound. sound id=%d, sound=\"%s\"...\n", sound->id, sound->text_id);
+            }
+            
+            // dependency is satisfied, so remove from "missing" list
+            struct MissingRef *ref = IntHashTable_pop(context->sound_missing_envelope, sound->id);
+
+            if (ref == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->sound_missing_envelope hash table cannot resolve key %d\n", __func__, __LINE__, sound->id);
+            }
+
+            // don't remove from hash table
+            struct ALEnvelope *envelope = StringHashTable_get(context->orphaned_envelopes, ref->ref_id);
+
+            if (envelope == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->orphaned_envelopes hash table cannot resolve key \"%s\"\n", __func__, __LINE__, ref->ref_id);
+            }
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("... found envelope \"%s\"\n", envelope->text_id);
+            }
+
+            sound->envelope = envelope;
+            ALEnvelope_add_parent(envelope, sound);
+            envelope->visited = 1;
+
+            // dependency is satisfied, so free memory
+            MissingRef_free(ref);
         }
-
-        // free temp ref string
-        free(sound->envelope);
-
-        sound->envelope = envelope;
     }
 
-    // repurpose during parsing: borrow keymap pointer property to store text ref string
-    htkey = (char *)(void*)sound->keymap;
-
-    if (htkey != NULL)
+    if (context->sound_missing_keymap != NULL)
     {
-        struct ALKeyMap *keymap = StringHashTable_get(context->orphaned_keymaps, htkey);
-        ALKeyMap_add_parent(keymap, sound);
-        keymap->visited = 1;
-
-        if (keymap == NULL)
+        if (IntHashTable_contains(context->sound_missing_keymap, sound->id))
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->orphaned_keymaps hash table cannot resolve key \"%s\"\n", __func__, __LINE__, htkey);
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("resolving keymap reference for sound. sound id=%d, sound=\"%s\"...\n", sound->id, sound->text_id);
+            }
+            
+            // dependency is satisfied, so remove from "missing" list
+            struct MissingRef *ref = IntHashTable_pop(context->sound_missing_keymap, sound->id);
+
+            if (ref == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->sound_missing_keymap hash table cannot resolve key %d\n", __func__, __LINE__, sound->id);
+            }
+
+            struct ALKeyMap *keymap = StringHashTable_get(context->orphaned_keymaps, ref->ref_id);
+
+            if (keymap == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->orphaned_keymaps hash table cannot resolve key \"%s\"\n", __func__, __LINE__, ref->ref_id);
+            }
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("... found keymap \"%s\"\n", keymap->text_id);
+            }
+
+            sound->keymap = keymap;
+            ALKeyMap_add_parent(keymap, sound);
+            keymap->visited = 1;
+
+            // dependency is satisfied, so free memory
+            MissingRef_free(ref);
         }
-
-        // free temp ref string
-        free(sound->keymap);
-
-        sound->keymap = keymap;
     }
 
     TRACE_LEAVE(__func__)
@@ -2445,6 +2644,8 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
             {
                 current_line_number--;
             }
+
+            context->current_line = current_line_number;
         }
 
         // if (pos == 277)
@@ -3334,6 +3535,18 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         struct ALEnvelope *envelope = (struct ALEnvelope *)any_first;
 
         stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed envelope, %s\n", envelope->text_id);
+    }
+
+    hash_count = IntHashTable_count(context->sound_missing_envelope);
+    if (hash_count > 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to envelope\n", hash_count);
+    }
+
+    hash_count = IntHashTable_count(context->sound_missing_keymap);
+    if (hash_count > 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to keymap\n", hash_count);
     }
 
     // done with final sanity check

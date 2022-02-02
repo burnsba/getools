@@ -5,7 +5,7 @@
 #include "machine_config.h"
 #include "debug.h"
 #include "common.h"
-#include "math.h"
+#include "gaudio_math.h"
 #include "utility.h"
 #include "adpcm_aifc.h"
 #include "naudio.h"

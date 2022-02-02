@@ -49,16 +49,6 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 todo:
 
 
-+ child objects need a list of parent objects that reference them
-+ reading from .ctl needs to have a context, to track offsets read, so that duplicates can point to the same object
-+ naudio_parse_inst needs to support duplicate references
-+ helper method to iterate all bank_file child objects and clear `visited` flag
-+ writing to .inst needs to have a context so that the same object isn't written more than once (for objects referenced more than once)
-+ writing to .ctl/.tbl needs to have a context so that the same object isn't written more than once (for objects referenced more than once)
-
-- test cases for parsing inst with duplicates
-- test cases for hash table `forearch`
-- test cases for hash table `any`
 
 - final valgrind check
 - readme writeup

@@ -159,6 +159,11 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
     }
 
+    if (key[0] == '\0')
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: key is empty\n", __func__);
+    }
+
     ht = (struct StringHashTable_internal *)root->internal;
 
     if (ht == NULL)
@@ -214,6 +219,11 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
     if (key == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
+    }
+    
+    if (key[0] == '\0')
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: key is empty\n", __func__);
     }
     
     ht = (struct StringHashTable_internal *)root->internal;
@@ -487,25 +497,30 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
 
     if (root == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table is NULL\n", __func__, pop?"pop":"get");
     }
 
     if (key == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: key is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): key is NULL\n", __func__, pop?"pop":"get");
+    }
+
+    if (key[0] == '\0')
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): key is empty\n", __func__, pop?"pop":"get");
     }
     
     ht = (struct StringHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table invalid internal state\n", __func__, pop?"pop":"get");
     }
 
     // if hashtable is empty, exit
     if (ht->num_entries == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: hash table is empty, key=%s\n", __func__, key);
+        stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
     hash = StringHashTable_hash_key(key);
@@ -515,7 +530,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
     // if bucket has never been setup, exit
     if (bucket == NULL)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: hash table bucket is empty, key=%s\n", __func__, key);
+        stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table bucket is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
     node = bucket->entry_list->root;
@@ -525,7 +540,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
 
         if (entry == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, key);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, pop?"pop":"get", key);
         }
 
         if (strcmp(key, entry->key) == 0)
@@ -549,7 +564,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
 
     TRACE_LEAVE(__func__)
 
-    stderr_exit(EXIT_CODE_GENERAL, "%s: key not found: %s\n", __func__, key);
+    stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): key not found: %s\n", __func__, pop?"pop":"get", key);
 
     // be quiet gcc
     return 0;

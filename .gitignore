@@ -159,3 +159,5 @@ orleans.codegen.cs
 Getools.Lib/Kaitai/Schema/*.cs
 /asset/
 /asset/**
+audio/bin/*
+audio/obj/*

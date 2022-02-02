@@ -31,6 +31,21 @@ struct KeyValuePointer {
     void *value;
 };
 
+/**
+ * Key value pair of type <int, int>.
+*/
+struct KeyValueInt {
+    /**
+     * Key
+     */    
+    int key;
+
+    /**
+     * Value.
+    */
+    int value;
+};
+
 struct KeyValue *KeyValue_new();
 struct KeyValue *KeyValue_new_value(char *value);
 void KeyValue_free(struct KeyValue *kvp);
@@ -38,5 +53,9 @@ void KeyValue_free(struct KeyValue *kvp);
 struct KeyValuePointer *KeyValuePointer_new();
 struct KeyValuePointer *KeyValuePointer_new_value(void *value);
 void KeyValuePointer_free(struct KeyValuePointer *kvp);
+
+struct KeyValueInt *KeyValueInt_new();
+struct KeyValueInt *KeyValueInt_new_value(int value);
+void KeyValueInt_free(struct KeyValueInt *kvp);
 
 #endif

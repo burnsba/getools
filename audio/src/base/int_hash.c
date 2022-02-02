@@ -323,7 +323,7 @@ void *IntHashTable_get(struct IntHashTable *root, uint32_t key)
 
 /**
  * Iterates hash table and returns key of first entry found.
- * No memory is allocated (returns pointer of key, do not free).
+ * No memory is allocated.
  * @param root: hash table to iterate.
  * @param key: out parameter. First found key, or NULL.
  * @returns: 1 if key found, zero otherwise.
@@ -544,20 +544,20 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
 
     if (root == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table is NULL\n", __func__, pop?"pop":"get");
     }
 
     ht = (struct IntHashTable_internal *)root->internal;
 
     if (ht == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table invalid internal state\n", __func__, pop?"pop":"get");
     }
 
     // if hashtable is empty, exit
     if (ht->num_entries == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: hash table is empty, key=%s\n", __func__, key);
+        stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
     hash = IntHashTable_hash_key(key);
@@ -567,7 +567,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
     // if bucket has never been setup, exit
     if (bucket == NULL)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: hash table bucket is empty, key=%s\n", __func__, key);
+        stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table bucket is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
     node = bucket->entry_list->root;
@@ -577,7 +577,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
 
         if (entry == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, key);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s (flag=%s): hash table invalid internal state, bucket entry is NULL, key=%s\n", __func__, pop?"pop":"get", key);
         }
 
         if (key == entry->key)
@@ -601,7 +601,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
 
     TRACE_LEAVE(__func__)
 
-    stderr_exit(EXIT_CODE_GENERAL, "%s: key not found: %s\n", __func__, key);
+    stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): key not found: %s\n", __func__, pop?"pop":"get", key);
 
     // be quiet gcc
     return 0;

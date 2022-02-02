@@ -6,64 +6,120 @@ CC := gcc
 CFLAGS := -g -Wall -Wextra -pedantic -Wunreachable-code
 LINKERS := -lm
 
-# location of source files
+# root location of source files (no trailing slash)
 SRC := src
 
-# output build location
+# let all header files be available everywhere.
+INCLUDES := -I$(SRC)/base -I$(SRC)/lib -I$(SRC)/app -I$(SRC)/test
+
+# location for object files and libraries (no trailing slash)
+OBJ := obj
+
+# location to put completed binaries (no trailing slash)
 BUILD := bin
 
-$(BUILD)/%.o: $(SRC)/%.c
-	$(CC) -c $< -o $@ $(CFLAGS) 
+####################################################################################################
+#
+# compile c file section
+#
+# Just throwing everything into one `obj` directory until there are name collisions.
 
-$(BUILD)/libgaudiobase.a: $(BUILD)/llist.o $(BUILD)/kvp.o $(BUILD)/common.o $(BUILD)/utility.o $(BUILD)/math.o $(BUILD)/debug.o
+$(OBJ)/%.o: $(SRC)/base/%.c
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES)
+
+$(OBJ)/%.o: $(SRC)/lib/%.c
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES)
+
+$(OBJ)/%.o: $(SRC)/app/%.c
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES)
+
+$(OBJ)/%.o: $(SRC)/test/%.c
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES)
+
+####################################################################################################
+#
+# build static library section
+#
+
+$(OBJ)/libgaudiobase.a: $(OBJ)/llist.o $(OBJ)/kvp.o $(OBJ)/common.o $(OBJ)/utility.o $(OBJ)/gaudio_math.o $(OBJ)/debug.o
 	ar rcs $@ $^
 
-$(BUILD)/libgaudioshash.a: $(BUILD)/string_hash.o $(BUILD)/int_hash.o $(BUILD)/md5.o $(BUILD)/libgaudiobase.a 
+$(OBJ)/libgaudioshash.a: $(OBJ)/string_hash.o $(OBJ)/int_hash.o $(OBJ)/md5.o $(OBJ)/libgaudiobase.a 
 	ar rcs $@ $^
 
-$(BUILD)/libgaudionaudio.a: $(BUILD)/naudio.o $(BUILD)/naudio_parse_inst.o $(BUILD)/libgaudioshash.a
+$(OBJ)/libgaudionaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/libgaudioshash.a
 	ar rcs $@ $^
 
-$(BUILD)/libgaudiomidi.a: $(BUILD)/midi.o $(BUILD)/libgaudionaudio.a
+$(OBJ)/libgaudiomidi.a: $(OBJ)/midi.o $(OBJ)/libgaudionaudio.a
 	ar rcs $@ $^
 
-$(BUILD)/libgaudioaifc.a: $(BUILD)/adpcm_aifc.o $(BUILD)/libgaudionaudio.a
+$(OBJ)/libgaudioaifc.a: $(OBJ)/adpcm_aifc.o $(OBJ)/libgaudionaudio.a
 	ar rcs $@ $^
 
-$(BUILD)/libgaudiowav.a: $(BUILD)/wav.o $(BUILD)/libgaudioaifc.a
+$(OBJ)/libgaudiowav.a: $(OBJ)/wav.o $(OBJ)/libgaudioaifc.a
 	ar rcs $@ $^
 
-$(BUILD)/sbksplit: $(BUILD)/sbksplit.o $(BUILD)/libgaudiobase.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudiobase
+####################################################################################################
+#
+# build binaries section
+#
+# Each lib dependency is explicitly listed as a `-l` parameter. The makefile step lists the
+# top level make dependencies.
 
-$(BUILD)/tbl2aifc: $(BUILD)/tbl2aifc.o $(BUILD)/libgaudioaifc.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/sbksplit: $(OBJ)/sbksplit.o $(OBJ)/libgaudiobase.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiobase
 
-$(BUILD)/aifc2wav: $(BUILD)/aifc2wav.o $(BUILD)/libgaudiowav.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/tbl2aifc: $(OBJ)/tbl2aifc.o $(OBJ)/libgaudioaifc.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/cseq2midi: $(BUILD)/cseq2midi.o $(BUILD)/libgaudiomidi.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudiomidi -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/aifc2wav: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiowav.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/gic: $(BUILD)/gic.o $(BUILD)/libgaudioaifc.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiomidi.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiomidi -lgaudionaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/test: $(BUILD)/test.o $(BUILD)/libgaudiowav.a $(BUILD)/libgaudioaifc.a $(BUILD)/libgaudiomidi.a $(BUILD)/libgaudionaudio.a
-	$(CC) $^ -o $@ $(LINKERS) -Lbin -lgaudiomidi -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudioaifc.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
 
-aifc2wav: $(BUILD)/aifc2wav
-sbksplit: $(BUILD)/sbksplit
-tbl2aifc: $(BUILD)/tbl2aifc
-cseq2midi: $(BUILD)/cseq2midi
-gic: $(BUILD)/gic
-test: $(BUILD)/test
+$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_common.o $(OBJ)/libgaudiowav.a $(OBJ)/libgaudioaifc.a $(OBJ)/libgaudiomidi.a $(OBJ)/libgaudionaudio.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiomidi -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
 
-all: $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+####################################################################################################
+
+help:
+	@echo "makefile help"
+	@echo ""
+	@echo "  supported targets:"
+	@echo ""
+	@echo "    all                         build all (default)"
+	@echo "    clean                       rm all build artifacts"
+	@echo "    check                       build and run tests"
+	@echo ""
+	@echo "  single app targets:"
+	@echo ""
+	@echo "    aifc2wav cseq2midi gic sbksplit tbl2aifc "
+
+####################################################################################################
+#
+# top level recipes
+#
+
+directories:
+	mkdir -p bin obj
+
+aifc2wav: directories $(BUILD)/aifc2wav
+sbksplit: directories $(BUILD)/sbksplit
+tbl2aifc: directories $(BUILD)/tbl2aifc
+cseq2midi: directories $(BUILD)/cseq2midi
+gic: directories $(BUILD)/gic
+test: directories $(BUILD)/test
+
+all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
 
 clean:
-	rm -f $(BUILD)/*.o $(BUILD)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
 
-check: $(BUILD)/test
+check: directories $(BUILD)/test
 	bin/test
 
-.PHONY: all default clean sbksplit tbl2aifc aifc2wav gic test check
+.PHONY: all default clean sbksplit tbl2aifc aifc2wav gic test check directories help
