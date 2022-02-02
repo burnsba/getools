@@ -389,6 +389,141 @@ int IntHashTable_peek_next_key(struct IntHashTable *root, uint32_t *key)
 }
 
 /**
+ * Iterate every item in the hash table and perform an action on it.
+ * @param root: hash table.
+ * @param action: action to perform.
+*/
+void IntHashTable_foreach(struct IntHashTable *root, IntHash_callback action)
+{
+    TRACE_ENTER(__func__)
+
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
+    struct llist_root *list;
+    struct llist_node *node;
+    uint32_t i;
+
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+    }
+
+    ht = (struct IntHashTable_internal *)root->internal;
+
+    if (ht == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+    }
+
+    for (i=0; i<ht->bucket_count; i++)
+    {
+        bucket = ht->buckets[i];
+
+        if (bucket != NULL)
+        {
+            list = bucket->entry_list;
+            if (list != NULL)
+            {
+                node = list->root;
+                while (node != NULL)
+                {
+                    entry = node->data;
+
+                    if (entry != NULL)
+                    {
+                        action(entry->data);
+                    }
+
+                    node = node->next;
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterate every item in the hash table and test it.
+ * @param root: hash table.
+ * @param action: action to perform. Should return 0 for false, and any
+ * positive value for true.
+ * @param first: Out parameter. Optional. If the action ever returns a truthy value, this will
+ * point to the data pointer of that entry. Otherewise NULL.
+ * @returns: If callback ever returns a positive value, that value is
+ * returned and iteration stops, otherwise zero.
+*/
+int IntHashTable_any(struct IntHashTable *root, IntHash_bool_callback action, void **first)
+{
+    TRACE_ENTER(__func__)
+
+    struct IntHashTable_internal *ht;
+    struct IntHashBucket *bucket;
+    struct IntHashBucketEntry *entry;
+    struct llist_node *node;
+    struct llist_root *list;
+    uint32_t i;
+
+    if (first != NULL)
+    {
+        *first = NULL;
+    }
+
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table is NULL\n", __func__);
+    }
+
+    ht = (struct IntHashTable_internal *)root->internal;
+
+    if (ht == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: hash table invalid internal state\n", __func__);
+    }
+
+    for (i=0; i<ht->bucket_count; i++)
+    {
+        bucket = ht->buckets[i];
+
+        if (bucket != NULL)
+        {
+            list = bucket->entry_list;
+            if (list != NULL)
+            {
+                node = list->root;
+                while (node != NULL)
+                {
+                    entry = node->data;
+
+                    if (entry != NULL)
+                    {
+                        int result = action(entry->data);
+
+                        if (result)
+                        {
+                            if (first != NULL)
+                            {
+                                *first = entry->data;
+                            }
+
+                            TRACE_LEAVE(__func__)
+                            return result;
+                        }
+                    }
+
+                    node = node->next;
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return 0;
+}
+
+/**
  * Shared code for _get and _pop.
  * @param root: hash table.
  * @param key: lookup key.

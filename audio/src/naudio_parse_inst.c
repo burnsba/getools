@@ -739,13 +739,13 @@ enum InstParseState {
 
 // forward declarations.
 
-inline static int is_whitespace(char c) ATTR_INLINE ;
-inline static int is_newline(char c) ATTR_INLINE ;
-inline static int is_alpha(char c) ATTR_INLINE ;
-inline static int is_alphanumeric(char c) ATTR_INLINE ;
-inline static int is_numeric(char c) ATTR_INLINE ;
-inline static int is_numeric_int(char c) ATTR_INLINE ;
-inline static int is_comment(char c) ATTR_INLINE ;
+static inline int is_whitespace(char c) ATTR_INLINE ;
+static inline int is_newline(char c) ATTR_INLINE ;
+static inline int is_alpha(char c) ATTR_INLINE ;
+static inline int is_alphanumeric(char c) ATTR_INLINE ;
+static inline int is_numeric(char c) ATTR_INLINE ;
+static inline int is_numeric_int(char c) ATTR_INLINE ;
+static inline int is_comment(char c) ATTR_INLINE ;
 
 // end forward declarations
 
@@ -754,7 +754,7 @@ inline static int is_comment(char c) ATTR_INLINE ;
  * @param c: character.
  * @returns: true if '\t' or ' ', false otherwise.
 */
-inline static int is_whitespace(char c)
+static inline int is_whitespace(char c)
 {
     return c == ' ' || c == '\t';
 }
@@ -764,7 +764,7 @@ inline static int is_whitespace(char c)
  * @param c: character.
  * @returns: true if '\r' or '\n', false otherwise.
 */
-inline static int is_newline(char c)
+static inline int is_newline(char c)
 {
     return c == '\r' || c == '\n';
 }
@@ -790,7 +790,7 @@ static int is_windows_newline(int c, int previous_c)
  * @param c: character.
  * @returns: true if (regex: [a-zA-z_] ), false otherwise.
 */
-inline static int is_alpha(char c)
+static inline int is_alpha(char c)
 {
     return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
@@ -800,7 +800,7 @@ inline static int is_alpha(char c)
  * @param c: character.
  * @returns: true if (regex: [a-zA-z0-9_] ), false otherwise.
 */
-inline static int is_alphanumeric(char c)
+static inline int is_alphanumeric(char c)
 {
     return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
@@ -811,7 +811,7 @@ inline static int is_alphanumeric(char c)
  * @param c: character.
  * @returns: true if (regex: [0-9] ), false otherwise.
 */
-inline static int is_numeric(char c)
+static inline int is_numeric(char c)
 {
     return  (c >= '0' && c <= '9');
 }
@@ -822,7 +822,7 @@ inline static int is_numeric(char c)
  * @param c: character.
  * @returns: true if (regex: [0-9xX-] ), false otherwise.
 */
-inline static int is_numeric_int(char c)
+static inline int is_numeric_int(char c)
 {
     return  (c >= '0' && c <= '9') || c == 'x' || c == 'X' || c == '-';
 }
@@ -832,9 +832,77 @@ inline static int is_numeric_int(char c)
  * @param c: character.
  * @returns: true if '#', false otherwise.
 */
-inline static int is_comment(char c)
+static inline int is_comment(char c)
 {
     return c == '#';
+}
+
+/**
+ * Foreach `any` callback method.
+ * @param vp: hashtable value pointer.
+ * @returns: true if unvisitied, zero otherwise.
+*/
+static inline int StringHash_instrument_unvisited(void *vp)
+{
+    struct ALInstrument *instrument = (struct ALInstrument *)vp;
+
+    if (instrument != NULL)
+    {
+        return instrument->visited == 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Foreach `any` callback method.
+ * @param vp: hashtable value pointer.
+ * @returns: true if unvisitied, zero otherwise.
+*/
+static inline int StringHash_sound_unvisited(void *vp)
+{
+    struct ALSound *sound = (struct ALSound *)vp;
+
+    if (sound != NULL)
+    {
+        return sound->visited == 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Foreach `any` callback method.
+ * @param vp: hashtable value pointer.
+ * @returns: true if unvisitied, zero otherwise.
+*/
+static inline int StringHash_keymap_unvisited(void *vp)
+{
+    struct ALKeyMap *keymap = (struct ALKeyMap *)vp;
+
+    if (keymap != NULL)
+    {
+        return keymap->visited == 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Foreach `any` callback method.
+ * @param vp: hashtable value pointer.
+ * @returns: true if unvisitied, zero otherwise.
+*/
+static inline int StringHash_envelope_unvisited(void *vp)
+{
+    struct ALEnvelope *envelope = (struct ALEnvelope *)vp;
+
+    if (envelope != NULL)
+    {
+        return envelope->visited == 0;
+    }
+
+    return 0;
 }
 
 /**
@@ -1955,7 +2023,9 @@ static void resolve_references_sound(struct InstParseContext *context, struct AL
 
     if (htkey != NULL)
     {
-        struct ALEnvelope *envelope = StringHashTable_pop(context->orphaned_envelopes, htkey);
+        struct ALEnvelope *envelope = StringHashTable_get(context->orphaned_envelopes, htkey);
+        ALEnvelope_add_parent(envelope, sound);
+        envelope->visited = 1;
 
         if (envelope == NULL)
         {
@@ -1973,7 +2043,9 @@ static void resolve_references_sound(struct InstParseContext *context, struct AL
 
     if (htkey != NULL)
     {
-        struct ALKeyMap *keymap = StringHashTable_pop(context->orphaned_keymaps, htkey);
+        struct ALKeyMap *keymap = StringHashTable_get(context->orphaned_keymaps, htkey);
+        ALKeyMap_add_parent(keymap, sound);
+        keymap->visited = 1;
 
         if (keymap == NULL)
         {
@@ -2051,7 +2123,7 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: instrument \"%s\" need_names invalid state, kvp->value is NULL, kvp->key=%d\n", __func__, __LINE__, instrument->text_id, kvp->key);
         }
 
-        sound = StringHashTable_pop(context->orphaned_sounds, htkey);
+        sound = StringHashTable_get(context->orphaned_sounds, htkey);
 
         if (sound == NULL)
         {
@@ -2059,6 +2131,8 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
         }
 
         instrument->sounds[i] = sound;
+        ALSound_add_parent(sound, instrument);
+        sound->visited = 1;
 
         resolve_references_sound(context, sound);
 
@@ -2136,7 +2210,7 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank \"%s\" need_names invalid state, kvp->value is NULL, kvp->key=%d\n", __func__, __LINE__, bank->text_id, kvp->key);
         }
 
-        instrument = StringHashTable_pop(context->orphaned_instruments, htkey);
+        instrument = StringHashTable_get(context->orphaned_instruments, htkey);
 
         if (instrument == NULL)
         {
@@ -2144,6 +2218,8 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
         }
 
         bank->instruments[i] = instrument;
+        ALInstrument_add_parent(instrument, bank);
+        instrument->visited = 1;
 
         resolve_references_instrument(context, instrument);
 
@@ -2291,6 +2367,9 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
      * hash tables.
     */
     uint32_t hash_count;
+
+    // used in sanity check error message.
+    void *any_first;
 
     /**
      * Sometimes the current state ends but needs to understand context or delay processing
@@ -3192,6 +3271,11 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         }
     }
 
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("exit parse state machine\n");
+    }
+
     // Done with reading file, can release memory.
     free(file_contents);
 
@@ -3202,8 +3286,16 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     */
     resolve_references(context, bank_file);
 
-    // sanity check. Make sure all orphaned instances were used.
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("Finish resolving references.\n");
+    }
 
+    /**
+     * sanity check. Make sure all orphaned instances were used.
+    */
+
+    // banks are _pop from hashtable.
     hash_count = StringHashTable_count(context->orphaned_banks);
 
     if (hash_count > 0)
@@ -3211,32 +3303,37 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed banks\n", hash_count);
     }
 
-    hash_count = StringHashTable_count(context->orphaned_instruments);
+    /**
+     * instruments, sounds, envelope, and keymaps are only _get from hashtable,
+     * as these can be referenced more than once.
+    */
 
-    if (hash_count > 0)
+    if (StringHashTable_any(context->orphaned_instruments, StringHash_instrument_unvisited, &any_first))
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed instruments\n", hash_count);
+        struct ALInstrument *instrument = (struct ALInstrument *)any_first;
+
+        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed instrument, %s\n", instrument->text_id);
     }
 
-    hash_count = StringHashTable_count(context->orphaned_sounds);
-
-    if (hash_count > 0)
+    if (StringHashTable_any(context->orphaned_sounds, StringHash_sound_unvisited, &any_first))
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed sounds\n", hash_count);
+        struct ALSound *sound = (struct ALSound *)any_first;
+
+        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed sound, %s\n", sound->text_id);
     }
 
-    hash_count = StringHashTable_count(context->orphaned_keymaps);
-
-    if (hash_count > 0)
+    if (StringHashTable_any(context->orphaned_keymaps, StringHash_keymap_unvisited, &any_first))
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed keymaps\n", hash_count);
+        struct ALKeyMap *keymap = (struct ALKeyMap *)any_first;
+
+        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed keymap, %s\n", keymap->text_id);
     }
 
-    hash_count = StringHashTable_count(context->orphaned_envelopes);
-
-    if (hash_count > 0)
+    if (StringHashTable_any(context->orphaned_envelopes, StringHash_envelope_unvisited, &any_first))
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed envelopes\n", hash_count);
+        struct ALEnvelope *envelope = (struct ALEnvelope *)any_first;
+
+        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed envelope, %s\n", envelope->text_id);
     }
 
     // done with final sanity check

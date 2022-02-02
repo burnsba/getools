@@ -28,6 +28,14 @@ struct CtlParseContext {
 */
 wavetable_init_callback wavetable_init_callback_ptr = NULL;
 
+static int32_t g_bank_file_id = 0;
+static int32_t g_bank_id = 0;
+static int32_t g_instrument_id = 0;
+static int32_t g_sound_id = 0;
+static int32_t g_envelope_id = 0;
+static int32_t g_wavetable_id = 0;
+static int32_t g_keymap_id = 0;
+
 // forward declarations
 
 struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset);
@@ -176,11 +184,9 @@ struct ALEnvelope *ALEnvelope_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t envelope_id = 0;
-
     struct ALEnvelope *envelope = (struct ALEnvelope *)malloc_zero(1, sizeof(struct ALEnvelope));
 
-    envelope->id = envelope_id++;
+    envelope->id = g_envelope_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -296,11 +302,9 @@ struct ALKeyMap *ALKeyMap_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t keymap_id = 0;
-
     struct ALKeyMap *keymap = (struct ALKeyMap *)malloc_zero(1, sizeof(struct ALKeyMap));
 
-    keymap->id = keymap_id++;
+    keymap->id = g_keymap_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -553,11 +557,9 @@ struct ALWaveTable *ALWaveTable_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t wavetable_id = 0;
-
     struct ALWaveTable *wavetable = (struct ALWaveTable *)malloc_zero(1, sizeof(struct ALWaveTable));
 
-    wavetable->id = wavetable_id++;
+    wavetable->id = g_wavetable_id++;
 
     // unlike the other properties with a base constructor, this doesn't have a named
     // reference saved/loaded from .inst file, so go ahead and set the text_id.
@@ -656,11 +658,9 @@ struct ALSound *ALSound_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t sound_id = 0;
-
     struct ALSound *sound = (struct ALSound *)malloc_zero(1, sizeof(struct ALSound));
 
-    sound->id = sound_id++;
+    sound->id = g_sound_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -891,11 +891,9 @@ struct ALInstrument *ALInstrument_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t instrument_id = 0;
-
     struct ALInstrument *instrument = (struct ALInstrument *)malloc_zero(1, sizeof(struct ALInstrument));
 
-    instrument->id = instrument_id++;
+    instrument->id = g_instrument_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -1172,11 +1170,9 @@ struct ALBank *ALBank_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t bank_id = 0;
-
     struct ALBank *bank = (struct ALBank *)malloc_zero(1, sizeof(struct ALBank));
 
-    bank->id = bank_id++;
+    bank->id = g_bank_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -1329,10 +1325,8 @@ struct ALBankFile *ALBankFile_new()
 {
     TRACE_ENTER(__func__)
 
-    static int32_t bank_file_id = 0;
-
     struct ALBankFile *bank_file = (struct ALBankFile *)malloc_zero(1, sizeof(struct ALBankFile));
-    bank_file->id = bank_file_id++;
+    bank_file->id = g_bank_file_id++;
 
     TRACE_LEAVE(__func__)
 
