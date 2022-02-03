@@ -5,7 +5,6 @@
 #include "debug.h"
 #include "common.h"
 #include "utility.h"
-#include "adpcm_aifc.h"
 #include "wav.h"
 
 /**
@@ -68,51 +67,6 @@ struct WavFile *WavFile_new(size_t num_chunks)
     TRACE_LEAVE(__func__)
 
     return p;
-}
-
-/**
- * Translates from .aifc to .wav.
- * The .aifc must be loaded into memory.
- * Allocates memory for resulting wav file, including uncompressed audio.
- * The exact .aifc uncompressed audio size is not known, so slightly more space
- * is allocated than is needed.
- * @param aifc_file: aifc file to convert to wav
- * @returns: pointer to new wav file.
-*/
-struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
-{
-    TRACE_ENTER(__func__)
-
-    struct WavFile *wav = WavFile_new(WAV_DEFAULT_NUM_CHUNKS);
-
-    // "fmt " chunk
-    wav->fmt_chunk = WavFmtChunk_new();
-    wav->chunks[0] = wav->fmt_chunk;
-
-    wav->fmt_chunk->audio_format = WAV_AUDIO_FORMAT;
-    wav->fmt_chunk->num_channels = 1;
-    wav->fmt_chunk->sample_rate = AdpcmAifcFile_get_int_sample_rate(aifc_file);
-    wav->fmt_chunk->bits_per_sample = aifc_file->comm_chunk->sample_size;
-    wav->fmt_chunk->byte_rate = wav->fmt_chunk->sample_rate * wav->fmt_chunk->num_channels * wav->fmt_chunk->bits_per_sample/8;
-    wav->fmt_chunk->block_align = wav->fmt_chunk->num_channels * wav->fmt_chunk->bits_per_sample/8;
-
-    // "data" chunk
-    wav->data_chunk = WavDataChunk_new();
-    wav->chunks[1] = wav->data_chunk;
-
-    size_t buffer_len = AdpcmAifcFile_estimate_inflate_size(aifc_file);
-    wav->data_chunk->data = (uint8_t *)malloc_zero(1, buffer_len);
-
-    wav->data_chunk->ck_data_size = AdpcmAifcFile_decode(aifc_file, wav->data_chunk->data, buffer_len);
-
-    wav->ck_data_size = 
-        4 + /* rest of FORM header */
-        WAV_FMT_CHUNK_FULL_SIZE + /* "fmt " chunk is const size */
-        8 + wav->data_chunk->ck_data_size; /* "data" chunk header, then data size*/
-
-    TRACE_LEAVE(__func__)
-
-    return wav;
 }
 
 /**

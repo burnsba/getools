@@ -8,6 +8,7 @@
 #include "utility.h"
 #include "naudio.h"
 #include "int_hash.h"
+#include "string_hash.h"
 
 /**
  * This file contains primary code for supporting Rare's audio structs,
@@ -1401,7 +1402,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
 
 /**
  * This is the main entry point for writing an .inst file.
- * Writes {@code struct ALBankFile} to .inst file, using current file seek position.
+ * Writes {@code struct ALBankFile} to .inst file.
  * Writes any child information as well.
  * @param bank_file: object to write.
  * @param inst_filename: path to write to.

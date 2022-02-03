@@ -47,16 +47,10 @@ $(OBJ)/libgaudiobase.a: $(OBJ)/llist.o $(OBJ)/kvp.o $(OBJ)/common.o $(OBJ)/utili
 $(OBJ)/libgaudioshash.a: $(OBJ)/string_hash.o $(OBJ)/int_hash.o $(OBJ)/md5.o $(OBJ)/libgaudiobase.a 
 	ar rcs $@ $^
 
-$(OBJ)/libgaudionaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/libgaudioshash.a
+$(OBJ)/libgaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/adpcm_aifc.o $(OBJ)/midi.o $(OBJ)/wav.o $(OBJ)/libgaudioshash.a
 	ar rcs $@ $^
 
-$(OBJ)/libgaudiomidi.a: $(OBJ)/midi.o $(OBJ)/libgaudionaudio.a
-	ar rcs $@ $^
-
-$(OBJ)/libgaudioaifc.a: $(OBJ)/adpcm_aifc.o $(OBJ)/libgaudionaudio.a
-	ar rcs $@ $^
-
-$(OBJ)/libgaudiowav.a: $(OBJ)/wav.o $(OBJ)/libgaudioaifc.a
+$(OBJ)/libgaudiox.a: $(OBJ)/x.o $(OBJ)/libgaudio.a
 	ar rcs $@ $^
 
 ####################################################################################################
@@ -69,20 +63,20 @@ $(OBJ)/libgaudiowav.a: $(OBJ)/wav.o $(OBJ)/libgaudioaifc.a
 $(BUILD)/sbksplit: $(OBJ)/sbksplit.o $(OBJ)/libgaudiobase.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiobase
 
-$(BUILD)/tbl2aifc: $(OBJ)/tbl2aifc.o $(OBJ)/libgaudioaifc.a
-	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/tbl2aifc: $(OBJ)/tbl2aifc.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/aifc2wav: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiowav.a
-	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/aifc2wav: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiomidi.a
-	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiomidi -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudioaifc.a
-	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_common.o $(OBJ)/libgaudiowav.a $(OBJ)/libgaudioaifc.a $(OBJ)/libgaudiomidi.a $(OBJ)/libgaudionaudio.a
-	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiomidi -lgaudiowav -lgaudioaifc -lgaudionaudio -lgaudioshash -lgaudiobase
+$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
 ####################################################################################################
 

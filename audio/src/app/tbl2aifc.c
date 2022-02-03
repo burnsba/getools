@@ -11,6 +11,7 @@
 #include "llist.h"
 #include "naudio.h"
 #include "adpcm_aifc.h"
+#include "x.h"
 
 /**
  * This file contains main entry for tbl2aifc app.

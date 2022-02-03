@@ -13,6 +13,7 @@
 #include "naudio.h"
 #include "adpcm_aifc.h"
 #include "wav.h"
+#include "x.h"
 
 /**
  * This file contains main entry for gic app.
@@ -183,6 +184,10 @@ int main(int argc, char **argv)
     input_file = file_info_fopen(input_filename, "rb");
 
     bank_file = ALBankFile_new_from_inst(input_file);
+
+    // it's necessary to write the .tbl file first in order to set the wavetable->base
+    // offset values.
+    ALBankFile_write_tbl(bank_file, tbl_filename);
 
     // done with input file
     file_info_free(input_file);

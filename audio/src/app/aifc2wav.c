@@ -13,6 +13,7 @@
 #include "naudio.h"
 #include "adpcm_aifc.h"
 #include "wav.h"
+#include "x.h"
 
 /**
  * This file contains main entry for aifc2wav app.

@@ -426,6 +426,16 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 {
     TRACE_ENTER(__func__)
 
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
+    }
+
+    if (fi->_fp_state != 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
+    }
+
     int ret = fseek(fi->fp, __off, __whence);
 
     if (ret != 0)
@@ -434,6 +444,32 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Returns current position of underlying file stream.
+ * @param fi: file_info.
+ * @returns: ftell result.
+*/
+long file_info_ftell(struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
+    }
+
+    if (fi->_fp_state != 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
+    }
+
+    long ret = ftell(fi->fp);
 
     TRACE_LEAVE(__func__)
 
@@ -459,12 +495,12 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fwrite error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fwrite error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
     }
 
     if (size == 0)

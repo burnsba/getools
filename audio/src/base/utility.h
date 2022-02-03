@@ -71,6 +71,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode);
 size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, size_t n);
 size_t file_info_get_file_contents(struct file_info *fi, uint8_t **buffer);
 int file_info_fseek(struct file_info *fi, long __off, int __whence);
+long file_info_ftell(struct file_info *fi);
 size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, size_t n);
 size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n);
 int file_info_fclose(struct file_info *fi);

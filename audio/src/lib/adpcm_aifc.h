@@ -467,12 +467,10 @@ extern int g_AdpcmLoopInfiniteExportCount;
 
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count);
 struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);
-struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank);
 struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type);
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries);
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes);
 struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new();
-void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint8_t *tbl_file_contents, struct ALBank *bank);
 void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi);
 void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi);
 void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk);
@@ -481,8 +479,6 @@ void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_i
 void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi);
 void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi);
 void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi);
-void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi);
-void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents);
 size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len);
 int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
 void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk);
@@ -491,5 +487,8 @@ void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk);
 void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk);
 void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file);
 size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
+
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi);
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi);
 
 #endif

@@ -13,7 +13,6 @@
 
 /**
  * This file contains primary aifc methods.
- * This contains code to convert from other formats to aifc.
 */
 
 /**
@@ -433,109 +432,6 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 }
 
 /**
- * Allocates a new {@code struct AdpcmAifcFile} and initializes default values.
- * No sound data is loaded/converted, the parameters are simply to know what
- * needs to be initialized.
- * @param sound: reference {@code struct ALSound} that will be loaded
- * @param bank: reference {@code struct ALBank} that is the parent of {@code sound}
- * @returns pointer to new {@code struct AdpcmAifcFile}
-*/
-struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank)
-{
-    TRACE_ENTER(__func__)
-
-    int expected_chunk_count = 2; // COMM, SSND.
-    int alloc_chunk_count = 0;
-    int need_loop = 0;
-
-    uint32_t compression_type = 0;
-
-    if (sound->wavetable != NULL)
-    {
-        if (sound->wavetable->type == AL_ADPCM_WAVE)
-        {
-            compression_type = ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID;
-
-            if (sound->wavetable->wave_info.adpcm_wave.book != NULL)
-            {
-                expected_chunk_count++;
-            }
-
-            if (sound->wavetable->wave_info.adpcm_wave.loop != NULL)
-            {
-                need_loop = 1;
-                expected_chunk_count++;
-            }
-        }
-        else if (sound->wavetable->type == AL_RAW16_WAVE)
-        {
-            compression_type = ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID;
-
-            if (sound->wavetable->wave_info.raw_wave.loop != NULL)
-            {
-                need_loop = 1;
-                expected_chunk_count++;
-            }
-        }
-    }
-
-    struct AdpcmAifcFile *aaf = AdpcmAifcFile_new_simple(expected_chunk_count);
-
-    aaf->chunks[alloc_chunk_count] = AdpcmAifcCommChunk_new(compression_type);
-    aaf->comm_chunk = aaf->chunks[alloc_chunk_count];
-    alloc_chunk_count++;
-
-    if (sound->wavetable != NULL)
-    {
-        if (sound->wavetable->type == AL_ADPCM_WAVE)
-        {
-            if (sound->wavetable->wave_info.adpcm_wave.book != NULL)
-            {
-                struct ALADPCMBook *book = sound->wavetable->wave_info.adpcm_wave.book;
-                aaf->chunks[alloc_chunk_count] = AdpcmAifcCodebookChunk_new(book->order, book->npredictors);
-                aaf->codes_chunk = aaf->chunks[alloc_chunk_count];
-                alloc_chunk_count++;
-            }
-            else
-            {
-                stderr_exit(EXIT_CODE_GENERAL, "Cannot find ALADPCMBook to resolve codebook data, sound %s, bank %s\n", sound->text_id, bank->text_id);
-            }
-        }
-
-        if (sound->wavetable->len > 0)
-        {
-            aaf->chunks[alloc_chunk_count] = AdpcmAifcSoundChunk_new(sound->wavetable->len);
-            aaf->sound_chunk = aaf->chunks[alloc_chunk_count];
-            alloc_chunk_count++;
-        }
-        else
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "wavetable->len is zero, sound %s, bank %s\n", sound->text_id, bank->text_id);
-        }
-    }
-    else
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "wavetable is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-    }
-
-    if (need_loop)
-    {
-        aaf->chunks[alloc_chunk_count] = AdpcmAifcLoopChunk_new();
-        aaf->loop_chunk = aaf->chunks[alloc_chunk_count];
-        alloc_chunk_count++;
-    }
-
-    if (alloc_chunk_count != expected_chunk_count)
-    {
-        stderr_exit(EXIT_CODE_GENERAL, "Expected to allocate %d chunks, but only allocated %d. Sound %s, bank %s\n", expected_chunk_count, alloc_chunk_count, sound->text_id, bank->text_id);
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return aaf;
-}
-
-/**
  * Allocates memory for a new {@code struct AdpcmAifcCommChunk} and sets default values.
  * @param compression_type: Should be big endian 32-bit id of compression type used.
  * @returns: pointer to new {@code struct AdpcmAifcCommChunk}.
@@ -732,133 +628,6 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
     TRACE_LEAVE(__func__)
 
     return p;
-}
-
-/**
- * Reads a {@code struct ALSound} and converts to .aifc format.
- * @param aaf: destination container
- * @param sound: object to convert
- * @param tbl_file_contents: .tbl file contents
- * @param bank: parent bank of {@code sound}
-*/
-void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint8_t *tbl_file_contents, struct ALBank *bank)
-{
-    TRACE_ENTER(__func__)
-
-    aaf->ck_data_size = 0;
-
-    if (aaf->comm_chunk == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, common chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-    }
-
-    // COMM chunk
-    aaf->comm_chunk->num_channels = DEFAULT_NUM_CHANNELS;
-    aaf->comm_chunk->sample_size = DEFAULT_SAMPLE_SIZE;
-
-    f80 float_rate = (f80)(bank->sample_rate);
-    reverse_into(aaf->comm_chunk->sample_rate, (uint8_t *)&float_rate, 10);
-
-    aaf->ck_data_size += aaf->comm_chunk->ck_data_size;
-
-    if (sound->wavetable == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "wavetable is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-    }
-
-    if (sound->wavetable->wave_info.adpcm_wave.book != NULL)
-    {
-        if (aaf->codes_chunk == NULL)
-        {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, codebook chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-        }
-        
-        int code_len;
-        struct ALADPCMBook *book = sound->wavetable->wave_info.adpcm_wave.book;
-
-        // code book chunk
-        aaf->codes_chunk->base.unknown = 0xb; // ??
-        aaf->codes_chunk->version = 1; // ??
-
-        aaf->codes_chunk->order = book->order;
-        aaf->codes_chunk->nentries = book->npredictors;
-        code_len = book->order * book->npredictors * 16;
-        memcpy(aaf->codes_chunk->table_data, book->book, code_len);
-
-        AdpcmAifcCodebookChunk_decode_aifc_codebook(aaf->codes_chunk);
-
-        aaf->ck_data_size += aaf->codes_chunk->base.ck_data_size;
-    }
-
-    // sound chunk
-    if (sound->wavetable->len > 0)
-    {
-        if (g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("copying tbl data from offset 0x%06x len 0x%06x\n", sound->wavetable->base, sound->wavetable->len);
-            fflush(stdout);
-        }
-
-        if (aaf->sound_chunk == NULL)
-        {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, sound chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-        }
-    
-        memcpy(
-            aaf->sound_chunk->sound_data,
-            &tbl_file_contents[sound->wavetable->base],
-            sound->wavetable->len);
-
-        // from the programming manual:
-        // "The numSampleFrames field should be set to the number of bytes represented by the compressed data, not the the number of bytes used."
-        // Well, the programming manual is wrong.
-        // vadpcm_dec counts by 16, in how much it reads 9 bytes at a time.
-        aaf->comm_chunk->num_sample_frames = (sound->wavetable->len / 9) * 16;
-
-        aaf->ck_data_size += aaf->sound_chunk->ck_data_size;
-    }
-
-    // loop chunk
-    if (sound->wavetable->wave_info.adpcm_wave.loop != NULL
-        || sound->wavetable->wave_info.raw_wave.loop != NULL)
-    {
-        if (aaf->loop_chunk == NULL)
-        {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, loop chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
-        }
-
-        if (sound->wavetable->type == AL_ADPCM_WAVE)
-        {
-            struct ALADPCMLoop *loop = sound->wavetable->wave_info.adpcm_wave.loop;
-
-            aaf->loop_chunk->nloops = 1;
-            aaf->loop_chunk->loop_data->start = loop->start;
-            aaf->loop_chunk->loop_data->end = loop->end;
-            aaf->loop_chunk->loop_data->count = loop->count;
-
-            memcpy(
-                aaf->loop_chunk->loop_data->state,
-                loop->state,
-                ADPCM_STATE_SIZE);
-        }
-        else if (sound->wavetable->type == AL_RAW16_WAVE)
-        {
-            struct ALRawLoop *loop = sound->wavetable->wave_info.raw_wave.loop;
-
-            aaf->loop_chunk->nloops = 1;
-            aaf->loop_chunk->loop_data->start = loop->start;
-            aaf->loop_chunk->loop_data->end = loop->end;
-            aaf->loop_chunk->loop_data->count = loop->count;
-        }
-        else
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "Unsupported loop type: %d. Sound %s, bank %s\n", sound->wavetable->type, sound->text_id, bank->text_id);
-        }
-
-        aaf->ck_data_size += aaf->loop_chunk->base.ck_data_size;
-    }
-
-    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -1090,84 +859,6 @@ void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
                 }
             }
             break;
-        }
-    }
-
-    TRACE_LEAVE(__func__)
-}
-
-/**
- * Converts {@code struct ALSound} wavetable sound data to .aifc file.
- * @param sound: sound object holding wavetable data.
- * @param bank: sound object parent bank
- * @param tbl_file_contents: .tbl file contents
- * @param fi: file_info to write to. Uses current seek position.
-*/
-void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi)
-{
-    TRACE_ENTER(__func__)
-
-    struct AdpcmAifcFile *aaf = AdpcmAifcFile_new_full(sound, bank);
-
-    load_aifc_from_sound(aaf, sound, tbl_file_contents, bank);
-
-    AdpcmAifcFile_fwrite(aaf, fi);
-    AdpcmAifcFile_free(aaf);
-
-    TRACE_LEAVE(__func__)
-}
-
-/**
- * This is the main entry point for converting {@code struct ALBankFile} to .aifc format.
- * Converts bank file and .tbl information, writing all wavetable sound data to .aifc files.
- * @param bank_file: bank file.
- * @param tbl_file_contents: .tbl file contents
-*/
-void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents)
-{
-    TRACE_ENTER(__func__)
-
-    struct file_info *output;
-    int i,j,k;
-
-    ALBankFile_clear_visited_flags(bank_file);
-
-    for (i=0; i<bank_file->bank_count; i++)
-    {
-        struct ALBank *bank = bank_file->banks[i];
-        for (j=0; j<bank->inst_count; j++)
-        {
-            struct ALInstrument *inst = bank->instruments[j];
-            for (k=0; k<inst->sound_count; k++)
-            {
-                struct ALSound *sound = inst->sounds[k];
-
-                if (sound == NULL)
-                {
-                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound is NULL\n", __func__);
-                }
-
-                if (sound->wavetable == NULL)
-                {
-                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound->wavetable is NULL\n", __func__);
-                }
-
-                if (sound->wavetable->visited == 0)
-                {
-                    sound->wavetable->visited = 1;
-
-                    if (g_verbosity >= VERBOSE_DEBUG)
-                    {
-                        printf("opening sound file for output aifc: \"%s\"\n", sound->wavetable->aifc_path);
-                    }
-
-                    output = file_info_fopen(sound->wavetable->aifc_path, "w");
-
-                    write_sound_to_aifc(sound, bank, tbl_file_contents, output);
-
-                    file_info_free(output);
-                }
-            }
         }
     }
 
@@ -2027,6 +1718,68 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
     TRACE_LEAVE(__func__)
 
     return estimate;
+}
+
+/**
+ * Extracts the sound data from an .aifc file and writes to .tbl
+ * file at the current file offset.
+ * @param path: .aifc file to open and extract data from.
+ * @param fi: file to write to.
+ * @returns: number of bytes written.
+*/
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("open file \"%s\" to write to .tbl\n", path);
+    }
+
+    struct file_info *aifc_fi = file_info_fopen(path, "rb");
+    struct AdpcmAifcFile *aifc_file = AdpcmAifcFile_new_from_file(aifc_fi);
+    size_t result = AdpcmAifcFile_write_tbl(aifc_file, fi);
+    AdpcmAifcFile_free(aifc_file);
+    file_info_free(aifc_fi);
+
+    TRACE_LEAVE(__func__)
+
+    return result;
+}
+
+/**
+ * Extracts the sound data from an .aifc file and writes to .tbl
+ * file at the current file offset.
+ * @param aifc_file: file containing sound data to write.
+ * @param fi: file to write to.
+ * @returns: number of bytes written.
+*/
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (aifc_file->sound_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file->sound_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file->sound_chunk->ck_data_size < 8)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> aifc_file->sound_chunk too small\n", __func__, __LINE__);
+    }
+
+    size_t len = aifc_file->sound_chunk->ck_data_size - 8;
+
+    size_t actual = file_info_fwrite(fi, aifc_file->sound_chunk->sound_data, len, 1);
+
+    if (len != actual)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> write error, expected to write %ls but wrote %ld bytes\n", __func__, __LINE__, len, actual);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return len;
 }
 
 /**

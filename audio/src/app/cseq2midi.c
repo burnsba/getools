@@ -8,6 +8,7 @@
 #include "common.h"
 #include "utility.h"
 #include "midi.h"
+#include "x.h"
 
 /**
  * This file contains main entry for cseq2midi app.
