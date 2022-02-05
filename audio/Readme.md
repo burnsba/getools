@@ -5,6 +5,8 @@ cseq2midi
 sbksplit
 tbl2aifc
 
+clang code analysis: scan-build-11 make
+
 -----
 
 .inst parse support:
@@ -48,11 +50,15 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
+- document x.c methods
+- ALBankFile_populate_wavetables_from_aifc
+
 
 
 - final valgrind check
 - readme writeup
 - if only one input is required, and one input provided, assume it's the `--in` parameter
+- every stderr_exit call should have __func__ and __LINE__
 
 
 feature roadmap:

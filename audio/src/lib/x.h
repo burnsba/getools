@@ -11,5 +11,6 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
 void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi);
 void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents);
 void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename);
+void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename);
 
 #endif

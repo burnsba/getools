@@ -45,6 +45,13 @@ static struct option long_options[] =
     {NULL, 0, NULL, 0}
 };
 
+// forward declarations
+
+void print_help(const char * invoke);
+void read_opts(int argc, char **argv);
+
+// end forward declarations
+
 void print_help(const char * invoke)
 {
     printf("%s %s help\n", APPNAME, VERSION);
@@ -188,6 +195,7 @@ int main(int argc, char **argv)
     // it's necessary to write the .tbl file first in order to set the wavetable->base
     // offset values.
     ALBankFile_write_tbl(bank_file, tbl_filename);
+    ALBankFile_write_ctl(bank_file, ctl_filename);
 
     // done with input file
     file_info_free(input_file);

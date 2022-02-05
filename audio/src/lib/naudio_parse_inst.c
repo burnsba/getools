@@ -787,6 +787,36 @@ static inline int is_numeric(char c) ATTR_INLINE ;
 static inline int is_numeric_int(char c) ATTR_INLINE ;
 static inline int is_comment(char c) ATTR_INLINE ;
 
+
+static inline int StringHash_instrument_unvisited(void *vp);
+static inline int StringHash_sound_unvisited(void *vp);
+static inline int StringHash_keymap_unvisited(void *vp);
+static inline int StringHash_envelope_unvisited(void *vp);
+static struct MissingRef *MissingRef_new(int key, void *self, char *ref_id, size_t len);
+void MissingRef_free(struct MissingRef *ref);
+void MissingRef_hashcallback_free(void *data);
+static struct InstParseContext *InstParseContext_new(void);
+static void InstParseContext_free(struct InstParseContext *context);
+
+static void buffer_append_inc(char *buffer, int *position, char c);
+
+static void get_type(const char *type_name, struct RuntimeTypeInfo *type);
+static void get_property(struct RuntimeTypeInfo *type, const char *property_name, struct RuntimeTypeInfo *property);
+static void set_array_index_int(struct InstParseContext *context);
+static void set_current_property_value_int(struct InstParseContext *context);
+static void create_instance(struct InstParseContext *context);
+static void apply_property_on_instance_bank(struct InstParseContext *context);
+void apply_property_on_instance_instrument(struct InstParseContext *context);
+void apply_property_on_instance_sound(struct InstParseContext *context);
+void apply_property_on_instance_keymap(struct InstParseContext *context);
+void apply_property_on_instance_envelope(struct InstParseContext *context);
+void apply_property_on_instance(struct InstParseContext *context);
+static void add_orphaned_instance(struct InstParseContext *context);
+static void resolve_references_sound(struct InstParseContext *context, struct ALSound *sound);
+static void resolve_references_instrument(struct InstParseContext *context, struct ALInstrument *instrument);
+static void resolve_references_bank(struct InstParseContext *context, struct ALBank *bank);
+static void resolve_references(struct InstParseContext *context, struct ALBankFile *bank_file);
+
 // end forward declarations
 
 /**
@@ -2344,6 +2374,10 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
 
     instrument->sound_offsets = NULL;
 
+    // allocate offsets array in case writing to .ctl
+    // this can't be done until it's done being borrowed above.
+    instrument->sound_offsets = (int32_t *)malloc_zero(instrument->sound_count, sizeof(void*));
+
     TRACE_LEAVE(__func__)
 }
 
@@ -2430,6 +2464,10 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
     llist_node_root_free(need_names);
 
     bank->inst_offsets = NULL;
+    
+    // allocate offsets array in case writing to .ctl
+    // this can't be done until it's done being borrowed above.
+    bank->inst_offsets = (int32_t *)malloc_zero(bank->inst_count, sizeof(void*));
 
     TRACE_LEAVE(__func__)
 }
@@ -2453,6 +2491,7 @@ static void resolve_references(struct InstParseContext *context, struct ALBankFi
     count = StringHashTable_count(context->orphaned_banks);
     
     bank_file->bank_count = count;
+
     bank_file->banks = (struct ALBank **)malloc_zero(bank_file->bank_count, sizeof(void*));
 
     for (i=0; i<count; i++)
@@ -2479,6 +2518,9 @@ static void resolve_references(struct InstParseContext *context, struct ALBankFi
     }
 
     // hash table memory will be freed when context is freed.
+
+    // allocate offsets array in case writing to .ctl
+    bank_file->bank_offsets = (int32_t *)malloc_zero(bank_file->bank_count, sizeof(void*));
 
     TRACE_LEAVE(__func__)
 }

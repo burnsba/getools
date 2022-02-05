@@ -470,7 +470,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);
 struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type);
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries);
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes);
-struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new();
+struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new(void);
 void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi);
 void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi);
 void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk);

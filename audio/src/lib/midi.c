@@ -14,6 +14,13 @@
 
 int g_midi_parse_debug = 0;
 
+// forward declarations
+
+int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_node *second);
+int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_node *second);
+
+// end forward declarations
+
 /**
  * Merge sort comparison function.
  * Use this to sort largest to smallest.
@@ -1075,7 +1082,6 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
         if (need_delta_time == 0)
         {
             need_delta_time = 1;
-            param_len = 0;
 
             /**
              * implementation note: make sure pos is incrememnted in each every block!
@@ -1187,7 +1193,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
                 event->midi_command_len = MIDI_COMMAND_LEN_NOTE_ON;
                 event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON;
                 event->midi_command_parameters[0] = note;
-                event->midi_command_parameters[1] = velocity;
+                event->midi_command_parameters[1] = pressure;
                 event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
 
                 append_event = 1;

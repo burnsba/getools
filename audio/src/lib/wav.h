@@ -188,8 +188,8 @@ struct WavFile {
     struct WavDataChunk *data_chunk;
 };
 
-struct WavDataChunk *WavDataChunk_new();
-struct WavFmtChunk *WavFmtChunk_new();
+struct WavDataChunk *WavDataChunk_new(void);
+struct WavFmtChunk *WavFmtChunk_new(void);
 struct WavFile *WavFile_new(size_t num_chunks);
 void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi);
 void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi);

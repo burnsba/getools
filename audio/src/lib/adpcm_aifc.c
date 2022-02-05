@@ -25,6 +25,10 @@ int g_AdpcmLoopInfiniteExportCount = 0;
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);
 static void write_frame_output(uint8_t *out, int32_t *data, size_t size);
+static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd);
 
 // end forward declarations
 
@@ -43,198 +47,6 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
 
     p->chunk_count = chunk_count;
     p->chunks = (void*)malloc_zero(chunk_count, sizeof(void*));
-
-    TRACE_LEAVE(__func__)
-
-    return p;
-}
-
-/**
- * Creates new {@code struct AdpcmAifcCommChunk} from aifc file contents.
- * @param fi: aifc file. Reads from current seek position.
- * @param ck_data_size: chunk size in bytes.
- * @returns: pointer to new common chunk.
-*/
-struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
-{
-    TRACE_ENTER(__func__)
-
-    int remaining_bytes;
-
-    struct AdpcmAifcCommChunk *p = (struct AdpcmAifcCommChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCommChunk));
-    p->ck_id = ADPCM_AIFC_COMMON_CHUNK_ID;
-    p->ck_data_size = ck_data_size;
-    remaining_bytes = ck_data_size;
-
-    file_info_fread(fi, &p->num_channels, 2, 1);
-    BSWAP16(p->num_channels);
-    remaining_bytes -= 2;
-
-    file_info_fread(fi, &p->num_sample_frames, 4, 1);
-    BSWAP32(p->num_sample_frames);
-    remaining_bytes -= 4;
-
-    file_info_fread(fi, &p->sample_size, 2, 1);
-    BSWAP16(p->sample_size);
-    remaining_bytes -= 2;
-
-    file_info_fread(fi, &p->sample_rate, 10, 1);
-    reverse_inplace(p->sample_rate, 10);
-    remaining_bytes -= 10;
-
-    file_info_fread(fi, &p->compression_type, 4, 1);
-    BSWAP32(p->compression_type);
-    remaining_bytes -= 4;
-    
-    file_info_fread(fi, &p->unknown, 1, 1);
-    remaining_bytes -= 1;
-
-    if (remaining_bytes > 0)
-    {
-        if (remaining_bytes > ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN)
-        {
-            remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
-        }
-
-        file_info_fread(fi, &p->compression_name, remaining_bytes, 1);
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return p;
-}
-
-/**
- * Creates new application chunk from aifc file contents.
- * Must be codebook or loop chunk, otherwise program exits with error.
- * @param fi: aifc file. Reads from current seek position.
- * @param ck_data_size: chunk size in bytes.
- * @returns: pointer to new application chunk.
-*/
-struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
-{
-    TRACE_ENTER(__func__)
-
-    if (ck_data_size - (5 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN) <= 0)
-    {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid APPL chunk data size: %d\n", ck_data_size);
-    }
-
-    struct AdpcmAifcApplicationChunk *ret;
-    int i;
-
-    uint32_t application_signature;
-    uint8_t unknown;
-    char code_string[ADPCM_AIFC_VADPCM_APPL_NAME_LEN];
-
-    file_info_fread(fi, &application_signature, 4, 1);
-    BSWAP32(application_signature);
-
-    file_info_fread(fi, &unknown, 1, 1);
-
-    file_info_fread(fi, &code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
-
-    if (strncmp(code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
-    {
-        struct AdpcmAifcCodebookChunk *p = (struct AdpcmAifcCodebookChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCodebookChunk));
-        ret = (struct AdpcmAifcApplicationChunk *)p;
-        p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
-        p->base.ck_data_size = ck_data_size;
-        p->base.application_signature = application_signature;
-        p->base.unknown = unknown;
-        
-        // no terminating zero
-        memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
-
-        file_info_fread(fi, &p->version, 2, 1);
-        BSWAP16(p->version);
-
-        file_info_fread(fi, &p->order, 2, 1);
-        BSWAP16(p->order);
-
-        file_info_fread(fi, &p->nentries, 2, 1);
-        BSWAP16(p->nentries);
-
-        size_t table_data_size_bytes = p->order * p->nentries * 16;
-        p->table_data = (uint8_t *)malloc_zero(1, table_data_size_bytes);
-        file_info_fread(fi, p->table_data, table_data_size_bytes, 1);
-
-        AdpcmAifcCodebookChunk_decode_aifc_codebook(p);
-    }
-    else if (strncmp(code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
-    {
-        struct AdpcmAifcLoopChunk *p = (struct AdpcmAifcLoopChunk *)malloc_zero(1, sizeof(struct AdpcmAifcLoopChunk));
-        ret = (struct AdpcmAifcApplicationChunk *)p;
-        p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
-        p->base.ck_data_size = ck_data_size;
-        p->version = ADPCM_AIFC_VADPCM_LOOP_VERSION;
-        p->base.application_signature = application_signature;
-        p->base.unknown = unknown;
-        
-        // no terminating zero
-        memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
-
-        file_info_fread(fi, &p->version, 2, 1);
-        BSWAP16(p->version);
-
-        file_info_fread(fi, &p->nloops, 2, 1);
-        BSWAP16(p->nloops);
-
-        size_t loop_data_size_bytes = p->nloops * sizeof(struct AdpcmAifcLoopData);
-        p->loop_data = (struct AdpcmAifcLoopData *)malloc_zero(1, loop_data_size_bytes);
-
-        for (i=0; i<p->nloops; i++)
-        {
-            file_info_fread(fi, &p->loop_data[i].start, 4, 1);
-            BSWAP32(p->loop_data[i].start);
-
-            file_info_fread(fi, &p->loop_data[i].end, 4, 1);
-            BSWAP32(p->loop_data[i].end);
-
-            file_info_fread(fi, &p->loop_data[i].count, 4, 1);
-            BSWAP32(p->loop_data[i].count);
-
-            file_info_fread(fi, p->loop_data[i].state, ADPCM_AIFC_LOOP_STATE_LEN, 1);
-        }
-    }
-    else
-    {
-        // no terminating zero, requires explicit length
-        stderr_exit(EXIT_CODE_GENERAL, "Unsupported APPL chunk: %.*s\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
-    }
-
-    TRACE_LEAVE(__func__)
-
-    return ret;
-}
-
-/**
- * Creates new {@code struct AdpcmAifcSoundChunk} from aifc file contents.
- * @param fi: aifc file. Reads from current seek position.
- * @param ck_data_size: chunk size in bytes.
- * @returns: pointer to new sound chunk.
-*/
-struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
-{
-    TRACE_ENTER(__func__)
-
-    struct AdpcmAifcSoundChunk *p = (struct AdpcmAifcSoundChunk *)malloc_zero(1, sizeof(struct AdpcmAifcSoundChunk));
-    p->ck_id = ADPCM_AIFC_SOUND_CHUNK_ID;
-    p->ck_data_size = ck_data_size;
-
-    if (ck_data_size - 8 <= 0)
-    {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid SSND chunk data size: %d\n", ck_data_size);
-    }
-
-    file_info_fread(fi, &p->offset, 4, 1);
-    BSWAP32(p->offset);
-
-    file_info_fread(fi, &p->block_size, 4, 1);
-    BSWAP32(p->block_size);
-
-    p->sound_data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
-    file_info_fread(fi, p->sound_data, (size_t)(ck_data_size - 8), 1);
 
     TRACE_LEAVE(__func__)
 
@@ -859,92 +671,6 @@ void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
                 }
             }
             break;
-        }
-    }
-
-    TRACE_LEAVE(__func__)
-}
-
-/**
- * Applies the standard .aifc decode algorithm from the sound chunk and writes
- * result to the frame buffer.
- * @param aaf: container file.
- * @param frame_buffer: standard frame buffer.
- * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
- * {@code eof} then will be set to next byte position.
- * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
- * in the sound chunk this is set to 1. Otherwise set to zero.
-*/
-void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
-{
-    TRACE_ENTER(__func__)
-
-    int32_t optimalp;
-    int32_t scale;
-    int32_t max_level;
-    
-    int32_t scaled_frame[FRAME_DECODE_BUFFER_LEN];
-    int32_t convl_frame[FRAME_DECODE_BUFFER_LEN];
-
-    memset(scaled_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
-    memset(convl_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
-    
-    int i,j;
-
-    uint8_t frame_header;
-    uint8_t c;
-
-    max_level = 7;
-    frame_header = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
-    scale = 1 << (frame_header >> 4);
-    optimalp = frame_header & 0xf;
-
-    for (i = 0; i < FRAME_DECODE_BUFFER_LEN; i += 2)
-    {
-        c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
-
-        scaled_frame[i] = c >> 4;
-        scaled_frame[i + 1] = c & 0xf;
-
-        for (j=0; j<2; j++)
-        {
-            if (scaled_frame[i + j] <= max_level)
-            {
-                scaled_frame[i + j] *= scale;
-            }
-            else
-            {
-                scaled_frame[i + j] = (-0x10 - -scaled_frame[i + j]) * scale;
-            }
-        }
-    }
-
-    for (j = 0; j < 2; j++)
-    {
-        for (i = 0; i < 8; i++)
-        {
-            convl_frame[i + aaf->codes_chunk->order] = scaled_frame[j * 8 + i];
-        }
-
-        if (j == 0)
-        {
-            for (i = 0; i < aaf->codes_chunk->order; i++)
-            {
-                convl_frame[i] = frame_buffer[16 - aaf->codes_chunk->order + i];
-            }
-        }
-        else
-        {
-            for (i = 0; i < aaf->codes_chunk->order; i++)
-            {
-                convl_frame[i] = frame_buffer[j * 8 - aaf->codes_chunk->order + i];
-            }
-        }
-
-        for (i = 0; i < 8; i++)
-        {
-            frame_buffer[i + j * 8] = dot_product_i32(aaf->codes_chunk->coef_table[optimalp][i], convl_frame, aaf->codes_chunk->order + 8);
-            frame_buffer[i + j * 8] = divide_round_down(frame_buffer[i + j * 8], 2048);
         }
     }
 
@@ -1733,7 +1459,7 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi)
 
     if (g_verbosity >= VERBOSE_DEBUG)
     {
-        printf("open file \"%s\" to write to .tbl\n", path);
+        printf("Open file \"%s\" to write to .tbl\n", path);
     }
 
     struct file_info *aifc_fi = file_info_fopen(path, "rb");
@@ -1777,9 +1503,307 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> write error, expected to write %ls but wrote %ld bytes\n", __func__, __LINE__, len, actual);
     }
 
+    /**
+     * Implementation note:
+     * The .tbl file pads each sound section to the nearest multiple of 8.
+     * This is over the length specified in the .ctl file.
+    */
+    int over = len % 8;
+    if (over > 0)
+    {
+        int remain = 8 - over;
+        uint8_t pad[8];
+        memset(pad, 0, 8);
+
+        len += file_info_fwrite(fi, pad, remain, 1);
+    }
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("Write %ld bytes\n", len);
+    }
+
     TRACE_LEAVE(__func__)
 
     return len;
+}
+
+/**
+ * Creates new {@code struct AdpcmAifcCommChunk} from aifc file contents.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new common chunk.
+*/
+static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    int remaining_bytes;
+
+    struct AdpcmAifcCommChunk *p = (struct AdpcmAifcCommChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCommChunk));
+    p->ck_id = ADPCM_AIFC_COMMON_CHUNK_ID;
+    p->ck_data_size = ck_data_size;
+    remaining_bytes = ck_data_size;
+
+    file_info_fread(fi, &p->num_channels, 2, 1);
+    BSWAP16(p->num_channels);
+    remaining_bytes -= 2;
+
+    file_info_fread(fi, &p->num_sample_frames, 4, 1);
+    BSWAP32(p->num_sample_frames);
+    remaining_bytes -= 4;
+
+    file_info_fread(fi, &p->sample_size, 2, 1);
+    BSWAP16(p->sample_size);
+    remaining_bytes -= 2;
+
+    file_info_fread(fi, &p->sample_rate, 10, 1);
+    reverse_inplace(p->sample_rate, 10);
+    remaining_bytes -= 10;
+
+    file_info_fread(fi, &p->compression_type, 4, 1);
+    BSWAP32(p->compression_type);
+    remaining_bytes -= 4;
+    
+    file_info_fread(fi, &p->unknown, 1, 1);
+    remaining_bytes -= 1;
+
+    if (remaining_bytes > 0)
+    {
+        if (remaining_bytes > ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN)
+        {
+            remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
+        }
+
+        file_info_fread(fi, &p->compression_name, remaining_bytes, 1);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Creates new application chunk from aifc file contents.
+ * Must be codebook or loop chunk, otherwise program exits with error.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new application chunk.
+*/
+static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    if (ck_data_size - (5 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN) <= 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid APPL chunk data size: %d\n", ck_data_size);
+    }
+
+    struct AdpcmAifcApplicationChunk *ret;
+    int i;
+
+    uint32_t application_signature;
+    uint8_t unknown;
+    char code_string[ADPCM_AIFC_VADPCM_APPL_NAME_LEN];
+
+    file_info_fread(fi, &application_signature, 4, 1);
+    BSWAP32(application_signature);
+
+    file_info_fread(fi, &unknown, 1, 1);
+
+    file_info_fread(fi, &code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
+
+    if (strncmp(code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
+    {
+        struct AdpcmAifcCodebookChunk *p = (struct AdpcmAifcCodebookChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCodebookChunk));
+        ret = (struct AdpcmAifcApplicationChunk *)p;
+        p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
+        p->base.ck_data_size = ck_data_size;
+        p->base.application_signature = application_signature;
+        p->base.unknown = unknown;
+        
+        // no terminating zero
+        memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
+
+        file_info_fread(fi, &p->version, 2, 1);
+        BSWAP16(p->version);
+
+        file_info_fread(fi, &p->order, 2, 1);
+        BSWAP16(p->order);
+
+        file_info_fread(fi, &p->nentries, 2, 1);
+        BSWAP16(p->nentries);
+
+        size_t table_data_size_bytes = p->order * p->nentries * 16;
+        p->table_data = (uint8_t *)malloc_zero(1, table_data_size_bytes);
+        file_info_fread(fi, p->table_data, table_data_size_bytes, 1);
+
+        AdpcmAifcCodebookChunk_decode_aifc_codebook(p);
+    }
+    else if (strncmp(code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
+    {
+        struct AdpcmAifcLoopChunk *p = (struct AdpcmAifcLoopChunk *)malloc_zero(1, sizeof(struct AdpcmAifcLoopChunk));
+        ret = (struct AdpcmAifcApplicationChunk *)p;
+        p->base.ck_id = ADPCM_AIFC_APPLICATION_CHUNK_ID;
+        p->base.ck_data_size = ck_data_size;
+        p->version = ADPCM_AIFC_VADPCM_LOOP_VERSION;
+        p->base.application_signature = application_signature;
+        p->base.unknown = unknown;
+        
+        // no terminating zero
+        memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
+
+        file_info_fread(fi, &p->version, 2, 1);
+        BSWAP16(p->version);
+
+        file_info_fread(fi, &p->nloops, 2, 1);
+        BSWAP16(p->nloops);
+
+        size_t loop_data_size_bytes = p->nloops * sizeof(struct AdpcmAifcLoopData);
+        p->loop_data = (struct AdpcmAifcLoopData *)malloc_zero(1, loop_data_size_bytes);
+
+        for (i=0; i<p->nloops; i++)
+        {
+            file_info_fread(fi, &p->loop_data[i].start, 4, 1);
+            BSWAP32(p->loop_data[i].start);
+
+            file_info_fread(fi, &p->loop_data[i].end, 4, 1);
+            BSWAP32(p->loop_data[i].end);
+
+            file_info_fread(fi, &p->loop_data[i].count, 4, 1);
+            BSWAP32(p->loop_data[i].count);
+
+            file_info_fread(fi, p->loop_data[i].state, ADPCM_AIFC_LOOP_STATE_LEN, 1);
+        }
+    }
+    else
+    {
+        // no terminating zero, requires explicit length
+        stderr_exit(EXIT_CODE_GENERAL, "Unsupported APPL chunk: %.*s\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Creates new {@code struct AdpcmAifcSoundChunk} from aifc file contents.
+ * @param fi: aifc file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new sound chunk.
+*/
+static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    struct AdpcmAifcSoundChunk *p = (struct AdpcmAifcSoundChunk *)malloc_zero(1, sizeof(struct AdpcmAifcSoundChunk));
+    p->ck_id = ADPCM_AIFC_SOUND_CHUNK_ID;
+    p->ck_data_size = ck_data_size;
+
+    if (ck_data_size - 8 <= 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid SSND chunk data size: %d\n", ck_data_size);
+    }
+
+    file_info_fread(fi, &p->offset, 4, 1);
+    BSWAP32(p->offset);
+
+    file_info_fread(fi, &p->block_size, 4, 1);
+    BSWAP32(p->block_size);
+
+    p->sound_data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
+    file_info_fread(fi, p->sound_data, (size_t)(ck_data_size - 8), 1);
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Applies the standard .aifc decode algorithm from the sound chunk and writes
+ * result to the frame buffer.
+ * @param aaf: container file.
+ * @param frame_buffer: standard frame buffer.
+ * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
+ * {@code eof} then will be set to next byte position.
+ * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
+ * in the sound chunk this is set to 1. Otherwise set to zero.
+*/
+static void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
+{
+    TRACE_ENTER(__func__)
+
+    int32_t optimalp;
+    int32_t scale;
+    int32_t max_level;
+    
+    int32_t scaled_frame[FRAME_DECODE_BUFFER_LEN];
+    int32_t convl_frame[FRAME_DECODE_BUFFER_LEN];
+
+    memset(scaled_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+    memset(convl_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+    
+    int i,j;
+
+    uint8_t frame_header;
+    uint8_t c;
+
+    max_level = 7;
+    frame_header = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+    scale = 1 << (frame_header >> 4);
+    optimalp = frame_header & 0xf;
+
+    for (i = 0; i < FRAME_DECODE_BUFFER_LEN; i += 2)
+    {
+        c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+
+        scaled_frame[i] = c >> 4;
+        scaled_frame[i + 1] = c & 0xf;
+
+        for (j=0; j<2; j++)
+        {
+            if (scaled_frame[i + j] <= max_level)
+            {
+                scaled_frame[i + j] *= scale;
+            }
+            else
+            {
+                scaled_frame[i + j] = (-0x10 - -scaled_frame[i + j]) * scale;
+            }
+        }
+    }
+
+    for (j = 0; j < 2; j++)
+    {
+        for (i = 0; i < 8; i++)
+        {
+            convl_frame[i + aaf->codes_chunk->order] = scaled_frame[j * 8 + i];
+        }
+
+        if (j == 0)
+        {
+            for (i = 0; i < aaf->codes_chunk->order; i++)
+            {
+                convl_frame[i] = frame_buffer[16 - aaf->codes_chunk->order + i];
+            }
+        }
+        else
+        {
+            for (i = 0; i < aaf->codes_chunk->order; i++)
+            {
+                convl_frame[i] = frame_buffer[j * 8 - aaf->codes_chunk->order + i];
+            }
+        }
+
+        for (i = 0; i < 8; i++)
+        {
+            frame_buffer[i + j * 8] = dot_product_i32(aaf->codes_chunk->coef_table[optimalp][i], convl_frame, aaf->codes_chunk->order + 8);
+            frame_buffer[i + j * 8] = divide_round_down(frame_buffer[i + j * 8], 2048);
+        }
+    }
+
+    TRACE_LEAVE(__func__)
 }
 
 /**

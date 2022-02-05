@@ -1,9 +1,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
 #include "machine_config.h"
 #include "utility.h"
+#include "gaudio_math.h"
 
 /**
  * This file contains mathematical methods.

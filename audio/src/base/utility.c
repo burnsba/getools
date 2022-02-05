@@ -85,6 +85,99 @@ void *malloc_zero(size_t count, size_t item_size)
 }
 
 /**
+ * Changes allocation for a previously allocated chunk.
+ * The lesser of {@code old_size} and {@code new_size} bytes
+ * are copied from the old allocation to the new.
+ * The previous pointer is automatically freed.
+ * @param old_size: number of bytes allocated to old size.
+ * @param ref: pointer to pointer to previously allocated memory.
+ * @param new_size: size in bytes to change allocation to.
+*/
+void malloc_resize(size_t old_size, void **ref, size_t new_size)
+{
+    TRACE_ENTER(__func__)
+
+    void *temp;
+
+    if (new_size == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> malloc_resize to zero\n", __func__, __LINE__);
+    }
+
+    if (ref == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ref is NULL\n", __func__, __LINE__);
+    }
+
+    if (*ref == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> *ref is NULL\n", __func__, __LINE__);
+    }
+
+    size_t lesser = old_size;
+    if (new_size < old_size)
+    {
+        lesser = new_size;
+    }
+
+    temp = malloc_zero(1, new_size);
+    memcpy(temp, *ref, lesser);
+    free(*ref);
+
+    *ref = temp;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes data into a buffer. If the data to write will exceed the length of the buffer,
+ * it is resized.
+ * @param data: data to write into buffer.
+ * @param data_len: number of bytes to write from data into buffer.
+ * @param buffer_start: pointer to pointer of allocated memory. If the buffer is resized
+ * this will point to the newly allocated memory.
+ * @param buffer_pos: byte index to begin writing to in buffer.
+ * @param max_buffer_len: length in bytes of the buffer.
+ * @returns: the length of the buffer (the original length or resized length).
+*/
+size_t dynamic_buffer_memcpy(uint8_t *data, size_t data_len, uint8_t **buffer_start, size_t buffer_pos, size_t max_buffer_len)
+{
+    TRACE_ENTER(__func__)
+
+    if (data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> data is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer_start == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer_start is NULL\n", __func__, __LINE__);
+    }
+
+    if (*buffer_start == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> *buffer_start is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer_pos + data_len <= max_buffer_len)
+    {
+        memcpy(&(*buffer_start)[buffer_pos], data, data_len);
+
+        TRACE_LEAVE(__func__)
+        return max_buffer_len;
+    }
+
+    size_t new_size = (size_t)((double)max_buffer_len * 1.5);
+    malloc_resize(max_buffer_len, (void**)buffer_start, new_size);
+
+    memcpy(&(*buffer_start)[buffer_pos], data, data_len);
+
+    TRACE_LEAVE(__func__)
+
+    return new_size;
+}
+
+/**
  * Creates directory and any sub directories.
  * Application exits if this fails.
  * @param path: path to final directory, including any sub directories.
@@ -663,7 +756,7 @@ void file_info_free(struct file_info *fi)
  * byte swap on each element.
  * @param dest: destination array.
  * @param src: source array.
- * @param num: number of elements to copy and swap.
+ * @param num: number of elements to copy and swap. (not number of bytes!)
 */
 void bswap16_memcpy(void *dest, const void *src, size_t num)
 {
@@ -700,7 +793,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
  * byte swap on each element.
  * @param dest: destination array.
  * @param src: source array.
- * @param num: number of elements to copy and swap.
+ * @param num: number of elements to copy and swap. (not number of bytes!)
 */
 void bswap32_memcpy(void *dest, const void *src, size_t num)
 {
@@ -860,10 +953,6 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
         llist_root_append_node(names, node);
         memset(name_buffer, 0, MAX_FILENAME_LEN);
     }
-
-    current_len = 0;
-    trailing_space = 0;
-    state = 1;
 
     TRACE_LEAVE(__func__)
 }

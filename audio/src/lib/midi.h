@@ -414,7 +414,7 @@ struct GmidTrack {
 #define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
 extern int g_midi_parse_debug;
 
-struct CseqFile *CseqFile_new();
+struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
 void CseqFile_free(struct CseqFile *cseq);
 void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
@@ -429,8 +429,8 @@ void MidiFile_free(struct MidiFile *midi);
 void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi);
 void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi);
 
-struct GmidEvent *GmidEvent_new();
-struct GmidTrack *GmidTrack_new();
+struct GmidEvent *GmidEvent_new(void);
+struct GmidTrack *GmidTrack_new(void);
 void GmidTrack_free(struct GmidTrack *track);
 void GmidEvent_free(struct GmidEvent *event);
 int32_t GmidEvent_get_midi_command(struct GmidEvent *event);

@@ -46,15 +46,15 @@ struct KeyValueInt {
     int value;
 };
 
-struct KeyValue *KeyValue_new();
+struct KeyValue *KeyValue_new(void);
 struct KeyValue *KeyValue_new_value(char *value);
 void KeyValue_free(struct KeyValue *kvp);
 
-struct KeyValuePointer *KeyValuePointer_new();
+struct KeyValuePointer *KeyValuePointer_new(void);
 struct KeyValuePointer *KeyValuePointer_new_value(void *value);
 void KeyValuePointer_free(struct KeyValuePointer *kvp);
 
-struct KeyValueInt *KeyValueInt_new();
+struct KeyValueInt *KeyValueInt_new(void);
 struct KeyValueInt *KeyValueInt_new_value(int value);
 void KeyValueInt_free(struct KeyValueInt *kvp);
 

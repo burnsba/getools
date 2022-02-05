@@ -14,6 +14,14 @@
 #include "naudio.h"
 #include "test_common.h"
 
+// forward declarations.
+
+void print16(char *arr);
+int ascii_to_int(char c);
+int md5_compare(char *expected, char *actual);
+
+// end forward declarations
+
 void print16(char *arr)
 {
     int i;

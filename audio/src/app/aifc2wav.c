@@ -84,8 +84,6 @@ static int detune = 0;
 #define AIFC2WAV_DEFAULT_KEYBASE_HELP_TEXT "60 (MIDI note C4)"
 #define AIFC2WAV_DEFAULT_DETUNE 0
 
-
-
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
@@ -108,6 +106,13 @@ static struct option long_options[] =
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
     {NULL, 0, NULL, 0}
 };
+
+// forward declarations
+
+void print_help(const char * invoke);
+void read_opts(int argc, char **argv);
+
+// end forward declarations
 
 void print_help(const char * invoke)
 {

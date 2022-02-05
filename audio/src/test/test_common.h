@@ -13,7 +13,7 @@ extern int g_test_hashtable_kvpint_compare;
 int hashtable_kvpint_callback(void* data);
 void hashtable_kvpint_callback_free(void* data);
 
-struct TestKeyValue *TestKeyValue_new();
+struct TestKeyValue *TestKeyValue_new(void);
 void TestKeyValue_free(struct TestKeyValue *tkvp);
 int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second);
 

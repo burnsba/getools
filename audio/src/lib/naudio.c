@@ -71,8 +71,9 @@ void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable);
 void ALSound_notify_parents_null(struct ALSound *sound);
 void ALInstrument_notify_parents_null(struct ALInstrument *instrument);
 
-static struct CtlParseContext *CtlParseContext_new();
+static struct CtlParseContext *CtlParseContext_new(void);
 static void CtlParseContext_free(struct CtlParseContext *context);
+static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable);
 
 // end forward declarations
 
@@ -529,27 +530,6 @@ void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *par
 }
 
 /**
- * Default wavetable_init method if not set externally.
- * Sets text id to 4 digit id without any filename.
- * Allocates memory for {@code wavetable->aifc_path}.
- * @param wavetable: wavetable to init.
-*/
-void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
-{
-    TRACE_ENTER(__func__)
-
-    size_t len;
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
-
-    // g_write_buffer has terminating '\0', but that's not counted in len
-    len++;
-    wavetable->aifc_path = (char *)malloc_zero(len, 1);
-    strncpy(wavetable->aifc_path, g_write_buffer, len);
-
-    TRACE_LEAVE(__func__)
-}
-
-/**
  * Base constructor. Only partially initializes wavetable. This should
  * only be called from other constructors.
  * @returns: pointer to new wavetable.
@@ -688,7 +668,7 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
     sound->envelope_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    sound->key_map_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
+    sound->keymap_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
     sound->wavetable_offfset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
@@ -726,22 +706,22 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
         ALEnvelope_add_parent(envelope, sound);
     }
 
-    if (sound->key_map_offset > 0)
+    if (sound->keymap_offset > 0)
     {
-        struct ALKeyMap *key_map;
+        struct ALKeyMap *keymap;
 
-        if (IntHashTable_contains(context->seen_keymap, sound->key_map_offset))
+        if (IntHashTable_contains(context->seen_keymap, sound->keymap_offset))
         {
-            key_map = IntHashTable_get(context->seen_keymap, sound->key_map_offset);
+            keymap = IntHashTable_get(context->seen_keymap, sound->keymap_offset);
         }
         else
         {
-            key_map = ALKeyMap_new_from_ctl(ctl_file_contents, sound->key_map_offset);
-            IntHashTable_add(context->seen_keymap, sound->key_map_offset, key_map);
+            keymap = ALKeyMap_new_from_ctl(ctl_file_contents, sound->keymap_offset);
+            IntHashTable_add(context->seen_keymap, sound->keymap_offset, keymap);
         }
 
-        sound->keymap = key_map;
-        ALKeyMap_add_parent(key_map, sound);
+        sound->keymap = keymap;
+        ALKeyMap_add_parent(keymap, sound);
     }
 
     if (sound->wavetable_offfset > 0)
@@ -866,7 +846,7 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
             if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# key_map_offset = 0x%06x;\n", sound->key_map_offset);
+                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# keymap_offset = 0x%06x;\n", sound->keymap_offset);
                 file_info_fwrite(fi, g_write_buffer, len, 1);
             }
         }
@@ -2294,6 +2274,140 @@ void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file)
 }
 
 /**
+ * Attempts to guess the .ctl file size that would result from
+ * writing this bank file to disk. This is an over estimate.
+ * @param bank_file: bank file to estimate size for.
+ * @returns: size in bytes the bank file should fit into.
+*/
+size_t ALBankFile_estimate_ctl_filesize(struct ALBankFile *bank_file)
+{
+    TRACE_ENTER(__func__)
+
+    size_t len = 0;
+    int bank_count;
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    len += 4; /* magic bytes, count */
+    len += 4 * bank_file->bank_count; /* offsets */
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            len += 12; /* instrument data */
+            len += 4 * bank->inst_count; /* offsets */
+
+            // I think there's a final zero word?
+            len += 4;
+
+            // I think this is 16-byte aligned? pad the estimate here just in case.
+            len += 12;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL)
+                {
+                    int sound_count;
+
+                    if (instrument->visited == 1)
+                    {
+                        continue;
+                    }
+
+                    instrument->visited = 1;
+
+                    len += 16; /* instrument data */
+                    len += 4 * instrument->sound_count; /* offsets */
+
+                    // I think there's a final zero word?
+                    len += 4;
+
+                    // I think this is 16-byte aligned? pad the estimate here just in case.
+                    len += 12;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL)
+                        {
+                            struct ALEnvelope *envelope = sound->envelope;
+                            struct ALKeyMap *keymap = sound->keymap;
+                            struct ALWaveTable *wavetable = sound->wavetable;
+
+                            if (sound->visited == 1)
+                            {
+                                continue;
+                            }
+
+                            sound->visited = 1;
+
+                            len += 16; /* sound data */
+
+                            if (envelope != NULL && envelope->visited == 0)
+                            {
+                                envelope->visited = 1;
+
+                                len += 16; /* envelope data (and padding) */
+                            }
+
+                            if (keymap != NULL && keymap->visited == 0)
+                            {
+                                keymap->visited = 1;
+
+                                len += 8; /* keymap data */
+                            }
+
+                            if (wavetable != NULL && wavetable->visited == 0)
+                            {
+                                wavetable->visited = 1;
+
+                                len += 24; /* wavetable data (and padding) */
+
+                                // always assume there is a ALADPCMWaveInfo loop (over estimate)
+                                // loop:
+                                len += 12 + 32; /* start, end, count + state */ 
+
+                                if (wavetable->type == AL_ADPCM_WAVE)
+                                {
+                                    struct ALADPCMWaveInfo *info = &wavetable->wave_info.adpcm_wave;
+
+                                    if (info->book != NULL)
+                                    {
+                                        len += 8 + (info->book->order * info->book->npredictors * 16); /* order, predictors + state */
+
+                                        // I don't think this is 16-byte align, I think
+                                        // it just adds 8 bytes?
+                                        len += 8;
+                                    }
+                                }
+                                // else, AL_RAW16_WAVE, but this is less space than AL_ADPCM_WAVE
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return len;
+}
+
+/**
  * Allocates memory for a new context.
  * @returns: pointer to new context.
 */
@@ -2329,6 +2443,29 @@ static void CtlParseContext_free(struct CtlParseContext *context)
     IntHashTable_free(context->seen_keymap);
 
     free(context);
+
+    TRACE_LEAVE(__func__)
+}
+
+
+
+/**
+ * Default wavetable_init method if not set externally.
+ * Sets text id to 4 digit id without any filename.
+ * Allocates memory for {@code wavetable->aifc_path}.
+ * @param wavetable: wavetable to init.
+*/
+static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
+{
+    TRACE_ENTER(__func__)
+
+    size_t len;
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+
+    // g_write_buffer has terminating '\0', but that's not counted in len
+    len++;
+    wavetable->aifc_path = (char *)malloc_zero(len, 1);
+    strncpy(wavetable->aifc_path, g_write_buffer, len);
 
     TRACE_LEAVE(__func__)
 }

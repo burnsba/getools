@@ -32,7 +32,7 @@ typedef void (*IntHash_callback)(void *data);
 */
 typedef int (*IntHash_bool_callback)(void *data);
 
-struct IntHashTable *IntHashTable_new();
+struct IntHashTable *IntHashTable_new(void);
 void IntHashTable_free(struct IntHashTable *root);
 
 void IntHashTable_add(struct IntHashTable *root, uint32_t key, void *data);

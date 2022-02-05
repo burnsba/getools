@@ -74,9 +74,9 @@ struct string_data
 typedef int (*f_llist_node_compare)(struct llist_node *, struct llist_node *);
 
 void llist_root_append_node(struct llist_root *root, struct llist_node *node);
-struct llist_node *llist_node_new();
-struct llist_node *llist_node_string_data_new();
-struct llist_root *llist_root_new();
+struct llist_node *llist_node_new(void);
+struct llist_node *llist_node_string_data_new(void);
+struct llist_root *llist_root_new(void);
 void set_string_data(struct string_data *sd, char *text, size_t len);
 void string_data_free(struct string_data *sd);
 void llist_node_string_data_print(struct llist_root *root);

@@ -30,7 +30,7 @@ typedef void (*StringHash_callback)(void *data);
 */
 typedef int (*StringHash_bool_callback)(void *data);
 
-struct StringHashTable *StringHashTable_new();
+struct StringHashTable *StringHashTable_new(void);
 void StringHashTable_free(struct StringHashTable *root);
 
 void StringHashTable_add(struct StringHashTable *root, char *key, void *data);

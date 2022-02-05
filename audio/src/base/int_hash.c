@@ -74,11 +74,11 @@ struct IntHashTable_internal {
 // forward declarations
 
 static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, int pop);
-static struct IntHashTable_internal *IntHashTable_internal_new();
+static struct IntHashTable_internal *IntHashTable_internal_new(void);
 static void IntHashTable_internal_free(struct IntHashTable_internal *root);
-static struct IntHashBucket *IntHashBucket_new();
+static struct IntHashBucket *IntHashBucket_new(void);
 static void IntHashBucket_free(struct IntHashBucket *bucket);
-static struct IntHashBucketEntry *IntHashBucketEntry_new();
+static struct IntHashBucketEntry *IntHashBucketEntry_new(uint32_t key);
 static void IntHashBucketEntry_free(struct IntHashBucketEntry *entry);
 
 static uint32_t IntHashTable_hash_key(uint32_t key);

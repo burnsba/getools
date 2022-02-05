@@ -49,10 +49,23 @@
 #define EXIT_CODE_IO                       3
 #define EXIT_CODE_NULL_REFERENCE_EXCEPTION 4
 
-/**
- * typedef for 80 bit "extended" float.
-*/
-typedef __float80 f80;
+#if defined(__llvm__)
+
+    /**
+     * typedef for 80 bit "extended" float.
+    */
+    typedef long double f80;
+    #define ATTR_NO_RETURN __attribute__((analyzer_noreturn))
+
+#else
+
+    /**
+     * typedef for 80 bit "extended" float.
+    */
+    typedef __float80 f80;
+    #define ATTR_NO_RETURN
+
+#endif
 
 // gcc
 #define ATTR_INLINE __attribute__((always_inline))

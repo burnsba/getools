@@ -74,11 +74,11 @@ struct StringHashTable_internal {
 // forward declarations
 
 static void *StringHashTable_pop_common(struct StringHashTable *root, char *key, int pop);
-static struct StringHashTable_internal *StringHashTable_internal_new();
+static struct StringHashTable_internal *StringHashTable_internal_new(void);
 static void StringHashTable_internal_free(struct StringHashTable_internal *root);
-static struct StringHashBucket *StringHashBucket_new();
+static struct StringHashBucket *StringHashBucket_new(void);
 static void StringHashBucket_free(struct StringHashBucket *bucket);
-static struct StringHashBucketEntry *StringHashBucketEntry_new();
+static struct StringHashBucketEntry *StringHashBucketEntry_new(char *key);
 static void StringHashBucketEntry_free(struct StringHashBucketEntry *entry);
 
 static uint32_t StringHashTable_hash_key(char *key);

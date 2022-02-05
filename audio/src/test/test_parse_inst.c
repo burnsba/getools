@@ -14,6 +14,12 @@
 #include "naudio.h"
 #include "test_common.h"
 
+// forward declarations
+
+int parse_inst_default(struct file_info *fi);
+
+// end forward declarations
+
 /**
  * Parses file as first described in `0002.inst`
 */
@@ -112,6 +118,7 @@ int parse_inst_default(struct file_info *fi)
         {
             pass = 0;
             printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
+            exit(1);
         }
 
         if (strcmp(sound->text_id, "sound1") == 0)
@@ -560,6 +567,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         {
             pass = 0;
             printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
+            exit(1);
         }
 
         wavetable = sound->wavetable;

@@ -416,7 +416,7 @@ struct ALSound {
      * This is never promoted to a pointer by this library.
      * big endian.
     */
-    int32_t key_map_offset;
+    int32_t keymap_offset;
 
     /**
      * File offset of wavetable as read from file.
@@ -716,19 +716,20 @@ struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, 
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);
 struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename);
 
+size_t ALBankFile_estimate_ctl_filesize(struct ALBankFile *bank_file);
 void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file);
 
 /**
  * The following prototypes should be treated as internal to naudio.
 */
 
-struct ALEnvelope *ALEnvelope_new();
-struct ALKeyMap *ALKeyMap_new();
-struct ALWaveTable *ALWaveTable_new();
-struct ALSound *ALSound_new();
-struct ALInstrument *ALInstrument_new();
-struct ALBank *ALBank_new();
-struct ALBankFile *ALBankFile_new();
+struct ALEnvelope *ALEnvelope_new(void);
+struct ALKeyMap *ALKeyMap_new(void);
+struct ALWaveTable *ALWaveTable_new(void);
+struct ALSound *ALSound_new(void);
+struct ALInstrument *ALInstrument_new(void);
+struct ALBank *ALBank_new(void);
+struct ALBankFile *ALBankFile_new(void);
 
 void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent);
 void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent);
