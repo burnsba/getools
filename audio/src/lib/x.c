@@ -1511,6 +1511,9 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
 
     *pos_ptr = pos;
 
+    // cleanup
+    llist_node_root_free(list_sounds);
+
     TRACE_LEAVE(__func__)
 }
 
@@ -1601,6 +1604,9 @@ static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file,
     }
 
     *pos_ptr = pos;
+
+    // cleanup
+    llist_node_root_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }
@@ -1756,6 +1762,9 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
     }
 
     *pos_ptr = pos;
+
+    // cleanup
+    llist_node_root_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }
