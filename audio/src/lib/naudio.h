@@ -63,6 +63,22 @@ enum AL_WAVETABLE_TYPE {
 };
 
 /**
+ * This only applies to envelope and keymap objects.
+*/
+enum CTL_SORT_METHOD {
+    /**
+     * Write according to parent ALSound order.
+     * Default value.
+    */
+    CTL_SORT_METHOD_NATURAL,
+
+    /**
+     * Ignore ALSound, use ctl_write_order to determine write order.
+    */
+    CTL_SORT_METHOD_META
+};
+
+/**
  * same as libultra struct.
 */
 struct ALADPCMBook {
@@ -267,6 +283,12 @@ struct ALWaveTable {
      * object is referenced multiple times.
     */
     int visited;
+
+    /**
+     * This may have more than one parent, so just track relevant file offsets
+     * on self.
+    */
+    int self_offset;
 };
 
 /**
@@ -335,6 +357,17 @@ struct ALKeyMap {
      * object is referenced multiple times.
     */
     int visited;
+
+    /**
+     * Meta property, used to write .ctl from .inst in correct order.
+    */
+    int ctl_write_order;
+
+    /**
+     * This may have more than one parent, so just track relevant file offsets
+     * on self.
+    */
+    int self_offset;
 };
 
 /**
@@ -396,6 +429,17 @@ struct ALEnvelope {
      * object is referenced multiple times.
     */
     int visited;
+
+    /**
+     * Meta property, used to write .ctl from .inst in correct order.
+    */
+    int ctl_write_order;
+
+    /**
+     * This may have more than one parent, so just track relevant file offsets
+     * on self.
+    */
+    int self_offset;
 };
 
 /**
@@ -423,7 +467,7 @@ struct ALSound {
      * This is never promoted to a pointer by this library.
      * big endian.
     */
-    int32_t wavetable_offfset;
+    int32_t wavetable_offset;
 
     /**
      * Pan. 0=left, 64=center, 127=right.
@@ -482,6 +526,17 @@ struct ALSound {
      * object is referenced multiple times.
     */
     int visited;
+
+    /**
+     * Meta property, used to write .ctl from .inst in correct order.
+    */
+    int ctl_write_order;
+
+    /**
+     * This may have more than one parent, so just track relevant file offsets
+     * on self.
+    */
+    int self_offset;
 };
 
 /**
@@ -571,6 +626,12 @@ struct ALInstrument {
      * object is referenced multiple times.
     */
     int visited;
+
+    /**
+     * This may have more than one parent, so just track relevant file offsets
+     * on self.
+    */
+    int self_offset;
 };
 
 /**
@@ -680,6 +741,11 @@ struct ALBankFile {
      * Array of pointers to each bank.
     */
     struct ALBank **banks;
+
+    /**
+     * See {@code enum CTL_SORT_METHOD}.
+    */
+    int ctl_sort_method;
 };
 
 /**

@@ -730,7 +730,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     {
         if (ssnd_data_size & 0x1)
         {
-            printf("warning, ssnd_data_size is odd, truncating last byte (required for bswap)\n");
+            fflush_printf(stderr, "warning, ssnd_data_size is odd, truncating last byte (required for bswap)\n");
             ssnd_data_size--;
         }
 
@@ -1451,9 +1451,12 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
  * file at the current file offset.
  * @param path: .aifc file to open and extract data from.
  * @param fi: file to write to.
+ * @param sound_data_len: out parameter. Optional. If provided, will contain the number of bytes
+ * of sound data written. This may be less than the number of bytes written
+ * due to padding.
  * @returns: number of bytes written.
 */
-size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi)
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len)
 {
     TRACE_ENTER(__func__)
 
@@ -1464,7 +1467,7 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi)
 
     struct file_info *aifc_fi = file_info_fopen(path, "rb");
     struct AdpcmAifcFile *aifc_file = AdpcmAifcFile_new_from_file(aifc_fi);
-    size_t result = AdpcmAifcFile_write_tbl(aifc_file, fi);
+    size_t result = AdpcmAifcFile_write_tbl(aifc_file, fi, sound_data_len);
     AdpcmAifcFile_free(aifc_file);
     file_info_free(aifc_fi);
 
@@ -1478,9 +1481,12 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi)
  * file at the current file offset.
  * @param aifc_file: file containing sound data to write.
  * @param fi: file to write to.
+ * @param sound_data_len: out parameter. Optional. If provided, will contain the number of bytes
+ * of sound data written. This may be less than the number of bytes written
+ * due to padding.
  * @returns: number of bytes written.
 */
-size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi)
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi, size_t *sound_data_len)
 {
     TRACE_ENTER(__func__)
 
@@ -1501,6 +1507,11 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
     if (len != actual)
     {
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> write error, expected to write %ls but wrote %ld bytes\n", __func__, __LINE__, len, actual);
+    }
+
+    if (sound_data_len != NULL)
+    {
+        *sound_data_len = len;
     }
 
     /**
@@ -1673,6 +1684,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
             file_info_fread(fi, &p->loop_data[i].count, 4, 1);
             BSWAP32(p->loop_data[i].count);
 
+            // AL_RAW16_WAVE has empty state
             file_info_fread(fi, p->loop_data[i].state, ADPCM_AIFC_LOOP_STATE_LEN, 1);
         }
     }

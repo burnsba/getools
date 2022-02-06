@@ -74,6 +74,7 @@ void ALInstrument_notify_parents_null(struct ALInstrument *instrument);
 static struct CtlParseContext *CtlParseContext_new(void);
 static void CtlParseContext_free(struct CtlParseContext *context);
 static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable);
+static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file);
 
 // end forward declarations
 
@@ -212,6 +213,9 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
 
     snprintf(envelope->text_id, INST_OBJ_ID_STRING_LEN, "Envelope%04d", envelope->id);
 
+    envelope->ctl_write_order = envelope->id;
+    envelope->self_offset = load_from_offset;
+
     envelope->attack_time = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
@@ -257,6 +261,10 @@ void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", envelope->ctl_write_order);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -329,6 +337,9 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
     struct ALKeyMap *keymap = ALKeyMap_new();
     snprintf(keymap->text_id, INST_OBJ_ID_STRING_LEN, "Keymap%04d", keymap->id);
 
+    keymap->ctl_write_order = keymap->id;
+    keymap->self_offset = load_from_offset;
+
     keymap->velocity_min = ctl_file_contents[input_pos];
     input_pos += 1;
 
@@ -377,6 +388,10 @@ void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", keymap->ctl_write_order);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
     if (g_output_mode == OUTPUT_MODE_SFX)
@@ -566,6 +581,8 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 
     struct ALWaveTable *wavetable = ALWaveTable_new();
 
+    wavetable->self_offset = load_from_offset;
+
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
 
     if (wavetable_init_callback_ptr == NULL)
@@ -665,13 +682,16 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
     struct ALSound *sound = ALSound_new();
     snprintf(sound->text_id, INST_OBJ_ID_STRING_LEN, "Sound%04d", sound->id);
 
+    sound->ctl_write_order = sound->id;
+    sound->self_offset = load_from_offset;
+
     sound->envelope_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
     sound->keymap_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
-    sound->wavetable_offfset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
+    sound->wavetable_offset = BSWAP32_INLINE(*(uint32_t*)(&ctl_file_contents[input_pos]));
     input_pos += 4;
 
     sound->sample_pan = ctl_file_contents[input_pos];
@@ -724,18 +744,18 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
         ALKeyMap_add_parent(keymap, sound);
     }
 
-    if (sound->wavetable_offfset > 0)
+    if (sound->wavetable_offset > 0)
     {
         struct ALWaveTable *wavetable;
 
-        if (IntHashTable_contains(context->seen_wavetable, sound->wavetable_offfset))
+        if (IntHashTable_contains(context->seen_wavetable, sound->wavetable_offset))
         {
-            wavetable = IntHashTable_get(context->seen_wavetable, sound->wavetable_offfset);
+            wavetable = IntHashTable_get(context->seen_wavetable, sound->wavetable_offset);
         }
         else
         {
-            wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offfset);
-            IntHashTable_add(context->seen_wavetable, sound->wavetable_offfset, wavetable);
+            wavetable = ALWaveTable_new_from_ctl(ctl_file_contents, sound->wavetable_offset);
+            IntHashTable_add(context->seen_wavetable, sound->wavetable_offset, wavetable);
         }
 
         sound->wavetable = wavetable;
@@ -781,6 +801,10 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", sound->ctl_write_order);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+
     if (g_output_mode == OUTPUT_MODE_SFX)
     {
         // allow writing reference more than once
@@ -793,7 +817,7 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
             if (g_verbosity >= VERBOSE_DEBUG)
             {
                 memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offfset = 0x%06x;\n", sound->wavetable_offfset);
+                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offset = 0x%06x;\n", sound->wavetable_offset);
                 file_info_fwrite(fi, g_write_buffer, len, 1);
             }
         }
@@ -899,6 +923,8 @@ struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, 
     struct ALInstrument *instrument = ALInstrument_new();
 
     snprintf(instrument->text_id, INST_OBJ_ID_STRING_LEN, "Instrument%04d", instrument->id);
+
+    instrument->self_offset = load_from_offset;
 
     instrument->volume = ctl_file_contents[input_pos];
     input_pos += 1;
@@ -1268,6 +1294,10 @@ void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sampleRate = %d;\n", bank->sample_rate);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+
     if (g_output_mode == OUTPUT_MODE_SFX)
     {
         // Skip writing declaration above, but always write references.
@@ -1374,6 +1404,13 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
 
     free(ctl_file_contents);
     CtlParseContext_free(context);
+
+    // At this point everything from the .ctl is read and loaded into the bank_file.
+    // However, the associated write_order are based on the order read from the top down.
+    // In order to correctly write back to .ctl later (if this is read to .inst file
+    // and loaded again), then the write_order from the original .ctl needs to be preserved
+    // to carry into the .inst file.
+    ALBankFile_set_write_order_by_offset(bank_file);
 
     TRACE_LEAVE(__func__)
 
@@ -2466,6 +2503,341 @@ static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable
     len++;
     wavetable->aifc_path = (char *)malloc_zero(len, 1);
     strncpy(wavetable->aifc_path, g_write_buffer, len);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->keymap->self_offset.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_keymap_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if ((sound_first == NULL || sound_first->keymap == NULL) && (sound_second == NULL || sound_second->keymap == NULL))
+        {
+            ret = 0;
+        }
+        else if ((sound_first == NULL || sound_first->keymap == NULL) && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && (sound_second == NULL || sound_second->keymap == NULL))
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->keymap->self_offset < sound_second->keymap->self_offset)
+            {
+                ret = -1;
+            }
+            else if (sound_first->keymap->self_offset > sound_second->keymap->self_offset)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->envelope->self_offset.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_envelope_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if ((sound_first == NULL || sound_first->envelope == NULL) && (sound_second == NULL || sound_second->envelope == NULL))
+        {
+            ret = 0;
+        }
+        else if ((sound_first == NULL || sound_first->envelope == NULL) && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && (sound_second == NULL || sound_second->envelope == NULL))
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->envelope->self_offset < sound_second->envelope->self_offset)
+            {
+                ret = -1;
+            }
+            else if (sound_first->envelope->self_offset > sound_second->envelope->self_offset)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->self_offset.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if (sound_first == NULL && sound_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (sound_first == NULL && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && sound_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->self_offset < sound_second->self_offset)
+            {
+                ret = -1;
+            }
+            else if (sound_first->self_offset > sound_second->self_offset)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Iterate the bank file and update envelope and keymap write_order
+ * based on their offsets.
+ * @param bank_file: bank_file to order.
+*/
+static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
+{
+    TRACE_ENTER(__func__)
+
+    /**
+     * Iterate bank_file and collect all sounds into a list.
+     * 
+     * sort the sounds list by wavetable offset.
+     * iterate sounds list and set wavetable write_order from sort order.
+     * 
+     * sort the sounds list by envelope offset.
+     * iterate sounds list and set envelope write_order from sort order.
+    */
+
+    struct llist_root *list_sounds = llist_root_new();
+    struct llist_node *node;
+    int bank_count;
+    int write_order;
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL)
+                {
+                    int sound_count;
+
+                    if (instrument->visited == 1)
+                    {
+                        continue;
+                    }
+
+                    instrument->visited = 1;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL)
+                        {
+                            if (sound->visited == 1)
+                            {
+                                continue;
+                            }
+
+                            sound->visited = 1;
+
+                            node = llist_node_new();
+                            node->data = sound;
+                            llist_root_append_node(list_sounds, node);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_offset_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    // start at non-zero.
+    write_order = 1;
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->visited == 0)
+        {
+            sound->ctl_write_order = write_order;
+            write_order++;
+            sound->visited = 1;
+        }
+
+        node = node->next;
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_envelope_offset_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    // start at non-zero.
+    write_order = 1;
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->envelope != NULL && sound->envelope->visited == 0)
+        {
+            sound->envelope->ctl_write_order = write_order;
+            write_order++;
+            sound->envelope->visited = 1;
+        }
+
+        node = node->next;
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_keymap_offset_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    // start at non-zero.
+    write_order = 1;
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->keymap != NULL && sound->keymap->visited == 0)
+        {
+            sound->keymap->ctl_write_order = write_order;
+            write_order++;
+            sound->keymap->visited = 1;
+        }
+
+        node = node->next;
+    }
+
+    llist_node_root_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }

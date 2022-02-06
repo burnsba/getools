@@ -378,7 +378,7 @@ struct AdpcmAifcCommChunk {
     /**
      * Compression type used by the audio.
      * Audio compressed with the Nintendo tools should be ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID.
-     * big endian. 
+     * big endian. Uncompressed audio should be ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID.
     */
     uint32_t compression_type;
 
@@ -488,7 +488,7 @@ void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk);
 void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file);
 size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
 
-size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi);
-size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi);
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len);
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi, size_t *sound_data_len);
 
 #endif

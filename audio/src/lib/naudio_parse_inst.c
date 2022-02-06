@@ -41,8 +41,7 @@
  * array index listed in .inst file. Array indeces are required. The devkit example seems
  * to make these optional.
  * 
- * An evelope maps one-to-one to sound. The devkit example has multiple sounds using the
- * same envelope, this is not supported.
+ * Multiple instances can reference the same child object.
 */
 
 /**
@@ -226,6 +225,12 @@ struct InstParseContext {
     struct StringHashTable *orphaned_sounds;
 
     /**
+     * Hash table of ALWaveTable.
+     * This isn't used until parsing is finished.
+    */
+    struct StringHashTable *orphaned_wavetables;
+
+    /**
      * Hash table of ALKeyMap.
     */
     struct StringHashTable *orphaned_keymaps;
@@ -234,6 +239,11 @@ struct InstParseContext {
      * Hash table of ALEnvelope.
     */
     struct StringHashTable *orphaned_envelopes;
+
+    /**
+     * Hash table of ALSound that need to have wavetable (aifc_path) reference resolved.
+    */
+    struct IntHashTable *sound_missing_wavetable;
 
     /**
      * Hash table of ALSound that need to have envelope reference resolved.
@@ -336,7 +346,13 @@ enum InstBankPropertyId {
      * .inst name: instrument
      * class: struct ALBank->instruments
     */
-    INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY = 1
+    INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY = 1,
+
+    /**
+     * .inst name: sample_rate
+     * class: struct ALBank->sample_rate
+    */
+    INST_BANK_PROPERTY_SAMPLE_RATE
 };
 
 /**
@@ -471,7 +487,13 @@ enum InstSoundPropertyId {
      * .inst name: keymap
      * class: struct ALSound->keymap
     */
-    INST_SOUND_PROPERTY_KEYMAP
+    INST_SOUND_PROPERTY_KEYMAP,
+
+    /**
+     * .inst name: metaCtlWriteOrder
+     * class: struct ALSOUND->ctl_write_order
+    */
+    INST_SOUND_PROPERTY_META_CTL_WRITE_ORDER
 };
 
 /**
@@ -517,7 +539,13 @@ enum InstKeyMapPropertyId {
      * .inst name: detune
      * class: struct ALKeyMap->detune
     */
-    INST_KEYMAP_PROPERTY_DETUNE
+    INST_KEYMAP_PROPERTY_DETUNE,
+
+    /**
+     * .inst name: metaCtlWriteOrder
+     * class: struct ALKeyMap->ctl_write_order
+    */
+    INST_KEYMAP_PROPERTY_META_CTL_WRITE_ORDER
 };
 
 /**
@@ -557,7 +585,13 @@ enum InstEnvelopePropertyId {
      * .inst name: releaseTime
      * class: struct ALEnvelope->release_time
     */
-    INST_ENVELOPE_PROPERTY_RELEASE_TIME
+    INST_ENVELOPE_PROPERTY_RELEASE_TIME,
+
+    /**
+     * .inst name: metaCtlWriteOrder
+     * class: struct ALEnvelope->ctl_write_order
+    */
+    INST_ENVELOPE_PROPERTY_META_CTL_WRITE_ORDER
 };
 
 /**
@@ -576,7 +610,8 @@ static const int InstTypes_len = ARRAY_LENGTH(InstTypes);
  * Describes properties of .inst `bank` type.
 */
 static struct TypeInfo InstBankProperties[] = {
-    { INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY, "instrument", TYPE_ID_ARRAY_TEXT_REF_ID }
+    { INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY, "instrument", TYPE_ID_ARRAY_TEXT_REF_ID },
+    { INST_BANK_PROPERTY_SAMPLE_RATE, "sampleRate", TYPE_ID_INT }
 };
 static const int InstBankProperties_len = ARRAY_LENGTH(InstBankProperties);
 
@@ -609,7 +644,8 @@ static struct TypeInfo InstSoundProperties[] = {
     { INST_SOUND_PROPERTY_PAN, "pan", TYPE_ID_INT },
     { INST_SOUND_PROPERTY_VOLUME, "volume", TYPE_ID_INT },
     { INST_SOUND_PROPERTY_ENVELOPE, "envelope", TYPE_ID_TEXT_REF_ID },
-    { INST_SOUND_PROPERTY_KEYMAP, "keymap", TYPE_ID_TEXT_REF_ID }
+    { INST_SOUND_PROPERTY_KEYMAP, "keymap", TYPE_ID_TEXT_REF_ID },
+    { INST_SOUND_PROPERTY_META_CTL_WRITE_ORDER, "metaCtlWriteOrder", TYPE_ID_INT }
 };
 static const int InstSoundProperties_len = ARRAY_LENGTH(InstSoundProperties);
 
@@ -622,7 +658,8 @@ static struct TypeInfo InstKeyMapProperties[] = {
     { INST_KEYMAP_PROPERTY_KEY_MIN, "keyMin", TYPE_ID_INT },
     { INST_KEYMAP_PROPERTY_KEY_MAX, "keyMax", TYPE_ID_INT },
     { INST_KEYMAP_PROPERTY_KEY_BASE, "keyBase", TYPE_ID_INT },
-    { INST_KEYMAP_PROPERTY_DETUNE, "detune", TYPE_ID_INT }
+    { INST_KEYMAP_PROPERTY_DETUNE, "detune", TYPE_ID_INT },
+    { INST_KEYMAP_PROPERTY_META_CTL_WRITE_ORDER, "metaCtlWriteOrder", TYPE_ID_INT }
 };
 static const int InstKeyMapProperties_len = ARRAY_LENGTH(InstKeyMapProperties);
 
@@ -634,7 +671,8 @@ static struct TypeInfo InstEnvelopeProperties[] = {
     { INST_ENVELOPE_PROPERTY_ATTACK_VOLUME, "attackVolume", TYPE_ID_INT },
     { INST_ENVELOPE_PROPERTY_DECAY_TIME, "decayTime", TYPE_ID_INT },
     { INST_ENVELOPE_PROPERTY_DECAY_VOLUME, "decayVolume", TYPE_ID_INT },
-    { INST_ENVELOPE_PROPERTY_RELEASE_TIME, "releaseTime", TYPE_ID_INT }
+    { INST_ENVELOPE_PROPERTY_RELEASE_TIME, "releaseTime", TYPE_ID_INT },
+    { INST_ENVELOPE_PROPERTY_META_CTL_WRITE_ORDER, "metaCtlWriteOrder", TYPE_ID_INT }
 };
 static const int InstEnvelopeProperties_len = ARRAY_LENGTH(InstEnvelopeProperties);
 
@@ -1067,9 +1105,11 @@ static struct InstParseContext *InstParseContext_new()
     context->orphaned_banks = StringHashTable_new();
     context->orphaned_instruments = StringHashTable_new();
     context->orphaned_sounds = StringHashTable_new();
+    context->orphaned_wavetables = StringHashTable_new();
     context->orphaned_keymaps = StringHashTable_new();
     context->orphaned_envelopes = StringHashTable_new();
 
+    context->sound_missing_wavetable = IntHashTable_new();
     context->sound_missing_envelope = IntHashTable_new();
     context->sound_missing_keymap = IntHashTable_new();
 
@@ -1089,8 +1129,15 @@ static void InstParseContext_free(struct InstParseContext *context)
     StringHashTable_free(context->orphaned_banks);
     StringHashTable_free(context->orphaned_instruments);
     StringHashTable_free(context->orphaned_sounds);
+    StringHashTable_free(context->orphaned_wavetables);
     StringHashTable_free(context->orphaned_keymaps);
     StringHashTable_free(context->orphaned_envelopes);
+
+    if (context->sound_missing_wavetable != NULL)
+    {
+        IntHashTable_foreach(context->sound_missing_wavetable, MissingRef_hashcallback_free);
+        IntHashTable_free(context->sound_missing_wavetable);
+    }
 
     if (context->sound_missing_envelope != NULL)
     {
@@ -1309,7 +1356,8 @@ static void set_array_index_int(struct InstParseContext *context)
 /**
  * Parses {@code context->property_value_buffer} as integer and sets
  * {@code context->current_value_int} to the parsed value. If array
- * is empty (position is zero), value is set to zero.
+ * is empty (position is zero), value is set to zero. The original
+ * buffer remains unchanged (this can be called multiple times).
  * @param context: context.
 */
 static void set_current_property_value_int(struct InstParseContext *context)
@@ -1469,6 +1517,19 @@ static void apply_property_on_instance_bank(struct InstParseContext *context)
             node = llist_node_new();
             node->data = kvp;
             llist_root_append_node((struct llist_root*)bank->inst_offsets, node);
+        }
+        break;
+
+        case INST_BANK_PROPERTY_SAMPLE_RATE:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set bank id=%d sample_rate=%d\n", bank->id, context->current_value_int);
+            }
+            
+            bank->sample_rate = (int)context->current_value_int;
         }
         break;
 
@@ -1744,13 +1805,18 @@ void apply_property_on_instance_sound(struct InstParseContext *context)
                 stderr_exit(EXIT_CODE_GENERAL, "%s %d>: sound->wavetable previously initialized\n", __func__, __LINE__);
             }
 
-            struct ALWaveTable *wavetable = ALWaveTable_new();
-            
-            // includes space for terminating zero
-            wavetable->aifc_path = (char*)malloc_zero(1, context->property_value_buffer_pos);
-            memcpy(wavetable->aifc_path, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+            struct MissingRef *ref;
 
-            sound->wavetable = wavetable;
+            if (context->sound_missing_wavetable == NULL)
+            {
+                context->sound_missing_wavetable = IntHashTable_new();
+            }
+
+            if (!IntHashTable_contains(context->sound_missing_wavetable, sound->id))
+            {
+                ref = MissingRef_new(sound->id, (void*)sound, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
+                IntHashTable_add(context->sound_missing_wavetable, ref->key, ref);
+            }
         }
         break;
 
@@ -1821,6 +1887,19 @@ void apply_property_on_instance_sound(struct InstParseContext *context)
                 ref = MissingRef_new(sound->id, (void*)sound, context->property_value_buffer, (size_t)context->property_value_buffer_pos);
                 IntHashTable_add(context->sound_missing_keymap, ref->key, ref);
             }
+        }
+        break;
+
+        case INST_SOUND_PROPERTY_META_CTL_WRITE_ORDER:
+        {
+            set_current_property_value_int(context);
+
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set sound id=%d ctl_write_order=%d\n", sound->id, context->current_value_int);
+            }
+
+            sound->ctl_write_order = (int)context->current_value_int;
         }
         break;
 
@@ -1922,6 +2001,17 @@ void apply_property_on_instance_keymap(struct InstParseContext *context)
         }
         break;
 
+        case INST_KEYMAP_PROPERTY_META_CTL_WRITE_ORDER:
+        {
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set keymap id=%d ctl_write_order=%d\n", keymap->id, context->current_value_int);
+            }
+
+            keymap->ctl_write_order = (int)context->current_value_int;
+        }
+        break;
+
         default:
         {
             stderr_exit(EXIT_CODE_GENERAL, "%s %d>: context->current_property->key not supported: %d\n", __func__, __LINE__, context->current_property->key);
@@ -2005,6 +2095,17 @@ void apply_property_on_instance_envelope(struct InstParseContext *context)
             }
 
             envelope->release_time = (int32_t)context->current_value_int;
+        }
+        break;
+
+        case INST_ENVELOPE_PROPERTY_META_CTL_WRITE_ORDER:
+        {
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("set envelope id=%d ctl_write_order=%d\n", envelope->id, context->current_value_int);
+            }
+
+            envelope->ctl_write_order = (int32_t)context->current_value_int;
         }
         break;
 
@@ -2209,6 +2310,66 @@ static void add_orphaned_instance(struct InstParseContext *context)
 static void resolve_references_sound(struct InstParseContext *context, struct ALSound *sound)
 {
     TRACE_ENTER(__func__)
+
+    if (context->sound_missing_wavetable != NULL)
+    {
+        if (IntHashTable_contains(context->sound_missing_wavetable, sound->id))
+        {
+            if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("resolving wavetable reference for sound. sound id=%d, sound=\"%s\"...\n", sound->id, sound->text_id);
+            }
+            
+            // dependency is satisfied, so remove from "missing" list
+            struct MissingRef *ref = IntHashTable_pop(context->sound_missing_wavetable, sound->id);
+
+            if (ref == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->sound_missing_wavetable hash table cannot resolve key %d\n", __func__, __LINE__, sound->id);
+            }
+
+            struct ALWaveTable *wavetable;
+
+            // wave table is different from envelope and keymap.
+            // The ref_id is for the .aifc_path.
+            // The wavetable may not have been created yet, so create and add in that case.
+
+            if (StringHashTable_contains(context->orphaned_wavetables, ref->ref_id))
+            {
+                // don't remove from hash table
+                wavetable = StringHashTable_get(context->orphaned_wavetables, ref->ref_id);
+
+                if (wavetable == NULL)
+                {
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->orphaned_wavetables hash table cannot resolve key \"%s\"\n", __func__, __LINE__, ref->ref_id);
+                }
+
+                if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("... found wavetable \"%s\"\n", wavetable->text_id);
+                }
+            }
+            else
+            {
+                size_t len;
+                wavetable = ALWaveTable_new();
+
+                // the MissingRef objects owns the ref_id memory, so allocate space for the path.
+                len = strlen(ref->ref_id);
+                wavetable->aifc_path = (char *)malloc_zero(1, len + 1);
+                memcpy(wavetable->aifc_path, ref->ref_id, len);
+
+                StringHashTable_add(context->orphaned_wavetables, wavetable->aifc_path, wavetable);
+            }
+
+            sound->wavetable = wavetable;
+            ALWaveTable_add_parent(wavetable, sound);
+            wavetable->visited = 1;
+
+            // dependency is satisfied, so free memory
+            MissingRef_free(ref);
+        }
+    }
 
     if (context->sound_missing_envelope != NULL)
     {
@@ -2676,6 +2837,11 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
             if (is_newline(c))
             {
                 current_line_number++;
+
+                if (line_buffer_pos > MAX_FILENAME_LEN)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer overflow (line position %d) readline line, pos=%ld, source line=%d, state=%d\n", __func__, __LINE__, line_buffer_pos, pos, current_line_number, state);
+                }
 
                 memset(line_buffer, 0, MAX_FILENAME_LEN);
                 line_buffer_pos = 0;
@@ -3577,6 +3743,12 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
         struct ALEnvelope *envelope = (struct ALEnvelope *)any_first;
 
         stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed envelope, %s\n", envelope->text_id);
+    }
+
+    hash_count = IntHashTable_count(context->sound_missing_wavetable);
+    if (hash_count > 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to wavetable\n", hash_count);
     }
 
     hash_count = IntHashTable_count(context->sound_missing_envelope);

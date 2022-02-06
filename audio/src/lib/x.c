@@ -19,13 +19,22 @@
 
 // forward declarations
 
-static void ALBankFile_write_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
-static void ALBankFile_write_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
-static void ALBankFile_write_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+static void ALBankFile_write_natural_order_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+static void ALBankFile_write_natural_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+static void ALBankFile_write_natural_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
 static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
 static void ALBankFile_write_bank_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
 
 static void ALBankFile_populate_wavetables_from_aifc(struct ALBankFile *bank_file);
+static void ALWaveTable_populate_from_aifc(struct ALWaveTable *wavetable, struct AdpcmAifcFile *aifc_file);
+
+static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
+
+static int llist_node_sound_keymap_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
+static int llist_node_sound_envelope_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
+static int llist_node_sound_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
 
 // end forward declarations
 
@@ -237,7 +246,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
             memcpy(
                 aaf->loop_chunk->loop_data->state,
                 loop->state,
-                ADPCM_STATE_SIZE);
+                ADPCM_AIFC_LOOP_STATE_LEN);
         }
         else if (sound->wavetable->type == AL_RAW16_WAVE)
         {
@@ -396,12 +405,20 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 {
     TRACE_ENTER(__func__)
 
+    /**
+     * Need to honor the sort method.
+     * Iterate the bank file and collect all wavetable objects.
+     * Apply sort method if needed.
+     * Then iterate the wavetable objects and write .aifc sound data to .tbl.
+    */
+
     struct file_info *output;
     int bank_count;
+    struct llist_root *list_sounds = llist_root_new();
+    struct llist_node *node;
     struct StringHashTable *seen = StringHashTable_new();
 
-    output = file_info_fopen(tbl_filename, "w");
-
+    // first step, collect everything
     for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
     {
         struct ALBank *bank = bank_file->banks[bank_count];
@@ -428,22 +445,11 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
                             if (wavetable != NULL && wavetable->aifc_path != NULL && wavetable->aifc_path[0] != '\0')
                             {
-                                if (!StringHashTable_contains(seen, wavetable->aifc_path))
-                                {
-                                    int32_t wavetable_base = (int32_t)file_info_ftell(output);
+                                sound->visited = 1;
 
-                                    AdpcmAifcFile_path_write_tbl(wavetable->aifc_path, output);
-
-                                    wavetable->base = wavetable_base;
-
-                                    StringHashTable_add(seen, wavetable->aifc_path, wavetable);
-                                }
-                                else
-                                {
-                                    struct ALWaveTable *ht_wavetable = StringHashTable_get(seen, wavetable->aifc_path);
-
-                                    wavetable->base = ht_wavetable->base;
-                                }
+                                node = llist_node_new();
+                                node->data = sound;
+                                llist_root_append_node(list_sounds, node);
                             }
                         }
                     }
@@ -452,14 +458,71 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
         }
     }
 
+    // apply sort method if needed.
+    if (bank_file->ctl_sort_method == CTL_SORT_METHOD_NATURAL)
+    {
+        // nothing to do, use the order iterated above.
+    }
+    else if (bank_file->ctl_sort_method == CTL_SORT_METHOD_META)
+    {
+        llist_root_merge_sort(list_sounds, llist_node_sound_write_order_compare_smaller);
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> bank_file->ctl_sort_method not supported: %d\n", __func__, __LINE__, bank_file->ctl_sort_method);
+    }
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    // now write output and set `base` offset.
+
+    output = file_info_fopen(tbl_filename, "w");
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->visited == 0)
+        {
+            struct ALWaveTable *wavetable = sound->wavetable;
+            
+            sound->visited = 1;
+
+            if (!StringHashTable_contains(seen, wavetable->aifc_path))
+            {
+                int32_t wavetable_base = (int32_t)file_info_ftell(output);
+                size_t sound_data_size;
+
+                AdpcmAifcFile_path_write_tbl(wavetable->aifc_path, output, &sound_data_size);
+
+                wavetable->base = wavetable_base;
+                wavetable->len = (int)sound_data_size;
+
+                StringHashTable_add(seen, wavetable->aifc_path, wavetable);
+            }
+            else
+            {
+                struct ALWaveTable *ht_wavetable = StringHashTable_get(seen, wavetable->aifc_path);
+
+                wavetable->base = ht_wavetable->base;
+                wavetable->len = ht_wavetable->len;
+            }
+        }
+
+        node = node->next;
+    }
+
+    // done, cleanup.
+
+    llist_node_root_free(list_sounds);
+
     file_info_free(output);
 
     StringHashTable_free(seen);
 
     TRACE_LEAVE(__func__)
 }
-
-
 
 /**
  * This is the main entry point for writing a .ctl file.
@@ -493,6 +556,8 @@ void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
     uint16_t t16; // temp
     int bank_count;
 
+    // iterate all the wavetables (again ...) and load the loop
+    // and book information.
     ALBankFile_populate_wavetables_from_aifc(bank_file);
 
     buffer_size = ALBankFile_estimate_ctl_filesize(bank_file);
@@ -512,9 +577,23 @@ void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
     // Bank offsets are not known at this time. Skip ahead (fill with zero for now).
     pos += 4 * bank_file->bank_count;
 
-    ALBankFile_write_envelope_ctl(bank_file, buffer, buffer_size, &pos);
-    ALBankFile_write_keymap_ctl(bank_file, buffer, buffer_size, &pos);
-    ALBankFile_write_sound_ctl(bank_file, buffer, buffer_size, &pos);
+    if (bank_file->ctl_sort_method == CTL_SORT_METHOD_NATURAL)
+    {
+        ALBankFile_write_natural_order_envelope_ctl(bank_file, buffer, buffer_size, &pos);
+        ALBankFile_write_natural_order_keymap_ctl(bank_file, buffer, buffer_size, &pos);
+        ALBankFile_write_natural_order_sound_ctl(bank_file, buffer, buffer_size, &pos);
+    }
+    else if (bank_file->ctl_sort_method == CTL_SORT_METHOD_META)
+    {
+        ALBankFile_write_meta_order_envelope_ctl(bank_file, buffer, buffer_size, &pos);
+        ALBankFile_write_meta_order_keymap_ctl(bank_file, buffer, buffer_size, &pos);
+        ALBankFile_write_meta_order_sound_ctl(bank_file, buffer, buffer_size, &pos);
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> bank_file->ctl_sort_method not supported: %d\n", __func__, __LINE__, bank_file->ctl_sort_method);
+    }
+
     ALBankFile_write_instrument_ctl(bank_file, buffer, buffer_size, &pos);
     ALBankFile_write_bank_ctl(bank_file, buffer, buffer_size, &pos);
 
@@ -544,12 +623,472 @@ void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
     TRACE_LEAVE(__func__)
 }
 
-static void ALBankFile_write_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+/**
+ * Instantiates a new {@code struct ALADPCMLoop} and sets properties
+ * from {@code struct AdpcmAifcLoopChunk}.
+ * @param loop_chunk: source loop.
+ * @returns pointer to new memory.
+*/
+struct ALADPCMLoop *ALADPCMLoop_new_from_aifc_loop(struct AdpcmAifcLoopChunk *loop_chunk)
+{
+    TRACE_ENTER(__func__)
+
+    if (loop_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    struct ALADPCMLoop *loop = (struct ALADPCMLoop *)malloc_zero(1, sizeof(struct ALADPCMLoop));
+
+    if (loop_chunk->nloops > 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop_chunk->nloops should be 1, actual: %d\n", __func__, __LINE__, loop_chunk->nloops);
+    }
+    else if (loop_chunk->nloops == 1)
+    {
+        struct AdpcmAifcLoopData *loop_data = loop_chunk->loop_data;
+
+        if (loop_data == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_data is NULL\n", __func__, __LINE__);
+        }
+
+        loop->count = loop_data->count;
+        loop->start = loop_data->start;
+        loop->end = loop_data->end;
+
+        memcpy(loop->state, loop_data->state, ADPCM_AIFC_LOOP_STATE_LEN);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return loop;
+}
+
+/**
+ * Instantiates a new {@code struct ALADPCMBook} and sets properties
+ * from {@code struct AdpcmAifcCodebookChunk}.
+ * @param book_chunk: source book.
+ * @returns pointer to new memory.
+*/
+struct ALADPCMBook *ALADPCMBook_new_from_aifc_book(struct AdpcmAifcCodebookChunk *book_chunk)
+{
+    TRACE_ENTER(__func__)
+
+    if (book_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> book_chunk is NULL\n", __func__, __LINE__);
+    }
+    
+    int book_bytes;
+
+    struct ALADPCMBook *book = (struct ALADPCMBook *)malloc_zero(1, sizeof(struct ALADPCMBook));
+
+    book->order = book_chunk->order;
+    book->npredictors = book_chunk->nentries;
+
+    // book, size in bytes = order * npredictors * 16
+    book_bytes = book->order * book->npredictors * 16;
+
+    if (book_bytes > 0)
+    {
+        book->book = (int16_t *)malloc_zero(1, book_bytes);
+        // raw byte copy, no bswap
+        memcpy(book->book, book_chunk->table_data, book_bytes);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return book;
+}
+
+/**
+ * Instantiates a new {@code struct ALRawLoop} and sets properties
+ * from {@code struct AdpcmAifcLoopChunk}.
+ * @param loop_chunk: source loop.
+ * @returns pointer to new memory.
+*/
+struct ALRawLoop *ALRawLoop_new_from_aifc_loop(struct AdpcmAifcLoopChunk *loop_chunk)
+{
+    TRACE_ENTER(__func__)
+
+    if (loop_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    struct ALRawLoop *loop = (struct ALRawLoop *)malloc_zero(1, sizeof(struct ALRawLoop));
+
+    if (loop_chunk->nloops > 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop_chunk->nloops should be 1, actual: %d\n", __func__, __LINE__, loop_chunk->nloops);
+    }
+    else if (loop_chunk->nloops == 1)
+    {
+        struct AdpcmAifcLoopData *loop_data = loop_chunk->loop_data;
+
+        if (loop_data == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_data is NULL\n", __func__, __LINE__);
+        }
+
+        loop->count = loop_data->count;
+        loop->start = loop_data->start;
+        loop->end = loop_data->end;
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return loop;
+}
+
+/**
+ * Helper method, writes the sound into the buffer at the position.
+ * @param sound: sound to write.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALSound_write_ctl(struct ALSound *sound, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    uint32_t t32; // temp
+    int pos = *pos_ptr;
+
+    // write sound properties first.
+    struct ALWaveTable *wavetable = sound->wavetable;
+
+    if ((size_t)(pos + 16) > buffer_size)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing sound \"%s\"\n", __func__, __LINE__, pos, sound->text_id);
+    }
+
+    if (sound->envelope != NULL)
+    {
+        t32 = BSWAP32_INLINE(sound->envelope->self_offset);
+    }
+    else
+    {
+        t32 = 0;
+    }
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    if (sound->keymap != NULL)
+    {
+        t32 = BSWAP32_INLINE(sound->keymap->self_offset);
+    }
+    else
+    {
+        t32 = 0;
+    }
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    if (wavetable != NULL)
+    {
+        if (wavetable->visited == 0)
+        {
+            // time travel to the future to get the wavetable offset
+            sound->wavetable_offset = pos + 8;
+
+            // set offset available to all parents.
+            sound->wavetable->self_offset = pos + 8;
+        }
+
+        t32 = BSWAP32_INLINE(sound->wavetable->self_offset);
+    }
+    else
+    {
+        t32 = 0;
+    }
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    buffer[pos] = sound->sample_pan;
+    pos++;
+
+    buffer[pos] = sound->sample_volume;
+    pos++;
+
+    buffer[pos] = sound->flags;
+    pos++;
+
+    // 1 byte padding
+    pos++;
+
+    // Done with top level sound properties.
+    // Now write wavetable properties.
+
+    if (wavetable != NULL && wavetable->visited == 0)
+    {
+        int wavetable_size_guess = 24;
+
+        // offset to adjust for whether or not there's loop info.
+        int book_delta = 0;
+
+        wavetable->visited = 1;
+
+        // A little bit annoying, but calculate whether this will overflow the buffer,
+        // then do the same calculations again to write the data...
+        if (wavetable->type == AL_RAW16_WAVE)
+        {
+            if (wavetable->wave_info.raw_wave.loop != NULL)
+            {
+                wavetable_size_guess += 12 + 4;
+
+                book_delta = 16; // this isn't possible ...
+            }
+        }
+        else if (wavetable->type == AL_ADPCM_WAVE)
+        {
+            if (wavetable->wave_info.adpcm_wave.loop != NULL)
+            {
+                wavetable_size_guess += 12 + 32 + 4;
+
+                book_delta = 48;
+            }
+
+            if (wavetable->wave_info.adpcm_wave.book != NULL)
+            {
+                wavetable_size_guess +=
+                    16 * wavetable->wave_info.adpcm_wave.book->order * wavetable->wave_info.adpcm_wave.book->npredictors;
+
+                wavetable_size_guess += 8;
+            }
+        }
+
+        // overflow check
+        if ((size_t)(pos + wavetable_size_guess) > buffer_size)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing wavetable \"%s\"\n", __func__, __LINE__, pos, wavetable->text_id);
+        }
+
+        // set wavetable .ctl file offset (not needed now)
+        wavetable->self_offset = pos;
+
+        t32 = BSWAP32_INLINE(wavetable->base);
+        memcpy(&buffer[pos], &t32, 4);
+        pos += 4;
+
+        t32 = BSWAP32_INLINE(wavetable->len);
+        memcpy(&buffer[pos], &t32, 4);
+        pos += 4;
+
+        buffer[pos] = wavetable->type;
+        pos++;
+
+        buffer[pos] = wavetable->flags;
+        pos++;
+
+        // 2 bytes of padding
+        pos += 2;
+
+        // time travel to the future to get the loop offset
+        if ((wavetable->type == AL_RAW16_WAVE && wavetable->wave_info.raw_wave.loop != NULL)
+            || (wavetable->type == AL_ADPCM_WAVE && wavetable->wave_info.adpcm_wave.loop != NULL))
+        {
+            t32 = BSWAP32_INLINE(pos + 12);
+            memcpy(&buffer[pos], &t32, 4);
+        }
+        pos += 4;
+
+        // time travel to the future to get the book offset
+        if (wavetable->type == AL_ADPCM_WAVE && wavetable->wave_info.adpcm_wave.book != NULL)
+        {
+            t32 = BSWAP32_INLINE(pos + 8 + book_delta);
+            memcpy(&buffer[pos], &t32, 4);
+        }
+        pos += 4;
+
+        // padding
+        pos += 4;
+
+        // Done with wavetable info.
+        // Now write loop and book values.
+        // overflow check for these was handled above.
+
+        if (wavetable->type == AL_RAW16_WAVE)
+        {
+            if (wavetable->wave_info.raw_wave.loop != NULL)
+            {
+                struct ALRawLoop *loop = wavetable->wave_info.raw_wave.loop;
+
+                t32 = BSWAP32_INLINE(loop->start);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                t32 = BSWAP32_INLINE(loop->end);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                t32 = BSWAP32_INLINE(loop->count);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                // padding
+                pos += 4;
+            }
+        }
+        else if (wavetable->type == AL_ADPCM_WAVE)
+        {
+            if (wavetable->wave_info.adpcm_wave.loop != NULL)
+            {
+                struct ALADPCMLoop *loop = wavetable->wave_info.adpcm_wave.loop;
+
+                t32 = BSWAP32_INLINE(loop->start);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                t32 = BSWAP32_INLINE(loop->end);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                t32 = BSWAP32_INLINE(loop->count);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                memcpy(&buffer[pos], loop->state, ADPCM_STATE_SIZE);
+                pos += ADPCM_STATE_SIZE;
+
+                // padding
+                pos += 4;
+            }
+
+            if (wavetable->wave_info.adpcm_wave.book != NULL)
+            {
+                struct ALADPCMBook *book = wavetable->wave_info.adpcm_wave.book;
+                int state_size = book->order * book->npredictors * 16;
+
+                t32 = BSWAP32_INLINE(book->order);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                t32 = BSWAP32_INLINE(book->npredictors);
+                memcpy(&buffer[pos], &t32, 4);
+                pos += 4;
+
+                memcpy(&buffer[pos], book->book, state_size);
+                pos += state_size;
+
+                // padding
+                pos += 8;
+            }
+        }
+    }
+
+    *pos_ptr = pos;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Helper method, writes the envelope into the buffer at the position.
+ * @param envelope: envelope to write.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALEnvelope_write_ctl(struct ALEnvelope *envelope, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    uint32_t t32; // temp
+    int pos = *pos_ptr;
+
+    if ((size_t)(pos + 16) > buffer_size)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing envelope \"%s\"\n", __func__, __LINE__, pos, envelope->text_id);
+    }
+
+    t32 = BSWAP32_INLINE(envelope->attack_time);
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    t32 = BSWAP32_INLINE(envelope->decay_time);
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    t32 = BSWAP32_INLINE(envelope->release_time);
+    memcpy(&buffer[pos], &t32, 4);
+    pos += 4;
+
+    buffer[pos] = envelope->attack_volume;
+    pos++;
+
+    buffer[pos] = envelope->decay_volume;
+    pos++;
+
+    // there are two bytes of padding
+    pos += 2;
+
+    *pos_ptr = pos;
+    
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Helper method, writes the keymap into the buffer at the position.
+ * @param keymap: keymap to write.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALKeyMap_write_ctl(struct ALKeyMap *keymap, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    int pos = *pos_ptr;
+
+    if ((size_t)(pos + 8) > buffer_size)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing keymap \"%s\"\n", __func__, __LINE__, pos, keymap->text_id);
+    }
+
+    buffer[pos] = keymap->velocity_min;
+    pos++;
+
+    buffer[pos] = keymap->velocity_max;
+    pos++;
+
+    buffer[pos] = keymap->key_min;
+    pos++;
+
+    buffer[pos] = keymap->key_max;
+    pos++;
+
+    buffer[pos] = keymap->key_base;
+    pos++;
+
+    buffer[pos] = (uint8_t)keymap->detune;
+    pos++;
+
+    // there are two bytes of padding
+    pos += 2;
+
+    *pos_ptr = pos;
+    
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates the bank file and writes all envelopes
+ * into the buffer in the order encountered.
+ * @param bank_file: bank file containing envelopes.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_natural_order_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
 
     int bank_count;
-    uint32_t t32; // temp
     int pos = *pos_ptr;
 
     ALBankFile_clear_visited_flags(bank_file);
@@ -591,34 +1130,13 @@ static void ALBankFile_write_envelope_ctl(struct ALBankFile *bank_file, uint8_t 
                             {
                                 envelope->visited = 1;
 
-                                if ((size_t)(pos + 16) > buffer_size)
-                                {
-                                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing envelope \"%s\"\n", __func__, __LINE__, pos, envelope->text_id);
-                                }
-
-                                // set envelope .ctl file offset
+                                // set envelope parent .ctl file offset
                                 sound->envelope_offset = pos;
 
-                                t32 = BSWAP32_INLINE(envelope->attack_time);
-                                memcpy(&buffer[pos], &t32, 4);
-                                pos += 4;
+                                // set offset available to all parents.
+                                envelope->self_offset = pos;
 
-                                t32 = BSWAP32_INLINE(envelope->decay_time);
-                                memcpy(&buffer[pos], &t32, 4);
-                                pos += 4;
-
-                                t32 = BSWAP32_INLINE(envelope->release_time);
-                                memcpy(&buffer[pos], &t32, 4);
-                                pos += 4;
-
-                                buffer[pos] = envelope->attack_volume;
-                                pos++;
-
-                                buffer[pos] = envelope->decay_volume;
-                                pos++;
-
-                                // there are two bytes of padding
-                                pos += 2;
+                                ALEnvelope_write_ctl(envelope, buffer, buffer_size, &pos);
                             }
                         }
                     }
@@ -632,7 +1150,16 @@ static void ALBankFile_write_envelope_ctl(struct ALBankFile *bank_file, uint8_t 
     TRACE_LEAVE(__func__)
 }
 
-static void ALBankFile_write_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+/**
+ * Iterates the bank file and writes all keymaps
+ * into the buffer in the order encountered.
+ * @param bank_file: bank file containing keymaps.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_natural_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
 
@@ -678,34 +1205,13 @@ static void ALBankFile_write_keymap_ctl(struct ALBankFile *bank_file, uint8_t *b
                             {
                                 keymap->visited = 1;
 
-                                if ((size_t)(pos + 8) > buffer_size)
-                                {
-                                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing keymap \"%s\"\n", __func__, __LINE__, pos, keymap->text_id);
-                                }
-
-                                // set keymap .ctl file offset
+                                // set keymap parent .ctl file offset
                                 sound->keymap_offset = pos;
 
-                                buffer[pos] = keymap->velocity_min;
-                                pos++;
+                                // set offset available to all parents.
+                                keymap->self_offset = pos;
 
-                                buffer[pos] = keymap->velocity_max;
-                                pos++;
-
-                                buffer[pos] = keymap->key_min;
-                                pos++;
-
-                                buffer[pos] = keymap->key_max;
-                                pos++;
-
-                                buffer[pos] = keymap->key_base;
-                                pos++;
-
-                                buffer[pos] = (uint8_t)keymap->detune;
-                                pos++;
-
-                                // there are two bytes of padding
-                                pos += 2;
+                                ALKeyMap_write_ctl(keymap, buffer, buffer_size, &pos);
                             }
                         }
                     }
@@ -719,12 +1225,398 @@ static void ALBankFile_write_keymap_ctl(struct ALBankFile *bank_file, uint8_t *b
     TRACE_LEAVE(__func__)
 }
 
-static void ALBankFile_write_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->keymap->ctl_write_order.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_keymap_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if ((sound_first == NULL || sound_first->keymap == NULL) && (sound_second == NULL || sound_second->keymap == NULL))
+        {
+            ret = 0;
+        }
+        else if ((sound_first == NULL || sound_first->keymap == NULL) && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && (sound_second == NULL || sound_second->keymap == NULL))
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->keymap->ctl_write_order < sound_second->keymap->ctl_write_order)
+            {
+                ret = -1;
+            }
+            else if (sound_first->keymap->ctl_write_order > sound_second->keymap->ctl_write_order)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->envelope->ctl_write_order.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_envelope_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if ((sound_first == NULL || sound_first->envelope == NULL) && (sound_second == NULL || sound_second->envelope == NULL))
+        {
+            ret = 0;
+        }
+        else if ((sound_first == NULL || sound_first->envelope == NULL) && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && (sound_second == NULL || sound_second->envelope == NULL))
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->envelope->ctl_write_order < sound_second->envelope->ctl_write_order)
+            {
+                ret = -1;
+            }
+            else if (sound_first->envelope->ctl_write_order > sound_second->envelope->ctl_write_order)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Merge sort comparison function.
+ * Sorts on sound->ctl_write_order.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+static int llist_node_sound_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct ALSound *sound_first = (struct ALSound *)first->data;
+        struct ALSound *sound_second = (struct ALSound *)second->data;
+       
+        if (sound_first == NULL && sound_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (sound_first == NULL && sound_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (sound_first != NULL && sound_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (sound_first->ctl_write_order < sound_second->ctl_write_order)
+            {
+                ret = -1;
+            }
+            else if (sound_first->ctl_write_order > sound_second->ctl_write_order)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Collects all envelopes in the bank file, then sorts them according
+ * to the ctl_write_order property. Then writes them to the buffer
+ * in this order.
+ * @param bank_file: bank file containing envelopes.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
 
     int bank_count;
-    uint32_t t32; // temp
+    int pos = *pos_ptr;
+    struct llist_root *list_sounds = llist_root_new();
+    struct llist_node *node;
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf(".ctl begin writing envelopes position %d\n", pos);
+    }
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL && instrument->visited == 0)
+                {
+                    int sound_count;
+
+                    instrument->visited = 1;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL && sound->visited == 0)
+                        {
+                            sound->visited = 1;
+
+                            node = llist_node_new();
+                            node->data = sound;
+                            llist_root_append_node(list_sounds, node);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_envelope_write_order_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->envelope != NULL && sound->envelope->visited == 0)
+        {
+            sound->envelope->visited = 1;
+
+            // set envelope parent .ctl file offset
+            sound->envelope_offset = pos;
+
+            // set offset available to all parents.
+            sound->envelope->self_offset = pos;
+
+            ALEnvelope_write_ctl(sound->envelope, buffer, buffer_size, &pos);
+        }
+
+        node = node->next;
+    }
+
+    *pos_ptr = pos;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Collects all keymaps in the bank file, then sorts them according
+ * to the ctl_write_order property. Then writes them to the buffer
+ * in this order.
+ * @param bank_file: bank file containing keymaps.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_count;
+    int pos = *pos_ptr;
+    struct llist_root *list_sounds = llist_root_new();
+    struct llist_node *node;
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf(".ctl begin writing keymaps position %d\n", pos);
+    }
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL && instrument->visited == 0)
+                {
+                    int sound_count;
+
+                    instrument->visited = 1;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL && sound->visited == 0)
+                        {
+                            sound->visited = 1;
+
+                            node = llist_node_new();
+                            node->data = sound;
+                            llist_root_append_node(list_sounds, node);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_keymap_write_order_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->keymap != NULL && sound->keymap->visited == 0)
+        {
+            sound->keymap->visited = 1;
+
+            // set keymap parent .ctl file offset
+            sound->keymap_offset = pos;
+
+            // set offset available to all parents.
+            sound->keymap->self_offset = pos;
+
+            ALKeyMap_write_ctl(sound->keymap, buffer, buffer_size, &pos);
+        }
+
+        node = node->next;
+    }
+
+    *pos_ptr = pos;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates the bank file and writes all sounds
+ * into the buffer in the order encountered.
+ * No child information is written.
+ * @param bank_file: bank file containing sounds.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_natural_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_count;
     int pos = *pos_ptr;
 
     ALBankFile_clear_visited_flags(bank_file);
@@ -755,204 +1647,13 @@ static void ALBankFile_write_sound_ctl(struct ALBankFile *bank_file, uint8_t *bu
                     for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
                     {
                         struct ALSound *sound = instrument->sounds[sound_count];
-
+                        
                         if (sound != NULL && sound->visited == 0)
                         {
-                            // write sound properties first.
-                            struct ALWaveTable *wavetable = sound->wavetable;
-
                             sound->visited = 1;
                             instrument->sound_offsets[sound_count] = pos;
-
-                            if ((size_t)(pos + 16) > buffer_size)
-                            {
-                                stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing sound \"%s\"\n", __func__, __LINE__, pos, sound->text_id);
-                            }
-
-                            t32 = BSWAP32_INLINE(sound->envelope_offset);
-                            memcpy(&buffer[pos], &t32, 4);
-                            pos += 4;
-
-                            t32 = BSWAP32_INLINE(sound->keymap_offset);
-                            memcpy(&buffer[pos], &t32, 4);
-                            pos += 4;
-
-                            // time travel to the future to get the wavetable offset
-                            t32 = BSWAP32_INLINE(pos + 8);
-                            memcpy(&buffer[pos], &t32, 4);
-                            pos += 4;
-
-                            buffer[pos] = sound->sample_pan;
-                            pos++;
-
-                            buffer[pos] = sound->sample_volume;
-                            pos++;
-
-                            buffer[pos] = sound->flags;
-                            pos++;
-
-                            // 1 byte padding
-                            pos++;
-
-                            // Done with top level sound properties.
-                            // Now write wavetable properties.
-
-                            if (wavetable != NULL && wavetable->visited == 0)
-                            {
-                                int wavetable_size_guess = 24;
-
-                                // offset to adjust for whether or not there's loop info.
-                                int book_delta = 0;
-
-                                wavetable->visited = 1;
-
-                                // A little bit annoying, but calculate whether this will overflow the buffer,
-                                // then do the same calculations again to write the data...
-                                if (wavetable->type == AL_RAW16_WAVE)
-                                {
-                                    if (wavetable->wave_info.raw_wave.loop != NULL)
-                                    {
-                                        wavetable_size_guess += 12 + 4;
-
-                                        book_delta = 16; // this isn't possible ...
-                                    }
-                                }
-                                else if (wavetable->type == AL_ADPCM_WAVE)
-                                {
-                                    if (wavetable->wave_info.adpcm_wave.loop != NULL)
-                                    {
-                                        wavetable_size_guess += 12 + 32 + 4;
-
-                                        book_delta = 48;
-                                    }
-
-                                    if (wavetable->wave_info.adpcm_wave.book != NULL)
-                                    {
-                                        wavetable_size_guess +=
-                                            16 * wavetable->wave_info.adpcm_wave.book->order * wavetable->wave_info.adpcm_wave.book->npredictors;
-
-                                        wavetable_size_guess += 8;
-                                    }
-                                }
-
-                                // overflow check
-                                if ((size_t)(pos + wavetable_size_guess) > buffer_size)
-                                {
-                                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceed buffer length at position %ld writing wavetable \"%s\"\n", __func__, __LINE__, pos, wavetable->text_id);
-                                }
-
-                                // set wavetable .ctl file offset (not needed now)
-                                sound->wavetable_offfset = pos;
-
-                                t32 = BSWAP32_INLINE(wavetable->base);
-                                memcpy(&buffer[pos], &t32, 4);
-                                pos += 4;
-
-                                t32 = BSWAP32_INLINE(wavetable->len);
-                                memcpy(&buffer[pos], &t32, 4);
-                                pos += 4;
-
-                                buffer[pos] = wavetable->len;
-                                pos++;
-
-                                buffer[pos] = wavetable->flags;
-                                pos++;
-
-                                // 2 bytes of padding
-                                pos += 2;
-
-                                // time travel to the future to get the loop offset
-                                if ((wavetable->type == AL_RAW16_WAVE && wavetable->wave_info.raw_wave.loop != NULL)
-                                    || (wavetable->type == AL_ADPCM_WAVE && wavetable->wave_info.adpcm_wave.loop != NULL))
-                                {
-                                    t32 = BSWAP32_INLINE(pos + 12);
-                                    memcpy(&buffer[pos], &t32, 4);
-                                }
-                                pos += 4;
-
-                                // time travel to the future to get the book offset
-                                if (wavetable->type == AL_ADPCM_WAVE && wavetable->wave_info.adpcm_wave.book != NULL)
-                                {
-                                    t32 = (pos + 8 + book_delta);
-                                    memcpy(&buffer[pos], &t32, 4);
-                                }
-                                pos += 4;
-
-                                // padding
-                                pos += 4;
-
-                                // Done with wavetable info.
-                                // Now write loop and book values.
-                                // overflow check for these was handled above.
-
-                                if (wavetable->type == AL_RAW16_WAVE)
-                                {
-                                    if (wavetable->wave_info.raw_wave.loop != NULL)
-                                    {
-                                        struct ALRawLoop *loop = wavetable->wave_info.raw_wave.loop;
-
-                                        t32 = BSWAP32_INLINE(loop->start);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        t32 = BSWAP32_INLINE(loop->end);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        t32 = BSWAP32_INLINE(loop->count);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        // padding
-                                        pos += 4;
-                                    }
-                                }
-                                else if (wavetable->type == AL_ADPCM_WAVE)
-                                {
-                                    if (wavetable->wave_info.adpcm_wave.loop != NULL)
-                                    {
-                                        struct ALADPCMLoop *loop = wavetable->wave_info.adpcm_wave.loop;
-
-                                        t32 = BSWAP32_INLINE(loop->start);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        t32 = BSWAP32_INLINE(loop->end);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        t32 = BSWAP32_INLINE(loop->count);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        memcpy(&buffer[pos], loop->state, ADPCM_STATE_SIZE);
-                                        pos += ADPCM_STATE_SIZE;
-
-                                        // padding
-                                        pos += 4;
-                                    }
-
-                                    if (wavetable->wave_info.adpcm_wave.book != NULL)
-                                    {
-                                        struct ALADPCMBook *book = wavetable->wave_info.adpcm_wave.book;
-                                        int state_size = book->order * book->npredictors * 16;
-
-                                        t32 = BSWAP32_INLINE(book->order);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        t32 = BSWAP32_INLINE(book->npredictors);
-                                        memcpy(&buffer[pos], &t32, 4);
-                                        pos += 4;
-
-                                        memcpy(&buffer[pos], book->book, state_size);
-                                        pos += state_size;
-
-                                        // padding
-                                        pos += 4;
-                                    }
-                                }
-                            }
+                            sound->self_offset = pos;
+                            ALSound_write_ctl(sound, buffer, buffer_size, &pos);
                         }
                     }
                 }
@@ -965,6 +1666,107 @@ static void ALBankFile_write_sound_ctl(struct ALBankFile *bank_file, uint8_t *bu
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Collects all sounds in the bank file, then sorts them according
+ * to the ctl_write_order property. Then writes them to the buffer
+ * in this order.
+ * No child information is written.
+ * @param bank_file: bank file containing sounds.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
+static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
+{
+    TRACE_ENTER(__func__)
+
+    int bank_count;
+    int pos = *pos_ptr;
+    struct llist_root *list_sounds = llist_root_new();
+    struct llist_node *node;
+
+    ALBankFile_clear_visited_flags(bank_file);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf(".ctl begin writing sounds position %d\n", pos);
+    }
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL && instrument->visited == 0)
+                {
+                    int sound_count;
+
+                    instrument->visited = 1;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+                        
+                        if (sound != NULL && sound->visited == 0)
+                        {
+                            sound->visited = 1;
+
+                            node = llist_node_new();
+                            node->data = sound;
+                            llist_root_append_node(list_sounds, node);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    llist_root_merge_sort(list_sounds, llist_node_sound_write_order_compare_smaller);
+    ALBankFile_clear_visited_flags(bank_file);
+
+    node = list_sounds->root;
+    while (node != NULL)
+    {
+        struct ALSound *sound = (struct ALSound *)node->data;
+
+        if (sound->visited == 0)
+        {
+            sound->visited = 1;
+
+            // no reference to parent, so skip setting that.
+
+            // set offset available to all parents.
+            sound->self_offset = pos;
+
+            ALSound_write_ctl(sound, buffer, buffer_size, &pos);
+        }
+
+        node = node->next;
+    }
+
+    *pos_ptr = pos;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates the bank file and writes all instruments
+ * into the buffer in the order encountered.
+ * No child information is written.
+ * @param bank_file: bank file containing instruments.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
 static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
@@ -1000,6 +1802,7 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
 
                     instrument->visited = 1;
                     bank->inst_offsets[inst_count] = pos;
+                    instrument->self_offset = pos;
 
                     size_check = 16 + (4 * instrument->sound_count) + 4;
                     size_check += pos;
@@ -1056,7 +1859,14 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
 
                     for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
                     {
-                        t32 = BSWAP32_INLINE(instrument->sound_offsets[sound_count]);
+                        if (instrument->sounds[sound_count] != NULL)
+                        {
+                            t32 = BSWAP32_INLINE(instrument->sounds[sound_count]->self_offset);
+                        }
+                        else
+                        {
+                            t32 = BSWAP32_INLINE(instrument->sound_offsets[sound_count]);
+                        }
                         memcpy(&buffer[pos], &t32, 4);
                         pos += 4;
                     }
@@ -1074,6 +1884,16 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Iterates the bank file and writes all banks
+ * into the buffer in the order encountered.
+ * No child information is written.
+ * @param bank_file: bank file containing banks.
+ * @param buffer: buffer to write to.
+ * @param buffer_size: max size in bytes of the buffer.
+ * @param pos_ptr: in/out parameter. Start position of buffer to write
+ * to, will contain offset of next position to write to.
+*/
 static void ALBankFile_write_bank_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
@@ -1119,17 +1939,17 @@ static void ALBankFile_write_bank_ctl(struct ALBankFile *bank_file, uint8_t *buf
             // unused padding.
             pos++;
 
-            t32 = BSWAP16_INLINE(bank->sample_rate);
+            t32 = BSWAP32_INLINE(bank->sample_rate);
             memcpy(&buffer[pos], &t32, 4);
             pos += 4;
 
-            t32 = BSWAP16_INLINE(bank->percussion);
+            t32 = BSWAP32_INLINE(bank->percussion);
             memcpy(&buffer[pos], &t32, 4);
             pos += 4;
 
             for (inst_count=0; inst_count<bank->inst_count; inst_count++)
             {
-                t32 = BSWAP16_INLINE(bank->inst_offsets[inst_count]);
+                t32 = BSWAP32_INLINE(bank->inst_offsets[inst_count]);
                 memcpy(&buffer[pos], &t32, 4);
                 pos += 4;
             }
@@ -1148,11 +1968,152 @@ static void ALBankFile_write_bank_ctl(struct ALBankFile *bank_file, uint8_t *buf
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Helper method, copies loop and book data from .aifc file into wavetable.
+ * @param wavetable: wavetable to set properties on.
+ * @param aifc_file: source .aifc file.
+*/
+static void ALWaveTable_populate_from_aifc(struct ALWaveTable *wavetable, struct AdpcmAifcFile *aifc_file)
+{
+    TRACE_ENTER(__func__)
+
+    if (wavetable == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file->comm_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> aifc_file->comm_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file->comm_chunk->compression_type == ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID)
+    {
+        /**
+         * Loop info, with associated state.
+         * Book info, with associated state.
+        */
+        wavetable->type = AL_ADPCM_WAVE;
+
+        if (aifc_file->loop_chunk != NULL)
+        {
+            if (wavetable->wave_info.adpcm_wave.loop == NULL)
+            {
+                wavetable->wave_info.adpcm_wave.loop = ALADPCMLoop_new_from_aifc_loop(aifc_file->loop_chunk);
+            }
+            else
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> wavetable->wave_info.adpcm_wave.loop previously allocated\n", __func__, __LINE__);
+            }
+        }
+
+        if (aifc_file->codes_chunk != NULL)
+        {
+            if (wavetable->wave_info.adpcm_wave.book == NULL)
+            {
+                wavetable->wave_info.adpcm_wave.book = ALADPCMBook_new_from_aifc_book(aifc_file->codes_chunk);
+            }
+            else
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> wavetable->wave_info.adpcm_wave.book previously allocated\n", __func__, __LINE__);
+            }
+        }
+    }
+    else if (aifc_file->comm_chunk->compression_type == ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID)
+    {
+        /**
+         * Loop info, no associated state.
+         * No book data.
+        */
+        wavetable->type = AL_RAW16_WAVE;
+
+        if (aifc_file->loop_chunk != NULL)
+        {
+            if (wavetable->wave_info.raw_wave.loop == NULL)
+            {
+                wavetable->wave_info.raw_wave.loop = ALRawLoop_new_from_aifc_loop(aifc_file->loop_chunk);
+            }
+            else
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> wavetable->wave_info.raw_wave.loop previously allocated\n", __func__, __LINE__);
+            }
+        }
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> unsupported compression type: 0x%08x\n", __func__, __LINE__, aifc_file->comm_chunk->compression_type);
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates bank file and loads .aifc data into every associated wavetable.
+ * @param bank_file: bank file to load data for.
+*/
 static void ALBankFile_populate_wavetables_from_aifc(struct ALBankFile *bank_file)
 {
     TRACE_ENTER(__func__)
 
     ALBankFile_clear_visited_flags(bank_file);
+
+    int bank_count;
+
+    for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+    {
+        struct ALBank *bank = bank_file->banks[bank_count];
+
+        if (bank != NULL)
+        {
+            int inst_count;
+
+            for (inst_count=0; inst_count<bank->inst_count; inst_count++)
+            {
+                struct ALInstrument *instrument = bank->instruments[inst_count];
+
+                if (instrument != NULL)
+                {
+                    int sound_count;
+
+                    for (sound_count=0; sound_count<instrument->sound_count; sound_count++)
+                    {
+                        struct ALSound *sound = instrument->sounds[sound_count];
+
+                        if (sound != NULL)
+                        {
+                            struct ALWaveTable *wavetable = sound->wavetable;
+
+                            if (wavetable != NULL && wavetable->aifc_path != NULL && wavetable->aifc_path[0] != '\0')
+                            {
+                                struct file_info *aifc_fi;
+                                struct AdpcmAifcFile *aifc_file;
+
+                                if (wavetable->visited == 1)
+                                {
+                                    continue;
+                                }
+
+                                wavetable->visited = 1;
+
+                                aifc_fi = file_info_fopen(wavetable->aifc_path, "rb");
+                                aifc_file = AdpcmAifcFile_new_from_file(aifc_fi);
+
+                                ALWaveTable_populate_from_aifc(wavetable, aifc_file);
+                                
+                                AdpcmAifcFile_free(aifc_file);
+                                file_info_free(aifc_fi);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     TRACE_LEAVE(__func__)
 }

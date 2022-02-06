@@ -12,8 +12,11 @@ clang code analysis: scan-build-11 make
 .inst parse support:
 
 - instrument-sounds and bank->instruments are sorted by array index.
-- An evelope maps one-to-one to sound. The devkit example has multiple sounds using the same envelope, this is not supported.
 - Array indeces are required. The devkit example seems to make these optional.
+- expanded support:
+--- comments
+--- metaCtlWriteOrder (envelope, keymap, sound)
+--- sampleRate (bank)
 
 -----
 
@@ -50,9 +53,7 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
-- document x.c methods
-- ALBankFile_populate_wavetables_from_aifc
-
+- I think calls to bswap16_memcpy are all wrong? using number of bytes instead of number of elements (bswap32_memcpy looks ok)
 
 
 - final valgrind check

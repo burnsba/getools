@@ -25,19 +25,31 @@
 #define APPNAME "gic"
 #define VERSION "1.0"
 
+#define GIC_MAX_SAMPLE_RATE 44100
+
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
+static int opt_sort_natural = 0;
+static int opt_sort_meta = 0;
+static int opt_sample_rate = 0;
+static int user_sample_rate = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
-#define LONG_OPT_DEBUG        1003
+#define LONG_OPT_DEBUG               1003
+#define LONG_OPT_SORT_NATURAL        2001
+#define LONG_OPT_SORT_META           2002
 
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
     {"in",     required_argument,               NULL,  'n' },
     {"out",    required_argument,               NULL,  'o' },
+    {"sample-rate",  required_argument,         NULL,  'r' },
+    
+    {"sort-natural", no_argument,               NULL,  LONG_OPT_SORT_NATURAL },
+    {"sort-meta",    no_argument,               NULL,  LONG_OPT_SORT_META },
 
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
@@ -67,6 +79,11 @@ void print_help(const char * invoke)
     printf("    -n,--in=FILE                  input .inst file source\n");
     printf("    -o,--out=FILE                 output file prefix. Optional. If not provided, will\n");
     printf("                                  reuse the input file name but change extension.\n");
+    printf("    -r,--sample-rate              overwrite bank sample rate\n");
+    printf("    --sort-natural                write envelope and keymap according to parent\n");
+    printf("                                  ALSound order. Default value. Incompatible with sort-meta.\n");
+    printf("    --sort-meta                   write envelope and keymap according to metaCtlWriteOrder\n");
+    printf("                                  property read from .inst file. Incompatible with sort-natural.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -122,6 +139,40 @@ void read_opts(int argc, char **argv)
             }
             break;
 
+            case 'r':
+            {
+                int res;
+                char *pend = NULL;
+
+                opt_sample_rate = 1;
+
+                res = strtol(optarg, &pend, 0);
+                
+                if (pend != NULL && *pend == '\0')
+                {
+                    if (errno == ERANGE)
+                    {
+                        stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse sample rate as integer: %s\n", optarg);
+                    }
+
+                    if (res < 0 || res > GIC_MAX_SAMPLE_RATE)
+                    {
+                        stderr_exit(EXIT_CODE_GENERAL, "error, sample rate=%d out of range. Value must be 0-%d.\n", res, GIC_MAX_SAMPLE_RATE);
+                    }
+
+                    user_sample_rate = res;
+                }
+                else
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse sample rate as integer: %s\n", optarg);
+                }
+            }
+            break;
+
+            case LONG_OPT_DEBUG:
+                g_verbosity = VERBOSE_DEBUG;
+                break;
+
             case 'q':
                 g_verbosity = 0;
                 break;
@@ -130,8 +181,22 @@ void read_opts(int argc, char **argv)
                 g_verbosity = 2;
                 break;
 
-            case LONG_OPT_DEBUG:
-                g_verbosity = VERBOSE_DEBUG;
+            case LONG_OPT_SORT_NATURAL:
+                opt_sort_natural = 1;
+
+                if (opt_sort_meta == 1)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, only one of --sort-natural and --sort-meta can be specified\n");
+                }
+                break;
+
+            case LONG_OPT_SORT_META:
+                opt_sort_meta = 1;
+
+                if (opt_sort_natural == 1)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, only one of --sort-natural and --sort-meta can be specified\n");
+                }
                 break;
 
             case '?':
@@ -185,12 +250,58 @@ int main(int argc, char **argv)
         printf("output_filename: %s\n", output_filename);
         printf("ctl_filename: %s\n", ctl_filename);
         printf("tbl_filename: %s\n", tbl_filename);
+        printf("opt_sort_meta: %d\n", opt_sort_meta);
+        printf("opt_sort_natural: %d\n", opt_sort_natural);
+        printf("opt_sample_rate: %d\n", opt_sample_rate);
         fflush(stdout);
     }
 
     input_file = file_info_fopen(input_filename, "rb");
 
     bank_file = ALBankFile_new_from_inst(input_file);
+
+    if (opt_sample_rate == 1)
+    {
+        int bank_count;
+
+        for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
+        {
+            struct ALBank *bank = bank_file->banks[bank_count];
+
+            if (bank != NULL)
+            {
+                bank->sample_rate = user_sample_rate;
+            }
+        }
+    }
+
+    if (opt_sort_natural == 0 && opt_sort_meta == 0)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("no sort order specified, set bank_file sort order to CTL_SORT_METHOD_NATURAL\n");
+        }
+
+        bank_file->ctl_sort_method = CTL_SORT_METHOD_NATURAL;
+    }
+    else if (opt_sort_natural == 1)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("set bank_file sort order to CTL_SORT_METHOD_NATURAL\n");
+        }
+
+        bank_file->ctl_sort_method = CTL_SORT_METHOD_NATURAL;
+    }
+    else if (opt_sort_meta == 1)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("set bank_file sort order to CTL_SORT_METHOD_META\n");
+        }
+
+        bank_file->ctl_sort_method = CTL_SORT_METHOD_META;
+    }
 
     // it's necessary to write the .tbl file first in order to set the wavetable->base
     // offset values.
