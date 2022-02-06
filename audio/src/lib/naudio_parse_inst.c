@@ -1773,11 +1773,8 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
  * This resolves the current property info and sets the value from
  * {@code context->property_value_buffer}.
  * 
- * Note: {@code INST_SOUND_PROPERTY_USE} creates a {@code struct ALWaveTable} and
- * sets aifc_path.
- * 
- * Note: {@code sound->keymap} is abused to store a
- * malloc'd text ref id dependency.
+ * keymap, envelope, wavetable are saved and marked to be resolved once
+ * parsing is complete.
  * @param context: context.
 */
 void apply_property_on_instance_sound(struct InstParseContext *context)
@@ -2039,6 +2036,7 @@ void apply_property_on_instance_envelope(struct InstParseContext *context)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: context->current_instance is NULL\n", __func__, __LINE__);
     }
 
+    // all values are integers, can convert outside switch
     set_current_property_value_int(context);
 
     switch (context->current_property->key)
@@ -2827,6 +2825,11 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
             c = file_contents[pos];
 
+            if ((line_buffer_pos + 1) > MAX_FILENAME_LEN)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer overflow (line position %d) readline line, pos=%ld, source line=%d, state=%d\n", __func__, __LINE__, line_buffer_pos, pos, current_line_number, state);
+            }
+
             line_buffer[line_buffer_pos] = c;
             c_int = 0xff & (int)c;
 
@@ -2837,12 +2840,6 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
             if (is_newline(c))
             {
                 current_line_number++;
-
-                if (line_buffer_pos > MAX_FILENAME_LEN)
-                {
-                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer overflow (line position %d) readline line, pos=%ld, source line=%d, state=%d\n", __func__, __LINE__, line_buffer_pos, pos, current_line_number, state);
-                }
-
                 memset(line_buffer, 0, MAX_FILENAME_LEN);
                 line_buffer_pos = 0;
             }
@@ -2855,12 +2852,6 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
             context->current_line = current_line_number;
         }
-
-        // if (pos == 277)
-        // {
-        //     // debug breakpoint
-        //     int aaa = 123;
-        // }
 
         /**
          * See the graphml or svg for state transitions.
@@ -3704,9 +3695,8 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
      * sanity check. Make sure all orphaned instances were used.
     */
 
-    // banks are _pop from hashtable.
+    // banks are _pop from hashtable, so this should be empty.
     hash_count = StringHashTable_count(context->orphaned_banks);
-
     if (hash_count > 0)
     {
         stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed banks\n", hash_count);
@@ -3715,6 +3705,7 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     /**
      * instruments, sounds, envelope, and keymaps are only _get from hashtable,
      * as these can be referenced more than once.
+     * Check that each item in these hash tables is marked as `visited` (used by something).
     */
 
     if (StringHashTable_any(context->orphaned_instruments, StringHash_instrument_unvisited, &any_first))
@@ -3744,6 +3735,11 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
         stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed envelope, %s\n", envelope->text_id);
     }
+
+    /**
+     * When an item is resolved from these `missing` hash tables it gets
+     * removed, so these should all be empty.
+    */
 
     hash_count = IntHashTable_count(context->sound_missing_wavetable);
     if (hash_count > 0)

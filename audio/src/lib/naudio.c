@@ -267,30 +267,27 @@ void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", envelope->ctl_write_order);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    if (g_output_mode == OUTPUT_MODE_SFX)
-    {
-        // the following options are always written, even if zero.
+    // the following options are always written, even if zero.
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackTime = %d;\n", envelope->attack_time);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackTime = %d;\n", envelope->attack_time);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackVolume = %d;\n", envelope->attack_volume);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackVolume = %d;\n", envelope->attack_volume);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayTime = %d;\n", envelope->decay_time);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayTime = %d;\n", envelope->decay_time);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayVolume = %d;\n", envelope->decay_volume);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayVolume = %d;\n", envelope->decay_volume);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"releaseTime = %d;\n", envelope->release_time);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
-    }
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"releaseTime = %d;\n", envelope->release_time);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
@@ -394,34 +391,31 @@ void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", keymap->ctl_write_order);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    if (g_output_mode == OUTPUT_MODE_SFX)
-    {
-        // the following options are always written, even if zero.
+    // the following options are always written, even if zero.
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMin = %d;\n", keymap->velocity_min);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMin = %d;\n", keymap->velocity_min);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMax = %d;\n", keymap->velocity_max);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMax = %d;\n", keymap->velocity_max);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMin = %d;\n", keymap->key_min);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMin = %d;\n", keymap->key_min);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMax = %d;\n", keymap->key_max);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMax = %d;\n", keymap->key_max);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyBase = %d;\n", keymap->key_base);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyBase = %d;\n", keymap->key_base);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
-        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"detune = %d;\n", keymap->detune);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
-    }
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"detune = %d;\n", keymap->detune);
+    file_info_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
@@ -805,74 +799,70 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", sound->ctl_write_order);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    if (g_output_mode == OUTPUT_MODE_SFX)
+    if (sound->wavetable != NULL)
     {
-        // allow writing reference more than once
-        if (sound->wavetable != NULL)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"use (\"%s\");\n", sound->wavetable->aifc_path);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offset = 0x%06x;\n", sound->wavetable_offset);
-                file_info_fwrite(fi, g_write_buffer, len, 1);
-            }
-        }
-
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"use (\"%s\");\n", sound->wavetable->aifc_path);
         file_info_fwrite(fi, g_write_buffer, len, 1);
-        
-        if (sound->sample_pan != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", sound->sample_pan);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-        
-        if (sound->sample_volume != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", sound->sample_volume);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-        
-        if (sound->flags != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", sound->flags);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-        
-        if (sound->envelope != NULL)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"envelope = %s;\n", sound->envelope->text_id);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
 
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# envelope_offset = 0x%06x;\n", sound->envelope_offset);
-                file_info_fwrite(fi, g_write_buffer, len, 1);
-            }
-        }
-        
-        if (sound->keymap != NULL)
+        if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keymap = %s;\n", sound->keymap->text_id);
+            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offset = 0x%06x;\n", sound->wavetable_offset);
             file_info_fwrite(fi, g_write_buffer, len, 1);
+        }
+    }
 
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# keymap_offset = 0x%06x;\n", sound->keymap_offset);
-                file_info_fwrite(fi, g_write_buffer, len, 1);
-            }
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+    
+    if (sound->sample_pan != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", sound->sample_pan);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+    
+    if (sound->sample_volume != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", sound->sample_volume);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+    
+    if (sound->flags != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", sound->flags);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+    
+    if (sound->envelope != NULL)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"envelope = %s;\n", sound->envelope->text_id);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# envelope_offset = 0x%06x;\n", sound->envelope_offset);
+            file_info_fwrite(fi, g_write_buffer, len, 1);
+        }
+    }
+    
+    if (sound->keymap != NULL)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keymap = %s;\n", sound->keymap->text_id);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# keymap_offset = 0x%06x;\n", sound->keymap_offset);
+            file_info_fwrite(fi, g_write_buffer, len, 1);
         }
     }
 
@@ -1044,116 +1034,113 @@ void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    if (g_output_mode == OUTPUT_MODE_SFX)
+    if (instrument->volume != 0)
     {
-        if (instrument->volume != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", instrument->volume);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->pan != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", instrument->pan);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->priority != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"priority = %d;\n", instrument->priority);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->flags != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", instrument->flags);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->trem_type != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremType = %d;\n", instrument->trem_type);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->trem_rate != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremRate = %d;\n", instrument->trem_rate);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->trem_depth != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDepth = %d;\n", instrument->trem_depth);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->trem_delay != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDelay = %d;\n", instrument->trem_delay);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->vib_type != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibType = %d;\n", instrument->vib_type);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->vib_rate != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibRate = %d;\n", instrument->vib_rate);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->vib_depth != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDepth = %d;\n", instrument->vib_depth);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->vib_delay != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDelay = %d;\n", instrument->vib_delay);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
-        if (instrument->bend_range != 0)
-        {
-            memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"bendRange = %d;\n", instrument->bend_range);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
-        }
-
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", instrument->volume);
         file_info_fwrite(fi, g_write_buffer, len, 1);
-        
-        // Skip writing declaration above, but always write references.
-        for (i=0; i<instrument->sound_count; i++)
+    }
+
+    if (instrument->pan != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", instrument->pan);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->priority != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"priority = %d;\n", instrument->priority);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->flags != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", instrument->flags);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->trem_type != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremType = %d;\n", instrument->trem_type);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->trem_rate != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremRate = %d;\n", instrument->trem_rate);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->trem_depth != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDepth = %d;\n", instrument->trem_depth);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->trem_delay != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDelay = %d;\n", instrument->trem_delay);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->vib_type != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibType = %d;\n", instrument->vib_type);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->vib_rate != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibRate = %d;\n", instrument->vib_rate);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->vib_depth != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDepth = %d;\n", instrument->vib_depth);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->vib_delay != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDelay = %d;\n", instrument->vib_delay);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    if (instrument->bend_range != 0)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"bendRange = %d;\n", instrument->bend_range);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+    }
+
+    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
+    file_info_fwrite(fi, g_write_buffer, len, 1);
+    
+    // Skip writing declaration above, but always write references.
+    for (i=0; i<instrument->sound_count; i++)
+    {
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sound [%d] = %s;\n", i, instrument->sounds[i]->text_id);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+
+        if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sound [%d] = %s;\n", i, instrument->sounds[i]->text_id);
+            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# sound_offset = 0x%06x;\n", instrument->sound_offsets[i]);
             file_info_fwrite(fi, g_write_buffer, len, 1);
-
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# sound_offset = 0x%06x;\n", instrument->sound_offsets[i]);
-                file_info_fwrite(fi, g_write_buffer, len, 1);
-            }
         }
     }
 
@@ -1298,21 +1285,18 @@ void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sampleRate = %d;\n", bank->sample_rate);
     file_info_fwrite(fi, g_write_buffer, len, 1);
 
-    if (g_output_mode == OUTPUT_MODE_SFX)
+    // Skip writing declaration above, but always write references.
+    for (i=0; i<bank->inst_count; i++)
     {
-        // Skip writing declaration above, but always write references.
-        for (i=0; i<bank->inst_count; i++)
+        memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
+        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"instrument [%d] = %s;\n", i, bank->instruments[i]->text_id);
+        file_info_fwrite(fi, g_write_buffer, len, 1);
+
+        if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"instrument [%d] = %s;\n", i, bank->instruments[i]->text_id);
+            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# inst_offset = 0x%06x;\n", bank->inst_offsets[i]);
             file_info_fwrite(fi, g_write_buffer, len, 1);
-
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-                len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# inst_offset = 0x%06x;\n", bank->inst_offsets[i]);
-                file_info_fwrite(fi, g_write_buffer, len, 1);
-            }
         }
     }
 
@@ -2413,7 +2397,8 @@ size_t ALBankFile_estimate_ctl_filesize(struct ALBankFile *bank_file)
 
                                 len += 24; /* wavetable data (and padding) */
 
-                                // always assume there is a ALADPCMWaveInfo loop (over estimate)
+                                // always assume there is a ALADPCMWaveInfo loop.
+                                // note that the raw wave writes the state (`ADPCM_STATE_SIZE` number of bytes) but all zeros.
                                 // loop:
                                 len += 12 + 32; /* start, end, count + state */ 
 

@@ -837,9 +837,9 @@ static void ALSound_write_ctl(struct ALSound *sound, uint8_t *buffer, size_t buf
         {
             if (wavetable->wave_info.raw_wave.loop != NULL)
             {
-                wavetable_size_guess += 12 + 4;
+                wavetable_size_guess += 12 + 4 + ADPCM_STATE_SIZE;
 
-                book_delta = 16; // this isn't possible ...
+                book_delta = 16 + ADPCM_STATE_SIZE; // this isn't possible ...
             }
         }
         else if (wavetable->type == AL_ADPCM_WAVE)
@@ -927,6 +927,9 @@ static void ALSound_write_ctl(struct ALSound *sound, uint8_t *buffer, size_t buf
                 t32 = BSWAP32_INLINE(loop->count);
                 memcpy(&buffer[pos], &t32, 4);
                 pos += 4;
+
+                // raw loop uses space for the state but just writes zeros.
+                pos += ADPCM_STATE_SIZE;
 
                 // padding
                 pos += 4;
@@ -1804,9 +1807,16 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
                     bank->inst_offsets[inst_count] = pos;
                     instrument->self_offset = pos;
 
-                    size_check = 16 + (4 * instrument->sound_count) + 4;
+                    // check for buffer overflow
+                    size_check = 16 + (4 * instrument->sound_count);
+                    // adjust for current position
                     size_check += pos;
-                    size_check = (size_t)((uint32_t)(size_check + 16) & (uint32_t)(~ 0xf));
+                    // adjust for 8 byte align.
+                    if ((size_check % 8) > 0)
+                    {
+                        int remaining = 8 - (size_check - (int)((uint32_t)size_check & (uint32_t)(~0x7)));
+                        size_check += remaining;
+                    }
 
                     if (size_check > buffer_size)
                     {
@@ -1871,9 +1881,12 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
                         pos += 4;
                     }
 
-                    // pad to 16-byte align
-                    int remaining = 16 - (pos - (int)((uint32_t)pos & (uint32_t)(~0xf)));
-                    pos += remaining;
+                    // pad to 8-byte align
+                    if ((pos % 8) > 0)
+                    {
+                        int remaining = 8 - (pos - (int)((uint32_t)pos & (uint32_t)(~0x7)));
+                        pos += remaining;
+                    }
                 }
             }
         }
