@@ -695,6 +695,9 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     int i;
     int no_loop_chunk;
 
+    // counter for doing chunk-size bswap16
+    int num_16;
+
     // determine max size in bytes to read from input .aifc
     int32_t ssnd_data_size = aaf->sound_chunk->ck_data_size - 8;
     if (ssnd_data_size < 0)
@@ -728,6 +731,11 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     */
     if (aaf->comm_chunk->compression_type == ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID)
     {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("compression type=NONE\n");
+        }
+
         if (ssnd_data_size & 0x1)
         {
             fflush_printf(stderr, "warning, ssnd_data_size is odd, truncating last byte (required for bswap)\n");
@@ -736,7 +744,14 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
         if (no_loop_chunk)
         {
-            bswap16_memcpy(buffer, aaf->sound_chunk->sound_data, ssnd_data_size);
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("not looping\n");
+            }
+
+            // adjust count to 16-byte pieces.
+            num_16 = ssnd_data_size / 2;
+            bswap16_chunk(buffer, aaf->sound_chunk->sound_data, num_16);
 
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
@@ -772,6 +787,11 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             // number of times to decode loop data
             int loop_times;
+
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("loop chunk\n");
+            }
 
             if (aaf->loop_chunk->nloops != 1)
             {
@@ -828,7 +848,15 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // copy samples up to one (sample) less than the start loop position
             if (loop_start_position > 2)
             {
-                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[0], loop_start_position - 2);
+                if ((loop_start_position - 2) & 0x1)
+                {
+                    fflush_printf(stderr, "warning, loop_start_position is odd, truncating last byte (required for bswap)\n");
+                }
+
+                // adjust count to 16-byte pieces.
+                num_16 = (loop_start_position - 2) / 2;
+
+                bswap16_chunk(&buffer[write_len], &aaf->sound_chunk->sound_data[0], num_16);
                 write_len += loop_start_position - 2;
                 ssnd_chunk_pos += loop_start_position - 2;
             }
@@ -852,15 +880,31 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             */
             for (i=0; i<=loop_times; i++)
             {
+                if (loop_size_bytes & 0x1)
+                {
+                    fflush_printf(stderr, "warning, loop_size_bytes is odd, truncating last byte (required for bswap)\n");
+                }
+
+                // adjust count to 16-byte pieces.
+                num_16 = loop_size_bytes / 2;
+
                 ssnd_chunk_pos = loop_start_position;
-                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], loop_size_bytes);
+                bswap16_chunk(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], num_16);
                 write_len += loop_size_bytes;
                 ssnd_chunk_pos += loop_size_bytes;
             }
 
             if (after_loop_bytes > 0)
             {
-                bswap16_memcpy(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], after_loop_bytes);
+                if (after_loop_bytes & 0x1)
+                {
+                    fflush_printf(stderr, "warning, after_loop_bytes is odd, truncating last byte (required for bswap)\n");
+                }
+
+                // adjust count to 16-byte pieces.
+                num_16 = after_loop_bytes / 2;
+
+                bswap16_chunk(&buffer[write_len], &aaf->sound_chunk->sound_data[ssnd_chunk_pos], num_16);
                 write_len += after_loop_bytes;
                 ssnd_chunk_pos += after_loop_bytes;
             }
@@ -879,9 +923,19 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
     {
         int32_t *frame_buffer = (int32_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int32_t));
 
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("compression type=VAPC\n");
+        }
+
         // there's no loop chunk
         if (no_loop_chunk)
         {
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("not looping\n");
+            }
+
             /**
              * No loops, just decode the frames and writeout result until end of ssnd.
             */
@@ -933,6 +987,11 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             // number of times to decode loop data
             int loop_times;
+
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("loop chunk\n");
+            }
 
             if (aaf->loop_chunk->nloops != 1)
             {

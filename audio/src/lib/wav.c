@@ -11,6 +11,59 @@
  * This file contains primary wav methods.
 */
 
+static uint32_t g_wav_cue_point_id = 0;
+
+/**
+ * Allocates memory for a {@code struct WavSampleLoop} and sets known/const values.
+ * @returns: pointer to new object.
+*/
+struct WavSampleLoop *WavSampleLoop_new()
+{
+    TRACE_ENTER(__func__)
+
+    struct WavSampleLoop *p = (struct WavSampleLoop *)malloc_zero(1, sizeof(struct WavSampleLoop));
+
+    p->cue_point_id = g_wav_cue_point_id;
+    g_wav_cue_point_id++;
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Allocates memory for a {@code struct WavSampleChunk} and sets known/const values.
+ * Allocates memory for the list of sample loops, and allocates empty sample loops.
+ * @returns: pointer to new chunk.
+*/
+struct WavSampleChunk *WavSampleChunk_new(int number_loops)
+{
+    TRACE_ENTER(__func__)
+
+    int i;
+
+    struct WavSampleChunk *p = (struct WavSampleChunk *)malloc_zero(1, sizeof(struct WavSampleChunk));
+
+    p->ck_id = WAV_SMPL_CHUNK_ID;
+    p->sample_loop_bytes = number_loops * WAV_SAMPLE_LOOP_SIZE;
+    p->ck_data_size = WAV_SMPL_CHUNK_BODY_SIZE + p->sample_loop_bytes;
+    p->num_sample_loops = number_loops;
+
+    if (number_loops > 0)
+    {
+        p->loops = (struct WavSampleLoop **)malloc_zero(1, sizeof(struct WavSampleLoop *));
+
+        for (i=0; i<number_loops; i++)
+        {
+            p->loops[i] = WavSampleLoop_new();
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
 /**
  * Allocates memory for a {@code struct WavDataChunk} and sets known/const values.
  * @returns: pointer to new chunk.
@@ -66,6 +119,61 @@ struct WavFile *WavFile_new(size_t num_chunks)
     TRACE_LEAVE(__func__)
 
     return p;
+}
+
+/**
+ * Frees memory allocated to loop.
+ * @param loop: object to free.
+*/
+void WavSampleLoop_free(struct WavSampleLoop *loop)
+{
+    TRACE_ENTER(__func__)
+
+    if (loop == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    free(loop);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Frees memory allocated to chunk.
+ * @param chunk: object to free.
+*/
+void WavSampleChunk_free(struct WavSampleChunk *chunk)
+{
+    TRACE_ENTER(__func__)
+
+    int i;
+
+    if (chunk == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    if (chunk->num_sample_loops > 0)
+    {
+        for (i=0; i<chunk->num_sample_loops; i++)
+        {
+            WavSampleLoop_free(chunk->loops[i]);
+            chunk->loops[i] = NULL;
+        }
+    }
+
+    if (chunk->loops != NULL)
+    {
+        free(chunk->loops);
+        chunk->loops = 0;
+    }
+
+    free(chunk);
+
+    TRACE_LEAVE(__func__)
 }
 
 /**
@@ -132,6 +240,11 @@ void WavFile_free(struct WavFile *wav_file)
         // need to iterate the list in case there are duplicates.
         for (i=0; i<wav_file->chunk_count; i++)
         {
+            if (wav_file->chunks[i] == NULL)
+            {
+                continue;
+            }
+
             uint32_t ck_id = *(uint32_t *)wav_file->chunks[i];
             switch (ck_id)
             {
@@ -144,17 +257,81 @@ void WavFile_free(struct WavFile *wav_file)
                     WavDataChunk_free((struct WavDataChunk *)wav_file->chunks[i]);
                     wav_file->data_chunk = NULL;
                     break;
+
+                case WAV_SMPL_CHUNK_ID:
+                    WavSampleChunk_free((struct WavSampleChunk *)wav_file->chunks[i]);
+                    wav_file->smpl_chunk = NULL;
+                    break;
                 
                 default:
                     // ignore unsupported
                     break;
             }
+
+            wav_file->chunks[i] = NULL;
         }
 
         free(wav_file->chunks);
     }
 
     free(wav_file);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes a {@code struct WavSampleLoop} to disk.
+ * @param chunk: Chunk to write.
+ * @param fi: File handle to write to, using current offset.
+*/
+void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    file_info_fwrite(fi, &loop->cue_point_id, 4, 1);
+    file_info_fwrite(fi, &loop->loop_type, 4, 1);
+    file_info_fwrite(fi, &loop->start, 4, 1);
+    file_info_fwrite(fi, &loop->end, 4, 1);
+    file_info_fwrite(fi, &loop->fraction, 4, 1);
+    file_info_fwrite(fi, &loop->play_count, 4, 1);
+
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes a {@code struct WavSampleChunk} to disk.
+ * @param chunk: Chunk to write.
+ * @param fi: File handle to write to, using current offset.
+*/
+void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
+
+    file_info_fwrite(fi, &chunk->manufacturer, 4, 1);
+    file_info_fwrite(fi, &chunk->product, 4, 1);
+    file_info_fwrite(fi, &chunk->sample_period, 4, 1);
+    file_info_fwrite(fi, &chunk->midi_unity_note, 4, 1);
+    file_info_fwrite(fi, &chunk->midi_pitch_fraction, 4, 1);
+    file_info_fwrite(fi, &chunk->smpte_format, 4, 1);
+    file_info_fwrite(fi, &chunk->smpte_offset, 4, 1);
+    file_info_fwrite(fi, &chunk->num_sample_loops, 4, 1);
+    file_info_fwrite(fi, &chunk->sample_loop_bytes, 4, 1);
+
+    if (chunk->num_sample_loops > 0)
+    {
+        int i;
+        for (i=0; i<chunk->num_sample_loops; i++)
+        {
+            if (chunk->loops[i] != NULL)
+            {
+                WavSampleLoop_fwrite(chunk->loops[i], fi);
+            }
+        }
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -235,6 +412,13 @@ void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
             }
             break;
 
+            case WAV_SMPL_CHUNK_ID: // "smpl"
+            {
+                struct WavSampleChunk *chunk = (struct WavSampleChunk *)wav_file->chunks[i];
+                WavSampleChunk_fwrite(chunk, fi);
+            }
+            break;
+
             default:
                 // ignore unsupported
             {
@@ -285,6 +469,40 @@ void WavFile_set_frequency(struct WavFile *wav_file, double frequency)
     }
 
     wav_file->fmt_chunk->sample_rate = (int32_t)frequency;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Adds a "smpl" chunk to the wav file.
+ * This dynamically resizes the chunk array.
+ * The {@code wav_file->smpl_chunk} is set to the new chunk.
+ * @param wav_file: wav file to add chunk to.
+ * @param chunk: chunk to add.
+*/
+void WavFile_append_smpl_chunk(struct WavFile *wav_file, struct WavSampleChunk *chunk)
+{
+    TRACE_ENTER(__func__)
+
+    if (wav_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: chunk is NULL\n", __func__, __LINE__);
+    }
+
+    wav_file->chunk_count++;
+
+    size_t old_size = sizeof(void*) * (wav_file->chunk_count - 1);
+    size_t new_size = sizeof(void*) * (wav_file->chunk_count);
+
+    malloc_resize(old_size, (void**)&wav_file->chunks, new_size);
+
+    wav_file->chunks[wav_file->chunk_count - 1] = chunk;
+    wav_file->smpl_chunk = chunk;
 
     TRACE_LEAVE(__func__)
 }

@@ -63,6 +63,8 @@ static int opt_inst_file = 0;
 static int opt_inst_search = 0;
 static int opt_inst_val = 0;
 static int opt_force_freq_adjust = 0;
+static int opt_write_smpl = 0;
+static int opt_no_freq_adjust = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 static char inst_filename[MAX_FILENAME_LEN] = {0};
@@ -78,6 +80,9 @@ static int detune = 0;
 #define LONG_OPT_INST_SEARCH  1210
 #define LONG_OPT_INST_VAL     1220
 
+#define LONG_OPT_WRITE_SMPL         1230
+#define LONG_OPT_NO_FREQ_ADJUST     1231
+
 #define AIFC2WAV_DEFAULT_INF_LOOP_TIMES 0
 
 #define AIFC2WAV_DEFAULT_KEYBASE 60 /* MIDI note C4 */
@@ -91,14 +96,17 @@ static struct option long_options[] =
     {"out",    required_argument,               NULL,  'o' },
     {"loop",   required_argument,               NULL,  'l' },
 
+    {"write-smpl",     no_argument,             NULL,  LONG_OPT_WRITE_SMPL },
+    {"no-freq-adjust", no_argument,             NULL,  LONG_OPT_NO_FREQ_ADJUST },
+
     /* freq_adjust_mode = explicit */
-    {"keybase", required_argument,               NULL,  'k' },
-    {"detune",  required_argument,               NULL,  'd' },
+    {"keybase", required_argument,              NULL,  'k' },
+    {"detune",  required_argument,              NULL,  'd' },
 
     /* freq_adjust_mode = search */
-    {"inst-file",   required_argument,            NULL, LONG_OPT_INST_FILE },
-    {"inst-search", required_argument,            NULL, LONG_OPT_INST_SEARCH },
-    {"inst-val",    required_argument,            NULL, LONG_OPT_INST_VAL },
+    {"inst-file",   required_argument,          NULL,  LONG_OPT_INST_FILE },
+    {"inst-search", required_argument,          NULL,  LONG_OPT_INST_SEARCH },
+    {"inst-val",    required_argument,          NULL,  LONG_OPT_INST_VAL },
     {"force-freq-adjust",   no_argument,        NULL,  LONG_OPT_FORCE_FREQ_ADJUST },
 
     {"quiet",        no_argument,               NULL,  'q' },
@@ -132,6 +140,14 @@ void print_help(const char * invoke)
     printf("    -l,--loop=NUMBER              This specifies the number of times an ADPCM Loop\n");
     printf("                                  should be repeated. Only applies to infinite loops.\n");
     printf("                                  Default=%d.\n", AIFC2WAV_DEFAULT_INF_LOOP_TIMES);
+
+    printf("    --write-smpl                  Setting this flag will add the \"smpl\" chunk to\n");
+    printf("                                  output wav. This requires resolving keybase, which\n");
+    printf("                                  will use the same value (or default) as freq adjust.\n");
+    printf("    --no-freq-adjust              Disables frequency adjust mode, but allows setting\n");
+    printf("                                  keybase or searching .inst file to use with writing\n");
+    printf("                                  wav \"smpl\" chunk.\n");
+
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -165,7 +181,8 @@ void print_help(const char * invoke)
     printf("    --inst-val=TEXT               Text parameter of search. Required.\n");
     printf("    --force-freq-adjust           By default, frequency adjustments will only be applied on\n");
     printf("                                  audio of type AL_ADPCM_WAVE. This flag will force\n");
-    printf("                                  AL_RAW16_WAVE to be adjusted as well.\n");
+    printf("                                  AL_RAW16_WAVE to be adjusted as well. Has no \n");
+    printf("                                  effect if --no-freq-adjust is set.\n");
 
     printf("\n");
     fflush(stdout);
@@ -416,16 +433,24 @@ void read_opts(int argc, char **argv)
             }
             break;
 
+            case LONG_OPT_WRITE_SMPL:
+                opt_write_smpl = 1;
+                break;
+
+            case LONG_OPT_NO_FREQ_ADJUST:
+                opt_no_freq_adjust = 1;
+                break;
+
+            case LONG_OPT_FORCE_FREQ_ADJUST:
+                opt_force_freq_adjust = 1;
+                break;
+
             case 'q':
                 g_verbosity = 0;
                 break;
 
             case 'v':
                 g_verbosity = 2;
-                break;
-
-            case LONG_OPT_FORCE_FREQ_ADJUST:
-                opt_force_freq_adjust = 1;
                 break;
 
             case LONG_OPT_DEBUG:
@@ -503,6 +528,8 @@ int main(int argc, char **argv)
         printf("opt_detune: %d\n", opt_detune);
         printf("keybase: %d\n", keybase);
         printf("detune: %d\n", detune);
+        printf("opt_write_smpl: %d\n", opt_write_smpl);
+        printf("opt_no_freq_adjust: %d\n", opt_no_freq_adjust);
         fflush(stdout);
     }
 
@@ -579,6 +606,16 @@ int main(int argc, char **argv)
 
     wav_file = WavFile_load_from_aifc(aifc_file);
 
+    if (opt_write_smpl == 1)
+    {
+        WavFile_check_append_aifc_loop(wav_file, aifc_file);
+        
+        if (wav_file->smpl_chunk != NULL)
+        {
+            wav_file->smpl_chunk->midi_unity_note = keybase;
+        }
+    }
+
     /**
      * It seems the AL_RAW16_WAVE .aifc files don't adjust the frequency, maybe?
      * So check for that here.
@@ -610,15 +647,21 @@ int main(int argc, char **argv)
             */
             (opt_force_freq_adjust == 1 || skip_freq_adjust == 0)))
     {
-        double freq = WavFile_get_frequency(wav_file);
-        double new_freq = detune_frequency(freq, keybase, detune);
 
-        if (g_verbosity >= VERBOSE_DEBUG)
+        // freq_adjust could have been set because the wav "smpl" chunk was written,
+        // so also check for override disable here.
+        if (opt_no_freq_adjust == 0)
         {
-            printf("adjust wav freq to %f\n", new_freq);
-        }
+            double freq = WavFile_get_frequency(wav_file);
+            double new_freq = detune_frequency(freq, keybase, detune);
 
-        WavFile_set_frequency(wav_file, new_freq);
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("adjust wav freq to %f\n", new_freq);
+            }
+
+            WavFile_set_frequency(wav_file, new_freq);
+        }
     }
 
     output_file = file_info_fopen(output_filename, "wb");

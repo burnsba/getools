@@ -973,7 +973,7 @@ struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, 
     instrument->sound_offsets = (int32_t *)malloc_zero(instrument->sound_count, sizeof(void*));
     instrument->sounds = (struct ALSound **)malloc_zero(instrument->sound_count, sizeof(void*));
 
-    bswap32_memcpy(instrument->sound_offsets, &ctl_file_contents[input_pos], instrument->sound_count);
+    bswap32_chunk(instrument->sound_offsets, &ctl_file_contents[input_pos], instrument->sound_count);
     input_pos += instrument->sound_count * 4; /* 4 = sizeof offset */
 
     for (i=0; i<instrument->sound_count; i++)
@@ -1222,7 +1222,7 @@ struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl
     bank->inst_offsets = (int32_t *)malloc_zero(bank->inst_count, sizeof(void*));
     bank->instruments = (struct ALInstrument **)malloc_zero(bank->inst_count, sizeof(void*));
 
-    bswap32_memcpy(bank->inst_offsets, &ctl_file_contents[input_pos], bank->inst_count);
+    bswap32_chunk(bank->inst_offsets, &ctl_file_contents[input_pos], bank->inst_count);
     input_pos += bank->inst_count * 4; /* 4 = sizeof offset */
 
     for (i=0; i<bank->inst_count; i++)
@@ -1375,7 +1375,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
     bank_file->bank_offsets = (int32_t *)malloc_zero(bank_file->bank_count, sizeof(void*));
     bank_file->banks = (struct ALBank **)malloc_zero(bank_file->bank_count, sizeof(void*));
 
-    bswap32_memcpy(bank_file->bank_offsets, &ctl_file_contents[input_pos], bank_file->bank_count);
+    bswap32_chunk(bank_file->bank_offsets, &ctl_file_contents[input_pos], bank_file->bank_count);
     input_pos += bank_file->bank_count * 4; /* 4 = sizeof offset */
 
     for (i=0; i<bank_file->bank_count; i++)

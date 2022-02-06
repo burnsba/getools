@@ -758,7 +758,7 @@ void file_info_free(struct file_info *fi)
  * @param src: source array.
  * @param num: number of elements to copy and swap. (not number of bytes!)
 */
-void bswap16_memcpy(void *dest, const void *src, size_t num)
+void bswap16_chunk(void *dest, const void *src, size_t num)
 {
     TRACE_ENTER(__func__)
 
@@ -795,7 +795,7 @@ void bswap16_memcpy(void *dest, const void *src, size_t num)
  * @param src: source array.
  * @param num: number of elements to copy and swap. (not number of bytes!)
 */
-void bswap32_memcpy(void *dest, const void *src, size_t num)
+void bswap32_chunk(void *dest, const void *src, size_t num)
 {
     TRACE_ENTER(__func__)
 

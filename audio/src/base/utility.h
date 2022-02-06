@@ -65,8 +65,8 @@ int mkpath(const char* path);
 
 void reverse_into(uint8_t *dest, uint8_t *src, size_t len);
 void reverse_inplace(uint8_t *arr, size_t len);
-void bswap16_memcpy(void *dest, const void *src, size_t num);
-void bswap32_memcpy(void *dest, const void *src, size_t num);
+void bswap16_chunk(void *dest, const void *src, size_t num);
+void bswap32_chunk(void *dest, const void *src, size_t num);
 size_t dynamic_buffer_memcpy(uint8_t *data, size_t data_len, uint8_t **buffer_start, size_t buffer_pos, size_t max_buffer_len);
 
 size_t get_file_contents(char *path, uint8_t **buffer);

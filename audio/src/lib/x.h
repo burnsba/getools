@@ -13,6 +13,8 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
 void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename);
 void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename);
 
+void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *aifc_file);
+
 struct ALADPCMLoop *ALADPCMLoop_new_from_aifc_loop(struct AdpcmAifcLoopChunk *loop_chunk);
 struct ALADPCMBook *ALADPCMBook_new_from_aifc_book(struct AdpcmAifcCodebookChunk *book_chunk);
 struct ALRawLoop *ALRawLoop_new_from_aifc_loop(struct AdpcmAifcLoopChunk *loop_chunk);

@@ -346,6 +346,87 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Helper method.
+ * If there is loop information in the .aifc file then a "smpl"
+ * chunk is appended to the wav file.
+ * @param wav: wav file to append chunk to.
+ * @param aifc_file: aifc file to get loop information from.
+*/
+void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *aifc_file)
+{
+    TRACE_ENTER(__func__)
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("enter append \"smpl\" to wav\n");
+    }
+
+    if (wav == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aifc_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (aifc_file->loop_chunk == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    if (aifc_file->loop_chunk->nloops == 0)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    struct AdpcmAifcLoopChunk *aifc_loop_chunk = aifc_file->loop_chunk;
+
+    // Should only be one loop.
+    // Checked for zero loops above.
+    if (aifc_loop_chunk->nloops != 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: only 1 loop is supported. aifc_file->loop_chunk->nloops=%d\n", __func__, __LINE__, aifc_file->loop_chunk->nloops);
+    }
+
+    struct AdpcmAifcLoopData *aifc_loop_data = &aifc_loop_chunk->loop_data[0];
+
+    if (aifc_loop_data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aifc_loop_data is NULL\n", __func__, __LINE__);
+    }
+
+    // ok, made it this far, try to add this to the wav file.
+    struct WavSampleChunk *wav_sample_chunk = WavSampleChunk_new(1);
+    struct WavSampleLoop *wav_loop = wav_sample_chunk->loops[0];
+
+    // wav loop data is in samples, .aifc loop data is in samples
+    wav_loop->start = aifc_loop_data->start;
+    wav_loop->end = aifc_loop_data->end;
+
+    // this will already be set to correct value (zero), but making it explicit
+    wav_loop->loop_type = SAMPLE_LOOP_FORWARD;
+
+    // .aifc infinite loop is 0xffffffff but wav infinite loop is zero.
+    // Other values map the same.
+    if ((uint32_t)aifc_loop_data->count == (uint32_t)0xffffffff)
+    {
+        wav_loop->play_count = 0;
+    }
+    else
+    {
+        wav_loop->play_count = aifc_loop_data->count;
+    }
+
+    // done with conversion. Add to wav.
+    WavFile_append_smpl_chunk(wav, wav_sample_chunk);
+
+    TRACE_LEAVE(__func__)
+}
 
 /**
  * Translates from .aifc to .wav.

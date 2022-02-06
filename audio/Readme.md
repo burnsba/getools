@@ -53,19 +53,16 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
-- I think calls to bswap16_memcpy are all wrong? using number of bytes instead of number of elements (bswap32_memcpy looks ok)
-
-
 - final valgrind check
 - readme writeup
 - if only one input is required, and one input provided, assume it's the `--in` parameter
 - every stderr_exit call should have __func__ and __LINE__
+- every(?) fflush_printf call should have __func__ and __LINE__
 
 
 feature roadmap:
 
-+ app: gic -- convert sfx.inst to .ctl+.tbl
-- app: gic -- convert instruments.inst to .ctl+.tbl
+- wav loop point SMPL
 
 - decomp extract script
 --- extract sbk -> cseq -> midi
@@ -77,7 +74,6 @@ feature roadmap:
 --- sound .inst + .aifc -> .tbl, .ctl
 --- instrument .inst + .aifc -> .tbl, .ctl
 
-- wav loop point SMPL
 
 - app: wav2aifc -- convert wav to aifc
 --- encode/decode algorithm writeup
@@ -89,3 +85,4 @@ feature roadmap:
 
 - add parse flag to `ALBankFile_new_from_inst` to ignore unreferenced elements (currently fatal error)
 --- should print a list of text_id
+- parser should also check for instance declarations with no properties set
