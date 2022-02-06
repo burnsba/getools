@@ -9,7 +9,6 @@
 
 /**
  * This file contains primary wav methods.
- * This contains code to convert from other formats to wav.
 */
 
 /**

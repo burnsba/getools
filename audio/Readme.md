@@ -64,7 +64,8 @@ todo:
 
 feature roadmap:
 
-- app: gic -- convert .inst to .ctl+.tbl
++ app: gic -- convert sfx.inst to .ctl+.tbl
+- app: gic -- convert instruments.inst to .ctl+.tbl
 
 - decomp extract script
 --- extract sbk -> cseq -> midi
