@@ -28,7 +28,6 @@ static void write_frame_output(uint8_t *out, int32_t *data, size_t size);
 static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
 static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
 static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
-static void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd);
 
 // end forward declarations
 
@@ -296,35 +295,60 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type)
 
 /**
  * Parses {@code struct AdpcmAifcCodebookChunk.table_data} and converts to aifc coefficient table.
- * This allocates memory and stores the results in {@code struct AdpcmAifcCodebookChunk.coef_table}.@
+ * This allocates memory and stores the results in {@code struct AdpcmAifcCodebookChunk.coef_table}.
  * @param chunk: codebook chunk to decode.
 */
 void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk)
 {
     TRACE_ENTER(__func__)
 
-    int i,j,k;
+    int i,j;
     int code_book_pos = 0;
+    int row, col;
 
+    /**
+     * Comments are assuming the following example:
+     * order=2
+     * npredictors=1
+     * table_data (raw)=
+     *     FA E2 FA D0 FE 04 01 4F
+     *     02 98 01 CB 00 29 FF 03
+     *     08 1C 03 1A FD F5 FB F2
+     *     FD 32 FF C1 01 8B 01 B9
+    */
+
+    // allocate memory for list of lists
     chunk->coef_table = malloc_zero(chunk->nentries, sizeof(int32_t**));
 
     for (i = 0; i < chunk->nentries; i++)
     {
+        // Allocate memory for the rows.
+        // There are 8 rows.
         chunk->coef_table[i] = malloc_zero(8, sizeof(int32_t*));
 
         for (j = 0; j < 8; j++)
         {
+            // For each row,
+            // allocate memory for the column.
+            // This is `order` + 8 columns (probably 2 + 8).
             chunk->coef_table[i][j] = malloc_zero(chunk->order + 8, sizeof(int32_t));
         }
     }
+
+    // If `order` is 2, there's now a 8x10 grid allocated.
 
     for (i = 0; i < chunk->nentries; i++)
     {
         int32_t **table_entry = chunk->coef_table[i];
 
-        for (j = 0; j < chunk->order; j++)
+        /**
+         * Copy the `entry` into the coef_table. This travels down the
+         * rows and sets the j'th column value to the value read,
+         * where j increases up to the `order.
+        */
+        for (col = 0; col < chunk->order; col++)
         {
-            for (k = 0; k < 8; k++)
+            for (row = 0; row < 8; row++)
             {
                 // 0x16 is sizeof other stuff in the chunk header
                 if (code_book_pos > chunk->base.ck_data_size - 0x16)
@@ -334,31 +358,93 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
 
                 // careful, this needs to pass a signed 16 bit int to bswap, and then sign extend promote to 32 bit.
                 int16_t ts = BSWAP16_INLINE(*(int16_t*)(&chunk->table_data[code_book_pos]));
-                table_entry[k][j] = (int32_t)ts;
+                table_entry[row][col] = (int32_t)ts;
                 code_book_pos += 2;
             }
         }
 
-        for (k = 1; k < 8; k++)
-        {
-            table_entry[k][chunk->order] = table_entry[k - 1][chunk->order - 1];
-        }
+        /**
+         * table_entry should now look like (BSWAP applied, values in hex)
+         * [FAE2] [081C] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [FAD0] [031A] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [FE04] [FDF5] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [014F] [FBF2] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [0298] [FD32] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [01CB] [FFC1] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [0029] [018B] [0] [0] [0] [0] [0] [0] [0] [0]
+         * [FF03] [01B9] [0] [0] [0] [0] [0] [0] [0] [0]
+        */
 
-        table_entry[0][chunk->order] = 2048;
+        /**
+         * Now fill out the rest of the grid from existing values.
+         * The last column set above should be carried forward to the
+         * remaining columns, up to column 8. Each time the column
+         * is increased, the row number should increase too:
+         * 
+         * [FAE2] [081C] --> [0000] [0] [0] [0] [0] [0] [0] [0]
+         *                     |
+         *                     v
+         * [FAD0] [031A]     [081C] [0] [0] [0] [0] [0] [0] [0]
+         * 
+         * The only other info needed is that the first unset value
+         * in the first row should be set to 2048. 
+        */
 
-        for (k = 1; k < 8; k++)
+        // This approach is probably bad for cache misses, but the data set is
+        // so small it doesn't matter.
+        for (j=0; j<8; j++)
         {
-            // value of j is carried into second loop
-            for (j = 0; j < k; j++)
+            int val;
+            int col_limit = 8 + chunk->order;
+
+            row = j;
+            col = chunk->order;
+
+            if (j == 0)
             {
-                table_entry[j][k + chunk->order] = 0;
+                val = 2048;
+            }
+            else
+            {
+                val = table_entry[row - 1][col - 1];
             }
 
-            for (; j < 8; j++)
+            while (row < 8 && col < col_limit)
             {
-                table_entry[j][k + chunk->order] = table_entry[j - k][chunk->order];
+                table_entry[row][col] = val;
+
+                row++;
+                col++;
             }
         }
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("aifc codebook / coef table / table_entry:\n");
+
+            for (row=0; row<8; row++)
+            {
+                for (col=0; col<8+chunk->order; col++)
+                {
+                    printf("[%04X] ", (uint16_t)table_entry[row][col]);
+                }
+                printf("\n");
+            }
+
+            printf("\n\n");
+        }
+
+        /**
+         * table_entry should now look like (BSWAP applied, values in hex)
+         * [FAE2] [081C] [0800] [0000] [0000] [0000] [0000] [0000] [0000] [0000]
+         * [FAD0] [031A] [081C] [0800] [0000] [0000] [0000] [0000] [0000] [0000]
+         * [FE04] [FDF5] [031A] [081C] [0800] [0000] [0000] [0000] [0000] [0000]
+         * [014F] [FBF2] [FDF5] [031A] [081C] [0800] [0000] [0000] [0000] [0000]
+         * [0298] [FD32] [FBF2] [FDF5] [031A] [081C] [0800] [0000] [0000] [0000]
+         * [01CB] [FFC1] [FD32] [FBF2] [FDF5] [031A] [081C] [0800] [0000] [0000]
+         * [0029] [018B] [FFC1] [FD32] [FBF2] [FDF5] [031A] [081C] [0800] [0000]
+         * [FF03] [01B9] [018B] [FFC1] [FD32] [FBF2] [FDF5] [031A] [081C] [0800]
+        */
     }
 
     TRACE_LEAVE(__func__)
@@ -380,11 +466,11 @@ struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_
     p->base.ck_data_size = 4 + 1 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN + 2 + 2 + 2 + table_data_size_bytes;
     p->base.application_signature = ADPCM_AIFC_APPLICATION_SIGNATURE;
     p->base.unknown = 0xb;
+    p->order = order;
+    p->nentries = nentries;
     
     // no terminating zero
     memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
-
-    p->nentries = nentries;
 
     p->table_data = (uint8_t *)malloc_zero(1, table_data_size_bytes);
 
@@ -1795,84 +1881,152 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file
  * Applies the standard .aifc decode algorithm from the sound chunk and writes
  * result to the frame buffer.
  * @param aaf: container file.
- * @param frame_buffer: standard frame buffer.
+ * @param frame_buffer: standard frame buffer, two rows of 8.
  * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
  * {@code eof} then will be set to next byte position.
  * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
  * in the sound chunk this is set to 1. Otherwise set to zero.
 */
-static void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
+void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
 {
     TRACE_ENTER(__func__)
 
-    int32_t optimalp;
-    int32_t scale;
-    int32_t max_level;
-    
-    int32_t scaled_frame[FRAME_DECODE_BUFFER_LEN];
-    int32_t convl_frame[FRAME_DECODE_BUFFER_LEN];
+    // which coef_table to use
+    int32_t table_index;
 
-    memset(scaled_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
-    memset(convl_frame, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+    // how much to re-scale each input value
+    int32_t scale;
+
+    size_t convl_size;
+
+    // one row, length is `order` + FRAME_DECODE_ROW_LEN
+    int32_t *convl_frame;
+    int convl_position;
     
-    int i,j;
+    int order;
 
     uint8_t frame_header;
     uint8_t c;
 
-    max_level = 7;
+    int i;
+
+    int32_t *frame_buffer_feedback;
+    int32_t *frame_buffer_row;
+    
+    // which row in frame buffer, ~ frame buffer row index
+    int fbri;
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
+    }
+
+    if ( aaf->codes_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s:  aaf->codes_chunk is NULL\n", __func__);
+    }
+
+    // grab order from file for convenience
+    order = aaf->codes_chunk->order;
+
+    convl_size = order + FRAME_DECODE_ROW_LEN;
+    convl_frame = (int32_t *)malloc_zero(1, convl_size);
+
+    /**
+     * The last `order` bytes written to the frame buffer are carried forward
+     * in the decode algorithm below. The frame buffer is essentially
+     * two rows, so this will get updated to the end of the first row once the first
+     * row is written. But for starting conditions, this has to be last
+     * bytes of the entire frame_buffer since that was written last.
+    */
+    frame_buffer_feedback = &frame_buffer[FRAME_DECODE_BUFFER_LEN - order]; // total frame buffer len
+
+    /**
+     * Pointer to current row in output frame buffer. Start at the first row,
+     * this will advance through the frame_buffer while processing.
+    */
+    frame_buffer_row = frame_buffer;
+
+    /**
+     * The frame header is split into two 4-bit numbers.
+     * The upper four bits are exponent (base 2) for scale, as 2^s.
+     * The lower four bits are the row number in the coefficient table.
+    */
     frame_header = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
     scale = 1 << (frame_header >> 4);
-    optimalp = frame_header & 0xf;
+    table_index = frame_header & 0xf;
 
-    for (i = 0; i < FRAME_DECODE_BUFFER_LEN; i += 2)
+    /**
+     * An incoming frame is 9 bytes. It consists of the frame header (above)
+     * and eight bytes of data. Each 4-byte chunk will be one row
+     * in the output frame_buffer.
+    */
+    for (fbri=0; fbri<2; fbri++) // loop for each row in the frame_buffer .... is this `order`?
     {
-        c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+        convl_position = 0;
 
-        scaled_frame[i] = c >> 4;
-        scaled_frame[i + 1] = c & 0xf;
-
-        for (j=0; j<2; j++)
+        /**
+         * Copy the feedback state into the next row to be processed.
+         * This is written to the first `order` bytes of the row.
+        */
+        for (i=0; i<order; i++)
         {
-            if (scaled_frame[i + j] <= max_level)
-            {
-                scaled_frame[i + j] *= scale;
-            }
-            else
-            {
-                scaled_frame[i + j] = (-0x10 - -scaled_frame[i + j]) * scale;
-            }
+            convl_frame[convl_position] = frame_buffer_feedback[i];
+            convl_position++;
         }
+
+        /**
+         * 4 bytes of input decode into one row of frame_buffer.
+         * This will be put into the convl_frame just after the prior
+         * state bytes.
+        */
+        for (i=0; i<4; i++)
+        {
+            c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+
+            /**
+             * Two samples were compressed into one byte (4 bits each).
+             * These need to be re-scaled by the scale factor defined in the frame header.
+             * These were stored signed, 0-7 is positive, 8-15 corresponds to -8 through -1.
+             * This splits the compressed byte back into two samples
+             * in big endian format.
+            */
+            convl_frame[convl_position] = c >> 4; // upper
+            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
+            {
+                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
+            }
+            convl_frame[convl_position] *= scale;
+            convl_position++;
+            
+            convl_frame[convl_position] = c & 0xf; // lower
+            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
+            {
+                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
+            }
+            convl_frame[convl_position] *= scale;
+            convl_position++;
+        }
+
+        /**
+         * Compute the frame_buffer row.
+         * The i'th column in the frame_buffer is the convl_frame (dot product) i'th coef_table row
+        */
+        for (i=0; i<FRAME_DECODE_ROW_LEN; i++)
+        {
+            frame_buffer_row[i] = dot_product_i32(aaf->codes_chunk->coef_table[table_index][i], convl_frame, convl_size);
+            frame_buffer_row[i] = divide_round_down(frame_buffer_row[i], FRAME_DECODE_SCALE);
+        }
+
+        // Set pointer for the feedback state for next iteration.
+        // This needs to point to the end of the row just written above.
+        frame_buffer_feedback = &frame_buffer_row[FRAME_DECODE_ROW_LEN - order]; // row len
+
+        // Advance to next row in frame buffer.
+        frame_buffer_row = &frame_buffer_row[FRAME_DECODE_ROW_LEN];
     }
 
-    for (j = 0; j < 2; j++)
-    {
-        for (i = 0; i < 8; i++)
-        {
-            convl_frame[i + aaf->codes_chunk->order] = scaled_frame[j * 8 + i];
-        }
-
-        if (j == 0)
-        {
-            for (i = 0; i < aaf->codes_chunk->order; i++)
-            {
-                convl_frame[i] = frame_buffer[16 - aaf->codes_chunk->order + i];
-            }
-        }
-        else
-        {
-            for (i = 0; i < aaf->codes_chunk->order; i++)
-            {
-                convl_frame[i] = frame_buffer[j * 8 - aaf->codes_chunk->order + i];
-            }
-        }
-
-        for (i = 0; i < 8; i++)
-        {
-            frame_buffer[i + j * 8] = dot_product_i32(aaf->codes_chunk->coef_table[optimalp][i], convl_frame, aaf->codes_chunk->order + 8);
-            frame_buffer[i + j * 8] = divide_round_down(frame_buffer[i + j * 8], 2048);
-        }
-    }
+    free(convl_frame);
 
     TRACE_LEAVE(__func__)
 }

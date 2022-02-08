@@ -53,6 +53,10 @@ int main(int argc, char **argv)
     parse_inst_all(&sub_count, &pass_count, &fail_count);
     total_run_count += sub_count;
 
+    sub_count = 0;
+    aifc_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
+
     printf("%d tests run, %d pass, %d fail\n", total_run_count, pass_count, fail_count);
 
     return 0;

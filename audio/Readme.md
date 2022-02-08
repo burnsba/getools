@@ -62,8 +62,6 @@ todo:
 
 feature roadmap:
 
-- wav loop point SMPL
-
 - decomp extract script
 --- extract sbk -> cseq -> midi
 --- extract instruments -> .tbl, .ctl -> .inst, .aifc -> .wav

@@ -111,6 +111,10 @@
 */
 #define FRAME_DECODE_BUFFER_LEN 16
 
+#define FRAME_DECODE_ROW_LEN 8
+
+#define FRAME_DECODE_SCALE (1 << 11) /* 2048 */
+
 /**
  * Loops version number, required to be 1 by some applications.
 */
@@ -126,6 +130,9 @@
  * Size in bytes of each element in the loop state array.
 */
 #define ADPCM_LOOP_STATE_ELEMENT_SIZE 2
+
+#define ADPCM_ENCODE_VAL_RANGE       16
+#define ADPCM_ENCODE_VAL_SIGNED_MAX  ((ADPCM_ENCODE_VAL_RANGE >> 1) - 1) /* = 7 */
 
 /**
  * aifc container for sound chunk.
@@ -490,5 +497,9 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
 
 size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len);
 size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi, size_t *sound_data_len);
+
+// Exposed publicly for testing.
+
+void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd);
 
 #endif
