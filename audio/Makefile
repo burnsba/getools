@@ -41,13 +41,13 @@ $(OBJ)/%.o: $(SRC)/test/%.c
 # build static library section
 #
 
-$(OBJ)/libgaudiobase.a: $(OBJ)/llist.o $(OBJ)/kvp.o $(OBJ)/common.o $(OBJ)/utility.o $(OBJ)/gaudio_math.o $(OBJ)/debug.o
+$(OBJ)/libgaudiobase.a: $(OBJ)/llist.o $(OBJ)/kvp.o $(OBJ)/common.o $(OBJ)/parse.o $(OBJ)/utility.o $(OBJ)/gaudio_math.o $(OBJ)/debug.o
 	ar rcs $@ $^
 
 $(OBJ)/libgaudioshash.a: $(OBJ)/string_hash.o $(OBJ)/int_hash.o $(OBJ)/md5.o $(OBJ)/libgaudiobase.a 
 	ar rcs $@ $^
 
-$(OBJ)/libgaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/adpcm_aifc.o $(OBJ)/midi.o $(OBJ)/wav.o $(OBJ)/libgaudioshash.a
+$(OBJ)/libgaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/naudio_parse_coef.o $(OBJ)/adpcm_aifc.o $(OBJ)/midi.o $(OBJ)/wav.o $(OBJ)/libgaudioshash.a
 	ar rcs $@ $^
 
 $(OBJ)/libgaudiox.a: $(OBJ)/x.o $(OBJ)/libgaudio.a
@@ -69,13 +69,16 @@ $(BUILD)/tbl2aifc: $(OBJ)/tbl2aifc.o $(OBJ)/libgaudiox.a
 $(BUILD)/aifc2wav: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
+$(BUILD)/wav2aifc: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
+
 $(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
 $(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
+$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
 ####################################################################################################
@@ -102,18 +105,19 @@ directories:
 	mkdir -p bin obj
 
 aifc2wav: directories $(BUILD)/aifc2wav
+wav2aifc: directories $(BUILD)/wav2aifc
 sbksplit: directories $(BUILD)/sbksplit
 tbl2aifc: directories $(BUILD)/tbl2aifc
 cseq2midi: directories $(BUILD)/cseq2midi
 gic: directories $(BUILD)/gic
 test: directories $(BUILD)/test
 
-all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
 
 clean:
-	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
 
 check: directories $(BUILD)/test
 	bin/test
 
-.PHONY: all default clean sbksplit tbl2aifc aifc2wav gic test check directories help
+.PHONY: all default clean sbksplit tbl2aifc aifc2wav wav2aifc gic test check directories help

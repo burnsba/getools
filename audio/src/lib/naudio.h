@@ -777,6 +777,7 @@ void ALBankFile_free(struct ALBankFile *bank_file);
 double detune_frequency(double hw_sample_rate, int keybase, int detune);
 
 struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi);
+struct ALADPCMBook *ALADPCMBook_new_from_coef(struct file_info *fi);
 
 struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id);
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);
@@ -784,6 +785,8 @@ struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_f
 
 size_t ALBankFile_estimate_ctl_filesize(struct ALBankFile *bank_file);
 void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file);
+
+void ALADPCMBook_free(struct ALADPCMBook *book);
 
 /**
  * The following prototypes should be treated as internal to naudio.

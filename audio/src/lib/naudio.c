@@ -56,7 +56,6 @@ void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *
 void ALBank_write_inst(struct ALBank *bank, struct file_info *fi);
 
 void ALADPCMLoop_free(struct ALADPCMLoop *loop);
-void ALADPCMBook_free(struct ALADPCMBook *book);
 void ALRawLoop_free(struct ALRawLoop *loop);
 void ALEnvelope_free(struct ALEnvelope *envelope);
 void ALKeyMap_free(struct ALKeyMap *keymap);

@@ -19,6 +19,11 @@ struct llist_node
     void *data;
 
     /**
+     * Unallocated local data.
+    */
+    int data_local;
+
+    /**
      * Next node.
     */
     struct llist_node *next;

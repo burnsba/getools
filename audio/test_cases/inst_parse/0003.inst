@@ -72,7 +72,7 @@ keymap glasskey
 
 sound glass_sound
 {
-    use ("../sounds/glass.aifc");
+    use                      (    "../sounds/glass.aifc"          )                        ;
     
     keymap = glasskey;
     pan    = 60;

@@ -10,6 +10,8 @@
 #include "string_hash.h"
 #include "int_hash.h"
 #include "llist.h"
+#include "reflection.h"
+#include "parse.h"
 #include "naudio.h"
 #include "kvp.h"
 
@@ -48,62 +50,6 @@
  * Max length in bytes to accept as token length.
 */
 #define IDENTIFIER_MAX_LEN 50
-
-/**
- * Local struct to desribe properties or "classes".
- * Set at compile time.
-*/
-struct TypeInfo {
-    /**
-     * Unique identifier corresponding to property within "class".
-    */
-    int key;
-
-    /**
-     * Property name.
-    */
-    char *value;
-
-    /**
-     * Property type (another enum, corresponds to "integer" or similar).
-    */
-    int type_id;
-};
-
-/**
- * Container for resolved type info.
-*/
-struct RuntimeTypeInfo {
-    /**
-     * Unique identifier corresponding to property within "class".
-    */
-    int key;
-
-    /**
-     * Property type (another enum, corresponds to "integer" or similar).
-    */
-    int type_id;
-};
-
-/**
- * Container for tracking references that need to be resolved.
-*/
-struct MissingRef {
-    /**
-     * Unique id of `self`. Will be used as key into hash table.
-    */
-    int key;
-
-    /**
-     * Reference to object that is missing the reference.
-    */
-    void* self;
-
-    /**
-     * Text if that needs to be resolved.
-    */
-    char *ref_id;
-};
 
 /**
  * Local singleton containing the parser context.
@@ -254,43 +200,6 @@ struct InstParseContext {
      * Hash table of ALSound that need to have keymap reference resolved.
     */
     struct IntHashTable *sound_missing_keymap;
-};
-
-/**
- * Describes a "base" type like integer.
- * This is used for the properties, not parent block type.
- * This sort of corresponds to a line in the block.
-*/
-enum TYPE_ID {
-    /**
-     * Default / unset / unknown.
-    */
-    TYPE_ID_NONE = 0,
-
-    /**
-     * Integer type, signed/unsigned and bitsize
-     * are context dependent (based on property).
-    */
-    TYPE_ID_INT = 1,
-
-    /**
-     * Property such as:
-     *     use ("filename.aifc");
-    */
-    TYPE_ID_USE_STRING,
-
-    /**
-     * An unquoted string, gives an id of another block
-     * within the instance file.
-    */
-    TYPE_ID_TEXT_REF_ID,
-
-    /**
-     * An unquoted string, gives an id of another block
-     * within the instance file. Base property is an array
-     * and array index is required.
-    */
-    TYPE_ID_ARRAY_TEXT_REF_ID,
 };
 
 /**
@@ -817,13 +726,7 @@ enum InstParseState {
 
 // forward declarations.
 
-static inline int is_whitespace(char c) ATTR_INLINE ;
-static inline int is_newline(char c) ATTR_INLINE ;
-static inline int is_alpha(char c) ATTR_INLINE ;
-static inline int is_alphanumeric(char c) ATTR_INLINE ;
-static inline int is_numeric(char c) ATTR_INLINE ;
-static inline int is_numeric_int(char c) ATTR_INLINE ;
-static inline int is_comment(char c) ATTR_INLINE ;
+
 
 
 static inline int StringHash_instrument_unvisited(void *vp);
@@ -856,94 +759,6 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
 static void resolve_references(struct InstParseContext *context, struct ALBankFile *bank_file);
 
 // end forward declarations
-
-/**
- * Checks whether a character is whitespace or not.
- * @param c: character.
- * @returns: true if '\t' or ' ', false otherwise.
-*/
-static inline int is_whitespace(char c)
-{
-    return c == ' ' || c == '\t';
-}
-
-/**
- * Checks whether a character is a "newline" or not.
- * @param c: character.
- * @returns: true if '\r' or '\n', false otherwise.
-*/
-static inline int is_newline(char c)
-{
-    return c == '\r' || c == '\n';
-}
-
-/**
- * Checks whether a two character sequence is a windows neweline glyph.
- * @param c: most recent character.
- * @param previous_c: character before the most recent.
- * @returns: true if '\r\n', false otherwise.
-*/
-static int is_windows_newline(int c, int previous_c)
-{
-    if (c == '\n' && previous_c == '\r')
-    {
-        return 1;
-    }
-
-    return 0;
-}
-
-/**
- * Checks whether a character is a valid leading token name character.
- * @param c: character.
- * @returns: true if (regex: [a-zA-z_] ), false otherwise.
-*/
-static inline int is_alpha(char c)
-{
-    return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
-}
-
-/**
- * Checks whether a character is a valid token name character.
- * @param c: character.
- * @returns: true if (regex: [a-zA-z0-9_] ), false otherwise.
-*/
-static inline int is_alphanumeric(char c)
-{
-    return  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
-}
-
-/**
- * Checks whether a character is a number or not. This is more
- * restrictive than {@code is_numeric_int}.
- * @param c: character.
- * @returns: true if (regex: [0-9] ), false otherwise.
-*/
-static inline int is_numeric(char c)
-{
-    return  (c >= '0' && c <= '9');
-}
-
-/**
- * Checks whether a character could be used to describe an integer;
- * this allows hex representation.
- * @param c: character.
- * @returns: true if (regex: [0-9xX-] ), false otherwise.
-*/
-static inline int is_numeric_int(char c)
-{
-    return  (c >= '0' && c <= '9') || c == 'x' || c == 'X' || c == '-';
-}
-
-/**
- * Checks whether a character begins a comment.
- * @param c: character.
- * @returns: true if '#', false otherwise.
-*/
-static inline int is_comment(char c)
-{
-    return c == '#';
-}
 
 /**
  * Foreach `any` callback method.
@@ -2795,7 +2610,7 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
 
     c_int = -1;
     previous_c = -1;
-    current_line_number = 0;
+    current_line_number = 1;
     pos = 0;
     line_buffer_pos = 0;
     state = INST_PARSE_STATE_INITIAL;
