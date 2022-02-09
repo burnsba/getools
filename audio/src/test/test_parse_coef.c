@@ -64,7 +64,7 @@ void parse_coef_all(int *run_count, int *pass_count, int *fail_count)
         /**
          * test all supported values
         */
-        printf("parse inst test: 0001\n");
+        printf("parse coef test: 0001\n");
         int pass = 1;
         *run_count = *run_count + 1;
 
@@ -90,7 +90,7 @@ void parse_coef_all(int *run_count, int *pass_count, int *fail_count)
         /**
          * parse test for whitespace and comments
         */
-        printf("parse inst test: 0002 - whitespace and comments\n");
+        printf("parse coef test: 0002 - whitespace and comments\n");
         int pass = 1;
         *run_count = *run_count + 1;
 

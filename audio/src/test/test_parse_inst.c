@@ -38,8 +38,7 @@ int parse_inst_default(struct file_info *fi)
     int pass = 1;
     if (bank_file == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: bank_file is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: fail: bank_file is NULL\n", __func__, __LINE__);
     }
 
     if (bank_file->bank_count != 1)
@@ -50,16 +49,14 @@ int parse_inst_default(struct file_info *fi)
 
     if (bank_file->banks == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: bank_file->banks is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: fail: bank_file->banks is NULL\n", __func__, __LINE__);
     }
 
     bank = bank_file->banks[0];
 
     if (bank == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: bank is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank is NULL\n", __func__, __LINE__);
     }
 
     if (bank->inst_count != 1)
@@ -70,16 +67,14 @@ int parse_inst_default(struct file_info *fi)
 
     if (bank->instruments == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: bank->instruments is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank->instruments is NULL\n", __func__, __LINE__);
     }
 
     instrument = bank->instruments[0];
 
     if (instrument == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: instrument is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: instrument is NULL\n", __func__, __LINE__);
     }
 
     if (instrument->sound_count != 3)
@@ -102,8 +97,7 @@ int parse_inst_default(struct file_info *fi)
 
     if (instrument->sounds == NULL)
     {
-        pass = 0;
-        printf("%s %d>fail: instrument->sounds is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: instrument->sounds is NULL\n", __func__, __LINE__);
     }
 
     int seen_sound_index_0 = 0;
@@ -116,9 +110,7 @@ int parse_inst_default(struct file_info *fi)
 
         if (sound == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
-            exit(1);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: sound is NULL\n", __func__, __LINE__);
         }
 
         if (strcmp(sound->text_id, "sound1") == 0)
@@ -141,8 +133,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (wavetable == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wavetable is NULL\n", __func__, __LINE__);
             }
 
             if (strcmp(wavetable->aifc_path, "../sounds/thunk.aifc") != 0)
@@ -155,8 +146,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (envelope == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: envelope is NULL\n", __func__, __LINE__);
             }
 
             if (envelope->attack_time != 5000)
@@ -193,8 +183,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (keymap == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: keymap is NULL\n", __func__, __LINE__);
             }
 
             if (keymap->velocity_min != 1)
@@ -253,8 +242,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (wavetable == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wavetable is NULL\n", __func__, __LINE__);
             }
 
             if (strcmp(wavetable->aifc_path, "../sounds/glass.aifc") != 0)
@@ -267,8 +255,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (envelope == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: envelope is NULL\n", __func__, __LINE__);
             }
 
             if (envelope->attack_time != 5000)
@@ -305,8 +292,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (keymap == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: keymap is NULL\n", __func__, __LINE__);
             }
 
             if (keymap->velocity_min != 1)
@@ -365,8 +351,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (wavetable == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wavetable is NULL\n", __func__, __LINE__);
             }
 
             if (strcmp(wavetable->aifc_path, "hit.aifc") != 0)
@@ -379,8 +364,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (envelope == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: envelope is NULL\n", __func__, __LINE__);
             }
 
             if (envelope->attack_time != 11)
@@ -417,8 +401,7 @@ int parse_inst_default(struct file_info *fi)
 
             if (keymap == NULL)
             {
-                pass = 0;
-                printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: keymap is NULL\n", __func__, __LINE__);
             }
 
             if (keymap->velocity_min != 9)
@@ -505,8 +488,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         pass = 1;
         if (bank_file == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: bank_file is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
         }
 
         if (bank_file->bank_count != 1)
@@ -517,16 +499,14 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (bank_file->banks == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: bank_file->banks is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file->banks is NULL\n", __func__, __LINE__);
         }
 
         bank = bank_file->banks[0];
 
         if (bank == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: bank is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank is NULL\n", __func__, __LINE__);
         }
 
         if (bank->inst_count != 1)
@@ -537,16 +517,14 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (bank->instruments == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: bank->instruments is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank->instruments is NULL\n", __func__, __LINE__);
         }
 
         instrument = bank->instruments[0];
 
         if (instrument == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: instrument is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: instrument is NULL\n", __func__, __LINE__);
         }
 
         if (instrument->sound_count != 1)
@@ -557,25 +535,21 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (instrument->sounds == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: instrument->sounds is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: instrument->sounds is NULL\n", __func__, __LINE__);
         }
 
         sound = instrument->sounds[0];
 
         if (sound == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: sound is NULL\n", __func__, __LINE__);
-            exit(1);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: sound is NULL\n", __func__, __LINE__);
         }
 
         wavetable = sound->wavetable;
 
         if (wavetable == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: wavetable is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wavetable is NULL\n", __func__, __LINE__);
         }
 
         if (strcmp(wavetable->aifc_path, "sound_effect_0001.aifc") != 0)
@@ -588,8 +562,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (envelope == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: envelope is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: envelope is NULL\n", __func__, __LINE__);
         }
 
         if (envelope->attack_volume != 127)
@@ -602,8 +575,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (keymap == NULL)
         {
-            pass = 0;
-            printf("%s %d>fail: keymap is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: keymap is NULL\n", __func__, __LINE__);
         }
 
         if (keymap->key_min != 1)
