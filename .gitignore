@@ -161,3 +161,4 @@ Getools.Lib/Kaitai/Schema/*.cs
 /asset/**
 audio/bin/*
 audio/obj/*
+audio/backup

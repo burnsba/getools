@@ -371,7 +371,9 @@ static void apply_property_on_book(struct CoefParseContext *context)
             }
             
             struct llist_node *node = llist_node_new();
-            node->data_local = context->current_value_int;
+
+            // codebook values are stored big endian
+            node->data_local = BSWAP16_INLINE((uint16_t)context->current_value_int);
 
             llist_root_append_node(context->book_val, node);
 

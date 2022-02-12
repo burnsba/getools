@@ -1,0 +1,17 @@
+Test on short audio.
+
+wav format, sampleCount: 435118
+
+Convert .wav to .aifc using tool, then decode back to .wav.
+
+Compare the result with original .wav file.
+
+let `err` be the difference between original and gaudio
+sum of every `err` for gaudio: 27239554
+sum of every (`err` squared) for gaudio: 3703029298
+mean square error: 8510.40
+
+Compared to vadpcm encode:
+sum of every `err` for vadpcm: 28535253
+sum of every (`err` squared) for vadpcm: 3741856811
+mean square error: 8599.64

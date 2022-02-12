@@ -31,6 +31,7 @@
 
 extern int g_verbosity;
 extern int g_output_mode;
+extern int g_encode_bswap;
 extern char g_write_buffer[WRITE_BUFFER_LEN];
 extern char g_output_dir[MAX_FILENAME_LEN];
 extern char g_filename_prefix[MAX_FILENAME_LEN];

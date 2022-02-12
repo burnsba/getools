@@ -42,7 +42,7 @@
  * control flow flag, supposed to be used to mark "not implemented"
  * code paths (application should print error and exit(1) ).
 */
-#define THROW_NOT_IMPLEMENTED 1
+#define FLAG_THROW_NOT_IMPLEMENTED 1
 
 #if DEBUG_TRACE == 1
 extern int _trace_depth;

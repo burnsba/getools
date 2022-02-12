@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "machine_config.h"
 #include "debug.h"
 #include "common.h"
@@ -45,7 +46,11 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
     p->form_type = ADPCM_AIFC_FORM_TYPE_ID;
 
     p->chunk_count = chunk_count;
-    p->chunks = (void*)malloc_zero(chunk_count, sizeof(void*));
+    
+    if (chunk_count > 0)
+    {
+        p->chunks = (void**)malloc_zero(chunk_count, sizeof(void*));
+    }
 
     TRACE_LEAVE(__func__)
 
@@ -61,7 +66,6 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 {
     TRACE_ENTER(__func__)
 
-    size_t saved_pos;
     size_t pos;
     uint32_t chunk_id;
     int chunk_count;
@@ -98,14 +102,10 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
         stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", ADPCM_AIFC_FORM_TYPE_ID, p->form_type);
     }
 
-    // do a pass through the file once counting the number of chunks.
-    // this will let us finish malloc'ing the FORM chunk.
     // As the file is scanned, supported chunks will be parsed and added to a list.
     // Once the main aifc container is allocated the allocated chunks will
     // be added to the aifc container chunk list.
-    saved_pos = ftell(fi->fp);
-
-    pos = saved_pos;
+    pos = ftell(fi->fp);
     chunk_count = 0;
 
     struct llist_root chunk_list;
@@ -158,6 +158,11 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
                 default:
                 // ignore unsupported chunks
+                if (chunk_count > 0)
+                {
+                    chunk_count--;
+                }
+                file_info_fseek(fi, chunk_size, SEEK_CUR);
                 break;
             }
 
@@ -466,6 +471,7 @@ struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_
     p->base.ck_data_size = 4 + 1 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN + 2 + 2 + 2 + table_data_size_bytes;
     p->base.application_signature = ADPCM_AIFC_APPLICATION_SIGNATURE;
     p->base.unknown = 0xb;
+    p->version = ADPCM_AIFC_VADPCM_CODEBOOK_VERSION;
     p->order = order;
     p->nentries = nentries;
     
@@ -764,6 +770,234 @@ void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
 }
 
 /**
+ * Convert 16-bit mono PCM samples to format specified in .aifc comm chunk.
+ * If the audio needs to be encoded, this is the top level entry to encode it.
+ * This assumes "comm" chunk already exists with all parameters correctly set.
+ * If looping is to be used, this assumes "loop" chunk already exists with
+ * start and end values correctly set; then this method will update loop
+ * state to correct value during encode process.
+ * @param aaf: Output .aifc container. This method will allocate memory
+ * for the sound data. If sound chunk was previously allocated, the
+ * contents will be freed.
+ * @param buffer: buffer containing samples.
+ * @param max_len: Length in bytes of input buffer.
+ * @returns: number of bytes written
+*/
+size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t buffer_len)
+{
+    TRACE_ENTER(__func__)
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf->comm_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->comm_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer_len == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer_len is zero\n", __func__, __LINE__);
+    }
+
+    size_t write_len = 0;
+    size_t ssnd_chunk_pos = 0;
+    size_t sound_data_pos = 0;
+    size_t ssnd_data_size;
+
+    int use_loop = 0;
+    int found_loop_state = 0;
+
+    use_loop = aaf->loop_chunk != NULL
+        && aaf->loop_chunk->nloops == 1
+        && aaf->loop_chunk->loop_data != NULL;
+
+    /**
+     * If this is uncompressed audio then there's no codebook.
+    */
+    if (aaf->comm_chunk->compression_type == ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("compression type=NONE\n");
+        }
+
+        // no compression means there's nothing to do for the loop state.
+        use_loop = 0;
+
+        aaf->sound_chunk = AdpcmAifcSoundChunk_new(buffer_len);
+        AdpcmAifcFile_append_chunk(aaf, aaf->sound_chunk);
+
+        if (g_encode_bswap)
+        {
+            // adjust count to 16-byte pieces.
+            int num_16 = buffer_len / 2;
+            bswap16_chunk(aaf->sound_chunk->sound_data, buffer, num_16);
+        }
+        else
+        {
+            memcpy(aaf->sound_chunk->sound_data, buffer, buffer_len);
+        }
+
+        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, buffer_len);
+        }
+    }
+    else if (aaf->comm_chunk->compression_type == ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("compression type=VAPC\n");
+        }
+
+        if (aaf->codes_chunk == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->codes_chunk is NULL\n", __func__, __LINE__);
+        }
+
+        if (aaf->codes_chunk->coef_table == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->codes_chunk->coef_table is NULL\n", __func__, __LINE__);
+        }
+
+        if (aaf->codes_chunk->order < 1)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid order: %d\n", __func__, __LINE__, aaf->codes_chunk->order);
+        }
+
+        if (aaf->codes_chunk->nentries < 1)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid nentries: %d\n", __func__, __LINE__, aaf->codes_chunk->nentries);
+        }
+
+        // if there's no loop, these won't be used, but default to a large value
+        // in case any comparisons are made ...
+        int32_t loop_start_sample = INT32_MAX;
+        int32_t loop_start_byte = INT32_MAX;
+
+        int32_t loop_end_sample = INT32_MAX;
+        int32_t loop_end_byte = INT32_MAX;
+
+        if (use_loop)
+        {
+            loop_start_sample = aaf->loop_chunk->loop_data->start;
+            loop_start_byte = loop_start_sample * 2;
+            loop_end_sample = aaf->loop_chunk->loop_data->end;
+            loop_end_byte = loop_end_sample * 2;
+
+            if (loop_start_byte > loop_end_byte)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop_start_byte=%d > loop_end_byte=%d\n", __func__, __LINE__, loop_start_byte, loop_end_byte);
+            }
+
+            if ((size_t)loop_start_byte > buffer_len)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop_start_byte=%d > buffer_len=%ld\n", __func__, __LINE__, loop_start_byte, buffer_len);
+            }
+
+            if ((size_t)loop_end_byte > buffer_len)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop_end_byte=%d > buffer_len=%ld\n", __func__, __LINE__, loop_end_byte, buffer_len);
+            }
+        }
+
+        int32_t *apc_state = (int32_t *)malloc_zero(aaf->codes_chunk->order, sizeof(int32_t));
+
+        // estimate space for sound data.
+        ssnd_data_size = 9 * (buffer_len / 32); /* scale 32:9, 16 16-bit samples into 9 byte windows */
+        ssnd_data_size += 100;
+
+        aaf->sound_chunk = AdpcmAifcSoundChunk_new(ssnd_data_size);
+        AdpcmAifcFile_append_chunk(aaf, aaf->sound_chunk);
+
+        // iterate and encode data into the sound chunk.
+        while (ssnd_chunk_pos < ssnd_data_size && sound_data_pos < buffer_len)
+        {
+            int encode_bytes;
+            int16_t sample_buffer[FRAME_DECODE_BUFFER_LEN];
+            
+            // The loop state information should be the state before the beginning of the loop
+            // is processed. This should only get set once, so there's flag to disable
+            // checking after it's read.
+            if (use_loop && found_loop_state == 0)
+            {
+                // if there's no loop, it doesn't make sense to compare loop_start_byte
+                if ((sound_data_pos + 16) > (size_t)loop_start_byte)
+                {
+                    int loop_state_index;
+
+                    found_loop_state = 1;
+
+                    for (loop_state_index=0; loop_state_index<aaf->codes_chunk->order; loop_state_index++)
+                    {
+                        aaf->loop_chunk->loop_data->state[ADPCM_AIFC_LOOP_STATE_LEN - loop_state_index] = apc_state[loop_state_index];
+                    }
+                }
+            }
+
+            memset(sample_buffer, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int16_t));
+
+            fill_16bit_buffer(
+                sample_buffer,
+                FRAME_DECODE_BUFFER_LEN,
+                buffer,
+                &sound_data_pos,
+                buffer_len);
+            
+            if (g_encode_bswap)
+            {
+                // conversion needs to happen before encoding.
+                bswap16_chunk(sample_buffer, sample_buffer, FRAME_DECODE_BUFFER_LEN); // inplace swap is ok
+            }
+
+            // Now read the next chunk of sound data. This advances the position counters for
+            // the .aifc sound chunk and the buffer. This updates the encoder state.
+            encode_bytes = AdpcmAifcFile_encode_frame(aaf, sample_buffer, apc_state, &ssnd_chunk_pos);
+
+            write_len += encode_bytes;
+        }
+
+        free(apc_state);
+
+        // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_ENCODE
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+        }
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> unsupported compression type 0x%08x\n", __func__, __LINE__, aaf->comm_chunk->compression_type);
+    }
+
+    if (use_loop)
+    {
+        if (found_loop_state == 0)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> expected loop state information, but that was never set\n", __func__, __LINE__);
+        }
+    }
+
+    // set the "num_sample_frames" field, which should be the size of the uncompressed data
+    aaf->comm_chunk->num_sample_frames = buffer_len / 2; // 16 bit samples
+
+    // adjust sound chunk size to actual written data size
+    aaf->sound_chunk->ck_data_size = 8 + write_len; // 8 = sizeof offset,block_size
+
+    TRACE_LEAVE(__func__)
+    return write_len;
+}
+
+/**
  * Decode .aifc audio and write to output buffer.
  * If the audio is compressed, this is the top level entry into decompressing it.
  * @param aaf: input source
@@ -842,7 +1076,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%d\n", __func__, __LINE__, ssnd_data_size);
+                printf("%s %d: write_len=%d\n", __func__, __LINE__, num_16 * 2);
             }
 
             TRACE_LEAVE(__func__)
@@ -884,7 +1118,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
                 stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
             }
 
-            loop_data = &aaf->loop_chunk->loop_data[0];
+            loop_data = aaf->loop_chunk->loop_data;
 
             if (loop_data == NULL)
             {
@@ -1084,7 +1318,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
                 stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
             }
 
-            loop_data = &aaf->loop_chunk->loop_data[0];
+            loop_data = aaf->loop_chunk->loop_data;
 
             if (loop_data == NULL)
             {
@@ -1685,6 +1919,601 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
 }
 
 /**
+ * Adds codebook chunk to .aifc file.
+ * This allocates memory and dynamically resizes the chunk list on the .aifc file.
+ * @param aaf: file to add codebook chunk to.
+ * @param book: codebook.
+*/
+void AdpcmAifcFile_add_codebook_from_ALADPCMBook(struct AdpcmAifcFile *aaf, struct ALADPCMBook *book)
+{
+    TRACE_ENTER(__func__)
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (book == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> book is NULL\n", __func__, __LINE__);
+    }
+
+    int order = book->order;
+    int npredictors = book->npredictors;
+
+    if (order < 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid order: %d\n", __func__, __LINE__, order);
+    }
+
+    if (npredictors < 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid order: %d\n", __func__, __LINE__, npredictors);
+    }
+
+    struct AdpcmAifcCodebookChunk *chunk = AdpcmAifcCodebookChunk_new((int16_t)order, (int16_t)npredictors);
+
+    size_t table_data_size_bytes = order * npredictors * 16;
+    memcpy(chunk->table_data, book->book, table_data_size_bytes);
+    AdpcmAifcCodebookChunk_decode_aifc_codebook(chunk);
+
+    aaf->codes_chunk = chunk;
+    AdpcmAifcFile_append_chunk(aaf, aaf->codes_chunk);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * This dynamically resizes the chunk array and adds item to end of new list.
+ * This does not update any convenience pointers.
+ * @param aifc_file: .aifc file to add chunk to.
+ * @param chunk: chunk to add.
+*/
+void AdpcmAifcFile_append_chunk(struct AdpcmAifcFile *aifc_file, void *chunk)
+{
+    TRACE_ENTER(__func__)
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aifc_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: chunk is NULL\n", __func__, __LINE__);
+    }
+
+    aifc_file->chunk_count++;
+
+    // this could be initializing the chunks container for the first time.
+    if (aifc_file->chunks == NULL)
+    {
+        aifc_file->chunks = (void**)malloc_zero(aifc_file->chunk_count, sizeof(void*));
+    }
+    else
+    {
+        size_t old_size = sizeof(void*) * (aifc_file->chunk_count - 1);
+        size_t new_size = sizeof(void*) * (aifc_file->chunk_count);
+
+        malloc_resize(old_size, (void**)&aifc_file->chunks, new_size);
+    }
+
+    aifc_file->chunks[aifc_file->chunk_count - 1] = chunk;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Applies the standard .aifc encode algorithm on incoming sound data and writes it
+ * into the {@code struct AdpcmAifcFile} sound chunk.
+ * @param aaf: File to write compressed sound data into. Thus must have
+ * been previously initialized, sound chunk must be allocated with enough space,
+ * and codebook must be setup and loaded.
+ * @param sound_data: Incoming sound data. This is uncompressed PCM data, as used
+ * by .aiff or .wav sound chunks.
+ * @param apc_state: "Adaptive Predictive Coding" state. This contains the data
+ * carried forward to encode the next block of audio.
+ * @param ssnd_chunk_pos: The current position in {@code aaf} that will be written to.
+ * @param sound_data_pos: The current position in {@code sound_data} to be read.
+ * @param sound_data_len: Length in bytes of {@code sound_data}.
+ * @returns: the number of bytes written.
+*/
+int AdpcmAifcFile_encode_frame(
+    struct AdpcmAifcFile *aaf,
+    int16_t *samples_in,
+    int32_t *apc_state,
+    size_t *ssnd_chunk_pos)
+{
+    TRACE_ENTER(__func__)
+
+    // validation checks
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf->codes_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->codes_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf->codes_chunk->coef_table == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->codes_chunk->coef_table is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf->sound_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->sound_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (samples_in == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> samples_in is NULL\n", __func__, __LINE__);
+    }
+
+    if (apc_state == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> apc_state is NULL\n", __func__, __LINE__);
+    }
+
+    if (ssnd_chunk_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ssnd_chunk_pos is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf->sound_chunk->ck_data_size < 8)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid aaf->sound_chunk size: %d\n", __func__, __LINE__, aaf->sound_chunk->ck_data_size);
+    }
+
+    if ((*ssnd_chunk_pos + 16) > (size_t)(aaf->sound_chunk->ck_data_size - 8))
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> writing frame would exceed sound chunk length, aaf->sound_chunk->ck_data_size: %d, ssnd_chunk_pos= %ld\n", __func__, __LINE__, aaf->sound_chunk->ck_data_size, *ssnd_chunk_pos);
+    }
+
+    // done validating.
+
+    // declare variables
+
+    // convenience pointer
+    int32_t ***coefTable;
+    // convenience value
+    int npredictors;
+    // convenience value
+    int order;
+
+    // number of bytes written
+    int write_len;
+
+    // holds main values during row processing. Allocated, freed.
+    int32_t *working;
+
+    // copy of best state seen while evaluating scales.
+    int32_t *best_state;
+
+    // points to current row of the `samples_in` buffer.
+    int16_t *samples_in_row;
+
+    // look index, current predictor
+    int predictor;
+
+    // best predictor seen so far
+    int best_predictor;
+
+    // loop value/index.
+    int32_t scale;
+
+    // best scale seen so far.
+    int best_scale;
+
+    // sum of (error * error)
+    float square_error;
+
+    // best (smallest) error seen so far
+    float best_square_error;
+
+    // max clip amount seen for this predictor
+    int32_t max_clip;
+
+    // best max clip value for all predictors
+    int32_t best_max_clip;
+
+    // holds qanitization error for current loop iteration
+    int quantize_error;
+
+    // container for prediction values
+    int32_t prediction[FRAME_DECODE_BUFFER_LEN];
+
+    // pointer to current row in prediction array
+    int32_t *prediction_row;
+
+    // container for prediction errors
+    float prediction_error[FRAME_DECODE_BUFFER_LEN];
+
+    // pointer to current row in the prediction error buffer
+    float *error_row;
+
+    // holds main output values during final row processing while iterating scales.
+    int32_t working_encode[FRAME_DECODE_BUFFER_LEN];
+
+    // holds best encoded value seen so far while iterating scales
+    int32_t best_encode[FRAME_DECODE_BUFFER_LEN];
+
+    // pointer to current row in working encode buffer
+    int32_t *working_encode_row;
+
+    // frame buffer row index
+    int fbri;
+
+    uint8_t header;
+    uint8_t c;
+    int i;
+
+    // done declaring variables
+
+    // copy from aaf for convenience
+    order = aaf->codes_chunk->order;
+    npredictors = aaf->codes_chunk->nentries;
+    coefTable = aaf->codes_chunk->coef_table;
+
+    memset(prediction, 0, FRAME_DECODE_ROW_LEN * sizeof(int32_t));
+
+    working = (int32_t *)malloc_zero(order + FRAME_DECODE_ROW_LEN, sizeof(int32_t));
+    best_state = (int32_t *)malloc_zero(order, sizeof(int32_t));
+
+    best_square_error = UINT32_MAX;
+    best_max_clip = INT32_MAX;
+    scale = 0;
+    best_scale = -1;
+    best_predictor = 0;
+    write_len = 0;
+
+    /**
+     * Phase 1:
+     * Iterate the predictors and find the one that generates the least square error.
+    */
+    if (npredictors > 1)
+    {
+        for (predictor = 0; predictor < npredictors; predictor++)
+        {
+            // The first `order` bytes are feedback from the previous frame.
+            for (i = 0; i < order; i++)
+            {
+                working[i] = apc_state[i];
+            }
+
+            // reset to starting row.
+            prediction_row = &prediction[0];
+            samples_in_row = &samples_in[0];
+            error_row = &prediction_error[0];
+
+            // reset variables / buffers
+            memset(prediction_error, 0, FRAME_DECODE_BUFFER_LEN * sizeof(float));
+            memset(prediction, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+            square_error = 0.0f;
+
+            // Evaluate the frame, the important part is measuring the error.
+            for (fbri=0; fbri<2; fbri++)
+            {
+                for (i = 0; i < FRAME_DECODE_ROW_LEN; i++)
+                {
+                    prediction_row[i] = dot_product_i32(coefTable[predictor][i], working, order + i);
+                    prediction_row[i] = divide_round_down(prediction_row[i], FRAME_DECODE_SCALE);
+                    working[i + order] = samples_in_row[i] - prediction_row[i];
+                    error_row[i] = (float) working[i + order];
+                    square_error += error_row[i] * error_row[i];
+                }
+
+                // Carry forward the feedback
+                for (i = 0; i < order; i++)
+                {
+                    working[i] = prediction_row[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
+                }
+
+                // advance to next row.
+                prediction_row = &prediction_row[FRAME_DECODE_ROW_LEN];
+                samples_in_row = &samples_in_row[FRAME_DECODE_ROW_LEN];
+                error_row = &error_row[FRAME_DECODE_ROW_LEN];
+            }
+
+            /**
+             * If this is the best error amount seen so far then
+             * mark this predictor to be used.
+            */
+            if (square_error < best_square_error)
+            {
+                best_square_error = square_error;
+                best_predictor = predictor;
+            }
+        }
+    }
+
+    // declared on the stack, so make sure this is empty.
+    memset(best_encode, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+
+    /**
+     * Phase 2:
+     * Iterate the scales and find the first one that drops quantized
+     * error below 2.
+    */
+    for (scale = 0; scale <= FRAME_ENCODE_MAX_POW_SCALE; scale++)
+    {
+        // reset to starting row.
+        prediction_row = &prediction[0];
+        samples_in_row = &samples_in[0];
+        error_row = &prediction_error[0];
+        working_encode_row = &working_encode[0];
+
+        // reset variables / buffers
+        memset(prediction_error, 0, FRAME_DECODE_BUFFER_LEN * sizeof(float));
+        memset(prediction, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+        memset(working_encode, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+        memset(working, 0, (order + FRAME_DECODE_ROW_LEN) * sizeof(int32_t));
+        max_clip = 0;
+
+        // The first `order` bytes are feedback from the previous frame.
+        for (i = 0; i < order; i++)
+        {
+            working[i] = apc_state[i];
+        }
+
+        /**
+         * Evaluate the frame. This time the metric is against the quantized error.
+        */
+        for (fbri=0; fbri<2; fbri++)
+        {
+            for (i = 0; i < FRAME_DECODE_ROW_LEN; i++)
+            {
+                prediction_row[i] = dot_product_i32(coefTable[best_predictor][i], working, order + i);
+                prediction_row[i] = divide_round_down(prediction_row[i], FRAME_DECODE_SCALE);
+                
+                error_row[i] = samples_in_row[i] - prediction_row[i];
+                working_encode_row[i] = forward_quantize(error_row[i], 1 << scale);
+                quantize_error = (int16_t) clamp(working_encode_row[i], ADPCM_ENCODE_VAL_SIGNED_MIN, ADPCM_ENCODE_VAL_SIGNED_MAX) - working_encode_row[i];
+                working_encode_row[i] += quantize_error;
+                working[i + order] = working_encode_row[i] * (1 << scale);
+
+                if (max_clip < abs(quantize_error))
+                {
+                    max_clip = abs(quantize_error);
+                }
+            }
+
+            // Carry forward the feedback
+            for (i = 0; i < order; i++)
+            {
+                working[i] = prediction_row[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
+            }
+
+            // advance to next row.
+            prediction_row = &prediction_row[FRAME_DECODE_ROW_LEN];
+            samples_in_row = &samples_in_row[FRAME_DECODE_ROW_LEN];
+            error_row = &error_row[FRAME_DECODE_ROW_LEN];
+            working_encode_row = &working_encode_row[FRAME_DECODE_ROW_LEN];
+        }
+
+        /**
+         * If this is the best error amount seen so far then
+         * mark this scale to be used. Save the feedback state
+         * and the entire encoded values here, these will then
+         * be sent directly to output.
+        */
+        if (max_clip < best_max_clip)
+        {
+            best_scale = scale;
+            best_max_clip = max_clip;
+
+            for (i = 0; i < order; i++)
+            {
+                best_state[i] = working[i];
+            }
+
+            for (i = 0; i < FRAME_DECODE_BUFFER_LEN; i++)
+            {
+                best_encode[i] = working_encode[i];
+            }
+        }
+
+        // Once the error is small enough then exit.
+        if (best_max_clip <= 2)
+        {
+            break;
+        }
+    }
+
+    /**
+     * Copy the best decode state to the In/Out parameter.
+    */
+    for (i = 0; i < order; i++)
+    {
+        apc_state[i] = best_state[i];
+    }
+
+    if (best_scale < 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> could not determine scale\n", __func__, __LINE__);
+    }
+
+    // write header byte.
+    header = (uint8_t)(best_scale << 4) | (uint8_t)(best_predictor & 0xf);
+    aaf->sound_chunk->sound_data[*ssnd_chunk_pos] = header;
+    *ssnd_chunk_pos = *ssnd_chunk_pos + 1;
+    write_len++;
+
+    // Write the output bytes.
+    for (i = 0; i < FRAME_DECODE_BUFFER_LEN; i += 2)
+    {
+        c = (uint8_t)(best_encode[i] << 4) | (uint8_t)(best_encode[i + 1] & 0xf);
+        aaf->sound_chunk->sound_data[*ssnd_chunk_pos] = c;
+        *ssnd_chunk_pos = *ssnd_chunk_pos + 1;
+        write_len++;
+    }
+
+    // cleanup
+    free(working);
+    free(best_state);
+
+    TRACE_LEAVE(__func__)
+    return write_len;
+}
+
+/**
+ * Applies the standard .aifc decode algorithm from the sound chunk and writes
+ * result to the frame buffer.
+ * @param aaf: container file.
+ * @param frame_buffer: standard frame buffer, two rows of 8.
+ * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
+ * {@code eof} then will be set to next byte position.
+ * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
+ * in the sound chunk this is set to 1. Otherwise set to zero.
+*/
+void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
+{
+    TRACE_ENTER(__func__)
+
+    // which coef_table to use
+    int32_t table_index;
+
+    // how much to re-scale each input value
+    int32_t scale;
+
+    size_t convl_size;
+
+    // one row, length is `order` + FRAME_DECODE_ROW_LEN
+    int32_t *convl_frame;
+    int convl_position;
+    
+    int order;
+
+    uint8_t frame_header;
+    uint8_t c;
+
+    int i;
+
+    int32_t *frame_buffer_feedback;
+    int32_t *frame_buffer_row;
+    
+    // which row in frame buffer, ~ frame buffer row index
+    int fbri;
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
+    }
+
+    if (aaf->codes_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s:  aaf->codes_chunk is NULL\n", __func__);
+    }
+
+    // grab order from file for convenience
+    order = aaf->codes_chunk->order;
+
+    convl_size = order + FRAME_DECODE_ROW_LEN;
+    convl_frame = (int32_t *)malloc_zero(1, convl_size * sizeof(int32_t));
+
+    /**
+     * The last `order` bytes written to the frame buffer are carried forward
+     * in the decode algorithm below. The frame buffer is essentially
+     * two rows, so this will get updated to the end of the first row once the first
+     * row is written. But for starting conditions, this has to be last
+     * bytes of the entire frame_buffer since that was written last.
+    */
+    frame_buffer_feedback = &frame_buffer[FRAME_DECODE_BUFFER_LEN - order]; // total frame buffer len
+
+    /**
+     * Pointer to current row in output frame buffer. Start at the first row,
+     * this will advance through the frame_buffer while processing.
+    */
+    frame_buffer_row = frame_buffer;
+
+    /**
+     * The frame header is split into two 4-bit numbers.
+     * The upper four bits are exponent (base 2) for scale, as 2^s.
+     * The lower four bits are the table in the coefficient table.
+    */
+    frame_header = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+    scale = 1 << (frame_header >> 4);
+    table_index = frame_header & 0xf;
+
+    /**
+     * An incoming frame is 9 bytes. It consists of the frame header (above)
+     * and eight bytes of data. Each 4-byte chunk will be one row
+     * in the output frame_buffer.
+    */
+    for (fbri=0; fbri<2; fbri++) // loop for each row in the frame_buffer .... is this `order`?
+    {
+        convl_position = 0;
+
+        /**
+         * Copy the feedback state into the next row to be processed.
+         * This is written to the first `order` bytes of the row.
+        */
+        for (i=0; i<order; i++)
+        {
+            convl_frame[convl_position] = frame_buffer_feedback[i];
+            convl_position++;
+        }
+
+        /**
+         * 4 bytes of input decode into one row of frame_buffer.
+         * This will be put into the convl_frame just after the prior
+         * state bytes.
+        */
+        for (i=0; i<4; i++)
+        {
+            c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
+
+            /**
+             * Two samples were compressed into one byte (4 bits each).
+             * These need to be re-scaled by the scale factor defined in the frame header.
+             * These were stored signed, 0-7 is positive, 8-15 corresponds to -8 through -1.
+             * This splits the compressed byte back into two samples
+             * in big endian format.
+            */
+            convl_frame[convl_position] = c >> 4; // upper
+            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
+            {
+                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
+            }
+            convl_frame[convl_position] *= scale;
+            convl_position++;
+            
+            convl_frame[convl_position] = c & 0xf; // lower
+            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
+            {
+                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
+            }
+            convl_frame[convl_position] *= scale;
+            convl_position++;
+        }
+
+        /**
+         * Compute the frame_buffer row.
+         * The i'th column in the frame_buffer is the convl_frame (dot product) i'th coef_table row
+        */
+        for (i=0; i<FRAME_DECODE_ROW_LEN; i++)
+        {
+            frame_buffer_row[i] = dot_product_i32(aaf->codes_chunk->coef_table[table_index][i], convl_frame, convl_size);
+            frame_buffer_row[i] = divide_round_down(frame_buffer_row[i], FRAME_DECODE_SCALE);
+        }
+
+        // Set pointer for the feedback state for next iteration.
+        // This needs to point to the end of the row just written above.
+        frame_buffer_feedback = &frame_buffer_row[FRAME_DECODE_ROW_LEN - order]; // row len
+
+        // Advance to next row in frame buffer.
+        frame_buffer_row = &frame_buffer_row[FRAME_DECODE_ROW_LEN];
+    }
+
+    free(convl_frame);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
  * Creates new {@code struct AdpcmAifcCommChunk} from aifc file contents.
  * @param fi: aifc file. Reads from current seek position.
  * @param ck_data_size: chunk size in bytes.
@@ -1875,160 +2704,6 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file
     TRACE_LEAVE(__func__)
 
     return p;
-}
-
-/**
- * Applies the standard .aifc decode algorithm from the sound chunk and writes
- * result to the frame buffer.
- * @param aaf: container file.
- * @param frame_buffer: standard frame buffer, two rows of 8.
- * @param ssnd_chunk_pos: in/out paramter. Current byte position within the sound chunk. If not
- * {@code eof} then will be set to next byte position.
- * @param end_of_ssnd: out parameter. If {@code ssnd_chunk_pos} is less than the size of the sound data
- * in the sound chunk this is set to 1. Otherwise set to zero.
-*/
-void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd)
-{
-    TRACE_ENTER(__func__)
-
-    // which coef_table to use
-    int32_t table_index;
-
-    // how much to re-scale each input value
-    int32_t scale;
-
-    size_t convl_size;
-
-    // one row, length is `order` + FRAME_DECODE_ROW_LEN
-    int32_t *convl_frame;
-    int convl_position;
-    
-    int order;
-
-    uint8_t frame_header;
-    uint8_t c;
-
-    int i;
-
-    int32_t *frame_buffer_feedback;
-    int32_t *frame_buffer_row;
-    
-    // which row in frame buffer, ~ frame buffer row index
-    int fbri;
-
-    if (aaf == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
-    }
-
-    if ( aaf->codes_chunk == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s:  aaf->codes_chunk is NULL\n", __func__);
-    }
-
-    // grab order from file for convenience
-    order = aaf->codes_chunk->order;
-
-    convl_size = order + FRAME_DECODE_ROW_LEN;
-    convl_frame = (int32_t *)malloc_zero(1, convl_size);
-
-    /**
-     * The last `order` bytes written to the frame buffer are carried forward
-     * in the decode algorithm below. The frame buffer is essentially
-     * two rows, so this will get updated to the end of the first row once the first
-     * row is written. But for starting conditions, this has to be last
-     * bytes of the entire frame_buffer since that was written last.
-    */
-    frame_buffer_feedback = &frame_buffer[FRAME_DECODE_BUFFER_LEN - order]; // total frame buffer len
-
-    /**
-     * Pointer to current row in output frame buffer. Start at the first row,
-     * this will advance through the frame_buffer while processing.
-    */
-    frame_buffer_row = frame_buffer;
-
-    /**
-     * The frame header is split into two 4-bit numbers.
-     * The upper four bits are exponent (base 2) for scale, as 2^s.
-     * The lower four bits are the row number in the coefficient table.
-    */
-    frame_header = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
-    scale = 1 << (frame_header >> 4);
-    table_index = frame_header & 0xf;
-
-    /**
-     * An incoming frame is 9 bytes. It consists of the frame header (above)
-     * and eight bytes of data. Each 4-byte chunk will be one row
-     * in the output frame_buffer.
-    */
-    for (fbri=0; fbri<2; fbri++) // loop for each row in the frame_buffer .... is this `order`?
-    {
-        convl_position = 0;
-
-        /**
-         * Copy the feedback state into the next row to be processed.
-         * This is written to the first `order` bytes of the row.
-        */
-        for (i=0; i<order; i++)
-        {
-            convl_frame[convl_position] = frame_buffer_feedback[i];
-            convl_position++;
-        }
-
-        /**
-         * 4 bytes of input decode into one row of frame_buffer.
-         * This will be put into the convl_frame just after the prior
-         * state bytes.
-        */
-        for (i=0; i<4; i++)
-        {
-            c = get_sound_chunk_byte(aaf, ssnd_chunk_pos, end_of_ssnd);
-
-            /**
-             * Two samples were compressed into one byte (4 bits each).
-             * These need to be re-scaled by the scale factor defined in the frame header.
-             * These were stored signed, 0-7 is positive, 8-15 corresponds to -8 through -1.
-             * This splits the compressed byte back into two samples
-             * in big endian format.
-            */
-            convl_frame[convl_position] = c >> 4; // upper
-            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
-            {
-                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
-            }
-            convl_frame[convl_position] *= scale;
-            convl_position++;
-            
-            convl_frame[convl_position] = c & 0xf; // lower
-            if (convl_frame[convl_position] > ADPCM_ENCODE_VAL_SIGNED_MAX)
-            {
-                convl_frame[convl_position] -= ADPCM_ENCODE_VAL_RANGE;
-            }
-            convl_frame[convl_position] *= scale;
-            convl_position++;
-        }
-
-        /**
-         * Compute the frame_buffer row.
-         * The i'th column in the frame_buffer is the convl_frame (dot product) i'th coef_table row
-        */
-        for (i=0; i<FRAME_DECODE_ROW_LEN; i++)
-        {
-            frame_buffer_row[i] = dot_product_i32(aaf->codes_chunk->coef_table[table_index][i], convl_frame, convl_size);
-            frame_buffer_row[i] = divide_round_down(frame_buffer_row[i], FRAME_DECODE_SCALE);
-        }
-
-        // Set pointer for the feedback state for next iteration.
-        // This needs to point to the end of the row just written above.
-        frame_buffer_feedback = &frame_buffer_row[FRAME_DECODE_ROW_LEN - order]; // row len
-
-        // Advance to next row in frame buffer.
-        frame_buffer_row = &frame_buffer_row[FRAME_DECODE_ROW_LEN];
-    }
-
-    free(convl_frame);
-
-    TRACE_LEAVE(__func__)
 }
 
 /**

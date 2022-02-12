@@ -36,3 +36,10 @@ char g_output_dir[MAX_FILENAME_LEN] = {0};
  * Anything to prepend to output filename.
 */
 char g_filename_prefix[MAX_FILENAME_LEN] = {0};
+
+/**
+ * When this flag is set, the raw sound about to be encoded into a
+ * sound chunk will be byte swapped. This affects:
+ * {@code AdpcmAifcFile_encode}
+*/
+int g_encode_bswap = 0;

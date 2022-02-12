@@ -126,7 +126,7 @@ void print_help(const char * invoke)
 {
     printf("%s %s help\n", APPNAME, VERSION);
     printf("\n");
-    printf("Converts n64 aifc audio to wav format\n");
+    printf("Converts n64 aifc audio (mono 16 bit PCM big endian) to wav format (mono 16 bit PCM little endian)\n");
     printf("usage:\n");
     printf("\n");
     printf("    %s --in file\n", invoke);
@@ -604,7 +604,7 @@ int main(int argc, char **argv)
     file_info_free(input_file);
     input_file = NULL;
 
-    wav_file = WavFile_load_from_aifc(aifc_file);
+    wav_file = WavFile_new_from_aifc(aifc_file);
 
     if (opt_write_smpl == 1)
     {

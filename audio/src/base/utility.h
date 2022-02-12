@@ -89,5 +89,11 @@ int string_ends_with(const char * str, const char * suffix);
 void int32_to_varint(int32_t in, struct var_length_int *varint);
 void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint);
 void varint_copy(struct var_length_int *dest, struct var_length_int* source);
+size_t fill_16bit_buffer(
+    int16_t *samples,
+    size_t samples_required,
+    uint8_t *sound_data,
+    size_t *sound_data_pos,
+    size_t sound_data_len);
 
 #endif

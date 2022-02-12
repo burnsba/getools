@@ -50,7 +50,10 @@ int parse_coef_default(struct file_info *fi)
 
     for (i=0; i<count; i++)
     {
-        pass &= (book->book[i] == expected[i]);
+        // values are stored big endian
+        int16_t expected_val = BSWAP16_INLINE((uint16_t)expected[i]);
+
+        pass &= (book->book[i] == expected_val);
     }
 
     ALADPCMBook_free(book);

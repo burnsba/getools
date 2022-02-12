@@ -512,7 +512,7 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
  * struct file_info wrapper to fseek.
  * @param fi: file_info.
  * @param __off: seek amount offset.
- * @param __whence: from where to seek.
+ * @param __whence: from where to seek. (SEEK_SET, SEEK_CUR, SEEK_END)
  * @returns: fseek result.
 */
 int file_info_fseek(struct file_info *fi, long __off, int __whence)
@@ -754,6 +754,7 @@ void file_info_free(struct file_info *fi)
 /**
  * Copies 16 bit elements from source to destination, performing
  * byte swap on each element.
+ * It is safe for dest to be the same as source (probably don't overlap otherwise though).
  * @param dest: destination array.
  * @param src: source array.
  * @param num: number of elements to copy and swap. (not number of bytes!)
@@ -780,10 +781,21 @@ void bswap16_chunk(void *dest, const void *src, size_t num)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, src is NULL\n", __func__);
     }
 
-    for (i=0; i<num; i++)
+    if (dest == src)
     {
-        ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)src)[i]);
+        for (i=0; i<num; i++)
+        {
+            ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)dest)[i]);
+        }
     }
+    else
+    {
+        for (i=0; i<num; i++)
+        {
+            ((uint16_t*)dest)[i] = BSWAP16_INLINE(((uint16_t*)src)[i]);
+        }
+    }
+
 
     TRACE_LEAVE(__func__)
 }
@@ -1221,4 +1233,70 @@ void varint_copy(struct var_length_int *dest, struct var_length_int* source)
     dest->num_bytes = source->num_bytes;
 
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Reads a little endian byte buffer of sound data and puts it
+ * into a buffer of 16 bit samples. If the incoming data is not long
+ * enough to provide the required number of samples then values
+ * of zeros are used to pad the results.
+ * @param samples: Output buffer, must be previously allocated and large
+ * enough to hold {@code samples_required} number of 16-bit samples.
+ * @param samples_required: The number of 16 bit samples to acquire.
+ * @param sound_data: Byte buffer of litte endian sound data.
+ * @param sound_data_pos: In/out parmater. Current position in sound buffer
+ * to begin reading sound data. Will contain the last position read.
+ * @param sound_data_len: Length in bytes of incoming sound buffer.
+ * @returns: number of bytes read from buffer.
+*/
+size_t fill_16bit_buffer(
+    int16_t *samples,
+    size_t samples_required,
+    uint8_t *sound_data,
+    size_t *sound_data_pos,
+    size_t sound_data_len)
+{
+    TRACE_ENTER(__func__)
+
+    int i, sample_index;
+    size_t bytes_read = 0;
+    size_t max_i = 2 * samples_required; // 16 bit samples
+
+    /**
+     * Read bytes and convert to 16-bit samples, as long as data is
+     * available in incoming buffer.
+    */
+    i=0;
+    sample_index = 0;
+    while (*sound_data_pos < sound_data_len && (size_t)i<max_i && (size_t)sample_index<samples_required)
+    {
+        if ((i & 0x1) == 0)
+        {
+            samples[sample_index] = sound_data[*sound_data_pos];
+        }
+        else
+        {
+            samples[sample_index] |= sound_data[*sound_data_pos] << 8;
+            sample_index++;
+        }
+        
+        *sound_data_pos = *sound_data_pos + 1;
+        i++;
+        bytes_read++;
+    }
+
+    // if the above ended on half a sample, advance to next index
+    if ((i & 0x1) == 1)
+    {
+        sample_index++;
+    }
+
+    // pad any remaining samples with zero.
+    for (i=sample_index; (size_t)i<samples_required; i++)
+    {
+        samples[i] = 0;
+    }
+
+    TRACE_LEAVE(__func__)
+    return bytes_read;
 }

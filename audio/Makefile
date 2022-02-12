@@ -69,7 +69,7 @@ $(BUILD)/tbl2aifc: $(OBJ)/tbl2aifc.o $(OBJ)/libgaudiox.a
 $(BUILD)/aifc2wav: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
-$(BUILD)/wav2aifc: $(OBJ)/aifc2wav.o $(OBJ)/libgaudiox.a
+$(BUILD)/wav2aifc: $(OBJ)/wav2aifc.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
 $(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiox.a

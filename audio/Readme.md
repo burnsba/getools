@@ -53,6 +53,9 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 
 todo:
 
+
+- loops in encode
+
 - final valgrind check
 - readme writeup
 - if only one input is required, and one input provided, assume it's the `--in` parameter

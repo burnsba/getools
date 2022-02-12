@@ -5,6 +5,8 @@
 
 /**
  * This file contains structs and defines for supporting .wav audio files.
+ * 
+ * .wav files are assumed to be in LITTLE endian format.
 */
 
 /**
@@ -357,6 +359,7 @@ struct WavSampleChunk *WavSampleChunk_new(int number_loops);
 struct WavDataChunk *WavDataChunk_new(void);
 struct WavFmtChunk *WavFmtChunk_new(void);
 struct WavFile *WavFile_new(size_t num_chunks);
+struct WavFile *WavFile_new_from_file(struct file_info *fi);
 
 void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct file_info *fi);
 void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct file_info *fi);

@@ -43,7 +43,7 @@ int32_t dot_product_i32(int32_t *arr1, int32_t *arr2, size_t len)
 /**
  * Divides {@code num} by {@code den}, rounding the result down such that
  * result times {@code den} will be the nearest integral multiple of
- * @param den less than or equal to {@code num}. Fatal error if {@code den} is zero.
+ * {@code den} less than or equal to {@code num}. Fatal error if {@code den} is zero.
  * @param num: numerator
  * @param den: denominator
  * @returns: int32_t result
@@ -91,4 +91,23 @@ int32_t clamp(int32_t val, int32_t lt, int32_t gt)
     }
 
     return val;
+}
+
+/**
+ * Forward quantization step, divide by scale then add one half.
+ * Unless the value is negative, then subtract one half.
+ * @param x: value to quantize.
+ * @param scale: amount to divide by.
+ * @returns: 16-bit quantized amount.
+*/
+int16_t forward_quantize(float x, int32_t scale)
+{
+    if (x > 0.0f)
+    {
+        return (int16_t) ((x / scale) + 0.4999999);
+    }
+    else
+    {
+        return (int16_t) ((x / scale) - 0.4999999);
+    }
 }

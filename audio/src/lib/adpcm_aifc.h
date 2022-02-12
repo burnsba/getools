@@ -9,7 +9,14 @@
 
 /**
  * This file contains structs and defines for supporting .aifc audio files.
+ * 
+ * .aifc files are assumed to be in BIG endian format.
 */
+
+/**
+ * Default extension when creating a aifc file.
+*/
+#define AIFC_DEFAULT_EXTENSION ".aifc"
 
 /**
  * aifc file, root chunk fourcc id.
@@ -111,14 +118,30 @@
 */
 #define FRAME_DECODE_BUFFER_LEN 16
 
+/**
+ * The encode/decode is processed in "chunks" or "rows", this is the length.
+*/
 #define FRAME_DECODE_ROW_LEN 8
 
+/**
+ * Max value to attempt to encode values at (2^12).
+*/
+#define FRAME_ENCODE_MAX_POW_SCALE 12
+
+/**
+ * Data are scaled by this amount when encoding and decoding.
+*/
 #define FRAME_DECODE_SCALE (1 << 11) /* 2048 */
 
 /**
  * Loops version number, required to be 1 by some applications.
 */
 #define ADPCM_AIFC_VADPCM_LOOP_VERSION 1
+
+/**
+ * Codebook version number, required to be 1 by some applications.
+*/
+#define ADPCM_AIFC_VADPCM_CODEBOOK_VERSION 1
 
 /**
  * The number of bytes written to output wav file,
@@ -131,8 +154,30 @@
 */
 #define ADPCM_LOOP_STATE_ELEMENT_SIZE 2
 
-#define ADPCM_ENCODE_VAL_RANGE       16
+/**
+ * Samples will be scaled down to range only containing this many values.
+*/
+#define ADPCM_ENCODE_VAL_RANGE       16  /* should be power of 2 aligned or below math fails. */
+
+/**
+ * Max positive value that can be encoded.
+*/
 #define ADPCM_ENCODE_VAL_SIGNED_MAX  ((ADPCM_ENCODE_VAL_RANGE >> 1) - 1) /* = 7 */
+
+/**
+ * Most negative value that can be encoded.
+*/
+#define ADPCM_ENCODE_VAL_SIGNED_MIN  (-(ADPCM_ENCODE_VAL_RANGE >> 1)) /* = -8 */
+
+/**
+ * The most number of channels that are supported for .aifc format.
+*/
+#define AIFC_ENCODE_MAX_CHANNEL_SUPPORT 1
+
+/**
+ * The only bits-per-sample value supported by .aifc format.
+*/
+#define AIFC_ENCODE_BIT_SAMPLE_SUPPORT 16
 
 /**
  * aifc container for sound chunk.
@@ -478,21 +523,29 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type);
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries);
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes);
 struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new(void);
+
 void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi);
 void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi);
-void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk);
 void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi);
 void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi);
 void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi);
 void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi);
 void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi);
-size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len);
-int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
+
 void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk);
 void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk);
 void AdpcmAifcCodebookChunk_free(struct AdpcmAifcCodebookChunk *chunk);
 void AdpcmAifcLoopChunk_free(struct AdpcmAifcLoopChunk *chunk);
 void AdpcmAifcFile_free(struct AdpcmAifcFile *aifc_file);
+
+void AdpcmAifcFile_append_chunk(struct AdpcmAifcFile *aifc_file, void *chunk);
+
+void AdpcmAifcFile_add_codebook_from_ALADPCMBook(struct AdpcmAifcFile *aaf, struct ALADPCMBook *book);
+void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk);
+size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t buffer_len);
+size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len);
+
+int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
 size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
 
 size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len);
@@ -501,5 +554,10 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
 // Exposed publicly for testing.
 
 void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer, size_t *ssnd_chunk_pos, int *end_of_ssnd);
+int AdpcmAifcFile_encode_frame(
+    struct AdpcmAifcFile *aaf,
+    int16_t *samples_in,
+    int32_t *apc_state,
+    size_t *ssnd_chunk_pos);
 
 #endif

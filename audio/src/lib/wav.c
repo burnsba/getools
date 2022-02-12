@@ -13,6 +13,15 @@
 
 static uint32_t g_wav_cue_point_id = 0;
 
+// forward declarations
+
+static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct WavSampleLoop *WavSampleLoop_new_from_file(struct file_info *fi);
+static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+
+// end forward declarations
+
 /**
  * Allocates memory for a {@code struct WavSampleLoop} and sets known/const values.
  * @returns: pointer to new object.
@@ -114,11 +123,179 @@ struct WavFile *WavFile_new(size_t num_chunks)
     p->form_type = WAV_RIFF_TYPE_ID;
 
     p->chunk_count = num_chunks;
-    p->chunks = (void **)malloc_zero(num_chunks, sizeof(void *));
+
+    if (num_chunks > 0)
+    {
+        p->chunks = (void **)malloc_zero(num_chunks, sizeof(void *));
+    }
 
     TRACE_LEAVE(__func__)
 
     return p;
+}
+
+/**
+ * Reads contents of a file into a new {@code struct WavFile}.
+ * This is the main entry point to parse a file into a wav container.
+ * @param fi: wav file.
+ * @returns: pointer to new {@code struct WavFile}.
+*/
+struct WavFile *WavFile_new_from_file(struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    size_t pos;
+    uint32_t chunk_id;
+    int chunk_count;
+    int chunk_size;
+    int seen_fmt;
+    int seen_data;
+    int seen_smpl;
+
+    if (fi->len < 12)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: header too short\n");
+    }
+
+    file_info_fseek(fi, 0, SEEK_SET);
+
+    struct WavFile *wav = (struct WavFile *)malloc_zero(1, sizeof(struct WavFile));
+
+    file_info_fread(fi, &wav->ck_id, 4, 1);
+    BSWAP32(wav->ck_id);
+
+    file_info_fread(fi, &wav->ck_data_size, 4, 1);
+    file_info_fread(fi, &wav->form_type, 4, 1);
+    BSWAP32(wav->form_type);
+
+    if (wav->ck_id != WAV_RIFF_CHUNK_ID)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", WAV_RIFF_CHUNK_ID, wav->ck_id);
+    }
+
+    if (wav->form_type != WAV_RIFF_TYPE_ID)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", WAV_RIFF_TYPE_ID, wav->form_type);
+    }
+
+    // As the file is scanned, supported chunks will be parsed and added to a list.
+    // Once the main wav container is allocated the allocated chunks will
+    // be added to the wav container chunk list.
+    pos = ftell(fi->fp);
+
+    struct llist_root chunk_list;
+    memset(&chunk_list, 0, sizeof(struct llist_root));
+
+    while (pos < fi->len)
+    {
+        if (pos + 8 < fi->len)
+        {
+            struct llist_node *chunk_node;
+
+            pos += 8;
+            chunk_count++;
+
+            file_info_fread(fi, &chunk_id, 4, 1);
+            BSWAP32(chunk_id);
+
+            file_info_fread(fi, &chunk_size, 4, 1);
+
+            switch (chunk_id)
+            {
+                case WAV_FMT_CHUNK_ID:
+                seen_fmt++;
+                chunk_node = llist_node_new();
+                chunk_node->data = (void *)WavFmtChunk_new_from_file(fi, chunk_size);
+                llist_root_append_node(&chunk_list, chunk_node);
+                break;
+                
+                case WAV_DATA_CHUNK_ID:
+                seen_data++;
+                chunk_node = llist_node_new();
+                chunk_node->data = (void *)WavDataChunk_new_from_file(fi, chunk_size);
+                llist_root_append_node(&chunk_list, chunk_node);
+                break;
+                
+                case WAV_SMPL_CHUNK_ID:
+                seen_smpl++;
+                chunk_node = llist_node_new();
+                chunk_node->data = (void *)WavSampleChunk_new_from_file(fi, chunk_size);
+                llist_root_append_node(&chunk_list, chunk_node);
+                break;
+
+                default:
+                // ignore unsupported chunks
+                if (chunk_count > 0)
+                {
+                    chunk_count--;
+                }
+                file_info_fseek(fi, chunk_size, SEEK_CUR);
+                break;
+            }
+
+            pos += chunk_size;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (chunk_count < 2)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: needs more chonk\n");
+    }
+
+    if (seen_fmt == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: missing fmt chunk\n");
+    }
+
+    if (seen_data == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: missing data chunk\n");
+    }
+
+    wav->chunk_count = chunk_count;
+    wav->chunks = (void*)malloc_zero(chunk_count, sizeof(void*));
+
+    // Done with FORM header.
+    // Now iterate the list and assign pointers.
+    struct llist_node *node = chunk_list.root;
+    chunk_count = 0;
+
+    // This will overwrite the base WavFile convenience pointers if there
+    // are duplicate chunks.
+    while (node != NULL)
+    {
+        struct llist_node *next = node->next;
+
+        chunk_id = *(uint32_t *)node->data;
+        switch (chunk_id)
+        {
+            case WAV_FMT_CHUNK_ID:
+            wav->fmt_chunk = (struct WavFmtChunk*)node->data;
+            break;
+
+            case WAV_DATA_CHUNK_ID:
+            wav->data_chunk = (struct WavDataChunk*)node->data;
+            break;
+
+            case WAV_SMPL_CHUNK_ID:
+            wav->smpl_chunk = (struct WavSampleChunk*)node->data;
+            break;
+        }
+
+        wav->chunks[chunk_count] = node->data;
+
+        llist_node_free(NULL, node);
+        node = next;
+        chunk_count++;
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return wav;
 }
 
 /**
@@ -496,13 +673,148 @@ void WavFile_append_smpl_chunk(struct WavFile *wav_file, struct WavSampleChunk *
 
     wav_file->chunk_count++;
 
-    size_t old_size = sizeof(void*) * (wav_file->chunk_count - 1);
-    size_t new_size = sizeof(void*) * (wav_file->chunk_count);
+    // this could be initializing the chunks container for the first time.
+    if (wav_file->chunks == NULL)
+    {
+        wav_file->chunks = (void**)malloc_zero(wav_file->chunk_count, sizeof(void*));
+    }
+    else
+    {
+        size_t old_size = sizeof(void*) * (wav_file->chunk_count - 1);
+        size_t new_size = sizeof(void*) * (wav_file->chunk_count);
 
-    malloc_resize(old_size, (void**)&wav_file->chunks, new_size);
+        malloc_resize(old_size, (void**)&wav_file->chunks, new_size);
+    }
 
     wav_file->chunks[wav_file->chunk_count - 1] = chunk;
     wav_file->smpl_chunk = chunk;
 
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Creates new {@code struct WavDataChunk} from wav file contents.
+ * @param fi: wav file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new data chunk.
+*/
+static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    struct WavDataChunk *p = (struct WavDataChunk *)malloc_zero(1, sizeof(struct WavDataChunk));
+
+    p->ck_id = WAV_DATA_CHUNK_ID;
+    p->ck_data_size = ck_data_size;
+
+    if (ck_data_size - 8 <= 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid data chunk data size: %d\n", ck_data_size);
+    }
+
+    p->data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
+    file_info_fread(fi, p->data, (size_t)(ck_data_size - 8), 1);
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Creates new {@code struct WavFmtChunk} from wav file contents.
+ * @param fi: wav file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new fmt chunk.
+*/
+static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    struct WavFmtChunk *p = (struct WavFmtChunk *)malloc_zero(1, sizeof(struct WavFmtChunk));
+
+    p->ck_id = WAV_FMT_CHUNK_ID;
+    p->ck_data_size = ck_data_size;
+
+    if (ck_data_size - 8 <= 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid data chunk data size: %d\n", ck_data_size);
+    }
+
+    file_info_fread(fi, &p->audio_format, 2, 1);
+    file_info_fread(fi, &p->num_channels, 2, 1);
+    file_info_fread(fi, &p->sample_rate, 4, 1);
+    file_info_fread(fi, &p->byte_rate, 4, 1);
+    file_info_fread(fi, &p->block_align, 2, 1);
+    file_info_fread(fi, &p->bits_per_sample, 2, 1);
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Creates new {@code struct WavSampleLoop} from wav file contents.
+ * @param fi: wav file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new WavSampleLoop.
+*/
+static struct WavSampleLoop *WavSampleLoop_new_from_file(struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    struct WavSampleLoop *p = (struct WavSampleLoop *)malloc_zero(1, sizeof(struct WavSampleLoop));
+ 
+    file_info_fread(fi, &p->cue_point_id, 4, 1);
+    file_info_fread(fi, &p->loop_type, 4, 1);
+    file_info_fread(fi, &p->start, 4, 1);
+    file_info_fread(fi, &p->end, 4, 1);
+    file_info_fread(fi, &p->fraction, 4, 1);
+    file_info_fread(fi, &p->play_count, 4, 1);
+
+    TRACE_LEAVE(__func__)
+
+    return p;
+}
+
+/**
+ * Creates new {@code struct WavSampleChunk} from wav file contents.
+ * @param fi: wav file. Reads from current seek position.
+ * @param ck_data_size: chunk size in bytes.
+ * @returns: pointer to new loop chunk.
+*/
+static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+{
+    TRACE_ENTER(__func__)
+
+    int i;
+    struct WavSampleChunk *p = (struct WavSampleChunk *)malloc_zero(1, sizeof(struct WavSampleChunk));
+
+    p->ck_id = WAV_SMPL_CHUNK_ID;
+    p->ck_data_size = ck_data_size;
+
+    if (ck_data_size - 8 <= 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "Invalid smpl chunk data size: %d\n", ck_data_size);
+    }
+
+    file_info_fread(fi, &p->manufacturer, 4, 1);
+    file_info_fread(fi, &p->product, 4, 1);
+    file_info_fread(fi, &p->sample_period, 4, 1);
+    file_info_fread(fi, &p->midi_unity_note, 4, 1);
+    file_info_fread(fi, &p->midi_pitch_fraction, 4, 1);
+    file_info_fread(fi, &p->smpte_format, 4, 1);
+    file_info_fread(fi, &p->smpte_offset, 4, 1);
+    file_info_fread(fi, &p->num_sample_loops, 4, 1);
+    file_info_fread(fi, &p->sample_loop_bytes, 4, 1);
+
+    p->loops = (struct WavSampleLoop **)malloc_zero(p->num_sample_loops, sizeof(struct WavSampleLoop*));
+
+    for (i=0; i<p->num_sample_loops; i++)
+    {
+        p->loops[i] = WavSampleLoop_new_from_file(fi);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return p;
 }

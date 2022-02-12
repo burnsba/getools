@@ -348,12 +348,85 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
 
 /**
  * Helper method.
+ * If there is loop information in the .wav file then an application loop chunk
+ * is appended to the .aifc file. This only partially sets the loop data in the .aifc file
+ * because decode state information is not available here.
+ * @param aaf: aifc file to append chunk to.
+ * @param wav: wav file to get loop from.
+*/
+void AdpcmAifcFile_add_partial_loop_from_wav(struct AdpcmAifcFile *aaf, struct WavFile *wav)
+{
+    TRACE_ENTER(__func__)
+
+    if (wav == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav is NULL\n", __func__, __LINE__);
+    }
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (wav->smpl_chunk == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    if (wav->smpl_chunk->num_sample_loops == 0)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    struct WavSampleChunk *smpl_chunk = wav->smpl_chunk;
+
+    // Should only be one loop.
+    // Checked for zero loops above.
+    if (smpl_chunk->num_sample_loops != 1)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: only 1 loop is supported. smpl_chunk->num_sample_loops=%d\n", __func__, __LINE__, smpl_chunk->num_sample_loops);
+    }
+
+    struct WavSampleLoop *wav_loop = smpl_chunk->loops[0];
+
+    if (wav_loop == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav_loop is NULL\n", __func__, __LINE__);
+    }
+
+    // ok, made it this far, try to add this to the aifc file.
+    struct AdpcmAifcLoopChunk *aifc_loop = AdpcmAifcLoopChunk_new(); // sets nloops to 1
+    aifc_loop->loop_data->start = wav_loop->start;
+    aifc_loop->loop_data->end = wav_loop->end;
+
+    // .aifc infinite loop is 0xffffffff but wav infinite loop is zero.
+    // Other values map the same.
+    if ((uint32_t)wav_loop->play_count == 0)
+    {
+        aifc_loop->loop_data->count = (uint32_t)0xffffffff;
+    }
+    else
+    {
+        aifc_loop->loop_data->count = wav_loop->play_count;
+    }
+
+    // done with conversion. Add to aifc.
+    AdpcmAifcFile_append_chunk(aaf, aifc_loop);
+    aaf->loop_chunk = aifc_loop;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Helper method.
  * If there is loop information in the .aifc file then a "smpl"
  * chunk is appended to the wav file.
  * @param wav: wav file to append chunk to.
- * @param aifc_file: aifc file to get loop information from.
+ * @param aaf: aifc file to get loop information from.
 */
-void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *aifc_file)
+void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *aaf)
 {
     TRACE_ENTER(__func__)
 
@@ -367,33 +440,33 @@ void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *a
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav is NULL\n", __func__, __LINE__);
     }
 
-    if (aifc_file == NULL)
+    if (aaf == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aifc_file is NULL\n", __func__, __LINE__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aaf is NULL\n", __func__, __LINE__);
     }
 
-    if (aifc_file->loop_chunk == NULL)
-    {
-        TRACE_LEAVE(__func__)
-        return;
-    }
-
-    if (aifc_file->loop_chunk->nloops == 0)
+    if (aaf->loop_chunk == NULL)
     {
         TRACE_LEAVE(__func__)
         return;
     }
 
-    struct AdpcmAifcLoopChunk *aifc_loop_chunk = aifc_file->loop_chunk;
+    if (aaf->loop_chunk->nloops == 0)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    struct AdpcmAifcLoopChunk *aifc_loop_chunk = aaf->loop_chunk;
 
     // Should only be one loop.
     // Checked for zero loops above.
     if (aifc_loop_chunk->nloops != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: only 1 loop is supported. aifc_file->loop_chunk->nloops=%d\n", __func__, __LINE__, aifc_file->loop_chunk->nloops);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: only 1 loop is supported. aaf->loop_chunk->nloops=%d\n", __func__, __LINE__, aaf->loop_chunk->nloops);
     }
 
-    struct AdpcmAifcLoopData *aifc_loop_data = &aifc_loop_chunk->loop_data[0];
+    struct AdpcmAifcLoopData *aifc_loop_data = aifc_loop_chunk->loop_data;
 
     if (aifc_loop_data == NULL)
     {
@@ -434,12 +507,18 @@ void WavFile_check_append_aifc_loop(struct WavFile *wav, struct AdpcmAifcFile *a
  * Allocates memory for resulting wav file, including uncompressed audio.
  * The exact .aifc uncompressed audio size is not known, so slightly more space
  * is allocated than is needed.
+ * Loops ("smpl" chunk) are not copied in this method.
  * @param aifc_file: aifc file to convert to wav
  * @returns: pointer to new wav file.
 */
-struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
+struct WavFile *WavFile_new_from_aifc(struct AdpcmAifcFile *aifc_file)
 {
     TRACE_ENTER(__func__)
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: aifc_file is NULL\n", __func__, __LINE__);
+    }
 
     struct WavFile *wav = WavFile_new(WAV_DEFAULT_NUM_CHUNKS);
 
@@ -468,9 +547,124 @@ struct WavFile *WavFile_load_from_aifc(struct AdpcmAifcFile *aifc_file)
         WAV_FMT_CHUNK_FULL_SIZE + /* "fmt " chunk is const size */
         8 + wav->data_chunk->ck_data_size; /* "data" chunk header, then data size*/
 
+    // "smpl" chunk is optional, this is handled elsewhere.
+
     TRACE_LEAVE(__func__)
 
     return wav;
+}
+
+/**
+ * Converts .wav to .aifc.
+ * This is the main entry point for .wav to .aifc conversion.
+ * @param wav_file: wav file and sound data to convert.
+ * @param book: Optional. Codebook data. If present, sound data will be encoded
+ * using "VAPC" compression, otherwise uncompressed.
+ * @returns: pointer to new .aifc file.
+*/
+struct AdpcmAifcFile *AdpcmAifcFile_new_from_wav(struct WavFile *wav_file, struct ALADPCMBook *book)
+{
+    TRACE_ENTER(__func__)
+
+    if (wav_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (wav_file->fmt_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav_file->fmt_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (wav_file->data_chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: wav_file->data_chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (wav_file->data_chunk->ck_data_size < 8)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: wav_file->data_chunk->ck_data_size too short: %d\n", __func__, __LINE__, wav_file->data_chunk->ck_data_size);
+    }
+
+    struct AdpcmAifcFile *aaf;
+    struct AdpcmAifcCommChunk *comm;
+    uint32_t compression_type;
+    f80 extended_float_sample_rate;
+    size_t aifc_root_ck_data_size = 0;
+    size_t sound_data_len = 0;
+
+    sound_data_len = wav_file->data_chunk->ck_data_size - 8;
+
+    aaf = AdpcmAifcFile_new_simple(0);
+    aifc_root_ck_data_size = 4; // ck_data_size for empty .aifc file
+
+    if (book == NULL)
+    {
+        compression_type = ADPCM_AIFC_NONE_COMPRESSION_TYPE_ID;
+    }
+    else
+    {
+        compression_type = ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID;
+    }
+
+    comm = AdpcmAifcCommChunk_new(compression_type);
+    comm->num_channels = wav_file->fmt_chunk->num_channels;
+    extended_float_sample_rate = (f80)wav_file->fmt_chunk->sample_rate;
+
+    reverse_into(comm->sample_rate, (uint8_t *)&extended_float_sample_rate, 10);
+
+    comm->sample_size = wav_file->fmt_chunk->bits_per_sample;
+
+    aaf->comm_chunk = comm;
+    AdpcmAifcFile_append_chunk(aaf, comm);
+    
+    // chunk ck_data_size doesn't count bytes for id + ck_data_size so add 8.
+    aifc_root_ck_data_size += 8 + comm->ck_data_size;
+
+    if (book != NULL)
+    {
+        AdpcmAifcFile_add_codebook_from_ALADPCMBook(aaf, book);
+        
+        // chunk ck_data_size doesn't count bytes for id + ck_data_size so add 8.
+        aifc_root_ck_data_size += 8 + aaf->codes_chunk->base.ck_data_size;
+
+        // verify the wav audio is in a format that can be encoded
+        if (wav_file->fmt_chunk->bits_per_sample != AIFC_ENCODE_BIT_SAMPLE_SUPPORT)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> can only encode audio in %d bits per sample, but input audio is in %d\n", __func__, __LINE__, AIFC_ENCODE_BIT_SAMPLE_SUPPORT, wav_file->fmt_chunk->bits_per_sample);
+        }
+
+        if (wav_file->fmt_chunk->num_channels > AIFC_ENCODE_MAX_CHANNEL_SUPPORT)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> can only encode audio with up to %d channel(s), but input audio has %d\n", __func__, __LINE__, AIFC_ENCODE_MAX_CHANNEL_SUPPORT, wav_file->fmt_chunk->num_channels);
+        }
+    }
+
+    // Adding "smpl" loop chunk to wav is optional, but setting loop data on .aifc
+    // should be required. This adds the outline of required data to the .aifc file,
+    // but the decoder state information won't be available until processing the audio.
+    // This needs to be added before encoding audio.
+    if (wav_file->smpl_chunk != NULL)
+    {
+        AdpcmAifcFile_add_partial_loop_from_wav(aaf, wav_file);
+        
+        // chunk ck_data_size doesn't count bytes for id + ck_data_size so add 8.
+        aifc_root_ck_data_size += 8 + aaf->loop_chunk->base.ck_data_size;
+    }
+
+    // Load sound data. When codebook was created the incoming format was validated,
+    // so it should be safe to copy straight from wav sound data without any processing here.
+    AdpcmAifcFile_encode(aaf, wav_file->data_chunk->data, sound_data_len);
+    
+    // chunk ck_data_size doesn't count bytes for id + ck_data_size so add 8.
+    aifc_root_ck_data_size += 8 + aaf->sound_chunk->ck_data_size;
+
+    // set total file size
+    aaf->ck_data_size = (int32_t)aifc_root_ck_data_size;
+
+    TRACE_LEAVE(__func__)
+
+    return aaf;
 }
 
 /**
