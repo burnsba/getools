@@ -533,7 +533,8 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 
     if (ret != 0)
     {
-        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, fi->filename);
+        int fseek_errno = errno;
+        fflush_printf(stderr, "%s: error attempting to seek file %s, offset=%ld, whence=%d, return=%d, errno=%d\n", __func__, fi->filename, __off, __whence, ret, fseek_errno);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }

@@ -832,6 +832,11 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
         // no compression means there's nothing to do for the loop state.
         use_loop = 0;
 
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("write loop data=%d\n", use_loop);
+        }
+
         aaf->sound_chunk = AdpcmAifcSoundChunk_new(buffer_len);
         AdpcmAifcFile_append_chunk(aaf, aaf->sound_chunk);
 
@@ -857,6 +862,7 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             printf("compression type=VAPC\n");
+            printf("write loop data=%d\n", use_loop);
         }
 
         if (aaf->codes_chunk == NULL)
@@ -934,12 +940,13 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
                 if ((sound_data_pos + 16) > (size_t)loop_start_byte)
                 {
                     int loop_state_index;
+                    int order = aaf->codes_chunk->order;
 
                     found_loop_state = 1;
 
-                    for (loop_state_index=0; loop_state_index<aaf->codes_chunk->order; loop_state_index++)
+                    for (loop_state_index=0; loop_state_index<order; loop_state_index++)
                     {
-                        aaf->loop_chunk->loop_data->state[ADPCM_AIFC_LOOP_STATE_LEN - loop_state_index] = apc_state[loop_state_index];
+                        aaf->loop_chunk->loop_data->state[ADPCM_AIFC_LOOP_STATE_LEN - order - loop_state_index] = apc_state[loop_state_index];
                     }
                 }
             }

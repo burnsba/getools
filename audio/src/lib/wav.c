@@ -230,6 +230,10 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
                 default:
                 // ignore unsupported chunks
+                if (g_verbosity >= VERBOSE_DEBUG)
+                {
+                    printf("ignore chunk_id=0x%08x\n", chunk_id);
+                }
                 if (chunk_count > 0)
                 {
                     chunk_count--;
@@ -717,8 +721,8 @@ static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid data chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
-    p->data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
-    file_info_fread(fi, p->data, (size_t)(ck_data_size - 8), 1);
+    p->data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size));
+    file_info_fread(fi, p->data, (size_t)(ck_data_size), 1);
 
     TRACE_LEAVE(__func__)
 
