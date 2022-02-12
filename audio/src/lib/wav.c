@@ -152,6 +152,11 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
     int seen_data;
     int seen_smpl;
 
+    chunk_count = 0;
+    seen_fmt = 0;
+    seen_data = 0;
+    seen_smpl = 0;
+
     if (fi->len < 12)
     {
         stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: header too short\n");
