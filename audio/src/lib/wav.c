@@ -159,7 +159,7 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
     if (fi->len < 12)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: header too short\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: header too short\n", __func__, __LINE__);
     }
 
     file_info_fseek(fi, 0, SEEK_SET);
@@ -175,12 +175,12 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
     if (wav->ck_id != WAV_RIFF_CHUNK_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", WAV_RIFF_CHUNK_ID, wav->ck_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", __func__, __LINE__, WAV_RIFF_CHUNK_ID, wav->ck_id);
     }
 
     if (wav->form_type != WAV_RIFF_TYPE_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", WAV_RIFF_TYPE_ID, wav->form_type);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", __func__, __LINE__, WAV_RIFF_TYPE_ID, wav->form_type);
     }
 
     // As the file is scanned, supported chunks will be parsed and added to a list.
@@ -248,17 +248,17 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
     if (chunk_count < 2)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: needs more chonk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: needs more chonk\n", __func__, __LINE__);
     }
 
     if (seen_fmt == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .wav file: missing fmt chunk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: missing fmt chunk\n", __func__, __LINE__);
     }
 
     if (seen_data == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: missing data chunk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: missing data chunk\n", __func__, __LINE__);
     }
 
     wav->chunk_count = chunk_count;
@@ -714,7 +714,7 @@ static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int
 
     if (ck_data_size - 8 <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid data chunk data size: %d\n", ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid data chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
     p->data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
@@ -742,7 +742,7 @@ static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32
 
     if (ck_data_size - 8 <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid data chunk data size: %d\n", ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid data chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
     file_info_fread(fi, &p->audio_format, 2, 1);
@@ -799,7 +799,7 @@ static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi,
 
     if (ck_data_size - 8 <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid smpl chunk data size: %d\n", ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid smpl chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
     file_info_fread(fi, &p->manufacturer, 4, 1);

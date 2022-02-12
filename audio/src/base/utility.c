@@ -193,7 +193,7 @@ int mkpath(const char* path)
 
     if (len > MAX_FILENAME_LEN)
     {
-        stderr_exit(EXIT_CODE_IO, "error, mkpath name too long.\n");
+        stderr_exit(EXIT_CODE_IO, "%s: error, mkpath name too long.\n", __func__);
     }
 
     memset(local_path, 0, MAX_FILENAME_LEN);
@@ -209,7 +209,7 @@ int mkpath(const char* path)
             {
                 if (errno != EEXIST)
                 {
-                    stderr_exit(EXIT_CODE_IO, "mkpath error, could not create dir at step %s.\n", local_path);
+                    stderr_exit(EXIT_CODE_IO, "%s: mkpath error, could not create dir at step %s.\n", __func__, local_path);
                 }
             }
             else
@@ -228,7 +228,7 @@ int mkpath(const char* path)
     {
         if (errno != EEXIST)
         {
-            stderr_exit(EXIT_CODE_IO, "mkpath error, could not create dir %s.\n", path);
+            stderr_exit(EXIT_CODE_IO, "%s: mkpath error, could not create dir %s.\n", __func__, path);
         }
     }
     else
@@ -322,12 +322,12 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     input = fopen(path, "rb");
     if (input == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "Cannot open file: %s\n", path);
+        stderr_exit(EXIT_CODE_IO, "%s: Cannot open file: %s\n", __func__, path);
     }
 
     if (fseek(input, 0, SEEK_END) != 0)
     {
-        fflush_printf(stderr, "error attempting to seek to end of file %s\n", path);
+        fflush_printf(stderr, "%s: error attempting to seek to end of file %s\n", __func__, path);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -341,14 +341,14 @@ size_t get_file_contents(char *path, uint8_t **buffer)
 
     if(fseek(input, 0, SEEK_SET) != 0)
     {
-        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", path);
+        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, path);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
 
     if (input_filesize > MAX_INPUT_FILESIZE)
     {
-        fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", input_filesize, MAX_INPUT_FILESIZE);
+        fflush_printf(stderr, "%s: error, filesize=%ld is larger than max supported=%d\n", __func__, input_filesize, MAX_INPUT_FILESIZE);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -358,7 +358,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     f_result = fread((void *)*buffer, 1, input_filesize, input);
     if(f_result != input_filesize || ferror(input))
     {
-        fflush_printf(stderr, "error reading file [%s], expected to read %ld bytes, but read %ld\n", path, input_filesize, f_result);
+        fflush_printf(stderr, "%s: error reading file [%s], expected to read %ld bytes, but read %ld\n", __func__, path, input_filesize, f_result);
 		fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -424,7 +424,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     fi->fp = fopen(filename, mode);
     if (fi->fp == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "Cannot open file: %s\n", filename);
+        stderr_exit(EXIT_CODE_IO, "%s: Cannot open file: %s\n", __func__, filename);
     }
 
     stat(filename, &st);
@@ -434,7 +434,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     if(fseek(fi->fp, 0, SEEK_END) != 0)
     {
-        fflush_printf(stderr, "error attempting to seek to end of file %s\n", filename);
+        fflush_printf(stderr, "%s: error attempting to seek to end of file %s\n", __func__, filename);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -453,14 +453,14 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     if(fseek(fi->fp, 0, SEEK_SET) != 0)
     {
-        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
+        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, fi->filename);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
 
     if (fi->len > MAX_INPUT_FILESIZE)
     {
-        fflush_printf(stderr, "error, filesize=%ld is larger than max supported=%d\n", fi->len, MAX_INPUT_FILESIZE);
+        fflush_printf(stderr, "%s: error, filesize=%ld is larger than max supported=%d\n", __func__, fi->len, MAX_INPUT_FILESIZE);
         fclose(fi->fp);
         exit(EXIT_CODE_GENERAL);
     }
@@ -486,19 +486,19 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fread error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_IO, "%s: fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fread error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_IO, "%s: fi->fp not valid\n", __func__);
     }
 
     size_t f_result = fread((void *)output_buffer, size, n, fi->fp);
     
     if(f_result != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "error reading file [%s], expected to read %ld elements, but read %ld\n", fi->filename, n, f_result);
+        fflush_printf(stderr, "%s: error reading file [%s], expected to read %ld elements, but read %ld\n", __func__, fi->filename, n, f_result);
 		fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -521,19 +521,19 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
     }
 
     int ret = fseek(fi->fp, __off, __whence);
 
     if (ret != 0)
     {
-        fflush_printf(stderr, "error attempting to seek to beginning of file %s\n", fi->filename);
+        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, fi->filename);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -554,12 +554,12 @@ long file_info_ftell(struct file_info *fi)
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
     }
 
     long ret = ftell(fi->fp);
@@ -588,24 +588,24 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "file_info_fwrite error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
     }
 
     if (size == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "file_info_fwrite: element size is zero.\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: element size is zero.\n", __func__);
     }
 
     ret = fwrite(data, size, n, fi->fp);
     
     if (ret != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, ret);
+        fflush_printf(stderr, "%s: error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, n, ret);
 		fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -636,12 +636,12 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fwrite_bswap error, fi is NULL\n");
+        stderr_exit(EXIT_CODE_IO, "%s: error, fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_IO, "file_info_fwrite_bswap error, fi->fp not valid\n");
+        stderr_exit(EXIT_CODE_IO, "%s: error, fi->fp not valid\n", __func__);
     }
 
     if (size == 2)
@@ -653,7 +653,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
             if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", f_result);
+                fflush_printf(stderr, "%s: error writing to file, expected to write 1 element, but wrote %ld\n", __func__, f_result);
                 fclose(fi->fp);
                 exit(EXIT_CODE_IO);
             }
@@ -670,7 +670,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
             if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "error writing to file, expected to write 1 element, but wrote %ld\n", 1, f_result);
+                fflush_printf(stderr, "%s: error writing to file, expected to write 1 element, but wrote %ld\n", __func__, 1, f_result);
                 fclose(fi->fp);
                 exit(EXIT_CODE_IO);
             }
@@ -684,7 +684,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
         if (f_result != n || ferror(fi->fp))
         {
-            fflush_printf(stderr, "error writing to file, expected to write %ld elements, but wrote %ld\n", n, f_result);
+            fflush_printf(stderr, "%s: error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, n, f_result);
             fclose(fi->fp);
             exit(EXIT_CODE_IO);
         }

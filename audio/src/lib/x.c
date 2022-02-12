@@ -104,7 +104,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
             }
             else
             {
-                stderr_exit(EXIT_CODE_GENERAL, "Cannot find ALADPCMBook to resolve codebook data, sound %s, bank %s\n", sound->text_id, bank->text_id);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> Cannot find ALADPCMBook to resolve codebook data, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
             }
         }
 
@@ -116,12 +116,12 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
         }
         else
         {
-            stderr_exit(EXIT_CODE_GENERAL, "wavetable->len is zero, sound %s, bank %s\n", sound->text_id, bank->text_id);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> wavetable->len is zero, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
         }
     }
     else
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "wavetable is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
     }
 
     if (need_loop)
@@ -133,7 +133,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
 
     if (alloc_chunk_count != expected_chunk_count)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Expected to allocate %d chunks, but only allocated %d. Sound %s, bank %s\n", expected_chunk_count, alloc_chunk_count, sound->text_id, bank->text_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Expected to allocate %d chunks, but only allocated %d. Sound %s, bank %s\n", __func__, __LINE__, expected_chunk_count, alloc_chunk_count, sound->text_id, bank->text_id);
     }
 
     TRACE_LEAVE(__func__)
@@ -156,7 +156,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
 
     if (aaf->comm_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, common chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error loading aifc from sound, common chunk is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
     }
 
     // COMM chunk
@@ -170,14 +170,14 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
 
     if (sound->wavetable == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "wavetable is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
     }
 
     if (sound->wavetable->wave_info.adpcm_wave.book != NULL)
     {
         if (aaf->codes_chunk == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, codebook chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error loading aifc from sound, codebook chunk is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
         }
         
         int code_len;
@@ -208,7 +208,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
 
         if (aaf->sound_chunk == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, sound chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error loading aifc from sound, sound chunk is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
         }
     
         memcpy(
@@ -231,7 +231,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
     {
         if (aaf->loop_chunk == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "error loading aifc from sound, loop chunk is NULL, sound %s, bank %s\n", sound->text_id, bank->text_id);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error loading aifc from sound, loop chunk is NULL, sound %s, bank %s\n", __func__, __LINE__, sound->text_id, bank->text_id);
         }
 
         if (sound->wavetable->type == AL_ADPCM_WAVE)
@@ -259,7 +259,7 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
         }
         else
         {
-            stderr_exit(EXIT_CODE_GENERAL, "Unsupported loop type: %d. Sound %s, bank %s\n", sound->wavetable->type, sound->text_id, bank->text_id);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Unsupported loop type: %d. Sound %s, bank %s\n", __func__, __LINE__, sound->wavetable->type, sound->text_id, bank->text_id);
         }
 
         aaf->ck_data_size += aaf->loop_chunk->base.ck_data_size;

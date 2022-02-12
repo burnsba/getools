@@ -3482,7 +3482,7 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
             break;
 
             default:
-            stderr_exit(EXIT_CODE_GENERAL, "Invalid parse state: %d\n", state);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid parse state: %d\n", __func__, __LINE__, state);
         }
     }
 
@@ -3514,7 +3514,7 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     hash_count = StringHashTable_count(context->orphaned_banks);
     if (hash_count > 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there are %d unclaimed banks\n", hash_count);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, finished parsing file but there are %d unclaimed banks\n", __func__, __LINE__, hash_count);
     }
 
     /**
@@ -3527,28 +3527,28 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     {
         struct ALInstrument *instrument = (struct ALInstrument *)any_first;
 
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed instrument, %s\n", instrument->text_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, finished parsing file but there is at least one unclaimed instrument, %s\n", __func__, __LINE__, instrument->text_id);
     }
 
     if (StringHashTable_any(context->orphaned_sounds, StringHash_sound_unvisited, &any_first))
     {
         struct ALSound *sound = (struct ALSound *)any_first;
 
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed sound, %s\n", sound->text_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>, finished parsing file but there is at least one unclaimed sound, %s\n", __func__, __LINE__, sound->text_id);
     }
 
     if (StringHashTable_any(context->orphaned_keymaps, StringHash_keymap_unvisited, &any_first))
     {
         struct ALKeyMap *keymap = (struct ALKeyMap *)any_first;
 
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed keymap, %s\n", keymap->text_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, finished parsing file but there is at least one unclaimed keymap, %s\n", __func__, __LINE__, keymap->text_id);
     }
 
     if (StringHashTable_any(context->orphaned_envelopes, StringHash_envelope_unvisited, &any_first))
     {
         struct ALEnvelope *envelope = (struct ALEnvelope *)any_first;
 
-        stderr_exit(EXIT_CODE_GENERAL, "error, finished parsing file but there is at least one unclaimed envelope, %s\n", envelope->text_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, finished parsing file but there is at least one unclaimed envelope, %s\n", __func__, __LINE__, envelope->text_id);
     }
 
     /**
@@ -3559,19 +3559,19 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     hash_count = IntHashTable_count(context->sound_missing_wavetable);
     if (hash_count > 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to wavetable\n", hash_count);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, there are %d sounds with unresolved references to wavetable\n", __func__, __LINE__, hash_count);
     }
 
     hash_count = IntHashTable_count(context->sound_missing_envelope);
     if (hash_count > 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to envelope\n", hash_count);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, there are %d sounds with unresolved references to envelope\n", __func__, __LINE__, hash_count);
     }
 
     hash_count = IntHashTable_count(context->sound_missing_keymap);
     if (hash_count > 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, there are %d sounds with unresolved references to keymap\n", hash_count);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, there are %d sounds with unresolved references to keymap\n", __func__, __LINE__, hash_count);
     }
 
     // done with final sanity check

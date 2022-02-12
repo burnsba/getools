@@ -806,17 +806,17 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (bank == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank_file->banks[0] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file->banks[0] IS NULL\n", __func__, __LINE__);
         }
 
         if (bank->instruments[0] == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank->instruments[0] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fatal error: bank->instruments[0] IS NULL\n", __func__, __LINE__);
         }
 
         if (bank->instruments[1] == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank->instruments[1] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fatal error: bank->instruments[1] IS NULL\n", __func__, __LINE__);
         }
 
         if (bank->inst_count != 2)
@@ -839,17 +839,17 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
 
         if (bank->instruments[0]->sounds[0] == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank->instruments[0]->sounds[0] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fatal error: bank->instruments[0]->sounds[0] IS NULL\n", __func__, __LINE__);
         }
 
         if (bank->instruments[0]->sounds[1] == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank->instruments[0]->sounds[1] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fatal error: bank->instruments[0]->sounds[1] IS NULL\n", __func__, __LINE__);
         }
 
         if (bank->instruments[1]->sounds[0] == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "fatal error: bank->instruments[1]->sounds[0] IS NULL\n");
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fatal error: bank->instruments[1]->sounds[0] IS NULL\n", __func__, __LINE__);
         }
 
         if (strcmp(bank->instruments[0]->sounds[0]->text_id, "Sound0000") != 0)

@@ -1354,7 +1354,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
 
     if (bank_file->revision != BANKFILE_MAGIC_BYTES)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", BANKFILE_MAGIC_BYTES, bank_file->revision);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Error reading ctl file, revision number does not match. Expected 0x%04x, read 0x%04x.\n", __func__, __LINE__, BANKFILE_MAGIC_BYTES, bank_file->revision);
     }
 
     bank_file->bank_count = BSWAP16_INLINE(*(uint16_t*)(&ctl_file_contents[input_pos]));
@@ -1362,7 +1362,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
 
     if (bank_file->bank_count < 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "ctl count=%d, nothing to do.\n", bank_file->bank_count);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> ctl count=%d, nothing to do.\n", __func__, __LINE__, bank_file->bank_count);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)

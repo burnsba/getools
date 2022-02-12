@@ -76,7 +76,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
     if (fi->len < 12)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: header too short\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: header too short\n", __func__);
     }
 
     file_info_fseek(fi, 0, SEEK_SET);
@@ -94,12 +94,12 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
     if (p->ck_id != ADPCM_AIFC_FORM_CHUNK_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", ADPCM_AIFC_FORM_CHUNK_ID, p->ck_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", __func__, ADPCM_AIFC_FORM_CHUNK_ID, p->ck_id);
     }
 
     if (p->form_type != ADPCM_AIFC_FORM_TYPE_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", ADPCM_AIFC_FORM_TYPE_ID, p->form_type);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", __func__, ADPCM_AIFC_FORM_TYPE_ID, p->form_type);
     }
 
     // As the file is scanned, supported chunks will be parsed and added to a list.
@@ -176,22 +176,22 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
     if (chunk_count < 3)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: needs more chonk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: needs more chonk\n", __func__);
     }
 
     if (seen_comm == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: missing COMM chunk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing COMM chunk\n", __func__);
     }
 
     if (seen_appl == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: missing APPL chunk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing APPL chunk\n", __func__);
     }
 
     if (seen_ssnd == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid .aifc file: missing SSND chunk\n");
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing SSND chunk\n", __func__);
     }
 
     p->chunk_count = chunk_count;
@@ -358,7 +358,7 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
                 // 0x16 is sizeof other stuff in the chunk header
                 if (code_book_pos > chunk->base.ck_data_size - 0x16)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "AdpcmAifcCodebookChunk_decode_aifc_codebook: attempt to read past end of codebook\n");
+                    stderr_exit(EXIT_CODE_GENERAL, "%s: attempt to read past end of codebook\n", __func__);
                 }
 
                 // careful, this needs to pass a signed 16 bit int to bswap, and then sign extend promote to 32 bit.
@@ -2581,7 +2581,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
 
     if (ck_data_size - (5 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN) <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid APPL chunk data size: %d\n", ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid APPL chunk data size: %d\n", __func__, ck_data_size);
     }
 
     struct AdpcmAifcApplicationChunk *ret;
@@ -2665,7 +2665,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
     else
     {
         // no terminating zero, requires explicit length
-        stderr_exit(EXIT_CODE_GENERAL, "Unsupported APPL chunk: %.*s\n", ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Unsupported APPL chunk: %.*s\n", __func__, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
     }
 
     TRACE_LEAVE(__func__)
@@ -2689,7 +2689,7 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file
 
     if (ck_data_size - 8 <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "Invalid SSND chunk data size: %d\n", ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid SSND chunk data size: %d\n", __func__, ck_data_size);
     }
 
     file_info_fread(fi, &p->offset, 4, 1);
