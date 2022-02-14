@@ -24,12 +24,12 @@ int32_t dot_product_i32(int32_t *arr1, int32_t *arr2, size_t len)
 
     if (arr1 == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: arr1 is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> arr1 is NULL\n", __func__, __LINE__);
     }
 
     if (arr2 == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: arr2 is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> arr2 is NULL\n", __func__, __LINE__);
     }
 
     for (i=0; i<len; i++)
@@ -91,6 +91,34 @@ int32_t clamp(int32_t val, int32_t lt, int32_t gt)
     }
 
     return val;
+}
+
+/**
+ * Clamps all values in array to a range.
+ * The min and max values are inclusive.
+ * If value is greater than or equal to {@code max}, then value will be set to {@code max - epsilon}.
+ * If value is less than or equal to {@code min}, then value will be set to {@code min + epsilon}.
+*/
+void clamp_inclusive_array_f64_epsilon(double *arr, size_t len, double min, double max, double epsilon)
+{
+    if (arr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> arr is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+
+    for (i=0; i<len; i++)
+    {
+        if (arr[i] <= min)
+        {
+            arr[i] = min + epsilon;
+        }
+        else if (arr[i] >= max)
+        {
+            arr[i] = max - epsilon;
+        }
+    }
 }
 
 /**

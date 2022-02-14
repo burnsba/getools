@@ -29,6 +29,20 @@
 */
 #define ARRAY_LENGTH(array) (sizeof((array))/sizeof((array)[0]))
 
+enum DATA_ENCODING {
+    DATA_ENCODING_NONE = 0,
+
+    /**
+     * Little endian.
+    */
+    DATA_ENCODING_LSB,
+
+    /**
+     * Big endian.
+    */
+    DATA_ENCODING_MSB
+};
+
 extern int g_verbosity;
 extern int g_output_mode;
 extern int g_encode_bswap;

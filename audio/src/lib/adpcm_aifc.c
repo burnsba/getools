@@ -2010,6 +2010,9 @@ void AdpcmAifcFile_append_chunk(struct AdpcmAifcFile *aifc_file, void *chunk)
     TRACE_LEAVE(__func__)
 }
 
+double g_square_error = 0.0;
+long g_quantize_error = 0;
+
 /**
  * Applies the standard .aifc encode algorithm on incoming sound data and writes it
  * into the {@code struct AdpcmAifcFile} sound chunk.
@@ -2133,15 +2136,6 @@ int AdpcmAifcFile_encode_frame(
     // container for prediction values
     int32_t prediction[FRAME_DECODE_BUFFER_LEN];
 
-    // pointer to current row in prediction array
-    int32_t *prediction_row;
-
-    // container for prediction errors
-    float prediction_error[FRAME_DECODE_BUFFER_LEN];
-
-    // pointer to current row in the prediction error buffer
-    float *error_row;
-
     // holds main output values during final row processing while iterating scales.
     int32_t working_encode[FRAME_DECODE_BUFFER_LEN];
 
@@ -2154,6 +2148,7 @@ int AdpcmAifcFile_encode_frame(
     // frame buffer row index
     int fbri;
 
+    float err;
     uint8_t header;
     uint8_t c;
     int i;
@@ -2181,7 +2176,7 @@ int AdpcmAifcFile_encode_frame(
      * Phase 1:
      * Iterate the predictors and find the one that generates the least square error.
     */
-    if (npredictors > 1)
+    if (npredictors > 0)
     {
         for (predictor = 0; predictor < npredictors; predictor++)
         {
@@ -2192,37 +2187,34 @@ int AdpcmAifcFile_encode_frame(
             }
 
             // reset to starting row.
-            prediction_row = &prediction[0];
             samples_in_row = &samples_in[0];
-            error_row = &prediction_error[0];
 
             // reset variables / buffers
-            memset(prediction_error, 0, FRAME_DECODE_BUFFER_LEN * sizeof(float));
             memset(prediction, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
             square_error = 0.0f;
 
             // Evaluate the frame, the important part is measuring the error.
+            // The predictor is chosen by minimizing square error (MSE).
+            // No encoding happens here.
             for (fbri=0; fbri<2; fbri++)
             {
                 for (i = 0; i < FRAME_DECODE_ROW_LEN; i++)
                 {
-                    prediction_row[i] = dot_product_i32(coefTable[predictor][i], working, order + i);
-                    prediction_row[i] = divide_round_down(prediction_row[i], FRAME_DECODE_SCALE);
-                    working[i + order] = samples_in_row[i] - prediction_row[i];
-                    error_row[i] = (float) working[i + order];
-                    square_error += error_row[i] * error_row[i];
+                    prediction[i] = dot_product_i32(coefTable[predictor][i], working, order + i);
+                    prediction[i] = divide_round_down(prediction[i], FRAME_DECODE_SCALE);
+                    working[i + order] = samples_in_row[i] - prediction[i];
+                    err = (float) working[i + order];
+                    square_error += err * err;
                 }
 
                 // Carry forward the feedback
                 for (i = 0; i < order; i++)
                 {
-                    working[i] = prediction_row[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
+                    working[i] = prediction[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
                 }
 
                 // advance to next row.
-                prediction_row = &prediction_row[FRAME_DECODE_ROW_LEN];
                 samples_in_row = &samples_in_row[FRAME_DECODE_ROW_LEN];
-                error_row = &error_row[FRAME_DECODE_ROW_LEN];
             }
 
             /**
@@ -2233,12 +2225,16 @@ int AdpcmAifcFile_encode_frame(
             {
                 best_square_error = square_error;
                 best_predictor = predictor;
+
+                g_square_error += square_error;
             }
         }
     }
 
     // declared on the stack, so make sure this is empty.
     memset(best_encode, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
+
+    long best_scale_error = 0;
 
     /**
      * Phase 2:
@@ -2248,13 +2244,10 @@ int AdpcmAifcFile_encode_frame(
     for (scale = 0; scale <= FRAME_ENCODE_MAX_POW_SCALE; scale++)
     {
         // reset to starting row.
-        prediction_row = &prediction[0];
         samples_in_row = &samples_in[0];
-        error_row = &prediction_error[0];
         working_encode_row = &working_encode[0];
 
         // reset variables / buffers
-        memset(prediction_error, 0, FRAME_DECODE_BUFFER_LEN * sizeof(float));
         memset(prediction, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
         memset(working_encode, 0, FRAME_DECODE_BUFFER_LEN * sizeof(int32_t));
         memset(working, 0, (order + FRAME_DECODE_ROW_LEN) * sizeof(int32_t));
@@ -2266,6 +2259,8 @@ int AdpcmAifcFile_encode_frame(
             working[i] = apc_state[i];
         }
 
+        long scale_error = 0;
+
         /**
          * Evaluate the frame. This time the metric is against the quantized error.
         */
@@ -2273,14 +2268,26 @@ int AdpcmAifcFile_encode_frame(
         {
             for (i = 0; i < FRAME_DECODE_ROW_LEN; i++)
             {
-                prediction_row[i] = dot_product_i32(coefTable[best_predictor][i], working, order + i);
-                prediction_row[i] = divide_round_down(prediction_row[i], FRAME_DECODE_SCALE);
+                /**
+                 * The encoder is a class of predictive coders based on error
+                 * quantization against a model. The actual audio data is not encoded,
+                 * only the differece between the model prediction and the sample.
+                 * 
+                 * This is a n'th order LPC (n = "order" parameter)
+                 * that feeds back n parameters into the next audio frame predictors.
+                 * 
+                 * The "Adaptive" part of ADPCM comes from the fact that "scale" varies by frame.
+                */
+                prediction[i] = dot_product_i32(coefTable[best_predictor][i], working, order + i);
+                prediction[i] = divide_round_down(prediction[i], FRAME_DECODE_SCALE);
                 
-                error_row[i] = samples_in_row[i] - prediction_row[i];
-                working_encode_row[i] = forward_quantize(error_row[i], 1 << scale);
+                err = (float)(samples_in_row[i] - prediction[i]);
+                working_encode_row[i] = forward_quantize(err, 1 << scale);
                 quantize_error = (int16_t) clamp(working_encode_row[i], ADPCM_ENCODE_VAL_SIGNED_MIN, ADPCM_ENCODE_VAL_SIGNED_MAX) - working_encode_row[i];
                 working_encode_row[i] += quantize_error;
                 working[i + order] = working_encode_row[i] * (1 << scale);
+
+                scale_error += quantize_error;
 
                 if (max_clip < abs(quantize_error))
                 {
@@ -2291,13 +2298,11 @@ int AdpcmAifcFile_encode_frame(
             // Carry forward the feedback
             for (i = 0; i < order; i++)
             {
-                working[i] = prediction_row[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
+                working[i] = prediction[FRAME_DECODE_ROW_LEN - order + i] + working[FRAME_DECODE_ROW_LEN + i];
             }
 
             // advance to next row.
-            prediction_row = &prediction_row[FRAME_DECODE_ROW_LEN];
             samples_in_row = &samples_in_row[FRAME_DECODE_ROW_LEN];
-            error_row = &error_row[FRAME_DECODE_ROW_LEN];
             working_encode_row = &working_encode_row[FRAME_DECODE_ROW_LEN];
         }
 
@@ -2309,6 +2314,8 @@ int AdpcmAifcFile_encode_frame(
         */
         if (max_clip < best_max_clip)
         {
+            best_scale_error = scale_error;
+
             best_scale = scale;
             best_max_clip = max_clip;
 
@@ -2329,6 +2336,8 @@ int AdpcmAifcFile_encode_frame(
             break;
         }
     }
+
+    g_quantize_error += best_scale_error * best_scale_error;
 
     /**
      * Copy the best decode state to the In/Out parameter.

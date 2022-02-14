@@ -7,6 +7,12 @@ tbl2aifc
 
 clang code analysis: scan-build-11 make
 
+The tabledesign application depends on the GNU Scientific Library. On debian-like systems, this can be installed with  
+
+```
+sudo apt-get intstall libgsl-dev
+```
+
 -----
 
 .inst parse support:
@@ -54,13 +60,10 @@ for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/se
 todo:
 
 
-- loops in encode
 
 - final valgrind check
 - readme writeup
 - if only one input is required, and one input provided, assume it's the `--in` parameter
-- every stderr_exit call should have __func__ and __LINE__
-- every(?) fflush_printf call should have __func__ and __LINE__
 
 
 feature roadmap:
@@ -75,8 +78,7 @@ feature roadmap:
 --- sound .inst + .aifc -> .tbl, .ctl
 --- instrument .inst + .aifc -> .tbl, .ctl
 
-
-- app: wav2aifc -- convert wav to aifc
+- calculate encode codebook
 --- encode/decode algorithm writeup
 
 - app: midi2cseq -- convert midi to cseq

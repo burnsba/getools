@@ -516,6 +516,8 @@ struct AdpcmAifcFile {
 };
 
 extern int g_AdpcmLoopInfiniteExportCount;
+extern double g_square_error;
+extern long g_quantize_error;
 
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count);
 struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);

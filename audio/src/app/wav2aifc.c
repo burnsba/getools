@@ -244,5 +244,10 @@ int main(int argc, char **argv)
     AdpcmAifcFile_free(aifc);
     aifc = NULL;
 
+    printf("g_square_error: %.05e\n", g_square_error);
+
+    double dqe = (double)g_quantize_error;
+    printf("g_quantize_error: %.05e\n", dqe);
+
     return 0;
 }

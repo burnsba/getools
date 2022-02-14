@@ -18,6 +18,15 @@ OBJ := obj
 # location to put completed binaries (no trailing slash)
 BUILD := bin
 
+LIB_GSL := 0
+TARGET_TABLEDESIGN :=
+OBJ_MAGIC :=
+ifeq ($(shell /sbin/ldconfig -p | grep -q libgsl.so >/dev/null 2>/dev/null; echo $$?), 0)
+	LIB_GSL := 1
+	TARGET_TABLEDESIGN :=$(BUILD)/tabledesign
+	OBJ_MAGIC :=$(OBJ)/magic.o
+endif
+
 ####################################################################################################
 #
 # compile c file section
@@ -47,7 +56,7 @@ $(OBJ)/libgaudiobase.a: $(OBJ)/llist.o $(OBJ)/kvp.o $(OBJ)/common.o $(OBJ)/parse
 $(OBJ)/libgaudioshash.a: $(OBJ)/string_hash.o $(OBJ)/int_hash.o $(OBJ)/md5.o $(OBJ)/libgaudiobase.a 
 	ar rcs $@ $^
 
-$(OBJ)/libgaudio.a: $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/naudio_parse_coef.o $(OBJ)/adpcm_aifc.o $(OBJ)/midi.o $(OBJ)/wav.o $(OBJ)/libgaudioshash.a
+$(OBJ)/libgaudio.a: $(OBJ_MAGIC) $(OBJ)/naudio.o $(OBJ)/naudio_parse_inst.o $(OBJ)/naudio_parse_coef.o $(OBJ)/adpcm_aifc.o $(OBJ)/midi.o $(OBJ)/wav.o $(OBJ)/libgaudioshash.a
 	ar rcs $@ $^
 
 $(OBJ)/libgaudiox.a: $(OBJ)/x.o $(OBJ)/libgaudio.a
@@ -78,6 +87,15 @@ $(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiox.a
 $(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
+ifeq ($(LIB_GSL), 0)
+$(BUILD)/tabledesign:
+	@echo "missing system library libgsl.so"
+	@exit 1
+else
+$(BUILD)/tabledesign: $(OBJ)/tabledesign.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase	
+endif
+
 $(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
@@ -94,7 +112,7 @@ help:
 	@echo ""
 	@echo "  single app targets:"
 	@echo ""
-	@echo "    aifc2wav cseq2midi gic sbksplit tbl2aifc "
+	@echo "    aifc2wav cseq2midi gic sbksplit tabledesign tbl2aifc wav2aifc"
 
 ####################################################################################################
 #
@@ -105,19 +123,21 @@ directories:
 	mkdir -p bin obj
 
 aifc2wav: directories $(BUILD)/aifc2wav
-wav2aifc: directories $(BUILD)/wav2aifc
-sbksplit: directories $(BUILD)/sbksplit
-tbl2aifc: directories $(BUILD)/tbl2aifc
 cseq2midi: directories $(BUILD)/cseq2midi
 gic: directories $(BUILD)/gic
+sbksplit: directories $(BUILD)/sbksplit
+tabledesign: directories $(BUILD)/tabledesign
+tbl2aifc: directories $(BUILD)/tbl2aifc
+wav2aifc: directories $(BUILD)/wav2aifc
+
 test: directories $(BUILD)/test
 
-all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test $(TARGET_TABLEDESIGN)
 
 clean:
-	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/test
+	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/gic $(BUILD)/tabledesign $(BUILD)/test
 
 check: directories $(BUILD)/test
 	bin/test
 
-.PHONY: all default clean sbksplit tbl2aifc aifc2wav wav2aifc gic test check directories help
+.PHONY: all default clean sbksplit tbl2aifc aifc2wav wav2aifc gic tabledesign test check directories help

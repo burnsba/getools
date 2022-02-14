@@ -7,6 +7,7 @@
 int32_t dot_product_i32(int32_t *arr1, int32_t *arr2, size_t len);
 int32_t divide_round_down(int32_t num, int32_t den);
 int32_t clamp(int32_t val, int32_t lt, int32_t gt);
+void clamp_inclusive_array_f64_epsilon(double *arr, size_t len, double min, double max, double epsilon);
 int16_t forward_quantize(float x, int32_t scale);
 
 #endif
