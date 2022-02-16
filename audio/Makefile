@@ -18,6 +18,8 @@ OBJ := obj
 # location to put completed binaries (no trailing slash)
 BUILD := bin
 
+# if GNU Scientific Library isn't installed then disable tabledesign and related files.
+# Otherwise build/include/link
 LIB_GSL := 0
 TARGET_TABLEDESIGN :=
 OBJ_MAGIC :=
@@ -25,6 +27,10 @@ ifeq ($(shell /sbin/ldconfig -p | grep -q libgsl.so >/dev/null 2>/dev/null; echo
 	LIB_GSL := 1
 	TARGET_TABLEDESIGN :=$(BUILD)/tabledesign
 	OBJ_MAGIC :=$(OBJ)/magic.o
+
+	LINKERS += -lgsl
+else
+	CFLAGS += -DNOGSL
 endif
 
 ####################################################################################################
@@ -96,7 +102,7 @@ $(BUILD)/tabledesign: $(OBJ)/tabledesign.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase	
 endif
 
-$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
+$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_magic.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudioshash -lgaudiobase
 
 ####################################################################################################

@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "machine_config.h"
 #include "utility.h"
 #include "gaudio_math.h"
@@ -94,6 +95,28 @@ int32_t clamp(int32_t val, int32_t lt, int32_t gt)
 }
 
 /**
+ * Clamps a value between a range.
+ * @param val: input value.
+ * @param lt: if {@code val} is less than {@code lt}, then the result is {@code lt}.
+ * @param gt: if {@code val} is greater than {@code gt}, then the result is {@code gt}.
+ * @returns: {@code val}, or clamped value.
+*/
+double clamp_f64(double val, double lt, double gt)
+{
+    if (val < lt)
+    {
+        return lt;
+    }
+
+    if (val > gt)
+    {
+        return gt;
+    }
+
+    return val;
+}
+
+/**
  * Clamps all values in array to a range.
  * The min and max values are inclusive.
  * If value is greater than or equal to {@code max}, then value will be set to {@code max - epsilon}.
@@ -122,6 +145,27 @@ void clamp_inclusive_array_f64_epsilon(double *arr, size_t len, double min, doub
 }
 
 /**
+ * Multiply every value in an array by amount.
+ * @param arr: array to scale.
+ * @param len: number of elements in array.
+ * @param amount: amount to multiply each element by.
+*/
+void scale_f64_array(double *arr, size_t len, double amount)
+{
+    if (arr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> arr is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+
+    for (i=0; i<len; i++)
+    {
+        arr[i] *= amount;
+    }
+}
+
+/**
  * Forward quantization step, divide by scale then add one half.
  * Unless the value is negative, then subtract one half.
  * @param x: value to quantize.
@@ -138,4 +182,123 @@ int16_t forward_quantize(float x, int32_t scale)
     {
         return (int16_t) ((x / scale) - 0.4999999);
     }
+}
+
+/**
+ * Forward quantization step, divide by scale then add one half.
+ * Unless the value is negative, then subtract one half.
+ * @param x: value to quantize.
+ * @param scale: amount to divide by.
+ * @returns: 16-bit quantized amount.
+*/
+int16_t forward_quantize_f64(double x, int32_t scale)
+{
+    if (x > 0.0f)
+    {
+        return (int16_t) ((x / scale) + 0.4999999);
+    }
+    else
+    {
+        return (int16_t) ((x / scale) - 0.4999999);
+    }
+}
+
+/**
+ * Allocates memory for a new 2d matrix of type double.
+ * @param row_count: number of rows.
+ * @param col_count: number of columns.
+ * @returns: pointer to new matrix.
+*/
+double **matrix_f64_new(size_t row_count, size_t col_count)
+{
+    size_t i;
+
+    double **mat = (double **)malloc_zero(row_count, sizeof(double *));
+
+    for (i=0; i<row_count; i++)
+    {
+        mat[i] = (double *)malloc_zero(col_count, sizeof(double));
+    }
+
+    return mat;
+}
+
+/**
+ * Allocates memory for a new 2d matrix of type double and copies values
+ * from an existing matrix.
+ * @param source: existing matrix to copy.
+ * @param row_count: number of rows.
+ * @param col_count: number of columns.
+ * @returns: pointer to new matrix.
+*/
+double **matrix_f64_new_clone(double** source, size_t row_count, size_t col_count)
+{
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+    double **dest = (double **)malloc_zero(row_count, sizeof(double *));
+
+    for (i=0; i<row_count; i++)
+    {
+        dest[i] = (double *)malloc_zero(col_count, sizeof(double));
+        memcpy(dest[i], source[i], col_count * sizeof(double));
+    }
+
+    return dest;
+}
+
+/**
+ * Copies an existing matrix into another matrix.
+ * This must have the same dimensions.
+ * @param dest: Destination matrix.
+ * @param source: Source matrix.
+ * @param row_count: number of rows.
+ * @param col_count: number of columns.
+*/
+void matrix_f64_copy(double **dest, double** source, size_t row_count, size_t col_count)
+{
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+
+    for (i=0; i<row_count; i++)
+    {
+        memcpy(dest[i], source[i], col_count * sizeof(double));
+    }
+}
+
+/**
+ * Frees memory allocated to a matrix and all child rows.
+ * @param mat: matrix to free.
+ * @param row_count: number of rows in the matrix.
+*/
+void matrix_f64_free(double **mat, size_t row_count)
+{
+    if (mat == NULL)
+    {
+        return;
+    }
+
+    size_t i;
+
+    for (i=0; i<row_count; i++)
+    {
+        if (mat[i] != NULL)
+        {
+            free(mat[i]);
+        }
+    }
+
+    free(mat);
 }

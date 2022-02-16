@@ -149,6 +149,36 @@ struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 }
 
 /**
+ * Instantiates a new {@code struct ALADPCMBook} and allocates memory for codebook.
+ * @param order: order.
+ * @param npredictors: number of predictors.
+ * @returns: pointer to new book
+*/
+struct ALADPCMBook *ALADPCMBook_new(int order, int npredictors)
+{
+    TRACE_ENTER(__func__)
+    
+    int book_bytes;
+
+    struct ALADPCMBook *adpcm_book = (struct ALADPCMBook *)malloc_zero(1, sizeof(struct ALADPCMBook));
+
+    adpcm_book->order = order;
+    adpcm_book->npredictors = npredictors;
+
+    // book, size in bytes = order * npredictors * 16
+    book_bytes = adpcm_book->order * adpcm_book->npredictors * 16;
+
+    if (book_bytes > 0)
+    {
+        adpcm_book->book = (int16_t *)malloc_zero(1, book_bytes);
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return adpcm_book;
+}
+
+/**
  * Reads a single {@code struct ALRawLoop} from a .ctl file that has been loaded into memory.
  * No memory allocation performed.
  * @param ctl_file_contents: .ctl file.
@@ -238,6 +268,80 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
     TRACE_LEAVE(__func__)
 
     return envelope;
+}
+
+/**
+ * Write a codebook to disk in gaudio format.
+ * @param book: codebook to write.
+ * @param fi: file to write to.
+*/
+void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (book == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> book is NULL\n", __func__, __LINE__);
+    }
+
+    int line_length;
+    char line_buffer[WRITE_BUFFER_LEN];
+    int num_rows;
+    int i;
+    int row;
+    int pos;
+    int val;
+    char last;
+
+    memset(line_buffer, 0, WRITE_BUFFER_LEN);
+    line_length = sprintf(line_buffer, "order=%d;\n", book->order);
+    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+
+    memset(line_buffer, 0, WRITE_BUFFER_LEN);
+    line_length = sprintf(line_buffer, "npredictors=%d;\n", book->npredictors);
+    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+
+    memset(line_buffer, 0, WRITE_BUFFER_LEN);
+    line_length = sprintf(line_buffer, "book=\n");
+    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+
+    num_rows = book->order * book->npredictors;
+    pos = 0;
+
+    for (row=0; row<num_rows; row++)
+    {
+        for (i=0; i<7; i++)
+        {
+            val = book->book[pos];
+            pos++;
+
+            memset(line_buffer, 0, WRITE_BUFFER_LEN);
+            line_length = sprintf(line_buffer, "%6d, ", val);
+            file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+        }
+
+        val = book->book[pos];
+        pos++;
+
+        if (row == num_rows - 1)
+        {
+            last = ';';
+        }
+        else
+        {
+            last = ',';
+        }
+
+        memset(line_buffer, 0, WRITE_BUFFER_LEN);
+        line_length = sprintf(line_buffer, "%6d%c\n", val, last);
+        file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    }
+
+    memset(line_buffer, 0, WRITE_BUFFER_LEN);
+    line_length = sprintf(line_buffer, "\n\n");
+    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    
+    TRACE_LEAVE(__func__)
 }
 
 /**

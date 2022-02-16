@@ -17,13 +17,15 @@ struct TestKeyValue *TestKeyValue_new(void);
 void TestKeyValue_free(struct TestKeyValue *tkvp);
 int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second);
 
+int f64_equal(double d1, double d2, double epsilon);
+
 void test_md5_all(int *run_count, int *pass_count, int *fail_count);
 void linked_list_all(int *run_count, int *pass_count, int *fail_count);
 void int_hash_all(int *run_count, int *pass_count, int *fail_count);
 void string_hash_all(int *run_count, int *pass_count, int *fail_count);
 void parse_inst_all(int *run_count, int *pass_count, int *fail_count);
 void parse_coef_all(int *run_count, int *pass_count, int *fail_count);
-
 void aifc_all(int *run_count, int *pass_count, int *fail_count);
+void magic_all(int *run_count, int *pass_count, int *fail_count);
 
 #endif

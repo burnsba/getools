@@ -96,4 +96,6 @@ size_t fill_16bit_buffer(
     size_t *sound_data_pos,
     size_t sound_data_len);
 
+void convert_s16_f64(int16_t *source, size_t len, double *dest);
+
 #endif

@@ -777,7 +777,9 @@ void ALBankFile_free(struct ALBankFile *bank_file);
 double detune_frequency(double hw_sample_rate, int keybase, int detune);
 
 struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi);
+struct ALADPCMBook *ALADPCMBook_new(int order, int npredictors);
 struct ALADPCMBook *ALADPCMBook_new_from_coef(struct file_info *fi);
+void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi);
 
 struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id);
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id);

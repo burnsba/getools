@@ -1301,3 +1301,33 @@ size_t fill_16bit_buffer(
     TRACE_LEAVE(__func__)
     return bytes_read;
 }
+
+/**
+ * Converts signed 16 bit int array to array of double.
+ * @param source: source array.
+ * @param len: number of elements in array.
+ * @param dest: destination array.
+*/
+void convert_s16_f64(int16_t *source, size_t len, double *dest)
+{
+    TRACE_ENTER(__func__)
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+
+    for (i=0; i<len; i++)
+    {
+        dest[i] = (double)source[i];
+    }
+
+    TRACE_LEAVE(__func__)
+}

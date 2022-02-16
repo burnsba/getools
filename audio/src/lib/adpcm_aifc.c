@@ -22,6 +22,11 @@
 */
 int g_AdpcmLoopInfiniteExportCount = 0;
 
+// measure codebook predictor error
+static double g_square_error = 0.0;
+// measure quantization error
+static long g_quantize_error = 0;
+
 // forward declarations
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);
@@ -819,6 +824,9 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
         && aaf->loop_chunk->nloops == 1
         && aaf->loop_chunk->loop_data != NULL;
 
+    g_square_error = 0.0f;
+    g_quantize_error = 0;
+
     /**
      * If this is uncompressed audio then there's no codebook.
     */
@@ -999,6 +1007,14 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
 
     // adjust sound chunk size to actual written data size
     aaf->sound_chunk->ck_data_size = 8 + write_len; // 8 = sizeof offset,block_size
+
+    if (g_verbosity >= 2)
+    {
+        printf("g_square_error: %.05e\n", g_square_error);
+
+        double dqe = (double)g_quantize_error;
+        printf("g_quantize_error: %.05e\n", dqe);
+    }
 
     TRACE_LEAVE(__func__)
     return write_len;
@@ -2009,9 +2025,6 @@ void AdpcmAifcFile_append_chunk(struct AdpcmAifcFile *aifc_file, void *chunk)
 
     TRACE_LEAVE(__func__)
 }
-
-double g_square_error = 0.0;
-long g_quantize_error = 0;
 
 /**
  * Applies the standard .aifc encode algorithm on incoming sound data and writes it

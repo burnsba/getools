@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "machine_config.h"
 #include "debug.h"
 #include "common.h"
@@ -99,4 +100,10 @@ int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct
     }
 
     return ret;
+}
+
+int f64_equal(double d1, double d2, double epsilon)
+{
+    double diff = d1 - d2;
+    return (fabs(diff) < epsilon);
 }
