@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_statistics.h>
 #include "debug.h"
 #include "common.h"
 #include "utility.h"
@@ -17,15 +19,27 @@
  * LU decomposition/solver is implemented via GNU Scientific Library.
 */
 
+struct frame_data {
+    size_t origin_frame;
+    double norm;
+    double *vec;
+};
 
+// forward declarations
+
+static int get_bucket_from_frame(int current_frame, int num_buckets, int num_frames);
+static struct frame_data* frame_data_new(size_t origin_frame, double norm, double *vec, size_t vec_length);
+static void frame_data_free(struct frame_data *fd);
+
+// end forward declarations
 
 /**
  * Evaluates buffer of 16-bit audio samples to generate codebook.
  * @param buffer: Audio data to predict.
  * @param buffer_len: Length in bytes of the audio buffer.
  * @param buffer_encoding: Whether the audio is in little or big endian format.
- * @param autocorrelation_threshold: Only audio frames with autocorrelation
- * larger than this value will be used to estimate the codebook.
+ * @param threshold: Optional. Filters audio frames based on sum of squares of audio
+ * samples within the frame. If not set, all valid frames will be accepted. 
  * @param order: Generate nth order predictors.
  * @param npredictors: The number of predictors to generate.
  * @returns: vorpal codebook materialized from the Hadopelagic zone.
@@ -34,7 +48,7 @@ struct ALADPCMBook *estimate_codebook(
     uint8_t *buffer,
     size_t buffer_len,
     enum DATA_ENCODING buffer_encoding,
-    double autocorrelation_threshold,
+    struct codebook_threshold_parameters *threshold,
     int order,
     int npredictors)
 {
@@ -77,23 +91,23 @@ struct ALADPCMBook *estimate_codebook(
      * ---------------------------------------------------------------------------------------------
      * 
      * The goal of this algorithm is to create `npredictor` number of predictors that 
-     * minimize square error when encoding the file. The predictors are shared by
-     * every audio frame (16 samples of 16-bits) in the file.
+     * minimize square error when encoding the file. Each audio frame will choose
+     * whichever predictor results in the smallest square error.
      * 
-     * This is my best understanding of the algorithm:
+     * This is my best understanding of the codebook search algorithm:
      * 
      * create a `tally` container of length `order` (one for each npredictor)
      * 
-     * Read the sound data 16 bytes at a time (one frame). If there aren't 16 bytes available then we're done.
+     * Read the sound data 16 samples at a time (one frame). If there aren't 16 samples available then we're done.
      * For each frame read
      *     - Compute the auto-correlation vector (B) between the current frame and
      *       the previous.
-     *     - If this is above the threshold, compute the auto-correlation
+     *     - If this is not silence, compute the auto-correlation
      *       coefficients for auto-correlation matrix (A).
      *     - Attempt to solve the auto-correlation matrix for transfer function coefficients x in Ax=B.
      * 
      *     - Calculate the kfroma from x. If these have any poles on or outside the unit
-     *       circle, discard this frame. If this were an adaptive codebook, error
+     *       circle, discard this frame. If this were an dynamic codebook, error
      *       correction might take place here (e.g, reflect into the unit circle), but
      *       since the codebook will apply to the entire sound it's ok to drop frames
      *       when solving for an efficient codebook.
@@ -101,12 +115,21 @@ struct ALADPCMBook *estimate_codebook(
      *     - force stability: Clamp kfroma between 1.0 - epsilon and -1.0 + epsilon
      *     - Compute the afromk from kfroma
      *     - compute the rfroma from afromk
-     *     - add result to arbitrary tally (this is where it splits into different predictors)
+     *     - add result to list of tallies
      * 
-     * Foreach tally:
-     *     - Normalize tally (divide each element by number of elements)
+     * Compute stats on all collected frames (mean, median, min, max, ...)
      * 
-     *     - Do the durbin on tally to find reflection (aka predictor) coefficients, using last rfroma as model
+     * Filter collected frames according to user defined threshold parameters.
+     * 
+     * For the remaining frames, split into buckets (one bucket is one predictor)
+     *     - Divide number of frames by number of buckets to get frames_per_bucket
+     *     - Fill buckets in order until it has frames_per_bucket number of frames
+     *       then move to the next bucket.
+     * 
+     * Foreach bucket:
+     *     - Normalize tally (divide by number of elements in bucket)
+     *     - Do the durbin on tally to find reflection (aka predictor)
+     *       coefficients, using last rfroma as model
      *     - force stability: Clamp between 1.0 - epsilon and -1.0 + epsilon
      *     - Compute the afromk.
      *     - Send results to codebook untangler (and add to total results codebook)
@@ -119,6 +142,7 @@ struct ALADPCMBook *estimate_codebook(
     const double epsilon = 1e-6;
 
     // declare
+    int main_while_count;
     struct ALADPCMBook *result = NULL;
     int16_t *frame_buffer;
     double *frame_buffer_f64;
@@ -130,12 +154,28 @@ struct ALADPCMBook *estimate_codebook(
     double *ar_parameters;
     double *acf_r;
     double *tally;
+    double **tally_container;
+    int tally_counts[TABLE_MAX_PREDICTORS];
+    int tally_index;
     double *predictor_coefficients;
+    double norm;
+    size_t frame_measure_size;
+    size_t frame_measure_pos;
+    size_t frame_measure_count;
+    double *frame_measures;
+    double frame_measures_median;
+    enum CODEBOOK_THRESHOLD_MODE threshold_mode;
+    double frame_measure_threshold_min;
+    double frame_measure_threshold_max;
+    double frame_measure_quantile_min;
+    double frame_measure_quantile_max;
     size_t sound_data_pos;
     int ar_frame_count;
     int axb_solved;
     int stable;
     int i;
+    struct llist_root *ar_frames;
+    struct llist_node *node;
 
     // init
     frame_buffer = (int16_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int16_t));
@@ -146,16 +186,72 @@ struct ALADPCMBook *estimate_codebook(
     reflection_coefficients = (double *)malloc_zero(order, sizeof(double));
     ar_parameters = (double *)malloc_zero(order, sizeof(double));
     acf_r = (double *)malloc_zero(order, sizeof(double));
-    tally = (double *)malloc_zero(order, sizeof(double));
     predictor_coefficients = (double *)malloc_zero(order, sizeof(double));
 
-    correlation_mat = matrix_f64_new((size_t)order, (size_t)order);
+    ar_frames = llist_root_new();
     
+    tally_container = (double **)malloc_zero(TABLE_MAX_PREDICTORS, sizeof(double*));
+
+    for (i=0; i<TABLE_MAX_PREDICTORS; i++)
+    {
+        tally_container[i] = (double *)malloc_zero(order, sizeof(double));
+    }
+
+    memset(tally_counts, 0, TABLE_MAX_PREDICTORS * sizeof(int));
+
+    // size is arbitrary, will be resized at runtime.
+    frame_measure_count = 0;
+    frame_measure_size = 10 * sizeof(double);
+    frame_measures = (double *)malloc_zero(10, sizeof(double));
+
+    correlation_mat = matrix_f64_new((size_t)order, (size_t)order);
+
+    threshold_mode = THRESHOLD_MODE_DEFAULT_UNKOWN;
+
+    // validate configuration
+
+    if (threshold != NULL && threshold->mode != THRESHOLD_MODE_DEFAULT_UNKOWN)
+    {
+        if (threshold->mode == THRESHOLD_MODE_ABSOLUTE)
+        {
+            threshold_mode = THRESHOLD_MODE_ABSOLUTE;
+            frame_measure_threshold_min = threshold->min;
+            frame_measure_threshold_max = threshold->max;
+        }
+        else if (threshold->mode == THRESHOLD_MODE_QUANTILE)
+        {
+            threshold_mode = THRESHOLD_MODE_QUANTILE;
+            frame_measure_quantile_min = threshold->min;
+            frame_measure_quantile_max = threshold->max;
+
+            if (frame_measure_quantile_min < 0 || frame_measure_quantile_min > 1.0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid threshold->min=%f, valid range is 0.0-1.0\n", threshold->min);
+            }
+
+            if (frame_measure_quantile_max < 0 || frame_measure_quantile_max > 1.0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid threshold->max=%f, valid range is 0.0-1.0\n", threshold->max);
+            }
+        }
+        else
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> threshold->mode=%f not supported\n", threshold->mode);
+        }
+    }
+
+    // more init
+
     sound_data_pos = 0;
     ar_frame_count = 0;
+    main_while_count = 0;
+    tally_index = 0;
 
+    // read all the data.
     while (1)
     {
+        main_while_count++;
+
         // read next frame.
         int sample_bytes_read = fill_16bit_buffer(frame_buffer, FRAME_DECODE_BUFFER_LEN, buffer, &sound_data_pos, buffer_len);
 
@@ -165,7 +261,7 @@ struct ALADPCMBook *estimate_codebook(
             break;
         }
 
-        // convert endianess if this is n64 native .aifc audio
+        // convert endianess if needed
         if (buffer_encoding == DATA_ENCODING_MSB)
         {
             bswap16_chunk(frame_buffer, frame_buffer, FRAME_DECODE_BUFFER_LEN);
@@ -174,10 +270,14 @@ struct ALADPCMBook *estimate_codebook(
         // cast int to double
         convert_s16_f64(frame_buffer, FRAME_DECODE_BUFFER_LEN, frame_buffer_f64);
 
-        // compare to previous frame
-        autocorrelation_vector(previous_frame_buffer_f64, frame_buffer_f64, FRAME_DECODE_BUFFER_LEN, order, correlation_arr);
+        // measure quanitity of current frame.
+        norm = autocorrelation_vector(previous_frame_buffer_f64, frame_buffer_f64, FRAME_DECODE_BUFFER_LEN, order, correlation_arr);
 
-        if (!(correlation_arr[0] > autocorrelation_threshold))
+        frame_measure_pos = frame_measure_count * sizeof(double);
+        frame_measure_size = dynamic_buffer_memcpy((void*)&norm, sizeof(double), (uint8_t**)&frame_measures, frame_measure_pos, frame_measure_size);
+        frame_measure_count++;
+
+        if (!(fabs(norm) > TABLE_SILENCE_THRESHOLD))
         {
             goto continue_while_frame_read;
         }
@@ -204,11 +304,14 @@ struct ALADPCMBook *estimate_codebook(
         clamp_inclusive_array_f64_epsilon(reflection_coefficients, (size_t)order, -1.0, 1.0, epsilon);
 
         afromk(reflection_coefficients, (size_t)order, ar_parameters);
+
         rfroma(ar_parameters, (size_t)order, acf_r);
-        for (i=0; i<order; i++)
-        {
-            tally[i] += acf_r[i];
-        }
+
+        struct frame_data* fd = frame_data_new((size_t)main_while_count, norm, acf_r, (size_t)order);
+        node = llist_node_new();
+        node->data = fd;
+        llist_root_append_node(ar_frames, node);
+
         ar_frame_count++;
 
 continue_while_frame_read:
@@ -217,33 +320,160 @@ continue_while_frame_read:
         memcpy(previous_frame_buffer_f64, frame_buffer_f64, frame_buffer_f64_byte_size);
     }
 
-    if (g_verbosity >= VERBOSE_DEBUG)
+    gsl_sort(frame_measures, 1, frame_measure_count);
+    frame_measures_median = gsl_stats_median_from_sorted_data(frame_measures, 1, frame_measure_count);
+
+    if (g_verbosity >= 2)
     {
         printf("ar_frame_count: %d\n", ar_frame_count);
+
+        double d;
+
+        printf("frame measure mean, median, variance :\n");
+        d = gsl_stats_mean(frame_measures, 1, frame_measure_count);
+        printf("%14g, ", d);
+        // determined above
+        printf("%14g, ", frame_measures_median);
+        d = gsl_stats_variance(frame_measures, 1, frame_measure_count);
+        printf("%14g ", d);
+        printf("\n");
+
+        printf("frame measure min, max :\n");
+        d = gsl_stats_min(frame_measures, 1, frame_measure_count);
+        printf("%14g, ", d);
+        d = gsl_stats_max(frame_measures, 1, frame_measure_count);
+        printf("%14g ", d);
+        printf("\n");
+
+        printf("frame measure quantile 0.2, 0.4, 0.6, 0.8 :\n");
+        d = gsl_stats_quantile_from_sorted_data(frame_measures, 1, frame_measure_count, 0.2);
+        printf("%14g, ", d);
+        d = gsl_stats_quantile_from_sorted_data(frame_measures, 1, frame_measure_count, 0.4);
+        printf("%14g, ", d);
+        d = gsl_stats_quantile_from_sorted_data(frame_measures, 1, frame_measure_count, 0.6);
+        printf("%14g, ", d);
+        d = gsl_stats_quantile_from_sorted_data(frame_measures, 1, frame_measure_count, 0.8);
+        printf("%14g ", d);
+        printf("\n");
     }
 
-    for (i=0; i<order; i++)
+    // Apply threshold filtering
+    if (threshold_mode == THRESHOLD_MODE_ABSOLUTE || threshold_mode == THRESHOLD_MODE_QUANTILE)
     {
-        tally[i] /= (double)ar_frame_count;
+        size_t filter_remove_count = 0;
+
+        if (threshold_mode == THRESHOLD_MODE_QUANTILE)
+        {
+            frame_measure_threshold_min = gsl_stats_median_from_sorted_data(frame_measures, 1, frame_measure_quantile_min);
+            frame_measure_threshold_max = gsl_stats_median_from_sorted_data(frame_measures, 1, frame_measure_quantile_max);
+        }
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("threshold filtering: min=%g max=%g\n", frame_measure_threshold_min, frame_measure_threshold_max);
+        }
+
+        node = ar_frames->root;
+        while (node != NULL)
+        {
+            struct llist_node *next_node;
+            struct frame_data* fd = node->data;
+
+            next_node = node->next;
+
+            if (fd != NULL)
+            {
+                if (fd->norm > frame_measure_threshold_max || fd->norm < frame_measure_threshold_min)
+                {
+                    frame_data_free(fd);
+                    llist_node_free(ar_frames, node);
+                    filter_remove_count++;
+                }
+            }
+
+            node = next_node;
+        }
+
+        if (g_verbosity >= 2)
+        {
+            printf("threshold filtering removed %ld frames\n", filter_remove_count);
+        }
+    }
+
+    /**
+     * The main while loop may have filtered out frames due to norm threshold
+     * or pole errors, etc. Now that the total number of frames is known,
+     * split an (approximately) equal number of frames into each predictor
+     * tally. This just splits into buckets sequentially (i.e., first half
+     * of frames end up in first bucket, second half in second, etc).
+    */
+    size_t captures = ar_frames->count;
+    size_t capture_index = 0;
+    node = ar_frames->root;
+    while (node != NULL)
+    {
+        struct frame_data* fd = node->data;
+        if (fd != NULL)
+        {
+            tally_index = get_bucket_from_frame(capture_index, npredictors, captures);
+            tally = tally_container[tally_index];
+
+            for (i=0; i<order; i++)
+            {
+                tally[i] += fd->vec[i];
+            }
+
+            tally_counts[tally_index]++;
+        }
+
+        capture_index++;
+        node = node->next;
     }
 
     result = ALADPCMBook_new(order, npredictors);
 
-    for (i=0; i<npredictors; i++)
+    // for each predictor, translate coefficients into a codebook entry
+    for (tally_index=0; tally_index<npredictors; tally_index++)
     {
+        int j;
+
+        tally = tally_container[tally_index];
+
+        for (j=0; j<order; j++)
+        {
+            tally[j] /= (double)tally_counts[tally_index];
+        }
+
         levinson_durbin_recursion(tally, (size_t)order, predictor_coefficients);
 
         // force stability (move poles inside unit circle)
         clamp_inclusive_array_f64_epsilon(predictor_coefficients, (size_t)order, -1.0, 1.0, epsilon);
 
-        double *row = codebook_row_from_predictors(predictor_coefficients, (size_t)order);
+        afromk(predictor_coefficients, (size_t)order, ar_parameters);
 
-        ALADPCMBook_set_predictor(result, row, i);
+        double *row = codebook_row_from_predictors(ar_parameters, (size_t)order);
+
+        ALADPCMBook_set_predictor(result, row, tally_index);
 
         free(row);
     }
 
     // cleanup
+
+    node = ar_frames->root;
+    while (node != NULL)
+    {
+        struct frame_data *fd = node->data;
+        if (fd != NULL)
+        {
+            frame_data_free(fd);
+        }
+        node->data = NULL;
+
+        node = node->next;
+    }
+    llist_node_root_free(ar_frames);
+
     free(frame_buffer);
     free(previous_frame_buffer_f64);
     free(frame_buffer_f64);
@@ -252,8 +482,15 @@ continue_while_frame_read:
     free(reflection_coefficients);
     free(ar_parameters);
     free(acf_r);
-    free(tally);
     free(predictor_coefficients);
+    free(frame_measures);
+
+    for (i=0; i<TABLE_MAX_PREDICTORS; i++)
+    {
+        free(tally_container[i]);
+    }
+
+    free(tally_container);
 
     matrix_f64_free(correlation_mat, (size_t)order);
 
@@ -262,7 +499,17 @@ continue_while_frame_read:
     return result;
 }
 
-void autocorrelation_vector(double *previous, double *current, size_t len, int lag, double *result)
+/**
+ * Computes autocorrelation at lag n.
+ * Does this for every lag 1-n, and stores result as vector.
+ * @param previous: previous frame to compare against.
+ * @param current: current frame.
+ * @param len: length of frame in number of elements.
+ * @param lag: lag (order).
+ * @param result: Out. Contains autocorrelations. Result[0] is lag 1, result[1] is lag 2, etc. Must be previously allocated.
+ * @returns: lag 0 result (inner product with self).
+*/
+double autocorrelation_vector(double *previous, double *current, size_t len, int lag, double *result)
 {
     TRACE_ENTER(__func__)
 
@@ -290,14 +537,22 @@ void autocorrelation_vector(double *previous, double *current, size_t len, int l
     int s1;
     int s2;
     int int_len = (int)len;
+    double self;
 
     memset(result, 0, lag * sizeof(double));
+
+    self = 0;
+
+    for (s2 = 0; s2 < int_len; s2++)
+    {
+        self += current[s2] * current[s2];
+    }
 
     for (out_index = 0; out_index < lag; out_index++)
     {
         for (s2 = 0; s2 < int_len; s2++)
         {
-            s1 = s2 - out_index;
+            s1 = s2 - out_index - 1;
 
             if (s1 < 0)
             {
@@ -312,8 +567,17 @@ void autocorrelation_vector(double *previous, double *current, size_t len, int l
     }
 
     TRACE_LEAVE(__func__)
+    return self;
 }
 
+/**
+ * Auto correlation matrix.
+ * @param previous: previous frame to compare against.
+ * @param current: current frame.
+ * @param len: length of frame in number of elements.
+ * @param lag: lag (order).
+ * @param result: Out. Matrix of size {@code lag} x {@code lag}. Must be previously allocated.
+*/
 void autocorrelation_matrix(double *previous, double *current, size_t len, int lag, double **result)
 {
     TRACE_ENTER(__func__)
@@ -883,6 +1147,13 @@ div *= 1.0 - temp[3] * temp[3];
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Converts reflection coefficients of length {@code lag} into
+ * codebook row of length {@code 8 * lag}.
+ * @param reflection_coefficients: values to convert.
+ * @param lag: (order).
+ * @returns: newly allocated array containing converted values. 
+*/
 double *codebook_row_from_predictors(double *reflection_coefficients, size_t lag)
 {
     TRACE_ENTER(__func__)
@@ -943,6 +1214,12 @@ double *codebook_row_from_predictors(double *reflection_coefficients, size_t lag
     return result;
 }
 
+/**
+ * Sets the n'th predictor in a codebook.
+ * @param book: Container to set predictor.
+ * @param row: Codebook row of values.
+ * @param predictor_num: Zero based index of predictor to set.
+*/
 void ALADPCMBook_set_predictor(struct ALADPCMBook *book, double *row, int predictor_num)
 {
     TRACE_ENTER(__func__)
@@ -963,5 +1240,107 @@ void ALADPCMBook_set_predictor(struct ALADPCMBook *book, double *row, int predic
         book->book[book_pos] = forward_quantize_f64(d, 1);
     }
 
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * For a given frame out of a number of frames and a number of buckets,
+ * resolves which bucket this frame should go into.
+ * @param current_frame: zero based index of current frame to resolve.
+ * @param num_buckets: number of buckets.
+ * @param num_frames: number of frames.
+ * @returns: zero based index of bucket.
+*/
+static int get_bucket_from_frame(int current_frame, int num_buckets, int num_frames)
+{
+    TRACE_ENTER(__func__)
+
+    if (num_buckets > TABLE_MAX_PREDICTORS)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid num_buckets\n", __func__, __LINE__);
+    }
+
+    if (num_buckets <= 1)
+    {
+        return 0;
+    }
+
+    int step_size = num_frames / num_buckets;
+
+    int bucket = 0;
+
+    while (current_frame > step_size)
+    {
+        current_frame -= step_size;
+        bucket++;
+    }
+
+    if (bucket >= num_buckets)
+    {
+        return num_buckets - 1;
+    }
+
+    return bucket;
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Allocates new memory for a data container, and allocates memory for vector values.
+ * @param origin_frame: nth frame from main loop.
+ * @param norm: autocorrelation[0] value (inner product of frame with self).
+ * @param vec: Copy of vector. Memory will be allocated and these will be copied
+ * into the new container.
+ * @param vec_length: Number of elements in {@code vec}.
+ * @returns: pointer to new memory.
+*/
+static struct frame_data* frame_data_new(size_t origin_frame, double norm, double *vec, size_t vec_length)
+{
+    TRACE_ENTER(__func__)
+
+    if (vec == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> vec is NULL\n", __func__, __LINE__);
+    }
+
+    size_t i;
+
+    struct frame_data* fd = (struct frame_data*)malloc_zero(1, sizeof(struct frame_data));
+    fd->vec = (double *)malloc_zero(vec_length, sizeof(double));
+
+    fd->origin_frame = origin_frame;
+    fd->norm = norm;
+
+    for (i=0; i<vec_length; i++)
+    {
+        fd->vec[i] = vec[i];
+    }
+
+    TRACE_LEAVE(__func__)
+    return fd;
+}
+
+/**
+ * Frees memory associated with object.
+ * @param fd: object to free.
+*/
+static void frame_data_free(struct frame_data *fd)
+{
+    TRACE_ENTER(__func__)
+
+    if (fd == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+
+    if (fd->vec != NULL)
+    {
+        free(fd->vec);
+        fd->vec = NULL;
+    }
+
+    free(fd);
+    
     TRACE_LEAVE(__func__)
 }

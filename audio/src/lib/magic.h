@@ -1,6 +1,8 @@
 #ifndef _GAUDIO_MAGIC_H_
 #define _GAUDIO_MAGIC_H_
 
+#include <float.h>
+
 /**
  * Max number of feedback states used for prediction.
  * 
@@ -28,28 +30,46 @@
 #define TABLE_DEFAULT_PREDICTORS 1
 
 /**
- * Default minimum autocorrelation threshold for an audio frame to be
- * considered.
+ * Minimum norm threshold for an audio frame to be
+ * considered. This is a "silence" cutoff, separate from user
+ * specified parameters.
 */
-#define TABLE_DETAULT_THRESHOLD 10.0
+#define TABLE_SILENCE_THRESHOLD 10.0
 
 /**
  * Default extension when writing codebook data.
 */
 #define TABLE_DEFAULT_EXTENSION ".coef"
 
+#define CODEBOOK_DEFAULT_USER_THRESHOLD_ABSOLUTE_MIN 0.0
+#define CODEBOOK_DEFAULT_USER_THRESHOLD_ABSOLUTE_MAX DBL_MAX
+#define CODEBOOK_DEFAULT_USER_THRESHOLD_QUANTILE_MIN 0.0
+#define CODEBOOK_DEFAULT_USER_THRESHOLD_QUANTILE_MAX 1.0
+
+enum CODEBOOK_THRESHOLD_MODE {
+    THRESHOLD_MODE_DEFAULT_UNKOWN = 0,
+    THRESHOLD_MODE_ABSOLUTE,
+    THRESHOLD_MODE_QUANTILE,
+};
+
+struct codebook_threshold_parameters {
+    enum CODEBOOK_THRESHOLD_MODE mode;
+    double min;
+    double max;
+};
+
 struct ALADPCMBook *estimate_codebook(
     uint8_t *buffer,
     size_t buffer_len,
     enum DATA_ENCODING buffer_encoding,
-    double autocorrelation_threshold,
+    struct codebook_threshold_parameters *threshold,
     int order,
     int npredictors);
 
 
 // declarations made public for testing
 
-void autocorrelation_vector(double *previous, double *current, size_t len, int lag, double *result);
+double autocorrelation_vector(double *previous, double *current, size_t len, int lag, double *result);
 void autocorrelation_matrix(double *previous, double *current, size_t len, int lag, double **result);
 int lu_decomp_solve(double **a, double *b, size_t n, double *x);
 int stable_kfroma(double *parameters, size_t lag, double *reflection_coefficients);

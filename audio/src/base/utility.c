@@ -131,7 +131,8 @@ void malloc_resize(size_t old_size, void **ref, size_t new_size)
 
 /**
  * Writes data into a buffer. If the data to write will exceed the length of the buffer,
- * it is resized.
+ * the buffer is resized and contents are copied to the new buffer.
+ * This resizes by a fixed factor of 1.5.
  * @param data: data to write into buffer.
  * @param data_len: number of bytes to write from data into buffer.
  * @param buffer_start: pointer to pointer of allocated memory. If the buffer is resized

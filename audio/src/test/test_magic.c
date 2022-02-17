@@ -91,6 +91,8 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         #endif
 
         int i;
+        double expected_autocorrelation;
+        double autocorrelation;
 
         double previous[16] = {
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -104,13 +106,16 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
             0, 1, 0, 1
         };
 
+        expected_autocorrelation = 8;
         double expected[TEST_ORDER] = {
-            8, -2
+            -2, 1
         };
 
         double actual[TEST_ORDER];
 
-        autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+        autocorrelation = autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+
+        pass &= f64_equal(expected_autocorrelation, autocorrelation, TEST_EPSILON);
 
         for (i=0; i<TEST_ORDER; i++)
         {
@@ -139,6 +144,8 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         #endif
 
         int i;
+        double expected_autocorrelation;
+        double autocorrelation;
 
         double previous[16] = {
             0, 0, 0, 0,
@@ -154,13 +161,16 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
             0, 0, 0, 0
         };
 
+        expected_autocorrelation = 4;
         double expected[TEST_ORDER] = {
-            4, -2
+            -2, 2
         };
 
         double actual[TEST_ORDER];
 
-        autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+        autocorrelation = autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+
+        pass &= f64_equal(expected_autocorrelation, autocorrelation, TEST_EPSILON);
 
         for (i=0; i<TEST_ORDER; i++)
         {
@@ -189,6 +199,8 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         #endif
 
         int i;
+        double expected_autocorrelation;
+        double autocorrelation;
 
         double previous[16] = {
             -1, 1, 0, 0,
@@ -204,13 +216,16 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
             2,  -1,    2,   -2
         };
 
+        expected_autocorrelation = 56;
         double expected[TEST_ORDER] = {
-            56, -42
+            -42, 27
         };
 
         double actual[TEST_ORDER];
 
-        autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+        autocorrelation = autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+
+        pass &= f64_equal(expected_autocorrelation, autocorrelation, TEST_EPSILON);
 
         for (i=0; i<TEST_ORDER; i++)
         {
@@ -239,6 +254,8 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         #endif
 
         int i;
+        double expected_autocorrelation;
+        double autocorrelation;
 
         double previous[16] = {
             2,  -2,    4,   -3,    
@@ -254,13 +271,16 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
             0,    0,    0,    1
         };
 
+        expected_autocorrelation = 11;
         double expected[TEST_ORDER] = {
-            11, -7
+            -7, 4
         };
 
         double actual[TEST_ORDER];
 
-        autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+        autocorrelation = autocorrelation_vector(previous, current, 16, TEST_ORDER, actual);
+
+        pass &= f64_equal(expected_autocorrelation, autocorrelation, TEST_EPSILON);
 
         for (i=0; i<TEST_ORDER; i++)
         {
@@ -854,6 +874,78 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
 
         double expected[TEST_ORDER] = {
             0.7609, -0.3849, -0.3937, -0.0694
+        };
+
+        double actual[TEST_ORDER] = { 0 };
+
+        double **mat = matrix_f64_new(TEST_ORDER, TEST_ORDER);
+
+        for (i=0; i<TEST_ORDER; i++)
+        {
+            for (j=0; j<TEST_ORDER; j++)
+            {
+                mat[i][j] = mat_1d[i*TEST_ORDER + j];
+            }
+        }
+
+        lu_decomp_solve((double**)mat, b, TEST_ORDER, actual);
+
+        for (i=0; i<TEST_ORDER; i++)
+        {
+            pass &= f64_equal(expected[i], actual[i], TEST_FAT_EPSILON);
+        }
+
+        if (!pass)
+        {
+            printf("expected:\n");
+            for (i=0; i<TEST_ORDER; i++)
+            {
+                printf("%8.04f, ", expected[i]);
+            }
+            printf("\n");
+            printf("actual:\n");
+            for (i=0; i<TEST_ORDER; i++)
+            {
+                printf("%8.04f, ", actual[i]);
+            }
+            printf("\n");
+        }
+
+        matrix_f64_free(mat, TEST_ORDER);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+    {
+        printf("lu_decomp_solve (5)\n");
+        int pass = 1;
+        *run_count = *run_count + 1;
+        #if defined(TEST_ORDER)
+            #undef TEST_ORDER
+            #define TEST_ORDER 2
+        #endif
+
+        int i,j;
+
+        double mat_1d[TEST_ORDER * TEST_ORDER] = {
+            152, -128,
+            -128, 148
+        };
+
+        double b[TEST_ORDER] = {
+            128, -84
+        };
+
+        double expected[TEST_ORDER] = {
+            1.340314, 0.591623
         };
 
         double actual[TEST_ORDER] = { 0 };
