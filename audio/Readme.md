@@ -1,91 +1,81 @@
-programs:
+# Gaudio Tool Suite
 
-aifc2wav
-cseq2midi
-sbksplit
-tbl2aifc
+This is a collection of command line tools for working with N64 audio, as implemented in Goldeneye 007.
 
-clang code analysis: scan-build-11 make
+The "g" in gaudio stands for either Goldeneye or GNU.
+
+These tools were written for a Linux based operating system.
+
+# Tools
+
+- **aifc2wav**: Convert from N64 .aifc to .wav
+- **cseq2midi**: Convert from N64 MIDI format to standard MIDI
+- **gic**: Gaudio instrument compiler. Build .ctl and .tbl from .inst file and source .aifc files.
+- **midi2cseq**: Convert from standard MIDI to N64 MIDI format
+- **sbksplit**: Parse single .sbk file and split into separate .seq.rz files (no gzip decompression performed)
+- **sbc**: Compile existing gzip music tracks (.seq.rz) into single .sbk
+- **tabledesign**: Evaulate audio file and build .aifc codebook
+- **tbl2aifc**: Convert .ctl and .tbl file into .inst file and .aifc files.
+- **wav2aifc**: Convert .wav to compressed .aifc using supplied codebook.
+
+  
+See individual program help page for more info.
+
+# Project Structure
+
+```
+gaudio
+├── bin: where built executables end up
+├── doc: help files, technical documentation, runtime comparison
+├── obj: intermediate build objects
+├── src: project source code
+│   ├── app: command line executables source
+│   ├── base: general shared code, e.g., hash table
+│   ├── lib: audio processing code
+│   └── test: automated test code
+└── test_data: files used in automated tests
+```
+
+The project compiles four static libraries from source code:
+
+- **libgaudiobase**: general shared code (linked list, debugging, etc)
+- **libgaudiohash**: everything hash related (int hashtable, string hashtable, md5)
+- **libgaudio**: base audio implementation classes (wav, aifc, midi)
+- **libgaudiox**: translation between audio formats
+
+These libraries are placed in the `obj` folder.
+
+# Building
 
 The tabledesign application depends on the GNU Scientific Library. On debian-like systems, this can be installed with  
 
 ```
-sudo apt-get intstall libgsl-dev
+sudo apt-get install libgsl-dev
 ```
-
------
-
-.inst parse support:
-
-- instrument-sounds and bank->instruments are sorted by array index.
-- Array indeces are required. The devkit example seems to make these optional.
-- expanded support:
---- comments
---- metaCtlWriteOrder (envelope, keymap, sound)
---- sampleRate (bank)
-
------
-
-Add "further reading" or "references" section for the file spec stuff.
-
------
+ 
+This is not required to build the other applications. The makefile should automatically determine if the library is available or not. 
 
 
-Pan values range from 0 to 127, with 0 being full left, 64 center pan, and 127 full right.
-
-Volumes are from 0 to 127, with 0 meaning there will be no sound, and 127 being full volume. 
-
-Note: Keymaps are used only by the sequence player. They are ignored by the sound player. 
-
-Note: The Nintendo 64 imposes an upper limit on the keyMax value of one octave more than the keyBase.
-
------
+Running `make` without any arguments (or `make all`) should build everything:
 
 ```
-for file in test_data/seq/*.seq.rz
-do
-    OUTPUT_FILENAME=$(echo "${file}" | sed -e 's/seq\.rz$/seq/')
-    if [ "${file}" = "${OUTPUT_FILENAME}" ]; then
-        echo "cannot determine what to rename file: ${file}"
-        break
-    fi
-    GZ=../gzipsrc/gzip ../1172inflate.sh "${file}" "${OUTPUT_FILENAME}"
-done
+make
 ```
 
-for file in test_data/seq/Aztec.*.rz ; do echo "${file}" | sed -e 's/seq\.rz$/seq/' ; done
+If there were no compilation errors, executable files will end up in the `bin` folder. After the tools build, you can verify the results by running the automated tests:
 
------
+```
+bin/test
+```
 
-todo:
+or
 
+```
+make check
+```
 
+Test status is printed as it runs, it should end with a line similar to the following:
 
-- final valgrind check
-- readme writeup
-- if only one input is required, and one input provided, assume it's the `--in` parameter
-
-
-feature roadmap:
-
-- decomp extract script
---- extract sbk -> cseq -> midi
---- extract instruments -> .tbl, .ctl -> .inst, .aifc -> .wav
---- extract sounds -> .tbl, .ctl -> .inst, .aifc -> .wav
-
-- decomp build script
---- pack cseq into cseq.rz and combine into .sbk
---- sound .inst + .aifc -> .tbl, .ctl
---- instrument .inst + .aifc -> .tbl, .ctl
-
-- calculate encode codebook
---- encode/decode algorithm writeup
-
-- app: midi2cseq -- convert midi to cseq
-
-- app: ??? -- list controllers used by which midi tracks
-- app: cseq2wav -- convert midi to wav but automatically apply the correct instrument sounds
-
-- add parse flag to `ALBankFile_new_from_inst` to ignore unreferenced elements (currently fatal error)
---- should print a list of text_id
-- parser should also check for instance declarations with no properties set
+```
+74 tests run, 74 pass, 0 fail
+```

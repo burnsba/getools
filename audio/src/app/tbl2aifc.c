@@ -138,7 +138,7 @@ void read_opts(int argc, char **argv)
     int ch;
     int str_len;
 
-    while ((ch = getopt_long(argc, argv, "c:t:d:p:qv", long_options, &option_index)) != -1)
+    while ((ch = getopt_long(argc, argv, "c:t:d:p:m:n:qv", long_options, &option_index)) != -1)
     {
         switch (ch)
         {

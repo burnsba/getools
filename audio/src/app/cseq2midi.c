@@ -14,7 +14,7 @@
  * This file contains main entry for cseq2midi app.
  * 
  * This app converts a compressed MIDI for N64 playback to a regular MIDI.
- * Only format 0 MIDI is supported.
+ * Only format 1 MIDI is supported.
  * It accepts a file path as input and writes to the given output file path.
 */
 
@@ -76,7 +76,7 @@ void read_opts(int argc, char **argv)
     int ch;
     int str_len;
 
-    while ((ch = getopt_long(argc, argv, "c:t:d:p:qv", long_options, &option_index)) != -1)
+    while ((ch = getopt_long(argc, argv, "n:o:qv", long_options, &option_index)) != -1)
     {
         switch (ch)
         {
@@ -184,12 +184,12 @@ int main(int argc, char **argv)
 
     midi_file = MidiFile_from_CseqFile(cseq_file);
 
-    // done with input cseq file
+    // done with source cseq file
     CseqFile_free(cseq_file);
     cseq_file = NULL;
 
+    // write to output file
     output_file = file_info_fopen(output_filename, "wb");
-
     MidiFile_fwrite(midi_file, output_file);
 
     // done with MIDI file

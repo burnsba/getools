@@ -77,6 +77,8 @@ void magic_all(int *run_count, int *pass_count, int *fail_count)
     sub_count = 0;
     test_ALADPCMBook_set_predictor(&sub_count, pass_count, fail_count);
     local_run_count += sub_count;
+
+    *run_count = *run_count + local_run_count;
 }
 
 static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fail_count)

@@ -223,8 +223,25 @@ struct MidiFile *MidiFile_new_tracks(int format, int num_tracks)
     p->tracks = (struct MidiTrack **)malloc_zero(num_tracks, sizeof(struct MidiTrack *));
 
     TRACE_LEAVE(__func__)
-
     return p;
+}
+
+/**
+ * Allocates memory for a {@code struct MidiFile}.
+ * Reads a file and loads the contents into the new {@code struct MidiFile}.
+ * @returns: pointer to new object.
+*/
+struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (FLAG_THROW_NOT_IMPLEMENTED)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> not implemented\n", __func__, __LINE__);
+    }
+
+    TRACE_LEAVE(__func__)
+    return NULL;
 }
 
 /**
@@ -338,8 +355,8 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack)
 }
 
 /**
- * Creates new {@code struct MidiFile} from {@code struct CseqFile}.
- * Allocates memory.
+ * Processes a N64 seq file loaded into memory and converts to regular MIDI format.
+ * This allocates memory for the new MIDI file.
  * @param cseq: compressed MIDI format track to convert.
  * @returns: pointer to new MidiFile.
 */
@@ -383,6 +400,25 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq)
     return midi;
 
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Processes regular MIDI loaded into memory and converts to N64 compressed MIDI format.
+ * This allocates memory for the new cseq file.
+ * @param midi: Standard MIDI file to convert.
+ * @returns: pointer to new cseq file.
+*/
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
+{
+    TRACE_ENTER(__func__)
+
+    if (FLAG_THROW_NOT_IMPLEMENTED)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> not implemented\n", __func__, __LINE__);
+    }
+
+    TRACE_LEAVE(__func__)
+    return NULL;   
 }
 
 /**
@@ -1804,7 +1840,7 @@ void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi)
 }
 
 /**
- * Writes the full {@code struct MidiFile} to disk.
+ * Writes the full {@code struct MidiFile} to disk, and all child elements.
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
@@ -1823,6 +1859,23 @@ void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi)
     for (i=0; i<midi_file->num_tracks; i++)
     {
         MidiTrack_fwrite(midi_file->tracks[i], fi);
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes the full {@code struct CseqFile} to disk, and all child elements.
+ * @param cseq: Compressed N64 MIDI to write.
+ * @param fi: File handle to write to, using current offset.
+*/
+void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi)
+{
+    TRACE_ENTER(__func__)
+
+    if (FLAG_THROW_NOT_IMPLEMENTED)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> not implemented\n", __func__, __LINE__);
     }
 
     TRACE_LEAVE(__func__)

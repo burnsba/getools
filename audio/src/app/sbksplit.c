@@ -80,11 +80,11 @@ void print_help(const char * invoke)
     printf("    -i,--in=FILE                  input file (required)\n");
     printf("    -p,--prefix=STRING            string to prepend to output files. (optional)\n");
     printf("                                  default=%s\n", DEFAULT_FILENAME_PREFIX);
-    printf("    -n,--names=FILE               music names. One name per line. Lines starting with # ignored.\n");
+    printf("    -n,--names=FILE               sound names. One name per line. Lines starting with # ignored.\n");
     printf("                                  Names applied in order read, if the list is too short\n");
     printf("                                  subsequent items will be given numeric id (0001, 0002, ...).\n");
     printf("                                  Non alphanumeric characters ignored.\n");
-    printf("                                  Do not include filename extension.\n");
+    printf("                                  Names listed in file should not include filename extension.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -96,7 +96,7 @@ void read_opts(int argc, char **argv)
     int ch;
     int str_len;
 
-    while ((ch = getopt_long(argc, argv, "i:p:qvd", long_options, NULL)) != -1)
+    while ((ch = getopt_long(argc, argv, "i:p:n:qvd", long_options, NULL)) != -1)
     {
         switch (ch)
         {

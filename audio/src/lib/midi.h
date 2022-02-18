@@ -266,7 +266,7 @@ struct MidiFile {
 
 /**
  * gaudio MIDI format event.
- * Has information common to regular MIDI and compressed MIDI.
+ * This is common format for both n64 compressed midi and standard midi.
 */
 struct GmidEvent {
 
@@ -370,6 +370,7 @@ struct GmidEvent {
 
 /**
  * gaudio MIDI format track.
+ * This is common format for both n64 compressed midi and standard midi.
 */
 struct GmidTrack {
     /**
@@ -416,14 +417,17 @@ extern int g_midi_parse_debug;
 
 struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi);
 void CseqFile_free(struct CseqFile *cseq);
 void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
+void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi);
 
 struct MidiTrack *MidiTrack_new(int32_t track_index);
 struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
 struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq);
+struct MidiFile *MidiFile_new_from_file(struct file_info *fi);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
 void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi);
