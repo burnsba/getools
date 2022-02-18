@@ -155,10 +155,10 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-/workbin/
-Getools.Lib/Kaitai/Schema/*.cs
-/asset/
-/asset/**
+level/workbin/
+level/Getools.Lib/Kaitai/Schema/*.cs
+level/asset/
+level/asset/**
 audio/bin/*
 audio/obj/*
 audio/backup
