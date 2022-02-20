@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        change_filename_extension(input_filename, output_filename, MIDI_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        change_filename_extension(input_filename, output_filename, MIDI_N64_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)

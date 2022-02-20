@@ -7,6 +7,11 @@
 #define MIDI_DEFAULT_EXTENSION ".midi"
 
 /**
+ * Default extension when creating n64 format MIDI file.
+*/
+#define MIDI_N64_DEFAULT_EXTENSION ".seq"
+
+/**
  * MIDI file, root chunk fourcc id.
 */
 #define MIDI_ROOT_CHUNK_ID 0x4D546864 /* 0x4D546864 = "MThd" */
@@ -74,17 +79,22 @@
 #define MIDI_COMMAND_BYTE_PITCH_BEND 0xe0
 #define MIDI_COMMAND_NAME_PITCH_BEND "Pitch Bend"
 
+#define MIDI_COMMAND_BYTE_META 0xff
+#define MIDI_COMMAND_NAME_META "meta"
+
 /**
  * Length in bytes of command. Includes 0xff prefix.
 */
 #define CSEQ_COMMAND_LEN_TEMPO 2
 #define CSEQ_COMMAND_BYTE_TEMPO 0x51
+#define CSEQ_COMMAND_BYTE_TEMPO_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_TEMPO)
 #define CSEQ_COMMAND_NAME_TEMPO "cseq Tempo"
 #define CSEQ_COMMAND_PARAM_BYTE_TEMPO 3
 #define CSEQ_COMMAND_NUM_PARAM_TEMPO 1
 
 #define MIDI_COMMAND_LEN_TEMPO 2
 #define MIDI_COMMAND_BYTE_TEMPO 0x51
+#define MIDI_COMMAND_BYTE_TEMPO_WITH_META  (0xff00 | MIDI_COMMAND_BYTE_TEMPO)
 #define MIDI_COMMAND_NAME_TEMPO "MIDI Tempo"
 #define MIDI_COMMAND_PARAM_BYTE_TEMPO 4
 #define MIDI_COMMAND_NUM_PARAM_TEMPO 2
@@ -98,6 +108,7 @@
 */
 #define CSEQ_COMMAND_LEN_LOOP_END 2
 #define CSEQ_COMMAND_BYTE_LOOP_END 0x2d
+#define CSEQ_COMMAND_BYTE_LOOP_END_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_LOOP_END)
 #define CSEQ_COMMAND_NAME_LOOP_END "cseq Loop End"
 #define CSEQ_COMMAND_PARAM_BYTE_LOOP_END 6
 #define CSEQ_COMMAND_NUM_PARAM_LOOP_END 3
@@ -111,12 +122,14 @@
 */
 #define CSEQ_COMMAND_LEN_LOOP_START 2
 #define CSEQ_COMMAND_BYTE_LOOP_START 0x2e
+#define CSEQ_COMMAND_BYTE_LOOP_START_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_LOOP_START)
 #define CSEQ_COMMAND_NAME_LOOP_START "cseq Loop Start"
 #define CSEQ_COMMAND_PARAM_BYTE_LOOP_START 2
 #define CSEQ_COMMAND_NUM_PARAM_LOOP_START 2
 
 #define MIDI_COMMAND_LEN_END_OF_TRACK 3
 #define MIDI_COMMAND_BYTE_END_OF_TRACK 0x2f
+#define MIDI_COMMAND_BYTE_END_OF_TRACK_WITH_META  (0xff00 | MIDI_COMMAND_BYTE_END_OF_TRACK)
 #define MIDI_COMMAND_FULL_END_OF_TRACK 0xff2f00
 #define MIDI_COMMAND_NAME_END_OF_TRACK "MIDI End Of Track"
 #define MIDI_COMMAND_PARAM_BYTE_END_OF_TRACK 0
@@ -124,6 +137,7 @@
 
 #define CSEQ_COMMAND_LEN_END_OF_TRACK 2
 #define CSEQ_COMMAND_BYTE_END_OF_TRACK 0x2f
+#define CSEQ_COMMAND_BYTE_END_OF_TRACK_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_END_OF_TRACK)
 #define CSEQ_COMMAND_NAME_END_OF_TRACK "cseq End Of Track"
 #define CSEQ_COMMAND_PARAM_BYTE_END_OF_TRACK 0
 #define CSEQ_COMMAND_NUM_PARAM_END_OF_TRACK 0
@@ -132,6 +146,27 @@
 #define CSEQ_COMMAND_NAME_PATTERN "cseq pattern"
 
 #define MIDI_DESCRIPTION_TEXT_BUFFER_LEN 40
+
+#define MIDI_CONTROLLER_BANK_SELECT       0
+#define MIDI_CONTROLLER_CHANNEL_VOLUME    7
+#define MIDI_CONTROLLER_CHANNEL_BALANCE   8
+#define MIDI_CONTROLLER_CHANNEL_PAN      10
+#define MIDI_CONTROLLER_CHANNEL_PAN2   0x2a
+#define MIDI_CONTROLLER_SUSTAIN          64
+#define MIDI_CONTROLLER_EFFECTS_1_DEPTH  91
+#define MIDI_CONTROLLER_EFFECTS_2_DEPTH  92
+#define MIDI_CONTROLLER_EFFECTS_3_DEPTH  93
+#define MIDI_CONTROLLER_EFFECTS_4_DEPTH  94
+#define MIDI_CONTROLLER_EFFECTS_5_DEPTH  95
+#define MIDI_CONTROLLER_LOOP_START      102
+#define MIDI_CONTROLLER_LOOP_END        103
+#define MIDI_CONTROLLER_LOOP_COUNT_0    104
+#define MIDI_CONTROLLER_LOOP_COUNT_128  105
+
+// bit flags:
+#define MIDI_MALFORMED_EVENT_LOOP       (0x01)
+#define MIDI_SEQ_EVENT_NOTE_OFF_HANDLED (0x02)
+#define MIDI_MIDI_EVENT_LOOP_END_HANDLED (0x04)
 
 enum MIDI_FORMAT {
     /**
@@ -150,6 +185,23 @@ enum MIDI_FORMAT {
     MIDI_FORMAT_SEQUENTIAL = 2
 };
 
+enum MIDI_IMPLEMENTATION {
+    /**
+     * Standard MIDI file format.
+    */
+    MIDI_IMPLEMENTATION_STANDARD = 0,
+
+    /**
+     * N64 seq MIDI format (no compression).
+    */
+    MIDI_IMPLEMENTATION_SEQ,
+
+    /**
+     * N64 compressed seq MIDI format.
+    */
+    MIDI_IMPLEMENTATION_COMPRESSED_SEQ
+};
+
 /**
  * Compressed MIDI format file has a 44 byte header. This is 16 offsets to channels, and a division value.
  * The rest of the file is track data.
@@ -159,6 +211,10 @@ struct CseqFile {
 
     /**
      * Offsets to individual tracks.
+     * Actual value depends on context.
+     * When reading cseq file from disk to export, this is offset from start of file.
+     * When converting into cseq format to write to disk, this is offset from start
+     * of data block.
      * Some offsets might be set to 0.
      * big endian.
     */
@@ -186,6 +242,11 @@ struct CseqFile {
      * Length in bytes of the compressed track.
     */
     size_t track_lengths[CSEQ_FILE_NUM_TRACKS];
+
+    /**
+     * Length in bytes of the compressed_data field.
+    */
+    size_t compressed_data_len;
 };
 
 struct MidiTrack {
@@ -198,7 +259,7 @@ struct MidiTrack {
     uint32_t ck_id;
 
     /**
-     * Chunk size.
+     * Chunk size (length of data in bytes).
      * big endian.
     */
     int32_t ck_data_size;
@@ -361,6 +422,16 @@ struct GmidEvent {
     int midi_command_parameters_len;
 
     /**
+     * File offset the event begins at.
+    */
+    size_t file_offset;
+
+    /**
+     * Special flags.
+    */
+    uint32_t flags;
+
+    /**
      * Associated dual event.
      * For example: Note On <-> Note Off; loop start <-> loop end; etc.
      * May be NULL.
@@ -415,6 +486,12 @@ struct GmidTrack {
 #define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
 extern int g_midi_parse_debug;
 
+/**
+ * Callback function with single parameter, pointer to GmidTrack.
+ * Returns void.
+*/
+typedef void (*f_GmidTrack_callback)(struct GmidTrack *);
+
 struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
 struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi);
@@ -426,7 +503,7 @@ struct MidiTrack *MidiTrack_new(int32_t track_index);
 struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
-struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq);
+struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, f_GmidTrack_callback post_unroll_action);
 struct MidiFile *MidiFile_new_from_file(struct file_info *fi);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
@@ -439,6 +516,21 @@ void GmidTrack_free(struct GmidTrack *track);
 void GmidEvent_free(struct GmidEvent *event);
 int32_t GmidEvent_get_midi_command(struct GmidEvent *event);
 void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack);
+// new
+
+
+struct GmidEvent *GmidEvent_new_from_buffer(uint8_t *buffer, size_t *pos_ptr, size_t buffer_len, enum MIDI_IMPLEMENTATION buffer_type, int32_t running_status, int *bytes_read);
+void GmidTrack_absolute_from_delta(struct GmidTrack *gtrack);
+void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack);
+void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack);
+void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack);
+void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack);
+void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack);
+void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
+void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack);
+size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
+struct CseqFile *CseqFile_new_roll_from_tracks(struct GmidTrack **track, size_t num_tracks);
+// end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 
 void midi_controller_to_name(int controller, char *result, size_t max_length);

@@ -24,17 +24,21 @@
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
+static int opt_write_seq_track = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
 #define LONG_OPT_DEBUG   1003
 #define LONG_OPT_PARSE_DEBUG   1004
 
+#define LONG_OPT_WRITE_SEQ_TRACK   2001
+
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
     {"in",     required_argument,               NULL,  'n' },
     {"out",    required_argument,               NULL,  'o' },
+    {"write-seq-tracks",     no_argument,       NULL,  LONG_OPT_WRITE_SEQ_TRACK },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
@@ -46,6 +50,7 @@ static struct option long_options[] =
 
 void print_help(const char * invoke);
 void read_opts(int argc, char **argv);
+static void write_seq_track(struct GmidTrack *gtrack);
 
 // end forward declarations
 
@@ -64,6 +69,8 @@ void print_help(const char * invoke)
     printf("    -n,--in=FILE                  input .aifc file to convert\n");
     printf("    -o,--out=FILE                 output file. Optional. If not provided, will\n");
     printf("                                  reuse the input file name but change extension.\n");
+    printf("    --write-seq-tracks            Perform pattern substitution (unroll track) then\n");
+    printf("                                  write track to disk.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -130,6 +137,10 @@ void read_opts(int argc, char **argv)
                 g_verbosity = VERBOSE_DEBUG;
                 break;
 
+            case LONG_OPT_WRITE_SEQ_TRACK:
+                opt_write_seq_track = 1;
+                break;
+
             case LONG_OPT_PARSE_DEBUG:
                 g_midi_parse_debug = 1;
                 break;
@@ -142,13 +153,13 @@ void read_opts(int argc, char **argv)
     }
 }
 
-
 int main(int argc, char **argv)
 {
     struct MidiFile *midi_file;
     struct CseqFile *cseq_file;
     struct file_info *input_file;
     struct file_info *output_file;
+    f_GmidTrack_callback unroll_action = NULL;
 
     read_opts(argc, argv);
 
@@ -172,7 +183,13 @@ int main(int argc, char **argv)
         printf("opt_output_file: %d\n", opt_output_file);
         printf("input_filename: %s\n", input_filename);
         printf("output_filename: %s\n", output_filename);
+        printf("opt_write_seq_track: %d\n", opt_write_seq_track);
         fflush(stdout);
+    }
+
+    if (opt_write_seq_track)
+    {
+        unroll_action = write_seq_track;
     }
 
     input_file = file_info_fopen(input_filename, "rb");
@@ -182,7 +199,7 @@ int main(int argc, char **argv)
     file_info_free(input_file);
     input_file = NULL;
 
-    midi_file = MidiFile_from_CseqFile(cseq_file);
+    midi_file = MidiFile_from_CseqFile(cseq_file, unroll_action);
 
     // done with source cseq file
     CseqFile_free(cseq_file);
@@ -199,4 +216,25 @@ int main(int argc, char **argv)
     file_info_free(output_file);
     
     return 0;
+}
+
+static void write_seq_track(struct GmidTrack *gtrack)
+{
+    TRACE_ENTER(__func__)
+
+    struct file_info *fi;
+    char new_filename[MAX_FILENAME_LEN];
+    char new_extension[20];
+    
+    memset(new_filename, 0, MAX_FILENAME_LEN);
+    memset(new_extension, 0, 20);
+
+    sprintf(new_extension, "-track-%03d%s", gtrack->cseq_track_index, MIDI_N64_DEFAULT_EXTENSION);
+    change_filename_extension(output_filename, new_filename, new_extension, MAX_FILENAME_LEN);
+
+    fi = file_info_fopen(new_filename, "wb");
+    file_info_fwrite(fi, gtrack->cseq_data, gtrack->cseq_data_len, 1);
+    file_info_free(fi);
+
+    TRACE_LEAVE(__func__)
 }

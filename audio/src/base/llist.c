@@ -164,7 +164,7 @@ void llist_node_string_data_print(struct llist_root *root)
 }
 
 /**
- * Frees a node from the list.
+ * Removes a node from the list and frees memory allocated to it.
  * This does not free or modify {@code node->data}.
  * Next and previous nodes in the list will have their pointers
  * updated in the expected manner.
@@ -175,6 +175,28 @@ void llist_node_string_data_print(struct llist_root *root)
  * @param node: node to remove from list.
 */
 void llist_node_free(struct llist_root *root, struct llist_node *node)
+{
+    TRACE_ENTER(__func__)
+
+    llist_node_detach(root, node);
+
+    free(node);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Removes a node from the list but does not free memory.
+ * This does not free or modify {@code node->data}.
+ * Next and previous nodes in the list will have their pointers
+ * updated in the expected manner.
+ * If {@code root} is not NULL then the node count is decremented.
+ * Otherwise the parent list the node belongs to will now have incorrect count.
+ * If {@code node} is NULL then nothing happens.
+ * @param root: list to remove node from. Optional. If not used, pass NULL.
+ * @param node: node to remove from list.
+*/
+void llist_node_detach(struct llist_root *root, struct llist_node *node)
 {
     TRACE_ENTER(__func__)
 
@@ -204,8 +226,6 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
     {
         prev->next = next;
     }
-
-    free(node);
 
     if (root != NULL)
     {
@@ -435,6 +455,39 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
     {
         second_next->prev = first;
     }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Detaches a node from one list and appends it to the end of another.
+ * List counts and node pointers are updated accordingly.
+ * No memory is allocated or freed.
+ * @param dest: destination list to append to.
+ * @param src: source list to remove from.
+ * @param node: node to mode.
+*/
+void llist_node_move(struct llist_root *dest, struct llist_root *src, struct llist_node *node)
+{
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL\n", __func__, __LINE__);
+    }
+
+    if (src == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> src is NULL\n", __func__, __LINE__);
+    }
+
+    if (node == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> node is NULL\n", __func__, __LINE__);
+    }
+
+    llist_node_detach(src, node);
+    llist_root_append_node(dest, node);
 
     TRACE_LEAVE(__func__)
 }

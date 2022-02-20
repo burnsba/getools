@@ -27,5 +27,6 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count);
 void parse_coef_all(int *run_count, int *pass_count, int *fail_count);
 void aifc_all(int *run_count, int *pass_count, int *fail_count);
 void magic_all(int *run_count, int *pass_count, int *fail_count);
+void midi_all(int *run_count, int *pass_count, int *fail_count);
 
 #endif

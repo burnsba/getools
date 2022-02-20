@@ -638,7 +638,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: error, fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
     }
 
     if (fi->_fp_state != 1)
@@ -707,6 +707,11 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 int file_info_fclose(struct file_info *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
+    }
 
     int ret = 0;
 
@@ -851,11 +856,21 @@ void bswap32_chunk(void *dest, const void *src, size_t num)
  * is allocated and appended to the list of names.
  * @param names_file_contents: buffer containing file content.
  * @param file_length: size in bytes of file content array.
- * @param names: linked list to append names to.
+ * @param names: linked list to append names to. Must be previously allocated.
 */
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
 {
     TRACE_ENTER(__func__)
+
+    if (names_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: names_file_contents is NULL.\n", __func__);
+    }
+
+    if (names == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: names is NULL.\n", __func__);
+    }
 
     size_t i;
     int current_len = 0;
@@ -1120,10 +1135,17 @@ int string_ends_with(const char * str, const char * suffix)
 
 /**
  * Converts a 32 bit integer to a variable length quantity integer.
+ * @param in: int value to convert.
+ * @param varint: out parameter. Must be previously allocated. Will set value and num_bytes.
 */
 void int32_to_varint(int32_t in, struct var_length_int *varint)
 {
     TRACE_ENTER(__func__)
+
+    if (varint == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
+    }
 
     int32_t out_result = 0;
     int num_bytes = 0;
@@ -1144,8 +1166,12 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
         num_bytes++;
     } while (in > 0);
     
-    varint->value = out_result;
     varint->num_bytes = num_bytes;
+
+    // byte swap
+    varint->value = 0;
+    memcpy(&varint->value, &out_result, num_bytes);
+    reverse_inplace((uint8_t *)&varint->value, num_bytes);
 
     TRACE_LEAVE(__func__)
 }
