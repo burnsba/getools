@@ -44,7 +44,18 @@ void fflush_printf(FILE *stream, const char *format, ...)
     vfprintf(stream, format, args);
     va_end(args);
 
-    fflush(stderr);
+    fflush(stream);
+}
+
+/**
+ * Write text to file stream and flush output.
+ * @param stream: stream to write to.
+ * @param str: text to write.
+*/
+void fflush_string(FILE *stream, const char *str)
+{
+    fprintf(stream, str);
+    fflush(stream);
 }
 
 /**

@@ -13,6 +13,7 @@
 */
 
 int g_midi_parse_debug = 0;
+int g_midi_debug_loop_delta = 0;
 
 // give every event a unique id
 static int g_event_id = 0;
@@ -624,7 +625,9 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
     struct llist_node *node;
     int i;
     int source_track_index;
+    char *debug_printf_buffer;
 
+    debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
     gmidi_tracks = (struct GmidTrack **)malloc_zero(CSEQ_FILE_NUM_TRACKS, sizeof(struct GmidTrack *));
 
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
@@ -643,8 +646,25 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
         int32_t command;
         int destination_track = -1;
 
+        /** 
+         * running count of absolute time.
+         * Every delta event read is added to this value.
+         * The first delta event read sets the very first absolute time (not necessarily zero).
+        */
+        long absolute_time = 0;
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("begin parse track %d\n", source_track_index);
+        }
+
         if (source_track == NULL)
         {
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("empty track\n");
+            }
+
             continue;
         }
 
@@ -683,6 +703,17 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
                 stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid bytes_read (0) from GmidEvent_new_from_buffer\n", __func__, __LINE__);
             }
 
+            absolute_time += event->midi_delta_time.standard_value;
+            event->absolute_time = absolute_time;
+
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+                size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
+                debug_printf_buffer[debug_str_len] = '\n';
+                fflush_string(stdout, debug_printf_buffer);
+            }
+
             // Set destination track to first seen command channel.
             if (destination_track == -1 && event->command_channel > -1)
             {
@@ -702,6 +733,11 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
             llist_root_append_node(track_event_holder, node);
         }
 
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("finish parse track %d\n", source_track_index);
+        }
+
         if (destination_track < 0 || destination_track > CSEQ_FILE_NUM_TRACKS)
         {
             stderr_exit(EXIT_CODE_GENERAL, "%s %d>: destination_track %d was not resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
@@ -719,19 +755,14 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
     // All events from source midi have been added to appropriate tracks.
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
     {
-        // Set absolute time based on the delta times,
-        // then sort according to absolute times.
-        GmidTrack_absolute_from_delta(gmidi_tracks[i]);
-        
-        // Sort events by absolute time
-        llist_root_merge_sort(gmidi_tracks[i]->events, llist_node_gmidevent_compare_smaller);
-
         // Convert note-off and implicit note-off to cseq format.
         // Absolute times must be accurate in order to calculate duration.
         GmidTrack_cseq_note_on_from_midi(gmidi_tracks[i]);
 
         // Sort events by absolute time
         llist_root_merge_sort(gmidi_tracks[i]->events, llist_node_gmidevent_compare_smaller);
+
+        GmidTrack_delta_from_absolute(gmidi_tracks[i]);
 
         /**
          * cseq2midi needed loop end to be linked to loop start to resolve
@@ -743,7 +774,38 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
         */
         GmidTrack_midi_to_cseq_loop(gmidi_tracks[i]);
 
+        // fix delta times for loop events just added.
+        GmidTrack_delta_from_absolute(gmidi_tracks[i]);
+
         GmidTrack_set_track_size_bytes(gmidi_tracks[i]);
+
+        // TODO: delete
+        // if (i == 0 && g_verbosity >= VERBOSE_DEBUG)
+        // {
+        //     printf("final cseq track state before write\n");
+        //     node = gmidi_tracks[i]->events->root;
+        //     while (node != NULL)
+        //     {
+        //         size_t debug_str_len;
+        //         struct GmidEvent *event = (struct GmidEvent *)node->data;
+        //         if (event != NULL)
+        //         {
+        //             printf("cseq\n");
+        //             memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+        //             debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_SEQ);
+        //             debug_printf_buffer[debug_str_len] = '\n';
+        //             fflush_string(stdout, debug_printf_buffer);
+        //             printf("midi\n");
+        //             memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+        //             debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
+        //             debug_printf_buffer[debug_str_len] = '\n';
+        //             fflush_string(stdout, debug_printf_buffer);
+        //             printf("\n");
+        //         }
+
+        //         node = node->next;
+        //     }
+        // }
 
         // add a margin of error
         gmidi_tracks[i]->cseq_data = (uint8_t *)malloc_zero(1, gmidi_tracks[i]->cseq_track_size_bytes + 50);
@@ -763,6 +825,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi)
     }
 
     free(gmidi_tracks);
+    free(debug_printf_buffer);
 
     llist_node_root_free(track_event_holder);
 
@@ -2053,8 +2116,10 @@ struct GmidEvent *GmidEvent_new_from_buffer(uint8_t *buffer, size_t *pos_ptr, si
             event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_NOTE_ON;
 
             // don't have enough information to convert to cseq format yet
+            event->cseq_command_parameters_raw[0] = note;
+            event->cseq_command_parameters_raw[1] = velocity;
             event->cseq_command_len = CSEQ_COMMAND_LEN_NOTE_ON;
-            event->cseq_command_parameters_raw_len = 0;
+            event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_NOTE_ON; // this is wrong, but all we know for now
             event->cseq_command_parameters[0] = note;
             event->cseq_command_parameters[1] = velocity;
             event->cseq_command_parameters[2] = 0; // duration, unknown at this time
@@ -2295,12 +2360,15 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
     struct GmidEvent *event;
     struct GmidEvent *midi_count_event;
     struct GmidEvent *midi_end_event;
+    char *debug_printf_buffer;
+
+    debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
 
     /**
      * This iterates the list until finding a non standard MIDI loop start.
      * The node is converted to seq format and inserted before current.
      * The next node after the start is then checked. If it's a count node,
-     * and end node should exist (according to how gaudio exports), so
+     * the end node should exist (according to how gaudio exports), so
      * iterate the event list searching for a matching end event,
      * keep tracking of the number of bytes between start and end.
      * Once found, create a new end event node.
@@ -2361,6 +2429,11 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                     int found_end = 0;
                     int any_end = 0;
 
+                    // need to track running status command to determine whether
+                    // to include command in byte count or not.
+                    int command = 0;
+                    int previous_command = -1;
+
                     midi_count_event = (struct GmidEvent *)node->next->data;
 
                     if (midi_count_event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_COUNT_0)
@@ -2380,22 +2453,69 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                         midi_end_event = (struct GmidEvent *)end_node->data;
                         if (midi_end_event != NULL)
                         {
-                            byte_offset +=
-                                midi_end_event->midi_delta_time.num_bytes
-                                + midi_end_event->midi_command_parameters_raw_len;
+                            // only measure byte distance for cseq
+                            if (midi_end_event->cseq_valid)
+                            {
+                                int inc_amount = 0;
+
+                                if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG)
+                                {
+                                    memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+                                    size_t debug_str_len = GmidEvent_to_string(midi_end_event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_SEQ);
+                                    debug_printf_buffer[debug_str_len] = '\n';
+                                    fflush_string(stdout, debug_printf_buffer);
+                                }
+
+                                command = GmidEvent_get_cseq_command(midi_end_event);
+
+                                inc_amount +=
+                                    midi_end_event->cseq_delta_time.num_bytes
+                                    + midi_end_event->cseq_command_parameters_raw_len;
+
+                                // if this is a "running status" then no need to write command, otherwise write command bytes
+                                if (previous_command != command)
+                                {
+                                    inc_amount += midi_end_event->cseq_command_len;
+                                    previous_command = command;
+                                }
+
+                                if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG)
+                                {
+                                    printf("loop> byte_offset=%ld + (inc_amount=%d) = %ld\n", byte_offset, inc_amount, inc_amount+byte_offset);
+                                }
+
+                                byte_offset += inc_amount;
+
+                                // only allow running status for the "regular" MIDI commands
+                                if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+                                {
+                                    previous_command = 0;
+                                }
+                            }
 
                             // if this is an end loop event, and it's not claimed by any start loop event
                             if (midi_end_event->command == MIDI_COMMAND_BYTE_CONTROL_CHANGE
                                 && midi_end_event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_END
                                 && (midi_end_event->flags & MIDI_MIDI_EVENT_LOOP_END_HANDLED) == 0)
                             {
-                                any_end++;
-
                                 // for the purposes of error handlind, want to track the number of unclaimed
                                 // end nodes seen. This loop node only cares if the loop numbers
                                 // match though.
+                                any_end++;
+
                                 if (midi_end_event->midi_command_parameters[1] == event->midi_command_parameters[1])
                                 {
+                                    // adjust for size of meta end event, which is about to be created.
+                                    byte_offset += CSEQ_COMMAND_LEN_LOOP_END + CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
+
+                                    // adjust for size of end event delta time
+                                    byte_offset += midi_end_event->midi_delta_time.num_bytes;
+
+                                    if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG)
+                                    {
+                                        printf("loop> final byte_offset=%ld\n", byte_offset);
+                                    }
+
                                     seq_loop_end = GmidEvent_new();
 
                                     seq_loop_end->command = CSEQ_COMMAND_BYTE_LOOP_END_WITH_META;
@@ -2464,6 +2584,8 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
 
         node = node->next;
     }
+
+    free(debug_printf_buffer);
 
     TRACE_LEAVE(__func__)
 }
@@ -2698,6 +2820,10 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
     struct GmidEvent *midi_count_event;
     struct GmidEvent *midi_end_event;
 
+    // seq loop is a meta event so there's no channel information, but
+    // that should be included in the command.
+    uint8_t track_channel = gtrack->cseq_track_index & 0xf;
+
     node = gtrack->events->root;
     while (node != NULL)
     {
@@ -2720,7 +2846,7 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
                 midi_start_event->midi_valid = 1;
                 
                 midi_start_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                midi_start_event->command_channel = seq_event->command_channel;
+                midi_start_event->command_channel = track_channel;
 
                 midi_start_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
                 midi_start_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
@@ -2777,7 +2903,7 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
                     midi_count_event->midi_valid = 1;
                     
                     midi_count_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                    midi_count_event->command_channel = seq_event->command_channel;
+                    midi_count_event->command_channel = track_channel;
 
                     midi_count_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
                     midi_count_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
@@ -2793,7 +2919,7 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
                     midi_end_event->midi_valid = 1;
                     
                     midi_end_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                    midi_end_event->command_channel = seq_event->command_channel;
+                    midi_end_event->command_channel = track_channel;
 
                     midi_end_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
                     midi_end_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
@@ -2853,47 +2979,6 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
 }
 
 /**
- * This iterates the event list and sets the absolute time
- * markers based on the delta times of each event.
- * There are two separate running tallies, one for valid MIDI events
- * and one for valid seq events.
- * @param gtrack: track to update.
-*/
-void GmidTrack_absolute_from_delta(struct GmidTrack *gtrack)
-{
-    TRACE_ENTER(__func__)
-
-    if (gtrack == NULL)
-    {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
-    }
-
-    struct llist_node *node;
-    long absolute_time = 0;
-
-    node = gtrack->events->root;
-    while (node != NULL)
-    {
-        struct GmidEvent *current_node_event = (struct GmidEvent *)node->data;
-
-        if (current_node_event->cseq_valid == 1 && current_node_event->midi_valid == 0)
-        {
-            absolute_time += current_node_event->cseq_delta_time.standard_value;
-        }
-        else
-        {
-            absolute_time += current_node_event->midi_delta_time.standard_value;
-        }
-
-        current_node_event->absolute_time = absolute_time;
-
-        node = node->next;
-    }
-
-    TRACE_LEAVE(__func__)
-}
-
-/**
  * This iterates the event list and sets the delta times
  * based on the absolute time of each event.
  * There are two separate running tallies, one for valid MIDI events
@@ -2931,9 +3016,7 @@ void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack)
             time_delta = (int)(current_node_event->absolute_time - cseq_prev_absolute_time);
             int32_to_varint(time_delta, &current_node_event->cseq_delta_time);
             cseq_prev_absolute_time = current_node_event->absolute_time;
-            
-            // make sure midi delta stays synced
-            memcpy(&current_node_event->midi_delta_time, &current_node_event->cseq_delta_time, sizeof(struct var_length_int));
+            // do not set midi delta time here.
         }
 
         // set the event MIDI event time
@@ -2942,8 +3025,7 @@ void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack)
             time_delta = (int)(current_node_event->absolute_time - midi_prev_absolute_time);
             int32_to_varint(time_delta, &current_node_event->midi_delta_time);
             midi_prev_absolute_time = current_node_event->absolute_time;
-            // make sure cseq delta stays synced
-            memcpy(&current_node_event->cseq_delta_time, &current_node_event->midi_delta_time, sizeof(struct var_length_int));
+            // do not set cseq delta time here.
         }
 
         node = node->next;
@@ -3046,6 +3128,14 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
     struct llist_node *node_off;
     struct var_length_int varint;
 
+    char *debug_printf_buffer;
+    debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("begin %s\n", __func__);
+    }
+
     node = gtrack->events->root;
     while (node != NULL)
     {
@@ -3058,13 +3148,30 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
             {
                 int match = 0;
 
+                /**
+                 * Count the depth of duplicate note-on events. Treat this as a stack.
+                 * For example, three duplicate note-on events followed by one
+                 * note-off, the note-off will be matched to the last note-on.
+                */
+                int duplicate_stack = 0;
+
                 node_off = node;
                 while (node_off != NULL && match == 0)
                 {
                     event_off = (struct GmidEvent *)node_off->data;
                     if (event_off != NULL)
                     {
-                        if (
+                        // if this is a note-on event
+                        if (event_off->command == MIDI_COMMAND_BYTE_NOTE_ON
+                            // velocity == 0 means implicit note-off, so check this is positive
+                            && event_off->midi_command_parameters[1] > 0
+                            // and this is for the same note
+                            && event_off->midi_command_parameters[0] == event->midi_command_parameters[0])
+                        {
+                            // increase stack depth of duplicates.
+                            duplicate_stack++;
+                        }
+                        else if (
                             // this is note off event, or implicit note-off event
                             (
                                 (event_off->command == MIDI_COMMAND_BYTE_NOTE_OFF)
@@ -3074,23 +3181,38 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
                             && event_off->midi_command_parameters[0] == event->midi_command_parameters[0]
                         )
                         {
-                            long absolute_delta = event_off->absolute_time - event->absolute_time;
-                            memset(&varint, 0, sizeof(struct var_length_int));
-                            int32_to_varint((int32_t)absolute_delta, &varint);
+                            // decrase stack depth of duplicates.
+                            duplicate_stack--;
 
-                            // set "easy access" value for duration.
-                            // Offset 0 and 1 are note and velocity, so start at 2.
-                            event->cseq_command_parameters[2] = (int32_t)absolute_delta;
-                            // write duration into cseq parameters.
-                            memcpy(&event->cseq_command_parameters_raw[2], &varint.value, varint.num_bytes);
-                            // update byte length of parameters to write.
-                            event->cseq_command_parameters_raw_len += varint.num_bytes;
-                            // flag cseq now as valid.
-                            event->cseq_valid = 1;
-                            // flag the note off event as captured. This will prevent writing to output file.
-                            event_off->flags |= MIDI_SEQ_EVENT_NOTE_OFF_HANDLED;
+                            if (duplicate_stack == 0)
+                            {
+                                long absolute_delta = event_off->absolute_time - event->absolute_time;
+                                memset(&varint, 0, sizeof(struct var_length_int));
+                                int32_to_varint((int32_t)absolute_delta, &varint);
 
-                            match = 1;
+                                // set "easy access" value for duration.
+                                // Offset 0 and 1 are note and velocity, so start at 2.
+                                event->cseq_command_parameters[2] = (int32_t)absolute_delta;
+                                // write duration into cseq parameters.
+                                memcpy(&event->cseq_command_parameters_raw[2], &varint.value, varint.num_bytes);
+                                reverse_inplace(&event->cseq_command_parameters_raw[2], varint.num_bytes);
+                                // update byte length of parameters to write.
+                                event->cseq_command_parameters_raw_len += varint.num_bytes;
+                                // flag cseq now as valid.
+                                event->cseq_valid = 1;
+
+                                match = 1;
+
+                                if (g_verbosity >= VERBOSE_DEBUG)
+                                {
+                                    printf("set valid cseq note on, duration=%ld, varint=0x%08x\n", absolute_delta, varint.value);
+                                    
+                                    memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+                                    size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_SEQ);
+                                    debug_printf_buffer[debug_str_len] = '\n';
+                                    fflush_string(stdout, debug_printf_buffer);
+                                }
+                            }
                         }
                     }
 
@@ -3105,7 +3227,14 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
         }
 
         node = node->next;
-    }    
+    }
+
+    free(debug_printf_buffer);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("end %s\n", __func__);
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -3132,9 +3261,10 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
     size_t buffer_len;
     int32_t command;
 
-    /** running count of absolute time.
-    * Every delta event read is added to this value.
-    * The first delta event read sets the very first absolute time (not necessarily zero).
+    /** 
+     * running count of absolute time.
+     * Every delta event read is added to this value.
+     * The first delta event read sets the very first absolute time (not necessarily zero).
     */
     long absolute_time = 0;
 
@@ -3162,7 +3292,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
         absolute_time += event->midi_delta_time.standard_value;
         event->absolute_time = absolute_time;
 
-        command = GmidEvent_get_midi_command(event);
+        command = GmidEvent_get_cseq_command(event);
 
         // only allow running status for the "regular" MIDI commands
         if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
@@ -3365,7 +3495,83 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
         }
     }
 
-    stderr_exit(EXIT_CODE_GENERAL, "%s: command not supported: 0x%04x.\n", __func__, event->command);
+    stderr_exit(EXIT_CODE_GENERAL, "%s: midi command not supported: 0x%04x.\n", __func__, event->command);
+
+    TRACE_LEAVE(__func__)
+
+    // be quiet gcc
+    return -1;
+}
+
+/**
+ * Converts command from event into seq command, adding the channel number.
+ * (The stored command doesn't include channel in the command.)
+ * Maybe refactor this to split yet another parameter into two properties ...
+ * But for now, the command paramter evaluated is the "full" seq command (without channel),
+ * this contains logic to adjust differences from MIDI to cseq.
+ * @param event: event to build seq command from.
+ * @returns: seq command with channel.
+*/
+int32_t GmidEvent_get_cseq_command(struct GmidEvent *event)
+{
+    TRACE_ENTER(__func__)
+
+    int upper = (0xff00 & event->command) >> 8;
+
+    if (event->command == CSEQ_COMMAND_BYTE_NOTE_ON)
+    {
+        TRACE_LEAVE(__func__)
+        return CSEQ_COMMAND_BYTE_NOTE_ON | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_CONTROL_CHANGE)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_CONTROL_CHANGE | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_PROGRAM_CHANGE)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_PROGRAM_CHANGE | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_CHANNEL_PRESSURE)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_CHANNEL_PRESSURE | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_PITCH_BEND)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_PITCH_BEND | event->command_channel;
+    }
+    else if (upper == 0xff)
+    {
+        int lower = 0xff & event->command;
+
+        switch (lower)
+        {
+            /**
+             * System command 0xff followed by single byte:
+            */
+            case CSEQ_COMMAND_BYTE_TEMPO:
+            case CSEQ_COMMAND_BYTE_LOOP_END:
+            case CSEQ_COMMAND_BYTE_LOOP_START:
+            case CSEQ_COMMAND_BYTE_END_OF_TRACK:
+            TRACE_LEAVE(__func__)
+            return event->command;
+        }
+    }
+
+    stderr_exit(EXIT_CODE_GENERAL, "%s: seq command not supported: 0x%04x.\n", __func__, event->command);
 
     TRACE_LEAVE(__func__)
 
@@ -3501,7 +3707,7 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
             continue;
         }
 
-        command = GmidEvent_get_midi_command(event);
+        command = GmidEvent_get_cseq_command(event);
 
         if (event->cseq_delta_time.num_bytes == 0)
         {
@@ -3615,10 +3821,99 @@ void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Write the event to string in standard notation.
+ * @param event: event to write.
+ * @param buffer: buffer to write into.
+ * @param buffer_len: size of buffer in bytes.
+ * @param type: which values of event to retrieve.
+ * @returns: size of string, without '\0' terminator.
+*/
+size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type)
+{
+    TRACE_ENTER(__func__)
+
+    if (event == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> event is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
+
+    int i;
+    size_t write_len = 0;
+
+    if (type == MIDI_IMPLEMENTATION_SEQ)
+    {
+        if (event->cseq_valid)
+        {
+            write_len = sprintf(
+                buffer,
+                "abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
+                event->absolute_time,
+                event->cseq_delta_time.standard_value,
+                event->cseq_delta_time.value,
+                event->command_channel,
+                event->command
+                );
+
+            for (i=0; i<event->cseq_command_parameters_len; i++)
+            {
+                write_len += sprintf(&buffer[write_len], ", [%d]=%d", i, event->cseq_command_parameters[i]);
+            }
+        }
+        else
+        {
+            write_len = sprintf(buffer, "cseq invalid");
+        }
+    }
+    else if (type == MIDI_IMPLEMENTATION_STANDARD)
+    {
+        if (event->midi_valid)
+        {
+            write_len = sprintf(
+                buffer,
+                "abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
+                event->absolute_time,
+                event->midi_delta_time.standard_value,
+                event->midi_delta_time.value,
+                event->command_channel,
+                event->command
+                );
+
+            for (i=0; i<event->midi_command_parameters_len; i++)
+            {
+                write_len += sprintf(&buffer[write_len], ", [%d]=%d", i, event->midi_command_parameters[i]);
+            }
+        }
+        else
+        {
+            write_len = sprintf(buffer, "midi invalid");
+        }
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> type not supported: %d\n", __func__, __LINE__, type);
+    }
+
+    if (write_len > bufer_len)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer overflow. write_len=%ld, buffer_len=%ld \n", __func__, __LINE__, write_len, bufer_len);
+    }
+
+    TRACE_LEAVE(__func__)
+    return write_len;
+}
+
 static struct seq_unroll_grow *seq_unroll_grow_new(void)
 {
     TRACE_ENTER(__func__)
+
     struct seq_unroll_grow *result = (struct seq_unroll_grow *)malloc_zero(1, sizeof(struct seq_unroll_grow));
+
     TRACE_LEAVE(__func__)
     return result;
 }
@@ -3626,9 +3921,11 @@ static struct seq_unroll_grow *seq_unroll_grow_new(void)
 static void seq_unroll_grow_free(struct seq_unroll_grow *obj)
 {
     TRACE_ENTER(__func__)
+
     if (obj != NULL)
     {
         free(obj);
     }
+
     TRACE_LEAVE(__func__)
 }

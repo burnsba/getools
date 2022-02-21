@@ -105,7 +105,7 @@ $(BUILD)/tabledesign: $(OBJ)/tabledesign.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudiohash -lgaudiobase	
 endif
 
-$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_midi.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_magic.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
+$(BUILD)/test: $(OBJ)/test.o $(OBJ)/test_md5.o $(OBJ)/test_llist.o $(OBJ)/test_string_hash.o $(OBJ)/test_int_hash.o $(OBJ)/test_midi.o $(OBJ)/test_midi_convert.o $(OBJ)/test_parse_inst.o $(OBJ)/test_parse_coef.o $(OBJ)/test_magic.o $(OBJ)/test_aifc.o $(OBJ)/test_common.o $(OBJ)/libgaudio.a $(OBJ)/libgaudiox.a 
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudiohash -lgaudiobase
 
 ####################################################################################################

@@ -165,7 +165,6 @@
 
 // bit flags:
 #define MIDI_MALFORMED_EVENT_LOOP       (0x01)
-#define MIDI_SEQ_EVENT_NOTE_OFF_HANDLED (0x02)
 #define MIDI_MIDI_EVENT_LOOP_END_HANDLED (0x04)
 
 enum MIDI_FORMAT {
@@ -485,6 +484,7 @@ struct GmidTrack {
 
 #define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
 extern int g_midi_parse_debug;
+extern int g_midi_debug_loop_delta;
 
 /**
  * Callback function with single parameter, pointer to GmidTrack.
@@ -517,10 +517,7 @@ void GmidEvent_free(struct GmidEvent *event);
 int32_t GmidEvent_get_midi_command(struct GmidEvent *event);
 void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack);
 // new
-
-
 struct GmidEvent *GmidEvent_new_from_buffer(uint8_t *buffer, size_t *pos_ptr, size_t buffer_len, enum MIDI_IMPLEMENTATION buffer_type, int32_t running_status, int *bytes_read);
-void GmidTrack_absolute_from_delta(struct GmidTrack *gtrack);
 void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack);
 void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack);
 void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack);
@@ -530,6 +527,8 @@ void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
 void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 struct CseqFile *CseqFile_new_roll_from_tracks(struct GmidTrack **track, size_t num_tracks);
+size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type);
+int32_t GmidEvent_get_cseq_command(struct GmidEvent *event);
 // end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 

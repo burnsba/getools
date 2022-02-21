@@ -27,6 +27,10 @@ void midi_all(int *run_count, int *pass_count, int *fail_count)
     test_midi_parser(&sub_count, pass_count, fail_count);
     local_run_count += sub_count;
 
+    sub_count = 0;
+    midi_convert_all(&sub_count, pass_count, fail_count);
+    local_run_count += sub_count;
+
     *run_count = *run_count + local_run_count;
 }
 

@@ -57,6 +57,7 @@ struct var_length_int {
 
 void stderr_exit(int exit_code, const char *format, ...) ATTR_NO_RETURN;
 void fflush_printf(FILE *stream, const char *format, ...);
+void fflush_string(FILE *stream, const char *str);
 
 void *malloc_zero(size_t count, size_t item_size);
 void malloc_resize(size_t old_size, void **ref, size_t new_size);

@@ -19,6 +19,8 @@ int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct
 
 int f64_equal(double d1, double d2, double epsilon);
 
+// top level test entry points.
+
 void test_md5_all(int *run_count, int *pass_count, int *fail_count);
 void linked_list_all(int *run_count, int *pass_count, int *fail_count);
 void int_hash_all(int *run_count, int *pass_count, int *fail_count);
@@ -28,5 +30,10 @@ void parse_coef_all(int *run_count, int *pass_count, int *fail_count);
 void aifc_all(int *run_count, int *pass_count, int *fail_count);
 void magic_all(int *run_count, int *pass_count, int *fail_count);
 void midi_all(int *run_count, int *pass_count, int *fail_count);
+
+// child test entry points
+
+void midi_convert_all(int *run_count, int *pass_count, int *fail_count);
+void test_midi_convert(int *run_count, int *pass_count, int *fail_count);
 
 #endif
