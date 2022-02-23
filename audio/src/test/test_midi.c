@@ -104,11 +104,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_velocity = 200;
@@ -116,7 +117,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_NOTE_OFF | command_channel);
         test_buffer_pos += 1;
@@ -137,18 +139,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -244,11 +260,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_velocity = 200;
@@ -256,7 +273,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_NOTE_ON | command_channel);
         test_buffer_pos += 1;
@@ -277,18 +295,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -384,11 +416,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_velocity = 200;
@@ -396,7 +429,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_note_key);
         test_buffer_pos += 1;
@@ -415,18 +449,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -522,20 +570,22 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_velocity = 200;
-        int command_note_duration = 240;
+        int command_note_duration = 4097;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(CSEQ_COMMAND_BYTE_NOTE_ON | command_channel);
         test_buffer_pos += 1;
@@ -544,7 +594,7 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         buffer[test_buffer_pos] = (uint8_t)(command_note_velocity);
         test_buffer_pos += 1;
         int32_to_varint(command_note_duration, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
         test_buffer_pos += varint.num_bytes;
         
         pos_expected = test_buffer_pos;
@@ -559,18 +609,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -694,27 +758,29 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_velocity = 200;
-        int command_note_duration = 240;
+        int command_note_duration = 4097;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_note_key);
         test_buffer_pos += 1;
         buffer[test_buffer_pos] = (uint8_t)(command_note_velocity);
         test_buffer_pos += 1;
         int32_to_varint(command_note_duration, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
         test_buffer_pos += varint.num_bytes;
         
         pos_expected = test_buffer_pos;
@@ -729,18 +795,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -864,11 +944,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_pressure = 200;
@@ -876,7 +957,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE | command_channel);
         test_buffer_pos += 1;
@@ -897,18 +979,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1027,11 +1123,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_note_key = 64;
         int command_note_pressure = 200;
@@ -1039,7 +1136,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_POLYPHONIC_PRESSURE | command_channel);
         test_buffer_pos += 1;
@@ -1060,18 +1158,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1188,11 +1300,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_VOLUME;
         int command_controller_value = 50;
@@ -1200,7 +1313,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -1221,18 +1335,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1349,11 +1477,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_VOLUME;
         int command_controller_value = 50;
@@ -1361,7 +1490,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -1380,18 +1510,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1508,11 +1652,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_VOLUME;
         int command_controller_value = 50;
@@ -1520,7 +1665,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -1541,18 +1687,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1669,11 +1829,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_VOLUME;
         int command_controller_value = 50;
@@ -1681,7 +1842,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -1700,18 +1862,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1828,11 +2004,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_PAN;
         int command_controller_value = 50;
@@ -1840,7 +2017,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -1861,18 +2039,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -1989,11 +2181,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_PAN;
         int command_controller_value = 50;
@@ -2001,7 +2194,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -2020,18 +2214,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2148,11 +2356,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_PAN;
         int command_controller_value = 50;
@@ -2160,7 +2369,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -2181,18 +2391,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2309,11 +2533,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_CHANNEL_PAN;
         int command_controller_value = 50;
@@ -2321,7 +2546,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -2340,18 +2566,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2468,11 +2708,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_SUSTAIN;
         int command_controller_value = 50;
@@ -2480,7 +2721,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -2501,18 +2743,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2629,11 +2885,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_SUSTAIN;
         int command_controller_value = 50;
@@ -2641,7 +2898,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -2660,18 +2918,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2788,11 +3060,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_SUSTAIN;
         int command_controller_value = 50;
@@ -2800,7 +3073,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -2821,18 +3095,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -2949,11 +3237,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_SUSTAIN;
         int command_controller_value = 50;
@@ -2961,7 +3250,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -2980,18 +3270,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3108,11 +3412,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_EFFECTS_1_DEPTH;
         int command_controller_value = 50;
@@ -3120,7 +3425,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -3141,18 +3447,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3269,11 +3589,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_EFFECTS_1_DEPTH;
         int command_controller_value = 50;
@@ -3281,7 +3602,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -3300,18 +3622,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3428,11 +3764,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_EFFECTS_1_DEPTH;
         int command_controller_value = 50;
@@ -3440,7 +3777,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -3461,18 +3799,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3589,11 +3941,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_EFFECTS_1_DEPTH;
         int command_controller_value = 50;
@@ -3601,7 +3954,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_controller_number);
         test_buffer_pos += 1;
@@ -3620,18 +3974,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3748,18 +4116,20 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_program = 27;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_PROGRAM_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -3778,18 +4148,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -3892,18 +4276,20 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_program = 27;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_program);
         test_buffer_pos += 1;
@@ -3920,18 +4306,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4034,18 +4434,20 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_program = 27;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_PROGRAM_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -4064,18 +4466,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4178,18 +4594,20 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_program = 27;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(command_program);
         test_buffer_pos += 1;
@@ -4206,18 +4624,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4320,11 +4752,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_LOOP_START;
         int command_controller_value = 4;
@@ -4332,7 +4765,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -4353,18 +4787,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4467,11 +4915,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_LOOP_END;
         int command_controller_value = 4;
@@ -4479,7 +4928,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -4500,18 +4950,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4614,11 +5078,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_LOOP_COUNT_0;
         int command_controller_value = 4;
@@ -4626,7 +5091,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -4647,18 +5113,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4761,11 +5241,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int command_channel = 1;
         int command_controller_number = MIDI_CONTROLLER_LOOP_COUNT_128;
         int command_controller_value = 4;
@@ -4773,7 +5254,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_CONTROL_CHANGE | command_channel);
         test_buffer_pos += 1;
@@ -4794,18 +5276,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -4908,17 +5404,19 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int tempo = (250000) & 0xffffff; // three bytes
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -4945,18 +5443,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -5066,17 +5578,19 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int tempo = (250000) & 0xffffff; // three bytes
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -5101,18 +5615,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -5222,16 +5750,18 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -5252,18 +5782,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -5352,16 +5896,18 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -5380,18 +5926,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -5480,17 +6040,19 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int loop_number = 4;
 
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -5513,18 +6075,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;
@@ -5606,11 +6182,12 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         int bytes_read_expected;
         struct var_length_int varint;
         size_t test_buffer_pos;
+        int32_t delta_time_varint_expected;
 
         // setup test data
         uint8_t buffer[20] = { 0 };
         size_t buffer_len = 20;
-        int delta_time_expected = 100;
+        int delta_time_expected = 0x200000;
         int loop_count = 17;
         int current_loop_count = loop_count; // current loop count is supposed to be the same as loop count
         int32_t loop_delta = 0x12345678;
@@ -5618,7 +6195,8 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         memset(&varint, 0, sizeof(struct var_length_int));
         test_buffer_pos = 0;
         int32_to_varint(delta_time_expected, &varint);
-        memcpy(&buffer[test_buffer_pos], &varint.value, varint.num_bytes);
+        varint_write_value_big(&buffer[test_buffer_pos], &varint);
+        delta_time_varint_expected = varint_get_value_big(&varint);
         test_buffer_pos += varint.num_bytes;
         buffer[test_buffer_pos] = (uint8_t)(MIDI_COMMAND_BYTE_META);
         test_buffer_pos += 1;
@@ -5649,18 +6227,32 @@ void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
         event = GmidEvent_new_from_buffer(buffer, &pos, buffer_len, buffer_type, current_command, &bytes_read);
 
         // evaluate results
-        pass_single = delta_time_expected == (int)event->midi_delta_time.value;
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->midi_delta_time);
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.value);
+            printf("%s %d> fail midi_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->midi_delta_time));
         }
 
-        pass_single = delta_time_expected == (int)event->cseq_delta_time.value;
+        pass_single = delta_time_expected == event->midi_delta_time.standard_value;
         pass &= pass_single;
         if (!pass_single)
         {
-            printf("%s %d> fail midi_delta_time: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.value);
+            printf("%s %d> fail midi_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->midi_delta_time.standard_value);
+        }
+
+        pass_single = delta_time_varint_expected == (int)varint_get_value_big(&event->cseq_delta_time);
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.value: expected %d, actual %d\n", __func__, __LINE__, delta_time_varint_expected, varint_get_value_big(&event->cseq_delta_time));
+        }
+
+        pass_single = delta_time_expected == event->cseq_delta_time.standard_value;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail cseq_delta_time.standard_value: expected %d, actual %d\n", __func__, __LINE__, delta_time_expected, event->cseq_delta_time.standard_value);
         }
 
         pass_single = pos == pos_expected;

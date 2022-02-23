@@ -8,6 +8,14 @@
 #include "llist.h"
 
 /**
+ * Max bytes supported in varint.
+ * Varint struct only has methods for 32-bit int (4 bytes).
+ * Internal algorithms add one to this value, but external use should always
+ * remain below this.
+*/
+#define VAR_INT_MAX_BYTES 8
+
+/**
  * Container for file information.
 */
 struct file_info {
@@ -36,13 +44,14 @@ struct file_info {
 
 /**
  * Variable length integer.
- * This implementation only supports 32 bit varint, as used by MIDI.
+ * This implementation supports up to 32 bit varint, as used by MIDI.
 */
 struct var_length_int {
     /**
-     * Variable length byte value.
+     * Internal varint container.
+     * Index zero is least significant byte.
     */
-    uint32_t value;
+    uint8_t value_bytes[VAR_INT_MAX_BYTES + 1]; // add leading byte to keep `set` algorithm simple.
 
     /**
      * Standard int value.
@@ -90,6 +99,11 @@ int string_ends_with(const char * str, const char * suffix);
 void int32_to_varint(int32_t in, struct var_length_int *varint);
 void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint);
 void varint_copy(struct var_length_int *dest, struct var_length_int* source);
+void varint_write_value_big(uint8_t *dest, struct var_length_int* source);
+void varint_write_value_little(uint8_t *dest, struct var_length_int* source);
+int32_t varint_get_value_big(struct var_length_int* source);
+int32_t varint_get_value_little(struct var_length_int* source);
+
 size_t fill_16bit_buffer(
     int16_t *samples,
     size_t samples_required,

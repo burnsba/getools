@@ -494,7 +494,7 @@ typedef void (*f_GmidTrack_callback)(struct GmidTrack *);
 
 struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
-struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi);
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution);
 void CseqFile_free(struct CseqFile *cseq);
 void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
 void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi);
@@ -503,7 +503,7 @@ struct MidiTrack *MidiTrack_new(int32_t track_index);
 struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
-struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, f_GmidTrack_callback post_unroll_action);
+struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, f_GmidTrack_callback post_unroll_action, int opt_pattern_substitution);
 struct MidiFile *MidiFile_new_from_file(struct file_info *fi);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
@@ -526,9 +526,11 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack);
 void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
 void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
-struct CseqFile *CseqFile_new_roll_from_tracks(struct GmidTrack **track, size_t num_tracks);
+struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type);
 int32_t GmidEvent_get_cseq_command(struct GmidEvent *event);
+void GmidTrack_roll(struct GmidTrack *gtrack);
+void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track);
 // end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 

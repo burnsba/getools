@@ -395,6 +395,11 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
     if (root != NULL)
     {
         root->count++;
+
+        if (current == root->root)
+        {
+            root->root = to_insert;
+        }
     }
 
     TRACE_LEAVE(__func__)

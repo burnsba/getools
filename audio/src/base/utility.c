@@ -1158,31 +1158,38 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
     }
 
-    int32_t out_result = 0;
     int num_bytes = 0;
+
+    memset(varint->value_bytes, 0, VAR_INT_MAX_BYTES+1);
 
     varint->standard_value = in;
 
     do {
         int var7bits = in & 0x7f;
         in >>= 7;
-        out_result |= var7bits;
+        // out_result |= var7bits;
+        varint->value_bytes[num_bytes] |= var7bits;
 
         if (in > 0)
         {
-            out_result <<= 8;
-            out_result |= 0x80;
+            varint->value_bytes[num_bytes + 1] = 0x80;
         }
 
+        // if (in > 0)
+        // {
+        //     out_result <<= 8;
+        //     out_result |= 0x80;
+        // }
+
         num_bytes++;
+
+        if (num_bytes > VAR_INT_MAX_BYTES)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint exceed available number bytes\n", __func__, __LINE__);
+        }
     } while (in > 0);
     
     varint->num_bytes = num_bytes;
-
-    // byte swap
-    varint->value = 0;
-    memcpy(&varint->value, &out_result, num_bytes);
-    reverse_inplace((uint8_t *)&varint->value, num_bytes);
 
     TRACE_LEAVE(__func__)
 }
@@ -1192,7 +1199,7 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
  * into regular integer.
  * @param buffer: byte buffer to read.
  * @param max_bytes: max number of bytes to read from buffer.
- * @param varint: out parameter. Will set standard_value and number bytes read.
+ * @param varint: out parameter. Will set varint values according to values read from buffer.
 */
 void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint)
 {
@@ -1201,6 +1208,7 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
     int32_t ret = 0;
     int done = 0;
     int bytes_read = 0;
+    int i;
 
     if (buffer == NULL)
     {
@@ -1212,11 +1220,9 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
     }
 
-    varint->value = 0;
-
-    if (max_bytes < 1 || max_bytes > 4)
+    if (max_bytes < 1 || max_bytes > VAR_INT_MAX_BYTES)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s parameter error, max_bytes=%d out of range.\n", __func__, max_bytes);
+        stderr_exit(EXIT_CODE_GENERAL, "%s parameter error, max_bytes=%d out of range. Max supported=%d\n", __func__, max_bytes, VAR_INT_MAX_BYTES);
     }
 
     while (!done && bytes_read <= max_bytes)
@@ -1228,9 +1234,6 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
             done = 1;
         }
 
-        varint->value <<= 8;
-        varint->value |= buffer[bytes_read];
-
         ret <<= 7;
         ret |= var7bits;
 
@@ -1240,6 +1243,12 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
     if (!done)
     {
         stderr_exit(EXIT_CODE_GENERAL, "%s parse error.\n", __func__);
+    }
+
+    memset(varint->value_bytes, 0, VAR_INT_MAX_BYTES+1);
+    for (i=0; i<bytes_read; i++)
+    {
+        varint->value_bytes[bytes_read - 1 - i] = buffer[i];
     }
 
     varint->num_bytes = bytes_read;
@@ -1267,11 +1276,172 @@ void varint_copy(struct var_length_int *dest, struct var_length_int* source)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
     }
 
+    if (source->num_bytes == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+    }
+
+    int i;
+
     dest->standard_value = source->standard_value;
-    dest->value = source->value;
     dest->num_bytes = source->num_bytes;
 
+    for (i=0; i<VAR_INT_MAX_BYTES+1; i++)
+    {
+        dest->value_bytes[i] = source->value_bytes[i];
+    }
+
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes internal value of varint to output buffer in litte endian format
+ * (least significant byte first).
+ * @param dest: buffer to write to.
+ * @param source: varint source.
+*/
+void varint_write_value_little(uint8_t *dest, struct var_length_int* source)
+{
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+    }
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+    }
+
+    if (source->num_bytes == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+    }
+
+    int i;
+
+    for (i=0; i<source->num_bytes; i++)
+    {
+        // value_bytes index zero is least significant byte
+        dest[i] = source->value_bytes[i];
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Writes internal value of varint to output buffer in big endian format
+ * (most significant byte first).
+ * @param dest: buffer to write to.
+ * @param source: varint source.
+*/
+void varint_write_value_big(uint8_t *dest, struct var_length_int* source)
+{
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+    }
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+    }
+
+    if (source->num_bytes == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+    }
+
+    int i;
+
+    for (i=0; i<source->num_bytes; i++)
+    {
+        // value_bytes index zero is least significant byte
+        dest[i] = source->value_bytes[source->num_bytes - 1 - i];
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * retrieves internal value of varint in litte endian format
+ * (least significant byte first).
+ * @param source: varint source.
+ * @returns: value as 32 bit signed integer.
+*/
+int32_t varint_get_value_little(struct var_length_int* source)
+{
+    TRACE_ENTER(__func__)
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+    }
+
+    if (source->num_bytes > 4)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint larger than int32.\n", __func__);
+    }
+
+    if (source->num_bytes == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+    }
+
+    int i;
+    int32_t result = 0;
+
+    for (i=0; i<source->num_bytes; i++)
+    {
+        // value_bytes index zero is least significant byte
+        result |= ((int)source->value_bytes[i]) << (8*i);
+    }
+
+    TRACE_LEAVE(__func__)
+    return result;
+}
+
+/**
+ * retrieves internal value of varint in big endian format
+ * (most significant byte first).
+ * @param source: varint source.
+ * @returns: value as 32 bit signed integer.
+*/
+int32_t varint_get_value_big(struct var_length_int* source)
+{
+    TRACE_ENTER(__func__)
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+    }
+
+    if (source->num_bytes > 4)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint larger than int32.\n", __func__);
+    }
+
+    if (source->num_bytes == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+    }
+
+    int i;
+    int32_t result = 0;
+    int shift = 8 * (source->num_bytes - 1);
+
+    for (i=0; i<source->num_bytes; i++)
+    {
+        // value_bytes index zero is least significant byte
+        result |= ((int)source->value_bytes[source->num_bytes - 1 - i]) << shift;
+        shift -= 8;
+    }
+
+    TRACE_LEAVE(__func__)
+    return result;
 }
 
 /**

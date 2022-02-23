@@ -22,17 +22,20 @@
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
+static int opt_no_pattern_compression = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 
 #define LONG_OPT_DEBUG   1003
 #define LONG_OPT_PARSE_DEBUG   1004
+#define LONG_OPT_NO_PATTERN_COMPRESSION   2001
 
 static struct option long_options[] =
 {
     {"help",         no_argument,     &opt_help_flag,   1  },
     {"in",     required_argument,               NULL,  'n' },
     {"out",    required_argument,               NULL,  'o' },
+    {"no-pattern-compression",    no_argument,  NULL,  LONG_OPT_NO_PATTERN_COMPRESSION },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
@@ -62,6 +65,9 @@ void print_help(const char * invoke)
     printf("    -n,--in=FILE                  input .aifc file to convert\n");
     printf("    -o,--out=FILE                 output file. Optional. If not provided, will\n");
     printf("                                  reuse the input file name but change extension.\n");
+    printf("    --no-pattern-compression      By default, MIDI conversion will perform pattern\n");
+    printf("                                  substituion to reduce file size, this option\n");
+    printf("                                  disables that.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -124,6 +130,10 @@ void read_opts(int argc, char **argv)
                 g_verbosity = 2;
                 break;
 
+            case LONG_OPT_NO_PATTERN_COMPRESSION:
+                opt_no_pattern_compression = 1;
+                break;
+
             case LONG_OPT_DEBUG:
                 g_verbosity = VERBOSE_DEBUG;
                 break;
@@ -169,6 +179,7 @@ int main(int argc, char **argv)
         printf("opt_output_file: %d\n", opt_output_file);
         printf("input_filename: %s\n", input_filename);
         printf("output_filename: %s\n", output_filename);
+        printf("opt_no_pattern_compression: %d\n", opt_no_pattern_compression);
         fflush(stdout);
     }
 
@@ -179,7 +190,7 @@ int main(int argc, char **argv)
     file_info_free(input_file);
     input_file = NULL;
 
-    cseq_file = CseqFile_from_MidiFile(midi_file);
+    cseq_file = CseqFile_from_MidiFile(midi_file, !opt_no_pattern_compression);
 
     // done with source MIDI file
     MidiFile_free(midi_file);
