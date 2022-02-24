@@ -494,7 +494,7 @@ typedef void (*f_GmidTrack_callback)(struct GmidTrack *);
 
 struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
-struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution);
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution, int opt_hack_match_cseq);
 void CseqFile_free(struct CseqFile *cseq);
 void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
 void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi);
@@ -529,8 +529,9 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type);
 int32_t GmidEvent_get_cseq_command(struct GmidEvent *event);
-void GmidTrack_roll(struct GmidTrack *gtrack);
+void GmidTrack_roll(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, int opt_hack_match_cseq);
 void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track);
+void GmidTrack_get_pattern_matches(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches);
 // end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 

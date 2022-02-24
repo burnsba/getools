@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <x86intrin.h>
+#include <stdlib.h>
 #include "machine_config.h"
 #include "debug.h"
 #include "utility.h"
@@ -36,11 +37,55 @@ int32_t md5_K[64] = {
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
     0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391 };
 
+int ascii_to_int(char c)
+{
+    if (c >= '0' && c <= '9')
+    {
+        c -= '0';
+    }
+    else if (c >= 'a' && c <= 'z')
+    {
+        c = 10 + c - 'a';
+    }
+    else if (c >= 'A' && c <= 'Z')
+    {
+        c = 10 + c - 'A';
+    }
+
+    return c;
+}
+
+/**
+ * Compares byte array to array of ASCII characters.
+ * @param expected: uint8_t byte values
+ * @param actual: ASCII text string.
+ * @returns: zero on match, one otherwise (different).
+*/
+int md5_compare(char *expected, char *actual)
+{
+    int i;
+    for (i=0; i<16; i++)
+    {
+        int ch;
+
+        ch = 0;
+        ch |= ascii_to_int(actual[i*2]) << 4;
+        ch |= ascii_to_int(actual[i*2+1]);
+
+        if ((uint8_t)expected[i] != (uint8_t)ch)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Generates MD5 on input string.
  * No memory allocations are performed.
- * @param str: string to hash.
- * @param str_len: length of input string. Should not include terminating zero.
+ * @param str: string to hash, or byte array.
+ * @param str_len: length of input string or byte array. Should not include terminating zero if string.
  * @param digest: out parameter. Will contain 128 bit hash result. Must be previously allocated.
 */
 void md5_hash(char *str, size_t str_len, char *digest)

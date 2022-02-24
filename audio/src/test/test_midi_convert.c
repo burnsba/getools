@@ -32,6 +32,7 @@ void midi_convert_all(int *run_count, int *pass_count, int *fail_count)
 
 void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
 {
+    if(0)
     {
         printf("convert midi to seq (no pattern)\n");
         int pass = 1;
@@ -119,7 +120,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         midi_file->tracks[0] = midi_track;
 
         // done with setup. execute test.
-        cseq_file = CseqFile_from_MidiFile(midi_file, 0);
+        cseq_file = CseqFile_from_MidiFile(midi_file, 0, 0);
 
         pass_single = cseq_file->division == midi_file->division;
         pass &= pass_single;
@@ -205,6 +206,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
+    if(0)
     {
         printf("convert (no pattern) seq to midi -- 2\n");
         int pass = 1;
@@ -364,6 +366,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
+    if(0)
     {
         printf("convert midi to seq (no pattern) -- 3\n");
         int pass = 1;
@@ -416,7 +419,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         midi_file->tracks[0] = midi_track;
 
         // done with setup. execute test.
-        cseq_file = CseqFile_from_MidiFile(midi_file, 0);
+        cseq_file = CseqFile_from_MidiFile(midi_file, 0, 0);
 
         pass_single = cseq_file->division == midi_file->division;
         pass &= pass_single;
@@ -489,6 +492,217 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
 
         MidiFile_free(midi_file);
         CseqFile_free(cseq_file);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d>fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        printf("convert seq roll to cseq -- 4\n");
+        int pass = 1;
+        int pass_single;
+        *run_count = *run_count + 1;
+        
+        struct GmidTrack *gtrack;
+        uint8_t *write_buffer;
+        size_t current_buffer_pos;
+        size_t buffer_len;
+        int i;
+
+        uint8_t seq_data[] = {
+            0x98, 0x00, 0xFF, 0x2E, 0x00, 0xFF, 0x81, 0xB4,
+            0x60, 0xCA, 0x3D, 0x83, 0x60, 0xBA, 0x5B, 0x5A,
+            0x60, 0x07, 0x6E, 0x83, 0x60, 0x0A, 0x28, 0x83,
+            0x00, 0x9A, 
+            // forward match 0x0A
+            0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40,
+            // forward match 0x37
+            0x38, 0x7F, 0x84, 0x59, 0x86,
+            // forward match 0x0B, and next index is forward match 0x21
+            0x00, 0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40,
+            0x37, 0x7F, 0x83, 0x64,
+            0x84, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40, 0x37,
+            0x7F, 0x97, 0x3F, 0x98, 0x00, 0x36, 0x7F, 0x85,
+            0x7A, 0x86, 0x00, 0x34, 0x7F, 0x74, 0x81, 0x40,
+            0x36, 0x7F, 0x74, 0x81, 0x40, 0x38, 0x7F, 0x84,
+            0x59, 0x86, 0x00, 
+            // start 0xFE, 0x00, 0x41, 0x0A
+            0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40,
+            // end
+            0x37, 0x7F, 0x83, 0x64, 0x84, 0x40, 0x36, 0x7F,
+            0x74, 0x81, 0x40, 0x37, 0x7F, 0x97, 0x3F, 0x98,
+            0x00, 0x36, 0x7F, 0x85, 0x7A, 0x84, 0xC6, 
+            // start: 0xFE, 0x00, 0x4D, 0x0B
+            0x00, 0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40,
+            // end
+            // start: 0xFE, 0x00, 0x56, 0x37
+            0x38, 0x7F, 0x84, 0x59, 0x86, 0x00, 0x34, 0x7F,
+            0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40,
+            0x37, 0x7F, 0x83, 0x64, 0x84, 0x40, 0x36, 0x7F,
+            0x74, 0x81, 0x40, 0x37, 0x7F, 0x97, 0x3F, 0x98,
+            0x00, 0x36, 0x7F, 0x85, 0x7A, 0x86, 0x00, 0x34,
+            0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81,
+            0x40, 0x38, 0x7F, 0x84, 0x59, 0x86, 0x00,
+            // end
+            // start: 0xFE, 0x00, 0x54, 0x21
+            0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74,
+            0x81, 0x40, 0x37, 0x7F, 0x83, 0x64, 0x84, 0x40,
+            0x36, 0x7F, 0x74, 0x81, 0x40, 0x37, 0x7F, 0x97,
+            0x3F, 0x98, 0x00, 0x36, 0x7F, 0x85, 0x7A, 0x86,
+            0x00, 
+            // end
+            0xFF, 0x2D, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xE1,
+            0x00, 0xFF, 0x2F
+        };
+        int seq_data_len = sizeof(seq_data);
+
+        uint8_t exepected_cseq_data[] = {
+            0x98, 0x00, 0xFF, 0x2E, 0x00, 0xFF, 0x81, 0xB4,
+            0x60, 0xCA, 0x3D, 0x83, 0x60, 0xBA, 0x5B, 0x5A,
+            0x60, 0x07, 0x6E, 0x83, 0x60, 0x0A, 0x28, 0x83,
+            0x00, 0x9A, 0x34, 0x7F, 0x74, 0x81, 0x40, 0x36,
+            0x7F, 0x74, 0x81, 0x40, 0x38, 0x7F, 0x84, 0x59,
+            0x86, 0x00, 0x34, 0x7F, 0x74, 0x81, 0x40, 0x36,
+            0x7F, 0x74, 0x81, 0x40, 0x37, 0x7F, 0x83, 0x64,
+            0x84, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40, 0x37,
+            0x7F, 0x97, 0x3F, 0x98, 0x00, 0x36, 0x7F, 0x85,
+            0x7A, 0x86, 0x00, 0x34, 0x7F, 0x74, 0x81, 0x40,
+            0x36, 0x7F, 0x74, 0x81, 0x40, 0x38, 0x7F, 0x84,
+            0x59, 0x86, 0x00,
+            0xFE, 0x00, 0x41, 0x0A,
+            0x37, 0x7F, 0x83, 0x64, 0x84, 0x40, 0x36, 0x7F,
+            0x74, 0x81, 0x40, 0x37, 0x7F, 0x97, 0x3F, 0x98, 
+            0x00, 0x36, 0x7F, 0x85, 0x7A, 0x84, 0xC6, 
+            0xFE, 0x00, 0x4D, 0x0B, 
+            0xFE, 0x00, 0x56, 0x37, 
+            0xFE, 0x00, 0x54, 0x21, 
+            0xFF, 0x2D, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x84,
+            0x00, 0xFF, 0x2F
+        };
+        int exepected_cseq_data_len = sizeof(exepected_cseq_data);
+
+        // setup
+        write_buffer = (uint8_t *)malloc_zero(1, seq_data_len); // overallocate
+
+        gtrack = GmidTrack_new();
+        gtrack->cseq_data = (uint8_t *)malloc_zero(1, seq_data_len);
+        gtrack->midi_track_index = 9;
+        memcpy(gtrack->cseq_data, seq_data, seq_data_len);
+        gtrack->cseq_track_size_bytes = seq_data_len;
+        gtrack->cseq_data_len = seq_data_len;
+
+        current_buffer_pos = 0;
+        buffer_len = seq_data_len;
+
+        // execute
+        GmidTrack_roll(gtrack, write_buffer, &current_buffer_pos, buffer_len, 1);
+
+        // compare
+        pass_single = gtrack->cseq_track_size_bytes == exepected_cseq_data_len;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail gtrack->cseq_track_size_bytes: expected %d, actual %d\n", __func__, __LINE__, exepected_cseq_data_len, gtrack->cseq_track_size_bytes);
+        }
+
+        pass_single = (int)gtrack->cseq_data_len == exepected_cseq_data_len;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail gtrack->cseq_data_len: expected %d, actual %ld\n", __func__, __LINE__, exepected_cseq_data_len, gtrack->cseq_data_len);
+        }
+
+        pass_single = 1;
+        for (i=0; i<exepected_cseq_data_len && i<(int)gtrack->cseq_data_len; i++)
+        {
+            pass_single &= exepected_cseq_data[i] == gtrack->cseq_data[i];
+            pass &= pass_single;
+        }
+
+        if (!pass_single || (exepected_cseq_data_len != (int)gtrack->cseq_data_len))
+        {
+            int color_flag = 0;
+            printf("%s %d> fail seq\n", __func__, __LINE__);
+            printf("expected\n");
+            for (i=0; i<exepected_cseq_data_len; i++)
+            {
+                color_flag = 0;
+                if (i < (int)gtrack->cseq_data_len && exepected_cseq_data[i] != gtrack->cseq_data[i])
+                {
+                    if (exepected_cseq_data[i] == 0xfe)
+                    {
+                        printf("\033[31;43m");
+                    }
+                    else if (gtrack->cseq_data[i] == 0xfe)
+                    {
+                        printf("\033[31;106m");
+                    }
+                    else
+                    {
+                        printf("\033[31m");
+                    }
+                    color_flag = 1;
+                }
+                printf("0x%02x", exepected_cseq_data[i]);
+                if (color_flag)
+                {
+                    printf("\033[39;49m");
+                    color_flag = 0;
+                }
+                printf(" ");
+                if (((i+1)%8)==0)
+                {
+                    printf("\n");
+                }
+            }
+            printf("\n");
+            printf("actual\n");
+            for (i=0; i<(int)gtrack->cseq_data_len; i++)
+            {
+                color_flag = 0;
+                if (i < exepected_cseq_data_len && exepected_cseq_data[i] != gtrack->cseq_data[i])
+                {
+                    if (exepected_cseq_data[i] == 0xfe)
+                    {
+                        printf("\033[31;106m");
+                    }
+                    else if (gtrack->cseq_data[i] == 0xfe)
+                    {
+                        printf("\033[31;43m");
+                    }
+                    else
+                    {
+                        printf("\033[31m");
+                    }
+                    color_flag = 1;
+                }
+                printf("0x%02x", gtrack->cseq_data[i]);
+                if (color_flag)
+                {
+                    printf("\033[39;49m");
+                    color_flag = 0;
+                }
+                printf(" ");
+                if (((i+1)%8)==0)
+                {
+                    printf("\n");
+                }
+            }
+            printf("\n");
+        }
+
+
+        // cleanup
+        GmidTrack_free(gtrack);
+        free(write_buffer);
 
         if (pass == 1)
         {

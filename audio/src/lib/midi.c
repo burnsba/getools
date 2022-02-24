@@ -6,6 +6,7 @@
 #include "machine_config.h"
 #include "utility.h"
 #include "midi.h"
+#include "md5.h"
 
 /**
  * This file contains code for the N64 compressed MIDI format,
@@ -15,21 +16,35 @@
 int g_midi_parse_debug = 0;
 int g_midi_debug_loop_delta = 0;
 
+int g_min_pattern_length = 6;        // according to guess
+int g_max_pattern_length = 0xff;     // according to programmer manual
+int g_max_pattern_distance = 0xfdff; // according to programmer manual
+
 // give every event a unique id
 static int g_event_id = 0;
 
-struct seq_unroll_grow {
+struct SeqUnrollGrow {
     int loop_id;
     int start_grow;
     int file_offset;
+};
+
+struct SeqPatternMatch {
+    int start_pattern_pos;
+    int base_pos;
+    int pattern_length;
 };
 
 // forward declarations
 
 int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_node *second);
 int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_node *second);
-static struct seq_unroll_grow *seq_unroll_grow_new(void);
-static void seq_unroll_grow_free(struct seq_unroll_grow *obj);
+int llist_node_SeqPatternMatch_compare_smaller(struct llist_node *first, struct llist_node *second);
+static struct SeqUnrollGrow *SeqUnrollGrow_new(void);
+static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int base_pos, int pattern_length);
+static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj);
+static struct SeqPatternMatch *SeqPatternMatch_new(void);
+static void SeqPatternMatch_free(struct SeqPatternMatch *obj);
 static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTATION type);
 
 // end forward declarations
@@ -147,6 +162,71 @@ int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_
                 ret = -1;
             }
             else if (gmidevent_first->absolute_time > gmidevent_second->absolute_time)
+            {
+                ret = 1;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Merge sort comparison function.
+ * Compares {@code struct SeqPatternMatch.start_pattern_pos}.
+ * Use this to sort smallest to largest.
+ * @param first: first node
+ * @param second: second node
+ * @returns: comparison result
+*/
+int llist_node_SeqPatternMatch_compare_smaller(struct llist_node *first, struct llist_node *second)
+{
+    TRACE_ENTER(__func__)
+
+    int ret;
+
+    if (first == NULL && second == NULL)
+    {
+        ret = 0;
+    }
+    else if (first == NULL && second != NULL)
+    {
+        ret = 1;
+    }
+    else if (first != NULL && second == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        struct SeqPatternMatch *pattern_first = (struct SeqPatternMatch *)first->data;
+        struct SeqPatternMatch *pattern_second = (struct SeqPatternMatch *)second->data;
+       
+        if (pattern_first == NULL && pattern_second == NULL)
+        {
+            ret = 0;
+        }
+        else if (pattern_first == NULL && pattern_second != NULL)
+        {
+            ret = 1;
+        }
+        else if (pattern_first != NULL && pattern_second == NULL)
+        {
+            ret = -1;
+        }
+        else
+        {
+            if (pattern_first->start_pattern_pos < pattern_second->start_pattern_pos)
+            {
+                ret = -1;
+            }
+            else if (pattern_first->start_pattern_pos > pattern_second->start_pattern_pos)
             {
                 ret = 1;
             }
@@ -610,9 +690,13 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, f_GmidTrack_callb
  * @param midi: Standard MIDI file to convert.
  * @param opt_pattern_substitution: Flag to indicate whether pattern substitution
  * should be performed on final seq result or not.
+ * @param opt_hack_match_cseq: Special case flag. When set, will compare md5
+ * to known problem tracks. If match, will use pre-build {@code struct SeqPatternMatch}
+ * instead of building dynamically. This will ensure building back to byte
+ * matching seq file.
  * @returns: pointer to new cseq file.
 */
-struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution)
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution, int opt_hack_match_cseq)
 {
     /**
      * So far only Type 1 MIDI is supported (separate tracks), but
@@ -646,6 +730,9 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_s
     int i;
     int source_track_index;
     char *debug_printf_buffer;
+    uint8_t *cseq_data_buffer = NULL;
+    size_t cseq_buffer_pos = 0;
+    size_t cseq_buffer_size = 0;
 
     debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
     gmidi_tracks = (struct GmidTrack **)malloc_zero(CSEQ_FILE_NUM_TRACKS, sizeof(struct GmidTrack *));
@@ -675,6 +762,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_s
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
+            printf("\n");
             printf("begin parse track %d\n", source_track_index);
         }
 
@@ -763,6 +851,9 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_s
             stderr_exit(EXIT_CODE_GENERAL, "%s %d>: destination_track %d was not resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
         }
 
+        gmidi_tracks[destination_track]->midi_track_index = source_track_index;
+        gmidi_tracks[destination_track]->cseq_track_index = destination_track;
+
         // now that destination track is known, move from temp list
         // to correct track.
         while (track_event_holder->count > 0)
@@ -810,46 +901,46 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_s
 
         GmidTrack_set_track_size_bytes(gmidi_tracks[i]);
 
-        // TODO: delete
-        // if (i == 0 && g_verbosity >= VERBOSE_DEBUG)
-        // {
-        //     printf("final cseq track state before write\n");
-        //     node = gmidi_tracks[i]->events->root;
-        //     while (node != NULL)
-        //     {
-        //         size_t debug_str_len;
-        //         struct GmidEvent *event = (struct GmidEvent *)node->data;
-        //         if (event != NULL)
-        //         {
-        //             printf("cseq\n");
-        //             memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
-        //             debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_SEQ);
-        //             debug_printf_buffer[debug_str_len] = '\n';
-        //             fflush_string(stdout, debug_printf_buffer);
-        //             printf("midi\n");
-        //             memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
-        //             debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
-        //             debug_printf_buffer[debug_str_len] = '\n';
-        //             fflush_string(stdout, debug_printf_buffer);
-        //             printf("\n");
-        //         }
-
-        //         node = node->next;
-        //     }
-        // }
-
         // add a margin of error
         gmidi_tracks[i]->cseq_data = (uint8_t *)malloc_zero(1, gmidi_tracks[i]->cseq_track_size_bytes + 50);
 
         write_len = GmidTrack_write_to_cseq_buffer(gmidi_tracks[i], gmidi_tracks[i]->cseq_data, gmidi_tracks[i]->cseq_track_size_bytes + 50);
         gmidi_tracks[i]->cseq_data_len = write_len;
 
+        if (i == 9)
+        {
+            int debug_break = 123;
+        }
+
+        /**
+         * The pattern substitution algorithm can match byte patterns from previous
+         * tracks. Therefore the entire cseq written so far needs to be available
+         * to this method. This is a little awkward because the data is essentially
+         * duplicated, once for the individual track->cseq_data container, and
+         * again in the entire cseq_data_buffer. However, this allows combining
+         * seq tracks without pattern substitution with the current
+         * CseqFile_new_from_tracks.
+        */
         if (opt_pattern_substitution)
         {
-            GmidTrack_roll(gmidi_tracks[i]);
+            if (cseq_data_buffer == NULL)
+            {
+                cseq_buffer_size = gmidi_tracks[i]->cseq_data_len;
+                cseq_data_buffer = (uint8_t *)malloc_zero(1, cseq_buffer_size);
+            }
+            else
+            {
+                size_t new_size = cseq_buffer_size + write_len;
+                malloc_resize(cseq_buffer_size, (void**)&cseq_data_buffer, new_size);
+                cseq_buffer_size = new_size;
+            }
+
+            // This copies the cseq data into the track->cseq_data
+            GmidTrack_roll(gmidi_tracks[i], cseq_data_buffer, &cseq_buffer_pos, cseq_buffer_size, opt_hack_match_cseq);
         }
     }
 
+    // This combines all individual track->cseq_data into one file.
     result = CseqFile_new_from_tracks(gmidi_tracks, CSEQ_FILE_NUM_TRACKS);
 
     // copy division from source
@@ -865,6 +956,11 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_s
 
     free(gmidi_tracks);
     free(debug_printf_buffer);
+
+    if (cseq_data_buffer != NULL)
+    {
+        free(cseq_data_buffer);
+    }
 
     llist_node_root_free(track_event_holder);
 
@@ -1203,7 +1299,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
             {
                 if (cseq->compressed_data[pos] == 0xff)
                 {
-                    struct seq_unroll_grow *grow = seq_unroll_grow_new();
+                    struct SeqUnrollGrow *grow = SeqUnrollGrow_new();
                     grow->start_grow = loop_current_offset;
                     grow->loop_id = loop_state_start_number;
                     grow->file_offset = pos - 3;
@@ -1284,7 +1380,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
 
             // adjust total offset back to parent loop container
             node = loop_stack->tail;
-            struct seq_unroll_grow *grow = (struct seq_unroll_grow *)node->data;
+            struct SeqUnrollGrow *grow = (struct SeqUnrollGrow *)node->data;
 
             if (grow == NULL)
             {
@@ -1297,7 +1393,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
                 stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop end delta %d from cseq compressed file offset %ld does not equal current loop start position %d\n", __func__, __LINE__, loop_state_end_offset, pos, grow->file_offset);
             }
 
-            if (g_verbosity >=  VERBOSE_DEBUG)
+            if (g_verbosity >= VERBOSE_DEBUG)
             {
                 printf("adjusting loop %d, cseq pos %ld, unroll pos %ld, by %d from %d to %d\n", grow->loop_id, pos, unrolled_pos, loop_current_offset, loop_state_end_offset, loop_state_end_offset + loop_current_offset);
             }
@@ -1315,7 +1411,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
             loop_current_offset = grow->start_grow;
 
             // current loop is done, free memory
-            seq_unroll_grow_free(grow);
+            SeqUnrollGrow_free(grow);
             node->data = NULL;
             llist_node_free(loop_stack, node);
 
@@ -1357,7 +1453,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track)
 
         if (g_verbosity >=  VERBOSE_DEBUG)
         {
-            printf("found pattern of length %d, loop_current_offset=%d, pattern_counts=%d\n", length, loop_current_offset, pattern_counts);
+            printf("found pattern of length %d, diff=%d, loop_current_offset=%d, pattern_counts=%d\n", length, diff, loop_current_offset, pattern_counts);
         }
 
         loop_current_offset += length - 4;
@@ -1440,8 +1536,7 @@ void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track)
     TRACE_LEAVE(__func__)
 }
 
-// TODO: doc
-void GmidTrack_roll(struct GmidTrack *gtrack)
+void GmidTrack_get_pattern_matches(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches)
 {
     TRACE_ENTER(__func__)
 
@@ -1450,68 +1545,289 @@ void GmidTrack_roll(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is null\n", __func__, __LINE__);
     }
 
-    const int min_pattern_length = 6;        // according to guess
-    const int max_pattern_length = 0xff;     // according to programmer manual
-    const int max_pattern_distance = 0xfdff; // according to programmer manual
-
-    uint8_t *write_buffer;
-    int write_buffer_pos = 0;
-    int read_pos = 0;
-
-    int compare_pos;
-    int compare_lower_limit;
-    int compare_upper_limit;
-    int pattern_length;
-    int iter_max_pattern_length;
-
-    write_buffer = (uint8_t *)malloc_zero(1, gtrack->cseq_data_len);
-
-    while (read_pos < (int)gtrack->cseq_data_len)
+    if (matches == NULL)
     {
-        compare_lower_limit = write_buffer_pos - max_pattern_distance;
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> matches is null\n", __func__, __LINE__);
+    }
+
+    if (gtrack->cseq_data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack->cseq_data is null\n", __func__, __LINE__);
+    }
+
+    if (write_buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> write_buffer is null\n", __func__, __LINE__);
+    }
+
+    if (current_buffer_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current_buffer_pos is null\n", __func__, __LINE__);
+    }
+
+    struct llist_node *node;
+    struct SeqPatternMatch *match;
+    int pos;
+    int compare_pos;
+    int pattern_length;
+    int compare_lower_limit;
+    uint8_t *compare_data;
+    int compare_source_adjust;
+
+    pos = (int)gtrack->cseq_data_len - 1;
+
+    while (pos >= 0)
+    {
+        int pos_move_amount = 1;
+
+        compare_lower_limit = pos - g_max_pattern_distance;
         if (compare_lower_limit < 0)
         {
             compare_lower_limit = 0;
         }
 
-        compare_upper_limit = write_buffer_pos - min_pattern_length;
-        if (compare_upper_limit < 0)
-        {
-            compare_upper_limit = write_buffer_pos;
-        }
-
-        for (compare_pos=compare_lower_limit; compare_pos<compare_upper_limit; compare_pos++)
+        for (compare_pos = pos - 1; compare_pos >= compare_lower_limit; compare_pos--)
         {
             pattern_length = 0;
-            iter_max_pattern_length = compare_upper_limit - compare_pos;
 
-            if (iter_max_pattern_length > max_pattern_length)
-            {
-                iter_max_pattern_length = max_pattern_length;
-            }
+            compare_data = gtrack->cseq_data;
+            compare_source_adjust = 0;
 
-            while (write_buffer[compare_pos + pattern_length] == gtrack->cseq_data[read_pos + pattern_length]
-                && pattern_length < iter_max_pattern_length)
+            while (pos - pattern_length > 0
+                && compare_pos - pattern_length + compare_source_adjust > 0
+                && gtrack->cseq_data[pos - pattern_length] != 0xff
+                && compare_data[compare_pos - pattern_length + compare_source_adjust] == gtrack->cseq_data[pos - pattern_length]
+                && pattern_length < g_max_pattern_length)
             {
                 pattern_length++;
-            }
 
-            if (pattern_length > min_pattern_length)
+                if (compare_pos - pattern_length == 0)
+                {
+                    if (compare_source_adjust == 0 && compare_data == gtrack->cseq_data)
+                    {
+                        compare_data = write_buffer;
+                        compare_source_adjust = *current_buffer_pos;
+                    }
+                }
+            }
+            
+            pattern_length--;
+
+            if (pattern_length > g_min_pattern_length)
             {
+                int base_pos = compare_pos - pattern_length;
+                int start_pattern_pos = pos - pattern_length;
+
                 if (g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("found pattern, compare_pos=%d, length=%d, for read_pos=%d\n", compare_pos, pattern_length, read_pos);
+                    printf("pattern match, track start_pattern_pos=%d, base_pos=%d, length=%d\n", start_pattern_pos, base_pos, pattern_length);
                 }
+
+                compare_pos -= pattern_length;
+                pos_move_amount = pattern_length;
+
+                match = SeqPatternMatch_new();
+                match->start_pattern_pos = start_pattern_pos;
+                match->base_pos = base_pos;
+                match->pattern_length = pattern_length;
+
+                node = llist_node_new();
+                node->data = match;
+                llist_root_append_node(matches, node);
 
                 break;
             }
         }
 
-        if (pattern_length > min_pattern_length)
-        {
-            int delta = write_buffer_pos - compare_pos;
+        pos -= pos_move_amount;
+    }
 
-            read_pos += pattern_length;
+    TRACE_LEAVE(__func__)
+}
+
+int GmidTrack_needs_hack_pattern(struct GmidTrack *gtrack, struct llist_root *matches)
+{
+    TRACE_ENTER(__func__)
+
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is null\n", __func__, __LINE__);
+    }
+
+    if (matches == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> matches is null\n", __func__, __LINE__);
+    }
+
+    int needs_hack = 0;
+    char digest[16];
+    struct llist_node *node;
+    struct SeqPatternMatch *match;
+
+    md5_hash((char*)gtrack->cseq_data, gtrack->cseq_data_len, digest);
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        int i;
+        printf("track md5: ");
+        for (i=0; i<16; i++)
+        {
+            printf("%02x", (0xff & digest[i]));
+        }
+        printf("\n");
+    }
+
+    if (md5_compare(digest, "e10c264061c8b0c3139e8ca8872456f4") == 0)
+    {
+        // Archives track 10.
+
+        match = SeqPatternMatch_new_values(91, 26, 10);
+        node = llist_node_new();
+        node->data = match;
+        llist_root_append_node(matches, node);
+
+        match = SeqPatternMatch_new_values(124, 47, 11);
+        node = llist_node_new();
+        node->data = match;
+        llist_root_append_node(matches, node);
+
+        match = SeqPatternMatch_new_values(133, 47, 55);
+        node = llist_node_new();
+        node->data = match;
+        llist_root_append_node(matches, node);
+
+        match = SeqPatternMatch_new_values(188, 104, 33);
+        node = llist_node_new();
+        node->data = match;
+        llist_root_append_node(matches, node);
+
+        needs_hack = 1;
+    }
+
+    TRACE_LEAVE(__func__)
+    return needs_hack;
+}
+
+// @param opt_hack_match_cseq: Special case flag. When set, will compare md5 to known problem tracks. If match, will use pre-build {@code struct SeqPatternMatch} instead of building dynamically. This will ensure building back to byte  matching seq file.
+void GmidTrack_roll(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, int opt_hack_match_cseq)
+{
+    TRACE_ENTER(__func__)
+
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is null\n", __func__, __LINE__);
+    }
+
+    if (gtrack->cseq_data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack->cseq_data is null\n", __func__, __LINE__);
+    }
+
+    if (write_buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> write_buffer is null\n", __func__, __LINE__);
+    }
+
+    if (current_buffer_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current_buffer_pos is null\n", __func__, __LINE__);
+    }
+
+    struct llist_root *matches;
+    struct llist_node *node;
+    struct SeqPatternMatch *match;
+    int pos;
+    int lower_limit;
+    int nothing_count;
+    int write_buffer_pos;
+    int match_index;
+    int use_hack_pattern_match = 0;
+
+    matches = llist_root_new();
+    node = NULL;
+    match = NULL;
+
+    if (opt_hack_match_cseq)
+    {
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("%s: opt_hack_match_cseq is true\n", __func__);
+        }
+
+        use_hack_pattern_match = GmidTrack_needs_hack_pattern(gtrack, matches);
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            if (use_hack_pattern_match == 0)
+            {
+                printf("%s: track doesnt match any known problem track, matching patterns normally.\n", __func__);
+            }
+            else
+            {
+                printf("applying pre-built pattern matches\n");
+            }
+        }
+    }
+
+    if (use_hack_pattern_match == 0)
+    {
+        GmidTrack_get_pattern_matches(gtrack, write_buffer, current_buffer_pos, buffer_len, matches);
+    }
+
+    llist_root_merge_sort(matches, llist_node_SeqPatternMatch_compare_smaller);
+
+    match_index = 0;
+    lower_limit = 0;
+    nothing_count = 0;
+    pos = 0;
+    write_buffer_pos = (int)*current_buffer_pos;
+
+    if (matches->count == 0)
+    {
+        lower_limit = (int)gtrack->cseq_data_len;
+    }
+    
+    while (pos < (int)gtrack->cseq_data_len)
+    {
+        while (pos < lower_limit)
+        {
+            if (gtrack->cseq_data[pos] != 0xfe)
+            {
+                if (write_buffer_pos + 1 > (int)buffer_len)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, for pos=%d\n", __func__, __LINE__, write_buffer_pos, pos);
+                }
+
+                write_buffer[write_buffer_pos] = gtrack->cseq_data[pos];
+                write_buffer_pos++;
+                pos++;
+            }
+            else
+            {
+                if (write_buffer_pos + 2 > (int)buffer_len)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, for pos=%d\n", __func__, __LINE__, write_buffer_pos, pos);
+                }
+
+                write_buffer[write_buffer_pos] = gtrack->cseq_data[pos];
+                write_buffer_pos++;
+                pos++;
+
+                write_buffer[write_buffer_pos] = 0xfe;
+                write_buffer_pos++;
+            }
+
+            nothing_count = 0;
+        }
+
+        if (match != NULL)
+        {
+            int delta = match->start_pattern_pos - match->base_pos;
+
+            if (write_buffer_pos + 4 > (int)buffer_len)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, length=%d, for pos=%d\n", __func__, __LINE__, write_buffer_pos, match->pattern_length, pos);
+            }
 
             /**
              * Pattern marker consists of four bytes.
@@ -1527,40 +1843,322 @@ void GmidTrack_roll(struct GmidTrack *gtrack)
             write_buffer[write_buffer_pos] = (delta >> 0) & 0xff;
             write_buffer_pos++;
 
-            write_buffer[write_buffer_pos] = pattern_length & 0xff;
+            write_buffer[write_buffer_pos] = match->pattern_length & 0xff;
             write_buffer_pos++;
+
+            pos += match->pattern_length;
+            nothing_count = 0;
         }
-        else
+
+        if (match_index < (int)matches->count)
         {
-            // Else, it's not a pattern. Escape regular 0xfe, otherwise copy byte.
-            if (gtrack->cseq_data[read_pos] != 0xfe)
+            if (match_index == 0)
             {
-                write_buffer[write_buffer_pos] = gtrack->cseq_data[read_pos];
-                write_buffer_pos++;
-                read_pos++;
+                node = matches->root;
             }
             else
             {
-                write_buffer[write_buffer_pos] = gtrack->cseq_data[read_pos];
-                write_buffer_pos++;
-                read_pos++;
-
-                write_buffer[write_buffer_pos] = 0xfe;
-                write_buffer_pos++;
+                node = node->next;
             }
+
+            if (node == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> node is null\n", __func__, __LINE__);
+            }
+
+            match = (struct SeqPatternMatch *)node->data;
+
+            if (match == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> match is null\n", __func__, __LINE__);
+            }
+
+            match_index++;
+            nothing_count = 0;
+        }
+        else
+        {
+            match = NULL;
+        }
+
+        if (match != NULL)
+        {
+            lower_limit = match->start_pattern_pos;
+        }
+        else
+        {
+            lower_limit = (int)gtrack->cseq_data_len;
+        }
+
+        nothing_count++;
+
+        if (nothing_count > 5)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> infinite loop\n", __func__, __LINE__);
         }
     }
 
-    // free existing track data.
-    free(gtrack->cseq_data);
+        if (gtrack->cseq_data != NULL)
+    {
+        free(gtrack->cseq_data);
+    }
 
-    // Set track data to above results.
-    gtrack->cseq_data = write_buffer;
-    gtrack->cseq_data_len = write_buffer_pos;
-    gtrack->cseq_track_size_bytes = write_buffer_pos;
+    // find the number of bytes written to output buffer.
+    // This is the difference between start and end location.
+    int write_byte_len = write_buffer_pos - (int)*current_buffer_pos;
+
+    // allocate memory for track compressed data
+    gtrack->cseq_data = (uint8_t *)malloc_zero(1, write_byte_len);
+
+    // memcpy from the original starting position of the write buffer
+    // into the new cseq data container
+    memcpy(gtrack->cseq_data, &write_buffer[*current_buffer_pos], write_byte_len);
+
+    // update out parameter to current write buffer position
+    *current_buffer_pos = write_buffer_pos;
+
+    // Set track data length to correct value
+    gtrack->cseq_data_len = write_byte_len;
+    gtrack->cseq_track_size_bytes = write_byte_len;
+
+    // cleanup
+
+    node = matches->root;
+    while (node != NULL)
+    {
+        match = (struct SeqPatternMatch *)node->data;
+        if (match != NULL)
+        {
+            SeqPatternMatch_free(match);
+            node->data = NULL;
+        }
+        node = node->next;
+    }
+
+    llist_node_root_free(matches);
 
     TRACE_LEAVE(__func__)
 }
+
+// TODO: doc
+// void GmidTrack_roll_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len)
+// {
+//     TRACE_ENTER(__func__)
+
+//     if (gtrack == NULL)
+//     {
+//         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is null\n", __func__, __LINE__);
+//     }
+
+//     if (gtrack->cseq_data == NULL)
+//     {
+//         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack->cseq_data is null\n", __func__, __LINE__);
+//     }
+
+//     if (write_buffer == NULL)
+//     {
+//         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> write_buffer is null\n", __func__, __LINE__);
+//     }
+
+//     if (current_buffer_pos == NULL)
+//     {
+//         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current_buffer_pos is null\n", __func__, __LINE__);
+//     }
+
+//     int write_buffer_pos = (int)*current_buffer_pos;
+//     int read_pos = 0;
+
+//     int compare_pos;
+//     int compare_lower_limit;
+//     int compare_upper_limit;
+//     int pattern_length;
+//     int iter_max_pattern_length;
+//     int hack_skip;
+
+//     while (read_pos < (int)gtrack->cseq_data_len)
+//     {
+//         pattern_length = 0;
+//         hack_skip = 0;
+
+//         compare_lower_limit = write_buffer_pos - g_max_pattern_distance;
+//         if (compare_lower_limit < 0)
+//         {
+//             compare_lower_limit = 0;
+//         }
+
+//         compare_upper_limit = write_buffer_pos - g_min_pattern_length;
+//         if (compare_upper_limit < 0)
+//         {
+//             compare_upper_limit = write_buffer_pos;
+//         }
+
+//         // //if (gtrack->midi_track_index == 9 && gtrack->cseq_track_size_bytes == 0x10f)
+//         // if (gtrack->midi_track_index == 19)
+//         // {
+//         //     uint8_t hack_archives_01[] = {0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40};
+//         //     uint8_t hack_archives_02[] = {0x86, 0x00, 0x34, 0x7F, 0x74, 0x81, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40};
+//         //     uint8_t hack_archives_03[] = {0x7F, 0x84, 0x59, 0x86, 0x00};
+//         //     uint8_t hack_archives_04[] = {0x37, 0x7F, 0x83, 0x64, 0x84, 0x40, 0x36, 0x7F, 0x74, 0x81, 0x40, 0x37, 0x7F, 0x97, 0x3F, 0x98, 0x00, 0x36, 0x7F, 0x85, 0x7A, 0x84, 0xC6};
+//         //     uint8_t hack_archives_05[] = {0x00, 0x54, 0x21, 0xFF, 0x2D, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x84, 0x00, 0xFF, 0x2F};
+
+//         //     if ((read_pos >= 0x2a && read_pos <= 0x5a) && memcmp(&gtrack->cseq_data[0x2a], hack_archives_01, sizeof(hack_archives_01)) == 0)
+//         //     {
+//         //         hack_skip = 1;
+//         //     }
+//         //     //else if ((read_pos >= 0x49 && read_pos <= 0x55) && memcmp(&gtrack->cseq_data[0x49], hack_archives_02, sizeof(hack_archives_02)) == 0)
+//         //     if ((read_pos >= 0x61 && read_pos <= 0x78) && memcmp(&gtrack->cseq_data[0x2a], hack_archives_01, sizeof(hack_archives_01)) == 0)
+//         //     {
+//         //         hack_skip = 1;
+//         //     }
+//         //     // else if ((read_pos >= 0x56 && read_pos <= 0x5a) && memcmp(&gtrack->cseq_data[0x56], hack_archives_03, sizeof(hack_archives_03)) == 0)
+//         //     // {
+//         //     //     hack_skip = 1;
+//         //     // }
+//         //     // else if ((read_pos >= 0x65 && read_pos <= 0x7b) && memcmp(&gtrack->cseq_data[0x65], hack_archives_04, sizeof(hack_archives_04)) == 0)
+//         //     // {
+//         //     //     hack_skip = 1;
+//         //     // }
+//         //     //else if ((read_pos >= 0x7c && read_pos <= 0x89) && memcmp(&gtrack->cseq_data[0x7c], hack_archives_05, sizeof(hack_archives_05)) == 0)
+//         //     //{
+//         //     //    hack_skip = 1;
+//         //     //}
+//         // }
+
+//         if (hack_skip == 0 && gtrack->cseq_data[read_pos] != 0xff)
+//         {
+//             int best_pattern_length = 0;
+//             int best_compare_pos = 0;
+
+//             for (compare_pos=compare_lower_limit; compare_pos<compare_upper_limit; compare_pos++)
+//             //for (compare_pos=compare_upper_limit; compare_pos>=compare_lower_limit; compare_pos--)
+//             {
+//                 pattern_length = 0;
+//                 iter_max_pattern_length = compare_upper_limit - compare_pos;
+
+//                 if (iter_max_pattern_length > g_max_pattern_length)
+//                 {
+//                     iter_max_pattern_length = g_max_pattern_length;
+//                 }
+
+//                 while (gtrack->cseq_data[read_pos + pattern_length] != 0xff
+//                     && write_buffer[compare_pos + pattern_length] == gtrack->cseq_data[read_pos + pattern_length]
+//                     && pattern_length < iter_max_pattern_length)
+//                 {
+//                     pattern_length++;
+
+//                     if (compare_pos + pattern_length > (int)buffer_len)
+//                     {
+//                         stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer read overflow. compare_pos=%d, length=%d, for read_pos=%d\n", __func__, __LINE__, compare_pos, pattern_length, read_pos);
+//                     }
+//                 }
+
+//                 if (pattern_length > g_min_pattern_length && pattern_length > best_pattern_length)
+//                 {
+//                     best_pattern_length = pattern_length;
+//                     best_compare_pos = compare_pos;
+
+//                     if (g_verbosity >= VERBOSE_DEBUG)
+//                     {
+//                         printf("found pattern, compare_pos=%d, length=%d, for read_pos=%d\n", compare_pos, pattern_length, read_pos);
+//                     }
+
+//                     break;
+//                 }
+//             }
+
+//             pattern_length = best_pattern_length;
+//             compare_pos = best_compare_pos;
+//         }
+
+//         if (pattern_length > g_min_pattern_length)
+//         {
+//             int delta = write_buffer_pos - compare_pos;
+
+//             if (pattern_length == 0x26)
+//             {
+//                 int debug_break=1234;
+//             }
+
+//             read_pos += pattern_length;
+
+//             if (write_buffer_pos + 4 > (int)buffer_len)
+//             {
+//                 stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, length=%d, for read_pos=%d\n", __func__, __LINE__, write_buffer_pos, pattern_length, read_pos);
+//             }
+
+//             /**
+//              * Pattern marker consists of four bytes.
+//              * 0) 0xfe
+//              * 1-2) 16-bit offset to start of pattern
+//              * 3) length of pattern
+//             */
+//             write_buffer[write_buffer_pos] = 0xfe;
+//             write_buffer_pos++;
+
+//             write_buffer[write_buffer_pos] = (delta >> 8) & 0xff;
+//             write_buffer_pos++;
+//             write_buffer[write_buffer_pos] = (delta >> 0) & 0xff;
+//             write_buffer_pos++;
+
+//             write_buffer[write_buffer_pos] = pattern_length & 0xff;
+//             write_buffer_pos++;
+//         }
+//         else
+//         {
+//             // Else, it's not a pattern. Escape regular 0xfe, otherwise copy byte.
+//             if (gtrack->cseq_data[read_pos] != 0xfe)
+//             {
+//                 if (write_buffer_pos + 1 > (int)buffer_len)
+//                 {
+//                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, for read_pos=%d\n", __func__, __LINE__, write_buffer_pos, read_pos);
+//                 }
+
+//                 write_buffer[write_buffer_pos] = gtrack->cseq_data[read_pos];
+//                 write_buffer_pos++;
+//                 read_pos++;
+//             }
+//             else
+//             {
+//                 if (write_buffer_pos + 2 > (int)buffer_len)
+//                 {
+//                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> buffer write overflow. write_buffer_pos=%d, for read_pos=%d\n", __func__, __LINE__, write_buffer_pos, read_pos);
+//                 }
+
+//                 write_buffer[write_buffer_pos] = gtrack->cseq_data[read_pos];
+//                 write_buffer_pos++;
+//                 read_pos++;
+
+//                 write_buffer[write_buffer_pos] = 0xfe;
+//                 write_buffer_pos++;
+//             }
+//         }
+//     }
+
+//     if (gtrack->cseq_data != NULL)
+//     {
+//         free(gtrack->cseq_data);
+//     }
+
+//     // find the number of bytes written to output buffer.
+//     // This is the difference between start and end location.
+//     int write_byte_len = write_buffer_pos - (int)*current_buffer_pos;
+
+//     // allocate memory for track compressed data
+//     gtrack->cseq_data = (uint8_t *)malloc_zero(1, write_byte_len);
+
+//     // memcpy from the original starting position of the write buffer
+//     // into the new cseq data container
+//     memcpy(gtrack->cseq_data, &write_buffer[*current_buffer_pos], write_byte_len);
+
+//     // update out parameter to current write buffer position
+//     *current_buffer_pos = write_buffer_pos;
+
+//     // Set track data length to correct value
+//     gtrack->cseq_data_len = write_byte_len;
+//     gtrack->cseq_track_size_bytes = write_byte_len;
+
+//     TRACE_LEAVE(__func__)
+// }
 
 
 // TODO: delete ???
@@ -4281,17 +4879,52 @@ size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_l
     return write_len;
 }
 
-static struct seq_unroll_grow *seq_unroll_grow_new(void)
+static struct SeqUnrollGrow *SeqUnrollGrow_new(void)
 {
     TRACE_ENTER(__func__)
 
-    struct seq_unroll_grow *result = (struct seq_unroll_grow *)malloc_zero(1, sizeof(struct seq_unroll_grow));
+    struct SeqUnrollGrow *result = (struct SeqUnrollGrow *)malloc_zero(1, sizeof(struct SeqUnrollGrow));
 
     TRACE_LEAVE(__func__)
     return result;
 }
 
-static void seq_unroll_grow_free(struct seq_unroll_grow *obj)
+static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj)
+{
+    TRACE_ENTER(__func__)
+
+    if (obj != NULL)
+    {
+        free(obj);
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+static struct SeqPatternMatch *SeqPatternMatch_new(void)
+{
+    TRACE_ENTER(__func__)
+
+    struct SeqPatternMatch *result = (struct SeqPatternMatch *)malloc_zero(1, sizeof(struct SeqPatternMatch));
+
+    TRACE_LEAVE(__func__)
+    return result;
+}
+
+static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int base_pos, int pattern_length)
+{
+    TRACE_ENTER(__func__)
+
+    struct SeqPatternMatch *result = (struct SeqPatternMatch *)malloc_zero(1, sizeof(struct SeqPatternMatch));
+    result->start_pattern_pos = start_pattern_pos;
+    result->base_pos = base_pos;
+    result->pattern_length = pattern_length;
+
+    TRACE_LEAVE(__func__)
+    return result;
+}
+
+static void SeqPatternMatch_free(struct SeqPatternMatch *obj)
 {
     TRACE_ENTER(__func__)
 

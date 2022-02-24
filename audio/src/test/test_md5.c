@@ -17,8 +17,6 @@
 // forward declarations.
 
 void print16(char *arr);
-int ascii_to_int(char c);
-int md5_compare(char *expected, char *actual);
 
 // end forward declarations
 
@@ -30,47 +28,6 @@ void print16(char *arr)
         printf("%02x", (0xff & arr[i]));
     }
     printf("\n");
-}
-
-int ascii_to_int(char c)
-{
-    if (c >= '0' && c <= '9')
-    {
-        c -= '0';
-    }
-    else if (c >= 'a' && c <= 'z')
-    {
-        c = 10 + c - 'a';
-    }
-    else if (c >= 'A' && c <= 'Z')
-    {
-        c = 10 + c - 'A';
-    }
-
-    return c;
-}
-
-/**
- * Compares byte array to array of ASCII characters.
-*/
-int md5_compare(char *expected, char *actual)
-{
-    int i;
-    for (i=0; i<16; i++)
-    {
-        int ch;
-
-        ch = 0;
-        ch |= ascii_to_int(actual[i*2]) << 4;
-        ch |= ascii_to_int(actual[i*2+1]);
-
-        if ((uint8_t)expected[i] != (uint8_t)ch)
-        {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 void test_md5_all(int *run_count, int *pass_count, int *fail_count)
