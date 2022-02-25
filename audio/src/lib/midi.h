@@ -1,6 +1,9 @@
 #ifndef _GAUDIO_MIDI_H
 #define _GAUDIO_MIDI_H
 
+#include <stdint.h>
+#include <stdlib.h>
+
 /**
  * Default extension when creating a MIDI file.
 */
@@ -202,6 +205,34 @@ enum MIDI_IMPLEMENTATION {
 };
 
 /**
+ * Algorithm used to compress seq data.
+*/
+enum GAUDIO_PATTERN_ALGORITHM {
+    /**
+     * Start at the beginning of the track and move forward.
+     * For each byte, backtrack max allowed and then
+     * compare following bytes. Iterate by stepping compare_pos forward
+     * one byte from backtrack to current position.
+     * Once all sequences in between are compared, advance
+     * current position until end of track.
+    */
+    PATTERN_ALGORITHM_NAIVE = 0,
+
+    /**
+     * Start at end of track and move towards beginning.
+     * For each byte, start by comparing immediate previous
+     * byte, and then comparing prior bytes (don't allow overlap).
+     * Iterate by stepping compare_pos backwards one byte, up to
+     * max allowed difference. Once all sequences are compared,
+     * decrement current position until beginning of track.
+     * This has an advantage over the naive algorithm that more
+     * sequences are available to search for matching patterns,
+     * since nested patterns are not allowed.
+    */
+    PATTERN_ALGORITHM_TRACK_REVERSE
+};
+
+/**
  * Compressed MIDI format file has a 44 byte header. This is 16 offsets to channels, and a division value.
  * The rest of the file is track data.
 */
@@ -226,7 +257,8 @@ struct CseqFile {
     int32_t division;
 
     /**
-     * MIDI file data, in compressed (pattern) format. Contains all track data.
+     * Output container when converting from MIDI. Will always be in seq format.
+     * May or may not have pattern substitution applied.
     */
     uint8_t *compressed_data;
 
@@ -482,28 +514,79 @@ struct GmidTrack {
     uint8_t *cseq_data;
 };
 
-#define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
-extern int g_midi_parse_debug;
-extern int g_midi_debug_loop_delta;
-
 /**
  * Callback function with single parameter, pointer to GmidTrack.
  * Returns void.
 */
 typedef void (*f_GmidTrack_callback)(struct GmidTrack *);
 
+/**
+ * Container for options when converting between MIDI
+ * and seq format.
+*/
+struct MidiConvertOptions {
+    /**
+     * Callback function to perform on each track after initial unroll.
+    */
+    f_GmidTrack_callback post_unroll_action;
+
+    /**
+     * Flag to indicate whether pattern substitution should be performed.
+     * When converting seq->midi, if this flag is set (pattern
+     * matching is disabled), then the track will be copied as-is
+     * without unrolling. If this flag is cleared (default), this
+     * will unroll patterns.
+     * When converting midi->seq, if this flag is set (pattern
+     * matching is disable), then the track will be copied as-is
+     * without compression. If this flag is cleared (default), then
+     * pattern substitution will be applied.
+     * Note that when pattern compression is disabled 0xfe will
+     * not be escaped.
+    */
+    int no_pattern_compression;
+
+    /**
+     * Flag to indicate override for pattern markers. When set, will
+     * use the matching file to read pattern marker locations from disk
+     * instead of computing them based on track data.
+     * Only applies if pattern compression is used.
+    */
+    int use_pattern_marker_file;
+
+    /**
+     * Filename to read pattern markers from disk.
+     * Points to previously allocated memory.
+     * Should not be freed.
+    */
+    char *pattern_marker_filename;
+
+    /**
+     * Which pattern substitution algorithm to use.
+    */
+    enum GAUDIO_PATTERN_ALGORITHM pattern_algorithm;
+
+    // not a configuration option, used at runtime.
+    struct file_info *runtime_pattern_file;
+    struct llist_root *runtime_patterns_list;
+};
+
+#define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
+extern int g_midi_parse_debug;
+extern int g_midi_debug_loop_delta;
+
+
 struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
-struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, int opt_pattern_substitution, int opt_hack_match_cseq);
+struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConvertOptions *options);
 void CseqFile_free(struct CseqFile *cseq);
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track);
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file_info *pattern_file);
 void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi);
 
 struct MidiTrack *MidiTrack_new(int32_t track_index);
 struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
-struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, f_GmidTrack_callback post_unroll_action, int opt_pattern_substitution);
+struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConvertOptions *options);
 struct MidiFile *MidiFile_new_from_file(struct file_info *fi);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
@@ -529,9 +612,16 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type);
 int32_t GmidEvent_get_cseq_command(struct GmidEvent *event);
-void GmidTrack_roll(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, int opt_hack_match_cseq);
+void GmidTrack_get_pattern_matches_reverse(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct llist_root *matches);
+void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct llist_root *matches);
 void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track);
 void GmidTrack_get_pattern_matches(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches);
+struct MidiConvertOptions *MidiConvertOptions_new(void);
+void MidiConvertOptions_free(struct MidiConvertOptions *obj);
+void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct MidiConvertOptions *options);
+void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches);
+void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct llist_root *matches);
+int where_SeqPatternMatch_is_track(struct llist_node *node, int arg1);
 // end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 

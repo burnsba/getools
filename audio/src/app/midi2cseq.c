@@ -23,14 +23,15 @@ static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
 static int opt_no_pattern_compression = 0;
-static int opt_hack_match_cseq = 0;
+static int opt_use_pattern_file = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
+static char pattern_filename[MAX_FILENAME_LEN] = {0};
 
 #define LONG_OPT_DEBUG   1003
 #define LONG_OPT_PARSE_DEBUG   1004
 #define LONG_OPT_NO_PATTERN_COMPRESSION   2001
-#define LONG_OPT_HACK_MATCH_CSEQ   2002
+#define LONG_OPT_PATTERN_FILE  2003
 
 static struct option long_options[] =
 {
@@ -38,7 +39,7 @@ static struct option long_options[] =
     {"in",     required_argument,               NULL,  'n' },
     {"out",    required_argument,               NULL,  'o' },
     {"no-pattern-compression",    no_argument,  NULL,  LONG_OPT_NO_PATTERN_COMPRESSION },
-    {"hack-match-cseq",           no_argument,  NULL,  LONG_OPT_HACK_MATCH_CSEQ },
+    {"pattern-file",        required_argument,  NULL,  LONG_OPT_PATTERN_FILE },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
@@ -71,9 +72,8 @@ void print_help(const char * invoke)
     printf("    --no-pattern-compression      By default, MIDI conversion will perform pattern\n");
     printf("                                  substituion to reduce file size, this option\n");
     printf("                                  disables that.\n");
-    printf("    --hack-match-cseq             If track event data (md5) matches known problem\n");
-    printf("                                  track then applies special handling to ensure track will\n");
-    printf("                                  compress back to exactly matching seq.\n");
+    printf("    --pattern-file=FILE           Reads pattern markers from previously saved file. Only\n");
+    printf("                                  applies when pattern compression is not disabled.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -128,6 +128,25 @@ void read_opts(int argc, char **argv)
             }
             break;
 
+            case LONG_OPT_PATTERN_FILE:
+            {
+                opt_use_pattern_file = 1;
+
+                str_len = strlen(optarg);
+                if (str_len < 1)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "error, pattern filename not specified\n");
+                }
+
+                if (str_len > MAX_FILENAME_LEN - 1)
+                {
+                    str_len = MAX_FILENAME_LEN - 1;
+                }
+
+                strncpy(pattern_filename, optarg, str_len);
+            }
+            break;
+
             case 'q':
                 g_verbosity = 0;
                 break;
@@ -138,10 +157,6 @@ void read_opts(int argc, char **argv)
 
             case LONG_OPT_NO_PATTERN_COMPRESSION:
                 opt_no_pattern_compression = 1;
-                break;
-
-            case LONG_OPT_HACK_MATCH_CSEQ:
-                opt_hack_match_cseq = 1;
                 break;
 
             case LONG_OPT_DEBUG:
@@ -166,8 +181,15 @@ int main(int argc, char **argv)
     struct CseqFile *cseq_file;
     struct file_info *input_file;
     struct file_info *output_file;
+    struct MidiConvertOptions *convert_options;
 
     read_opts(argc, argv);
+
+    if (opt_use_pattern_file && opt_no_pattern_compression)
+    {
+        printf("error, pattern file is not used when pattern compression is disabled\n");
+        exit(0);
+    }
 
     if (opt_help_flag || !opt_input_file)
     {
@@ -190,7 +212,8 @@ int main(int argc, char **argv)
         printf("input_filename: %s\n", input_filename);
         printf("output_filename: %s\n", output_filename);
         printf("opt_no_pattern_compression: %d\n", opt_no_pattern_compression);
-        printf("opt_hack_match_cseq: %d\n", opt_hack_match_cseq);
+        printf("opt_use_pattern_file: %d\n", opt_use_pattern_file);
+        printf("pattern_filename: %s\n", pattern_filename);
         fflush(stdout);
     }
 
@@ -201,7 +224,15 @@ int main(int argc, char **argv)
     file_info_free(input_file);
     input_file = NULL;
 
-    cseq_file = CseqFile_from_MidiFile(midi_file, !opt_no_pattern_compression, opt_hack_match_cseq);
+    convert_options = MidiConvertOptions_new();
+    convert_options->no_pattern_compression = opt_no_pattern_compression;
+    if (opt_use_pattern_file)
+    {
+        convert_options->use_pattern_marker_file = 1;
+        convert_options->pattern_marker_filename = pattern_filename;
+    }
+
+    cseq_file = CseqFile_from_MidiFile(midi_file, convert_options);
 
     // done with source MIDI file
     MidiFile_free(midi_file);
@@ -216,6 +247,7 @@ int main(int argc, char **argv)
     cseq_file = NULL;
 
     file_info_free(output_file);
+    MidiConvertOptions_free(convert_options);
 
     return 0;
 }

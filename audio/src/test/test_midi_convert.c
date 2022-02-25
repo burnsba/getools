@@ -32,7 +32,6 @@ void midi_convert_all(int *run_count, int *pass_count, int *fail_count)
 
 void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
 {
-    if(0)
     {
         printf("convert midi to seq (no pattern)\n");
         int pass = 1;
@@ -120,7 +119,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         midi_file->tracks[0] = midi_track;
 
         // done with setup. execute test.
-        cseq_file = CseqFile_from_MidiFile(midi_file, 0, 0);
+        cseq_file = CseqFile_from_MidiFile(midi_file, NULL);
 
         pass_single = cseq_file->division == midi_file->division;
         pass &= pass_single;
@@ -206,7 +205,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert (no pattern) seq to midi -- 2\n");
         int pass = 1;
@@ -261,7 +259,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         memcpy(cseq_file->compressed_data, seq_track, seq_track_len);
 
         // done with setup. execute test.
-        midi_file = MidiFile_from_CseqFile(cseq_file, NULL, 0);
+        midi_file = MidiFile_from_CseqFile(cseq_file, NULL);
 
         if (midi_file->tracks == NULL)
         {
@@ -366,7 +364,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert midi to seq (no pattern) -- 3\n");
         int pass = 1;
@@ -419,7 +416,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         midi_file->tracks[0] = midi_track;
 
         // done with setup. execute test.
-        cseq_file = CseqFile_from_MidiFile(midi_file, 0, 0);
+        cseq_file = CseqFile_from_MidiFile(midi_file, NULL);
 
         pass_single = cseq_file->division == midi_file->division;
         pass &= pass_single;
@@ -595,6 +592,7 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         gtrack = GmidTrack_new();
         gtrack->cseq_data = (uint8_t *)malloc_zero(1, seq_data_len);
         gtrack->midi_track_index = 9;
+        gtrack->cseq_track_index = 10;
         memcpy(gtrack->cseq_data, seq_data, seq_data_len);
         gtrack->cseq_track_size_bytes = seq_data_len;
         gtrack->cseq_data_len = seq_data_len;
@@ -602,8 +600,14 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         current_buffer_pos = 0;
         buffer_len = seq_data_len;
 
+        struct MidiConvertOptions *options = MidiConvertOptions_new();
+        options->use_pattern_marker_file = 1;
+        options->pattern_marker_filename = "test_cases/midi/patterns0004.csv";
+
         // execute
-        GmidTrack_roll(gtrack, write_buffer, &current_buffer_pos, buffer_len, 1);
+        GmidTrack_roll_entry(gtrack, write_buffer, &current_buffer_pos, buffer_len, options);
+
+        MidiConvertOptions_free(options);
 
         // compare
         pass_single = gtrack->cseq_track_size_bytes == exepected_cseq_data_len;

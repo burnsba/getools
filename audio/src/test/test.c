@@ -31,39 +31,39 @@ int main(int argc, char **argv)
         // be quiet gcc
     }
 
-    g_verbosity = VERBOSE_DEBUG;
+    //g_verbosity = VERBOSE_DEBUG;
 
-    // sub_count = 0;
-    // test_md5_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    test_md5_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // linked_list_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    linked_list_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // string_hash_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    string_hash_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // int_hash_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    int_hash_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // parse_inst_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    parse_inst_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // parse_coef_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    parse_coef_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // aifc_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    aifc_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
-    // sub_count = 0;
-    // magic_all(&sub_count, &pass_count, &fail_count);
-    // total_run_count += sub_count;
+    sub_count = 0;
+    magic_all(&sub_count, &pass_count, &fail_count);
+    total_run_count += sub_count;
 
     sub_count = 0;
     midi_all(&sub_count, &pass_count, &fail_count);

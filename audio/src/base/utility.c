@@ -427,7 +427,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
     if (filename_len > 0)
     {
         // TODO: this should check for path seperator and only use
-        // the actual filename.
+        // the actual filename, or change struct property to say path.
         fi->filename = (char *)malloc_zero(1, filename_len + 1);
         strcpy(fi->filename, filename);
         fi->filename[filename_len] = '\0';
@@ -1175,12 +1175,6 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
             varint->value_bytes[num_bytes + 1] = 0x80;
         }
 
-        // if (in > 0)
-        // {
-        //     out_result <<= 8;
-        //     out_result |= 0x80;
-        // }
-
         num_bytes++;
 
         if (num_bytes > VAR_INT_MAX_BYTES)
@@ -1538,4 +1532,35 @@ void convert_s16_f64(int16_t *source, size_t len, double *dest)
     }
 
     TRACE_LEAVE(__func__)
+}
+
+/**
+ * Convert string buffer of unspecified length to integer.
+ * Passthrough to {@code strtol} with generic error message.
+ * @param buffer: string to parse.
+ * @returns: parsed value cast to int.
+*/
+long parse_int(char *buffer)
+{
+    TRACE_ENTER(__func__)
+
+    int res;
+    char *pend = NULL;
+
+    res = (int)strtol(buffer, &pend, 0);
+    
+    if (pend != NULL && *pend == '\0')
+    {
+        if (errno == ERANGE)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse integer: %s\n", buffer);
+        }
+    }
+    else
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse integer: %s\n", buffer);
+    }
+
+    TRACE_LEAVE(__func__)
+    return res;
 }

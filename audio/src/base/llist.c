@@ -63,6 +63,32 @@ struct llist_node *llist_node_new()
 }
 
 /**
+ * Allocates memory for a new node, and copies values from source to new node.
+ * @returns: pointer to new node.
+*/
+struct llist_node *llist_node_copy(struct llist_node *source)
+{
+    TRACE_ENTER(__func__)
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
+
+    node->id = next_llist_node_id;
+    next_llist_node_id++;
+
+    node->data = source->data;
+    node->data_local = source->data_local;
+
+    TRACE_LEAVE(__func__)
+
+    return node;
+}
+
+/**
  * Allocates memory for a new root.
  * @returns: pointer to new root.
 */
@@ -493,6 +519,87 @@ void llist_node_move(struct llist_root *dest, struct llist_root *src, struct lli
 
     llist_node_detach(src, node);
     llist_root_append_node(dest, node);
+
+    TRACE_LEAVE(__func__)
+}
+
+void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback)
+{
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL\n", __func__, __LINE__);
+    }
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    struct llist_node *node;
+    struct llist_node *copy;
+    int do_copy;
+
+    node = source->root;
+    while (node != NULL)
+    {
+        do_copy = 0;
+
+        if (filter_callback == NULL)
+        {
+            do_copy = 1;
+        }
+        else
+        {
+            do_copy = filter_callback(node);
+        }
+
+        if (do_copy)
+        {
+            copy = llist_node_copy(node);
+            llist_root_append_node(dest, copy);
+        }
+
+        node = node->next;
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1)
+{
+    TRACE_ENTER(__func__)
+
+    if (dest == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL\n", __func__, __LINE__);
+    }
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    if (filter_callback == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> filter_callback is NULL\n", __func__, __LINE__);
+    }
+
+    struct llist_node *node;
+    struct llist_node *copy;
+
+    node = source->root;
+    while (node != NULL)
+    {
+        if (filter_callback(node, arg1))
+        {
+            copy = llist_node_copy(node);
+            llist_root_append_node(dest, copy);
+        }
+
+        node = node->next;
+    }
 
     TRACE_LEAVE(__func__)
 }
