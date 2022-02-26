@@ -398,7 +398,7 @@ void llist_node_root_free_only_self(struct llist_root *root)
         TRACE_LEAVE(__func__)
         return;
     }
-    
+
     root->root = NULL;
     root->tail = NULL;
     root->count = 0;
@@ -548,7 +548,15 @@ void llist_node_move(struct llist_root *dest, struct llist_root *src, struct lli
     TRACE_LEAVE(__func__)
 }
 
-//TODO: doc -- note copy will duplicate data references
+/**
+ * This filters a source list into a destination list.
+ * Matching nodes are copied (shallow) from one list to the other.
+ * Beware duplicate references to data (beware double free).
+ * @param dest: Destination list to filter into. Must be previously allocated.
+ * @param source: Source list to filter from.
+ * @param filter_callback: Callback function which accepts a node and returns 1
+ * if node should match, zero otherwise.
+*/
 void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback)
 {
     TRACE_ENTER(__func__)
@@ -593,7 +601,16 @@ void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llis
     TRACE_LEAVE(__func__)
 }
 
-//TODO: doc -- note copy will duplicate data references
+/**
+* This filters a source list into a destination list.
+ * Matching nodes are copied (shallow) from one list to the other.
+ * Beware duplicate references to data (beware double free).
+ * @param dest: Destination list to filter into. Must be previously allocated.
+ * @param source: Source list to filter from.
+ * @param filter_callback: Callback function which accepts a node and argument, and returns 1
+ * if node should match, zero otherwise.
+ * @param arg1: Integer argument to pass into callback.
+*/
 void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1)
 {
     TRACE_ENTER(__func__)

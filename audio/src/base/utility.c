@@ -426,8 +426,6 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     if (filename_len > 0)
     {
-        // TODO: this should check for path seperator and only use
-        // the actual filename, or change struct property to say path.
         fi->filename = (char *)malloc_zero(1, filename_len + 1);
         strcpy(fi->filename, filename);
         fi->filename[filename_len] = '\0';

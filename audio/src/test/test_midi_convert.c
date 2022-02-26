@@ -32,7 +32,6 @@ void midi_convert_all(int *run_count, int *pass_count, int *fail_count)
 
 void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
 {
-    if(0)
     {
         printf("convert midi to seq (no pattern)\n");
         int pass = 1;
@@ -169,7 +168,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert (no pattern) seq to midi -- 2\n");
         int pass = 1;
@@ -287,7 +285,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert midi to seq (no pattern) -- 3\n");
         int pass = 1;
@@ -385,7 +382,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert seq roll to cseq, use_pattern_marker_file -- 4\n");
         int pass = 1;
@@ -539,7 +535,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
 
-    if(0)
     {
         printf("convert seq roll to cseq, naive algorithm, same track -- 5\n");
         int pass = 1;
@@ -668,7 +663,6 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
         }
     }
     
-    if(0)
     {
         printf("convert seq roll to cseq, naive algorithm, across tracks -- 5\n");
         int pass = 1;

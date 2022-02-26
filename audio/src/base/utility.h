@@ -35,7 +35,8 @@ struct file_info {
     size_t len;
 
     /**
-     * Filename with extension.
+     * Filename with extension. This may include a path, depending on
+     * how this object was created / fopen was called.
      * Copied when opened, internal malloc.
      * Memory will be released once file_info_free is called.
     */
