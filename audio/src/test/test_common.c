@@ -107,3 +107,51 @@ int f64_equal(double d1, double d2, double epsilon)
     double diff = d1 - d2;
     return (fabs(diff) < epsilon);
 }
+
+void print_expected_vs_actual_arr(uint8_t *expected, size_t expected_len, uint8_t *actual, size_t actual_len)
+{
+    int color_flag = 0;
+    size_t i;
+    printf("expected\n");
+    for (i=0; i<expected_len; i++)
+    {
+        color_flag = 0;
+        if (i < actual_len && expected[i] != actual[i])
+        {
+            printf("\033[32m");
+            color_flag = 1;
+        }
+        printf("0x%02x ", expected[i]);
+        if (color_flag)
+        {
+            printf("\033[39m");
+            color_flag = 0;
+        }
+        if (((i+1)%8)==0)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+    printf("actual\n");
+    for (i=0; i < actual_len; i++)
+    {
+        color_flag = 0;
+        if (i < expected_len && expected[i] != actual[i])
+        {
+            printf("\033[31m");
+            color_flag = 1;
+        }
+        printf("0x%02x ", actual[i]);
+        if (color_flag)
+        {
+            printf("\033[39m");
+            color_flag = 0;
+        }
+        if (((i+1)%8)==0)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}

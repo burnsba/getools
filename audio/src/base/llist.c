@@ -64,6 +64,7 @@ struct llist_node *llist_node_new()
 
 /**
  * Allocates memory for a new node, and copies values from source to new node.
+ * Pointer of data is copied, beware duplicate references.
  * @returns: pointer to new node.
 */
 struct llist_node *llist_node_copy(struct llist_node *source)
@@ -384,6 +385,30 @@ void llist_node_root_free(struct llist_root *root)
 }
 
 /**
+ * Only frees memory allocated to root, list elements
+ * remain unchanged.
+ * @param root: root element to free.
+*/
+void llist_node_root_free_only_self(struct llist_root *root)
+{
+    TRACE_ENTER(__func__)
+
+    if (root == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
+    
+    root->root = NULL;
+    root->tail = NULL;
+    root->count = 0;
+
+    free(root);
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
  * Inserts a new node in the list immediately before the current node.
  * @param root: parent list. Optional, but required to update count.
  * @param current: current reference node.
@@ -523,6 +548,7 @@ void llist_node_move(struct llist_root *dest, struct llist_root *src, struct lli
     TRACE_LEAVE(__func__)
 }
 
+//TODO: doc -- note copy will duplicate data references
 void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback)
 {
     TRACE_ENTER(__func__)
@@ -567,6 +593,7 @@ void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llis
     TRACE_LEAVE(__func__)
 }
 
+//TODO: doc -- note copy will duplicate data references
 void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1)
 {
     TRACE_ENTER(__func__)

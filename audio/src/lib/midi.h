@@ -229,6 +229,7 @@ enum GAUDIO_PATTERN_ALGORITHM {
      * sequences are available to search for matching patterns,
      * since nested patterns are not allowed.
     */
+   // TODO: remove
     PATTERN_ALGORITHM_TRACK_REVERSE
 };
 
@@ -622,6 +623,7 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
 void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches);
 void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct llist_root *matches);
 int where_SeqPatternMatch_is_track(struct llist_node *node, int arg1);
+void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack);
 // end new
 size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 

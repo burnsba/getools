@@ -96,6 +96,7 @@ void string_data_free(struct string_data *sd);
 void llist_node_string_data_print(struct llist_root *root);
 void llist_node_root_free_children(struct llist_root *root);
 void llist_node_root_free(struct llist_root *root);
+void llist_node_root_free_only_self(struct llist_root *root);
 void llist_node_free_string_data(struct llist_root *root);
 void llist_node_free(struct llist_root *root, struct llist_node *node);
 void llist_node_detach(struct llist_root *root, struct llist_node *node);

@@ -23,15 +23,81 @@ void midi_all(int *run_count, int *pass_count, int *fail_count)
     int sub_count;
     int local_run_count = 0;
 
-    sub_count = 0;
-    test_midi_parser(&sub_count, pass_count, fail_count);
-    local_run_count += sub_count;
+    // sub_count = 0;
+    // test_midi_parser(&sub_count, pass_count, fail_count);
+    // local_run_count += sub_count;
 
     sub_count = 0;
     midi_convert_all(&sub_count, pass_count, fail_count);
     local_run_count += sub_count;
 
     *run_count = *run_count + local_run_count;
+}
+
+#define DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST 0
+void parse_seq_bytes_to_event_list(uint8_t *data, size_t buffer_len, struct llist_root *event_list)
+{
+    struct llist_node *node;
+    struct GmidEvent *event;
+    size_t track_pos;
+    int32_t command;
+    long absolute_time;
+
+#if DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST
+    char *debug_printf_buffer;
+    debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
+#endif
+
+    absolute_time = 0;
+    command = 0;
+    track_pos = 0;
+
+    while (track_pos < buffer_len)
+    {
+        int bytes_read = 0;
+        
+        // track position will be updated according to how many bytes read.
+        event = GmidEvent_new_from_buffer(data, &track_pos, buffer_len, MIDI_IMPLEMENTATION_SEQ, command, &bytes_read);
+
+        if (event == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: event is NULL\n", __func__, __LINE__);
+        }
+
+        if (bytes_read == 0)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid bytes_read (0) from GmidEvent_new_from_buffer\n", __func__, __LINE__);
+        }
+
+        absolute_time += event->midi_delta_time.standard_value;
+        event->absolute_time = absolute_time;
+
+#if DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+            size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_SEQ);
+            debug_printf_buffer[debug_str_len] = '\n';
+            fflush_string(stdout, debug_printf_buffer);
+        }
+#endif
+
+        command = GmidEvent_get_midi_command(event);
+
+        // only allow running status for the "regular" MIDI commands
+        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        {
+            command = 0;
+        }
+
+        node = llist_node_new();
+        node->data = event;
+        llist_root_append_node(event_list, node);
+    }
+
+#if DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST
+    free(debug_printf_buffer);
+#endif
 }
 
 void test_midi_parser(int *run_count, int *pass_count, int *fail_count)
