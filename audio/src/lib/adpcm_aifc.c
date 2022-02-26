@@ -31,9 +31,9 @@ static long g_quantize_error = 0;
 
 static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chunk_pos, int *eof);
 static void write_frame_output(uint8_t *out, int32_t *data, size_t size);
-static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
-static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
-static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
+static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
+static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
 
 // end forward declarations
 
@@ -67,7 +67,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count)
  * @param fi: aifc file.
  * @returns: pointer to new {@code struct AdpcmAifcFile}.
 */
-struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
+struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -84,17 +84,17 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
         stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: header too short\n", __func__);
     }
 
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
 
     struct AdpcmAifcFile *p = (struct AdpcmAifcFile *)malloc_zero(1, sizeof(struct AdpcmAifcFile));
 
-    file_info_fread(fi, &p->ck_id, 4, 1);
+    FileInfo_fread(fi, &p->ck_id, 4, 1);
     BSWAP32(p->ck_id);
 
-    file_info_fread(fi, &p->ck_data_size, 4, 1);
+    FileInfo_fread(fi, &p->ck_data_size, 4, 1);
     BSWAP32(p->ck_data_size);
 
-    file_info_fread(fi, &p->form_type, 4, 1);
+    FileInfo_fread(fi, &p->form_type, 4, 1);
     BSWAP32(p->form_type);
 
     if (p->ck_id != ADPCM_AIFC_FORM_CHUNK_ID)
@@ -125,10 +125,10 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
             pos += 8;
             chunk_count++;
 
-            file_info_fread(fi, &chunk_id, 4, 1);
+            FileInfo_fread(fi, &chunk_id, 4, 1);
             BSWAP32(chunk_id);
 
-            file_info_fread(fi, &chunk_size, 4, 1);
+            FileInfo_fread(fi, &chunk_size, 4, 1);
             BSWAP32(chunk_size);
 
             switch (chunk_id)
@@ -167,7 +167,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
                 {
                     chunk_count--;
                 }
-                file_info_fseek(fi, chunk_size, SEEK_CUR);
+                FileInfo_fseek(fi, chunk_size, SEEK_CUR);
                 break;
             }
 
@@ -543,33 +543,33 @@ struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new()
  * Write {@code struct AdpcmAifcCommChunk} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi)
+void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     int remaining_bytes = chunk->ck_data_size;
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
 
-    file_info_fwrite_bswap(fi, &chunk->num_channels, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->num_channels, 2, 1);
     remaining_bytes -= 2;
 
-    file_info_fwrite_bswap(fi, &chunk->num_sample_frames, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->num_sample_frames, 4, 1);
     remaining_bytes -= 4;
 
-    file_info_fwrite_bswap(fi, &chunk->sample_size, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->sample_size, 2, 1);
     remaining_bytes -= 2;
 
-    file_info_fwrite_bswap(fi, chunk->sample_rate, 10, 1);
+    FileInfo_fwrite_bswap(fi, chunk->sample_rate, 10, 1);
     remaining_bytes -= 10;
 
-    file_info_fwrite_bswap(fi, &chunk->compression_type, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->compression_type, 4, 1);
     remaining_bytes -= 4;
 
-    file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->unknown, 1, 1);
     remaining_bytes -= 1;
 
     if (remaining_bytes > 0)
@@ -579,7 +579,7 @@ void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_inf
             remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
         }
 
-        file_info_fwrite_bswap(fi, chunk->compression_name, remaining_bytes, 1);
+        FileInfo_fwrite_bswap(fi, chunk->compression_name, remaining_bytes, 1);
     }
     
     TRACE_LEAVE(__func__)
@@ -589,17 +589,17 @@ void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_inf
  * Write {@code struct AdpcmAifcApplicationChunk} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi)
+void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->application_signature, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->unknown, 1, 1);
-    file_info_fwrite_bswap(fi, chunk->code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->application_signature, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->unknown, 1, 1);
+    FileInfo_fwrite_bswap(fi, chunk->code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
     
     TRACE_LEAVE(__func__)
 }
@@ -608,9 +608,9 @@ void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, s
  * Write {@code struct AdpcmAifcCodebookChunk} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi)
+void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -618,13 +618,13 @@ void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct 
 
     AdpcmAifcApplicationChunk_fwrite(&chunk->base, fi);
 
-    file_info_fwrite_bswap(fi, &chunk->version, 2, 1);
-    file_info_fwrite_bswap(fi, &chunk->order, 2, 1);
-    file_info_fwrite_bswap(fi, &chunk->nentries, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->version, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->order, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->nentries, 2, 1);
 
     table_size = chunk->order * chunk->nentries * 16;
 
-    file_info_fwrite_bswap(fi, chunk->table_data, table_size, 1);
+    FileInfo_fwrite_bswap(fi, chunk->table_data, table_size, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -633,23 +633,23 @@ void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct 
  * Write {@code struct AdpcmAifcSoundChunk} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi)
+void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     size_t table_size;
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->offset, 4, 1);
-    file_info_fwrite_bswap(fi, &chunk->block_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->offset, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->block_size, 4, 1);
     
     table_size = chunk->ck_data_size - 8;
     if (table_size > 0 && table_size < INT32_MAX)
     {
-        file_info_fwrite(fi, chunk->sound_data, table_size, 1);
+        FileInfo_fwrite(fi, chunk->sound_data, table_size, 1);
     }
 
     TRACE_LEAVE(__func__)
@@ -659,16 +659,16 @@ void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_i
  * Write {@code struct AdpcmAifcLoopData} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi)
+void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &loop->start, 4, 1);
-    file_info_fwrite_bswap(fi, &loop->end, 4, 1);
-    file_info_fwrite_bswap(fi, &loop->count, 4, 1);
-    file_info_fwrite_bswap(fi, &loop->state, 0x20, 1);
+    FileInfo_fwrite_bswap(fi, &loop->start, 4, 1);
+    FileInfo_fwrite_bswap(fi, &loop->end, 4, 1);
+    FileInfo_fwrite_bswap(fi, &loop->count, 4, 1);
+    FileInfo_fwrite_bswap(fi, &loop->state, 0x20, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -677,9 +677,9 @@ void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *
  * Write {@code struct AdpcmAifcLoopChunk} to disk.
  * Calls write for all relevant child objects.
  * @param chunk: object to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi)
+void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -687,8 +687,8 @@ void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_inf
 
     AdpcmAifcApplicationChunk_fwrite(&chunk->base, fi);
 
-    file_info_fwrite_bswap(fi, &chunk->version, 2, 1);
-    file_info_fwrite_bswap(fi, &chunk->nloops, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->version, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->nloops, 2, 1);
 
     for (i=0; i<chunk->nloops; i++)
     {
@@ -702,17 +702,17 @@ void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_inf
  * Write {@code struct AdpcmAifcFile} to disk.
  * Calls write for all relevant child objects.
  * @param aaf: .aifc in-memory file to write.
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi)
+void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     int i;
 
-    file_info_fwrite_bswap(fi, &aaf->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &aaf->ck_data_size, 4, 1);
-    file_info_fwrite_bswap(fi, &aaf->form_type, 4, 1);
+    FileInfo_fwrite_bswap(fi, &aaf->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &aaf->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &aaf->form_type, 4, 1);
 
     for (i=0; i<aaf->chunk_count; i++)
     {
@@ -1858,7 +1858,7 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
  * due to padding.
  * @returns: number of bytes written.
 */
-size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len)
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct FileInfo *fi, size_t *sound_data_len)
 {
     TRACE_ENTER(__func__)
 
@@ -1867,11 +1867,11 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *so
         printf("Open file \"%s\" to write to .tbl\n", path);
     }
 
-    struct file_info *aifc_fi = file_info_fopen(path, "rb");
+    struct FileInfo *aifc_fi = FileInfo_fopen(path, "rb");
     struct AdpcmAifcFile *aifc_file = AdpcmAifcFile_new_from_file(aifc_fi);
     size_t result = AdpcmAifcFile_write_tbl(aifc_file, fi, sound_data_len);
     AdpcmAifcFile_free(aifc_file);
-    file_info_free(aifc_fi);
+    FileInfo_free(aifc_fi);
 
     TRACE_LEAVE(__func__)
 
@@ -1888,7 +1888,7 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *so
  * due to padding.
  * @returns: number of bytes written.
 */
-size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi, size_t *sound_data_len)
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct FileInfo *fi, size_t *sound_data_len)
 {
     TRACE_ENTER(__func__)
 
@@ -1904,7 +1904,7 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
 
     size_t len = aifc_file->sound_chunk->ck_data_size - 8;
 
-    size_t actual = file_info_fwrite(fi, aifc_file->sound_chunk->sound_data, len, 1);
+    size_t actual = FileInfo_fwrite(fi, aifc_file->sound_chunk->sound_data, len, 1);
 
     if (len != actual)
     {
@@ -1928,7 +1928,7 @@ size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info
         uint8_t pad[8];
         memset(pad, 0, 8);
 
-        len += file_info_fwrite(fi, pad, remain, 1);
+        len += FileInfo_fwrite(fi, pad, remain, 1);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -2548,7 +2548,7 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new common chunk.
 */
-static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -2559,27 +2559,27 @@ static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_i
     p->ck_data_size = ck_data_size;
     remaining_bytes = ck_data_size;
 
-    file_info_fread(fi, &p->num_channels, 2, 1);
+    FileInfo_fread(fi, &p->num_channels, 2, 1);
     BSWAP16(p->num_channels);
     remaining_bytes -= 2;
 
-    file_info_fread(fi, &p->num_sample_frames, 4, 1);
+    FileInfo_fread(fi, &p->num_sample_frames, 4, 1);
     BSWAP32(p->num_sample_frames);
     remaining_bytes -= 4;
 
-    file_info_fread(fi, &p->sample_size, 2, 1);
+    FileInfo_fread(fi, &p->sample_size, 2, 1);
     BSWAP16(p->sample_size);
     remaining_bytes -= 2;
 
-    file_info_fread(fi, &p->sample_rate, 10, 1);
+    FileInfo_fread(fi, &p->sample_rate, 10, 1);
     reverse_inplace(p->sample_rate, 10);
     remaining_bytes -= 10;
 
-    file_info_fread(fi, &p->compression_type, 4, 1);
+    FileInfo_fread(fi, &p->compression_type, 4, 1);
     BSWAP32(p->compression_type);
     remaining_bytes -= 4;
     
-    file_info_fread(fi, &p->unknown, 1, 1);
+    FileInfo_fread(fi, &p->unknown, 1, 1);
     remaining_bytes -= 1;
 
     if (remaining_bytes > 0)
@@ -2589,7 +2589,7 @@ static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_i
             remaining_bytes = ADPCM_AIFC_COMPRESSION_NAME_ARR_LEN;
         }
 
-        file_info_fread(fi, &p->compression_name, remaining_bytes, 1);
+        FileInfo_fread(fi, &p->compression_name, remaining_bytes, 1);
     }
 
     TRACE_LEAVE(__func__)
@@ -2604,7 +2604,7 @@ static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct file_i
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new application chunk.
 */
-static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -2620,12 +2620,12 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
     uint8_t unknown;
     char code_string[ADPCM_AIFC_VADPCM_APPL_NAME_LEN];
 
-    file_info_fread(fi, &application_signature, 4, 1);
+    FileInfo_fread(fi, &application_signature, 4, 1);
     BSWAP32(application_signature);
 
-    file_info_fread(fi, &unknown, 1, 1);
+    FileInfo_fread(fi, &unknown, 1, 1);
 
-    file_info_fread(fi, &code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
+    FileInfo_fread(fi, &code_string, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, 1);
 
     if (strncmp(code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN) == 0)
     {
@@ -2639,18 +2639,18 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
         // no terminating zero
         memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_CODES_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
 
-        file_info_fread(fi, &p->version, 2, 1);
+        FileInfo_fread(fi, &p->version, 2, 1);
         BSWAP16(p->version);
 
-        file_info_fread(fi, &p->order, 2, 1);
+        FileInfo_fread(fi, &p->order, 2, 1);
         BSWAP16(p->order);
 
-        file_info_fread(fi, &p->nentries, 2, 1);
+        FileInfo_fread(fi, &p->nentries, 2, 1);
         BSWAP16(p->nentries);
 
         size_t table_data_size_bytes = p->order * p->nentries * 16;
         p->table_data = (uint8_t *)malloc_zero(1, table_data_size_bytes);
-        file_info_fread(fi, p->table_data, table_data_size_bytes, 1);
+        FileInfo_fread(fi, p->table_data, table_data_size_bytes, 1);
 
         AdpcmAifcCodebookChunk_decode_aifc_codebook(p);
     }
@@ -2667,10 +2667,10 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
         // no terminating zero
         memcpy(p->base.code_string, ADPCM_AIFC_VADPCM_LOOPS_NAME, ADPCM_AIFC_VADPCM_APPL_NAME_LEN);
 
-        file_info_fread(fi, &p->version, 2, 1);
+        FileInfo_fread(fi, &p->version, 2, 1);
         BSWAP16(p->version);
 
-        file_info_fread(fi, &p->nloops, 2, 1);
+        FileInfo_fread(fi, &p->nloops, 2, 1);
         BSWAP16(p->nloops);
 
         size_t loop_data_size_bytes = p->nloops * sizeof(struct AdpcmAifcLoopData);
@@ -2678,17 +2678,17 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
 
         for (i=0; i<p->nloops; i++)
         {
-            file_info_fread(fi, &p->loop_data[i].start, 4, 1);
+            FileInfo_fread(fi, &p->loop_data[i].start, 4, 1);
             BSWAP32(p->loop_data[i].start);
 
-            file_info_fread(fi, &p->loop_data[i].end, 4, 1);
+            FileInfo_fread(fi, &p->loop_data[i].end, 4, 1);
             BSWAP32(p->loop_data[i].end);
 
-            file_info_fread(fi, &p->loop_data[i].count, 4, 1);
+            FileInfo_fread(fi, &p->loop_data[i].count, 4, 1);
             BSWAP32(p->loop_data[i].count);
 
             // AL_RAW16_WAVE has empty state
-            file_info_fread(fi, p->loop_data[i].state, ADPCM_AIFC_LOOP_STATE_LEN, 1);
+            FileInfo_fread(fi, p->loop_data[i].state, ADPCM_AIFC_LOOP_STATE_LEN, 1);
         }
     }
     else
@@ -2708,7 +2708,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new sound chunk.
 */
-static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -2721,14 +2721,14 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct file
         stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid SSND chunk data size: %d\n", __func__, ck_data_size);
     }
 
-    file_info_fread(fi, &p->offset, 4, 1);
+    FileInfo_fread(fi, &p->offset, 4, 1);
     BSWAP32(p->offset);
 
-    file_info_fread(fi, &p->block_size, 4, 1);
+    FileInfo_fread(fi, &p->block_size, 4, 1);
     BSWAP32(p->block_size);
 
     p->sound_data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size - 8));
-    file_info_fread(fi, p->sound_data, (size_t)(ck_data_size - 8), 1);
+    FileInfo_fread(fi, p->sound_data, (size_t)(ck_data_size - 8), 1);
 
     TRACE_LEAVE(__func__)
 

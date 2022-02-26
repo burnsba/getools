@@ -518,19 +518,19 @@ struct AdpcmAifcFile {
 extern int g_AdpcmLoopInfiniteExportCount;
 
 struct AdpcmAifcFile *AdpcmAifcFile_new_simple(size_t chunk_count);
-struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi);
+struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi);
 struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type);
 struct AdpcmAifcCodebookChunk *AdpcmAifcCodebookChunk_new(int16_t order, uint16_t nentries);
 struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new(size_t sound_data_size_bytes);
 struct AdpcmAifcLoopChunk *AdpcmAifcLoopChunk_new(void);
 
-void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct file_info *fi);
-void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct file_info *fi);
-void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct file_info *fi);
-void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct file_info *fi);
-void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct file_info *fi);
-void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct file_info *fi);
-void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct file_info *fi);
+void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct FileInfo *fi);
+void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, struct FileInfo *fi);
+void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct FileInfo *fi);
+void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct FileInfo *fi);
+void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct FileInfo *fi);
+void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct FileInfo *fi);
+void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct FileInfo *fi);
 
 void AdpcmAifcCommChunk_free(struct AdpcmAifcCommChunk *chunk);
 void AdpcmAifcSoundChunk_free(struct AdpcmAifcSoundChunk *chunk);
@@ -548,8 +548,8 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf);
 size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file);
 
-size_t AdpcmAifcFile_path_write_tbl(char *path, struct file_info *fi, size_t *sound_data_len);
-size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct file_info *fi, size_t *sound_data_len);
+size_t AdpcmAifcFile_path_write_tbl(char *path, struct FileInfo *fi, size_t *sound_data_len);
+size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct FileInfo *fi, size_t *sound_data_len);
 
 // Exposed publicly for testing.
 

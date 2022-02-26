@@ -469,9 +469,9 @@ int main(int argc, char **argv)
 {
     struct WavFile *wav_file;
     struct AdpcmAifcFile *aifc_file;
-    struct file_info *input_file;
-    struct file_info *inst_file;
-    struct file_info *output_file;
+    struct FileInfo *input_file;
+    struct FileInfo *inst_file;
+    struct FileInfo *output_file;
     int skip_freq_adjust = 0;
 
     read_opts(argc, argv);
@@ -535,7 +535,7 @@ int main(int argc, char **argv)
 
     if (freq_adjust_mode == FREQ_ADJUST_SEARCH)
     {
-        inst_file = file_info_fopen(inst_filename, "rb");
+        inst_file = FileInfo_fopen(inst_filename, "rb");
 
         // parse .inst file.
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(inst_file);
@@ -597,15 +597,15 @@ int main(int argc, char **argv)
         }
 
         ALBankFile_free(bank_file);
-        file_info_free(inst_file);
+        FileInfo_free(inst_file);
         inst_file = NULL;
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
     aifc_file = AdpcmAifcFile_new_from_file(input_file);
 
     // done with input file
-    file_info_free(input_file);
+    FileInfo_free(input_file);
     input_file = NULL;
 
     wav_file = WavFile_new_from_aifc(aifc_file);
@@ -668,7 +668,7 @@ int main(int argc, char **argv)
         }
     }
 
-    output_file = file_info_fopen(output_filename, "wb");
+    output_file = FileInfo_fopen(output_filename, "wb");
 
     WavFile_fwrite(wav_file, output_file);
 
@@ -676,7 +676,7 @@ int main(int argc, char **argv)
     WavFile_free(wav_file);
     wav_file = NULL;
 
-    file_info_free(output_file);
+    FileInfo_free(output_file);
     
     return 0;
 }

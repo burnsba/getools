@@ -455,7 +455,7 @@ static void check_resolve(struct CoefParseContext *context)
  * @param fi: file info object of file to parse.
  * @returns: new book parsed from .coef file.
 */
-struct ALADPCMBook *ALADPCMBook_new_from_coef(struct file_info *fi)
+struct ALADPCMBook *ALADPCMBook_new_from_coef(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -542,9 +542,9 @@ struct ALADPCMBook *ALADPCMBook_new_from_coef(struct file_info *fi)
     memset(line_buffer, 0, MAX_FILENAME_LEN);
 
     // read .coef file into memory
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
     file_contents = (char *)malloc_zero(1, fi->len);
-    len = file_info_fread(fi, file_contents, fi->len, 1);
+    len = FileInfo_fread(fi, file_contents, fi->len, 1);
 
     c_int = -1;
     previous_c = -1;

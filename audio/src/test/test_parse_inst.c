@@ -16,14 +16,14 @@
 
 // forward declarations
 
-int parse_inst_default(struct file_info *fi);
+int parse_inst_default(struct FileInfo *fi);
 
 // end forward declarations
 
 /**
  * Parses file as first described in `0002.inst`
 */
-int parse_inst_default(struct file_info *fi)
+int parse_inst_default(struct FileInfo *fi)
 {
     struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
@@ -475,7 +475,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0001.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0001.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         struct ALBank *bank;
@@ -585,7 +585,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         }
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -607,13 +607,13 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0002.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0002.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         pass = parse_inst_default(fi);
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -635,13 +635,13 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0003.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0003.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         pass = parse_inst_default(fi);
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -663,13 +663,13 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0004.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0004.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         pass = parse_inst_default(fi);
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -691,7 +691,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0002.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0002.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         pass = parse_inst_default(fi);
@@ -718,7 +718,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         }
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -740,7 +740,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0006.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0006.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         pass = parse_inst_default(fi);
@@ -767,7 +767,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         }
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -789,7 +789,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/inst_parse/0007.inst", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/inst_parse/0007.inst", "rb");
         struct ALBankFile *bank_file = ALBankFile_new_from_inst(fi);
 
         struct ALBank *bank;
@@ -916,7 +916,7 @@ void parse_inst_all(int *run_count, int *pass_count, int *fail_count)
         }
 
         ALBankFile_free(bank_file);
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {

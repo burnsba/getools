@@ -16,14 +16,14 @@
 
 // forward declarations
 
-int parse_coef_default(struct file_info *fi);
+int parse_coef_default(struct FileInfo *fi);
 
 // end forward declarations
 
 /**
  * Parses file as first described in `0001.inst`
 */
-int parse_coef_default(struct file_info *fi)
+int parse_coef_default(struct FileInfo *fi)
 {
     int pass = 1;
 
@@ -71,11 +71,11 @@ void parse_coef_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/coef_parse/0001.coef", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/coef_parse/0001.coef", "rb");
         
         pass = parse_coef_default(fi);
 
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {
@@ -97,11 +97,11 @@ void parse_coef_all(int *run_count, int *pass_count, int *fail_count)
         int pass = 1;
         *run_count = *run_count + 1;
 
-        struct file_info *fi = file_info_fopen("test_cases/coef_parse/0001.coef", "rb");
+        struct FileInfo *fi = FileInfo_fopen("test_cases/coef_parse/0001.coef", "rb");
         
         pass = parse_coef_default(fi);
 
-        file_info_free(fi);
+        FileInfo_free(fi);
 
         if (pass == 1)
         {

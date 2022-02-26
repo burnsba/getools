@@ -18,7 +18,7 @@
 /**
  * Container for file information.
 */
-struct file_info {
+struct FileInfo {
     /**
      * file pointer.
     */
@@ -38,7 +38,7 @@ struct file_info {
      * Filename with extension. This may include a path, depending on
      * how this object was created / fopen was called.
      * Copied when opened, internal malloc.
-     * Memory will be released once file_info_free is called.
+     * Memory will be released once FileInfo_free is called.
     */
     char *filename;
 };
@@ -47,7 +47,7 @@ struct file_info {
  * Variable length integer.
  * This implementation supports up to 32 bit varint, as used by MIDI.
 */
-struct var_length_int {
+struct VarLengthInt {
     /**
      * Internal varint container.
      * Index zero is least significant byte.
@@ -82,15 +82,15 @@ size_t dynamic_buffer_memcpy(uint8_t *data, size_t data_len, uint8_t **buffer_st
 
 size_t get_file_contents(char *path, uint8_t **buffer);
 
-struct file_info *file_info_fopen(char *filename, const char *mode);
-size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, size_t n);
-size_t file_info_get_file_contents(struct file_info *fi, uint8_t **buffer);
-int file_info_fseek(struct file_info *fi, long __off, int __whence);
-long file_info_ftell(struct file_info *fi);
-size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, size_t n);
-size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n);
-int file_info_fclose(struct file_info *fi);
-void file_info_free(struct file_info *fi);
+struct FileInfo *FileInfo_fopen(char *filename, const char *mode);
+size_t FileInfo_fread(struct FileInfo *fi, void *output_buffer, size_t size, size_t n);
+size_t FileInfo_get_file_contents(struct FileInfo *fi, uint8_t **buffer);
+int FileInfo_fseek(struct FileInfo *fi, long __off, int __whence);
+long FileInfo_ftell(struct FileInfo *fi);
+size_t FileInfo_fwrite(struct FileInfo *fi, const void *data, size_t size, size_t n);
+size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size, size_t n);
+int FileInfo_fclose(struct FileInfo *fi);
+void FileInfo_free(struct FileInfo *fi);
 
 void parse_names(uint8_t *names_file_contents, size_t file_length, struct LinkedList *names);
 void get_filename(char *string, char *filename, size_t max_len);
@@ -98,13 +98,13 @@ void change_filename_extension(char *input_filename, char *output_filename, char
 int string_ends_with(const char * str, const char * suffix);
 long parse_int(char *buffer);
 
-void int32_to_varint(int32_t in, struct var_length_int *varint);
-void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint);
-void varint_copy(struct var_length_int *dest, struct var_length_int* source);
-void varint_write_value_big(uint8_t *dest, struct var_length_int* source);
-void varint_write_value_little(uint8_t *dest, struct var_length_int* source);
-int32_t varint_get_value_big(struct var_length_int* source);
-int32_t varint_get_value_little(struct var_length_int* source);
+void int32_to_VarLengthInt(int32_t in, struct VarLengthInt *varint);
+void VarLengthInt_value_to_int32(uint8_t *buffer, int max_bytes, struct VarLengthInt *varint);
+void VarLengthInt_copy(struct VarLengthInt *dest, struct VarLengthInt* source);
+void VarLengthInt_write_value_big(uint8_t *dest, struct VarLengthInt* source);
+void VarLengthInt_write_value_little(uint8_t *dest, struct VarLengthInt* source);
+int32_t VarLengthInt_get_value_big(struct VarLengthInt* source);
+int32_t VarLengthInt_get_value_little(struct VarLengthInt* source);
 
 size_t fill_16bit_buffer(
     int16_t *samples,

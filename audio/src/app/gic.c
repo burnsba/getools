@@ -209,7 +209,7 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    struct file_info *input_file;
+    struct FileInfo *input_file;
     char *ctl_filename;
     char *tbl_filename;
     struct ALBankFile *bank_file;
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
 
     bank_file = ALBankFile_new_from_inst(input_file);
 
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
     ALBankFile_write_ctl(bank_file, ctl_filename);
 
     // done with input file
-    file_info_free(input_file);
+    FileInfo_free(input_file);
     input_file = NULL;
 
     ALBankFile_free(bank_file);

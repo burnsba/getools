@@ -396,7 +396,7 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 int main(int argc, char **argv)
 {
     struct ALBankFile *bank_file;
-    struct file_info *ctl_file;
+    struct FileInfo *ctl_file;
     
     read_opts(argc, argv);
 
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
         mkpath(g_output_dir);
     }
 
-    ctl_file = file_info_fopen(ctl_filename, "rb");
+    ctl_file = FileInfo_fopen(ctl_filename, "rb");
 
     // need to set the callback before any wavetable objects are instantiated.
     wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
@@ -515,7 +515,7 @@ int main(int argc, char **argv)
     
     ALBankFile_free(bank_file);
 
-    file_info_free(ctl_file);
+    FileInfo_free(ctl_file);
 
     return 0;
 }

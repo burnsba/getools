@@ -273,9 +273,9 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
  * @param sound: sound object holding wavetable data.
  * @param bank: sound object parent bank
  * @param tbl_file_contents: .tbl file contents
- * @param fi: file_info to write to. Uses current seek position.
+ * @param fi: FileInfo to write to. Uses current seek position.
 */
-void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct file_info *fi)
+void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -299,7 +299,7 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
 {
     TRACE_ENTER(__func__)
 
-    struct file_info *output;
+    struct FileInfo *output;
     int i,j,k;
 
     ALBankFile_clear_visited_flags(bank_file);
@@ -333,11 +333,11 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
                         printf("opening sound file for output aifc: \"%s\"\n", sound->wavetable->aifc_path);
                     }
 
-                    output = file_info_fopen(sound->wavetable->aifc_path, "w");
+                    output = FileInfo_fopen(sound->wavetable->aifc_path, "w");
 
                     write_sound_to_aifc(sound, bank, tbl_file_contents, output);
 
-                    file_info_free(output);
+                    FileInfo_free(output);
                 }
             }
         }
@@ -687,7 +687,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
      * Then iterate the wavetable objects and write .aifc sound data to .tbl.
     */
 
-    struct file_info *output;
+    struct FileInfo *output;
     int bank_count;
     struct LinkedList *list_sounds = LinkedList_new();
     struct LinkedListNode *node;
@@ -751,7 +751,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
     // now write output and set `base` offset.
 
-    output = file_info_fopen(tbl_filename, "w");
+    output = FileInfo_fopen(tbl_filename, "w");
 
     node = list_sounds->head;
     while (node != NULL)
@@ -766,7 +766,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
             if (!StringHashTable_contains(seen, wavetable->aifc_path))
             {
-                int32_t wavetable_base = (int32_t)file_info_ftell(output);
+                int32_t wavetable_base = (int32_t)FileInfo_ftell(output);
                 size_t sound_data_size;
 
                 AdpcmAifcFile_path_write_tbl(wavetable->aifc_path, output, &sound_data_size);
@@ -792,7 +792,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
     LinkedList_free(list_sounds);
 
-    file_info_free(output);
+    FileInfo_free(output);
 
     StringHashTable_free(seen);
 
@@ -819,7 +819,7 @@ void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
      * up any unknown offsets.
     */
 
-    struct file_info *output;
+    struct FileInfo *output;
     
     // temp buffer to store output in. Once entire bank_file is processed
     // this will be written to disk.
@@ -884,9 +884,9 @@ void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
     }
 
     // done writing bank_file to buffer.
-    output = file_info_fopen(ctl_filename, "w");
-    file_info_fwrite(output, buffer, file_size, 1);
-    file_info_free(output);
+    output = FileInfo_fopen(ctl_filename, "w");
+    FileInfo_fwrite(output, buffer, file_size, 1);
+    FileInfo_free(output);
 
     if (g_verbosity >= VERBOSE_DEBUG)
     {
@@ -2387,7 +2387,7 @@ static void ALBankFile_populate_wavetables_from_aifc(struct ALBankFile *bank_fil
 
                             if (wavetable != NULL && wavetable->aifc_path != NULL && wavetable->aifc_path[0] != '\0')
                             {
-                                struct file_info *aifc_fi;
+                                struct FileInfo *aifc_fi;
                                 struct AdpcmAifcFile *aifc_file;
 
                                 if (wavetable->visited == 1)
@@ -2397,13 +2397,13 @@ static void ALBankFile_populate_wavetables_from_aifc(struct ALBankFile *bank_fil
 
                                 wavetable->visited = 1;
 
-                                aifc_fi = file_info_fopen(wavetable->aifc_path, "rb");
+                                aifc_fi = FileInfo_fopen(wavetable->aifc_path, "rb");
                                 aifc_file = AdpcmAifcFile_new_from_file(aifc_fi);
 
                                 ALWaveTable_populate_from_aifc(wavetable, aifc_file);
                                 
                                 AdpcmAifcFile_free(aifc_file);
-                                file_info_free(aifc_fi);
+                                FileInfo_free(aifc_fi);
                             }
                         }
                     }

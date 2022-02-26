@@ -361,7 +361,7 @@ struct MidiFile *MidiFile_new_tracks(int format, int num_tracks)
  * Tracks remain unprocesed.
  * @returns: pointer to new object.
 */
-struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
+struct MidiFile *MidiFile_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -390,10 +390,10 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
     file_pos = 0;
 
     // make sure to begin reading at the beginning of the file.
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
 
     // root chunk id
-    file_info_fread(fi, &t32, 4, 1);
+    FileInfo_fread(fi, &t32, 4, 1);
     file_pos += 4;
     BSWAP32(t32);
     if (t32 != MIDI_ROOT_CHUNK_ID)
@@ -402,7 +402,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
     }
 
     // root chunk size
-    file_info_fread(fi, &t32, 4, 1);
+    FileInfo_fread(fi, &t32, 4, 1);
     file_pos += 4;
     BSWAP32(t32);
     if (t32 != MIDI_ROOT_CHUNK_BODY_SIZE)
@@ -411,7 +411,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
     }
 
     // format
-    file_info_fread(fi, &p->format, 2, 1);
+    FileInfo_fread(fi, &p->format, 2, 1);
     file_pos += 2;
     BSWAP16(p->format);
     if (p->format != MIDI_FORMAT_SIMULTANEOUS)
@@ -420,7 +420,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
     }
 
     // number of tracks
-    file_info_fread(fi, &p->num_tracks, 2, 1);
+    FileInfo_fread(fi, &p->num_tracks, 2, 1);
     file_pos += 2;
     BSWAP16(p->num_tracks);
     if (p->num_tracks > CSEQ_FILE_NUM_TRACKS)
@@ -429,7 +429,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
     }
 
     // ticks per quarter note (when positive)
-    file_info_fread(fi, &p->division, 2, 1);
+    FileInfo_fread(fi, &p->division, 2, 1);
     file_pos += 2;
     BSWAP16(p->division);
     if (p->division < 0)
@@ -453,7 +453,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
             break;
         }
 
-        file_info_fread(fi, &t32, 4, 1);
+        FileInfo_fread(fi, &t32, 4, 1);
         file_pos += 4;
         BSWAP32(t32);
         if (t32 != MIDI_TRACK_CHUNK_ID)
@@ -461,7 +461,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
             skip = 1;
         }
 
-        file_info_fread(fi, &track_size, 4, 1);
+        FileInfo_fread(fi, &track_size, 4, 1);
         file_pos += 4;
         BSWAP32(track_size);
 
@@ -470,7 +470,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
             file_pos += track_size;
             if (file_pos < fi->len)
             {
-                file_info_fseek(fi, (long)track_size, SEEK_CUR);
+                FileInfo_fseek(fi, (long)track_size, SEEK_CUR);
             }
             else
             {
@@ -487,7 +487,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
         track->ck_data_size = track_size;
         track->data = (uint8_t*)malloc_zero(1, (size_t)track_size);
 
-        file_info_fread(fi, track->data, track_size, 1);
+        FileInfo_fread(fi, track->data, track_size, 1);
         file_pos += track_size;
 
         p->tracks[tracks_read] = track;
@@ -509,7 +509,7 @@ struct MidiFile *MidiFile_new_from_file(struct file_info *fi)
  * Reads a file and loads the contents into the new {@code struct CseqFile}.
  * @returns: pointer to new object.
 */
-struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
+struct CseqFile *CseqFile_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -524,21 +524,21 @@ struct CseqFile *CseqFile_new_from_file(struct file_info *fi)
     struct CseqFile *p = (struct CseqFile *)malloc_zero(1, sizeof(struct CseqFile));
 
     // make sure to begin reading at the beginning of the file.
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
 
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
     {
-        file_info_fread(fi, &p->track_offset[i], 4, 1);
+        FileInfo_fread(fi, &p->track_offset[i], 4, 1);
         BSWAP32(p->track_offset[i]);
     }
 
-    file_info_fread(fi, &p->division, 4, 1);
+    FileInfo_fread(fi, &p->division, 4, 1);
     BSWAP32(p->division);
 
     data_len = fi->len - CSEQ_FILE_HEADER_SIZE_BYTES;
 
     p->compressed_data = (uint8_t *)malloc_zero(1, data_len);
-    file_info_fread(fi, p->compressed_data, data_len, 1);
+    FileInfo_fread(fi, p->compressed_data, data_len, 1);
 
     // Now load track contents.
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
@@ -637,7 +637,7 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
 
     int i;
     int allocated_tracks = 0;
-    struct file_info *pattern_file = NULL;
+    struct FileInfo *pattern_file = NULL;
     f_GmidTrack_callback post_unroll_action = NULL;
     int opt_pattern_substitution = 1; // enable by default
 
@@ -649,7 +649,7 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         if (options->use_pattern_marker_file)
         {
             // seq->midi is write
-            pattern_file = file_info_fopen(options->pattern_marker_filename, "wb");
+            pattern_file = FileInfo_fopen(options->pattern_marker_filename, "wb");
         }
     }
 
@@ -731,7 +731,7 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
 
     if (pattern_file != NULL)
     {
-        file_info_free(pattern_file);
+        FileInfo_free(pattern_file);
         pattern_file = NULL;
     }
 
@@ -784,7 +784,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     uint8_t *cseq_data_buffer = NULL;
     size_t cseq_buffer_pos = 0;
     size_t cseq_buffer_size = 0;
-    struct file_info *pattern_file = NULL;
+    struct FileInfo *pattern_file = NULL;
     int opt_pattern_substitution = 1; // enable by default
 
     if (options != NULL)
@@ -794,7 +794,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         if (options->use_pattern_marker_file)
         {
             // midi->cseq is read
-            pattern_file = file_info_fopen(options->pattern_marker_filename, "rb");
+            pattern_file = FileInfo_fopen(options->pattern_marker_filename, "rb");
             options->runtime_pattern_file = pattern_file;
         }
     }
@@ -1023,7 +1023,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     // cleanup.
     if (pattern_file != NULL)
     {
-        file_info_fclose(pattern_file);
+        FileInfo_fclose(pattern_file);
         pattern_file = NULL;
 
         if (options != NULL)
@@ -1263,7 +1263,7 @@ void MidiFile_free(struct MidiFile *midi)
  * @param pattern_file: Optional. If not null, will append pattern marker
  * sequences encountered while unrolling track.
 */
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file_info *pattern_file)
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct FileInfo *pattern_file)
 {
     TRACE_ENTER(__func__)
 
@@ -1579,7 +1579,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
             int sprintf_len;
             memset(pattern_write_buffer, 0, WRITE_BUFFER_LEN);
             sprintf_len = sprintf(pattern_write_buffer, "%d,%ld,%d,%d\n", track->cseq_track_index, unrolled_pos, diff, length);
-            file_info_fwrite(pattern_file, pattern_write_buffer, sprintf_len, 1);
+            FileInfo_fwrite(pattern_file, pattern_write_buffer, sprintf_len, 1);
         }
 
         // ensure pattern bytes can fit in current allocation, otherwise resize.
@@ -2166,7 +2166,7 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> options is null\n", __func__, __LINE__);
     }
 
-    struct file_info *pattern_file = options->runtime_pattern_file;
+    struct FileInfo *pattern_file = options->runtime_pattern_file;
 
     if (pattern_file == NULL)
     {
@@ -2201,8 +2201,8 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
     len = (int)pattern_file->len;
 
     file_contents = (uint8_t *)malloc_zero(1, len);
-    file_info_fseek(pattern_file, 0, SEEK_SET);
-    file_info_fread(pattern_file, file_contents, len, 1);
+    FileInfo_fseek(pattern_file, 0, SEEK_SET);
+    FileInfo_fread(pattern_file, file_contents, len, 1);
 
     pos = 0;
     line_buffer_pos = 0;
@@ -2455,7 +2455,7 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
     {
         if (options->runtime_pattern_file == NULL)
         {
-            options->runtime_pattern_file = file_info_fopen(options->pattern_marker_filename, "rb");
+            options->runtime_pattern_file = FileInfo_fopen(options->pattern_marker_filename, "rb");
         }
 
         if (options->runtime_patterns_list == NULL)
@@ -2646,7 +2646,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     int command_channel = -1;
     int command_without_channel = 0;
     // temp varint for parsing/copying values
-    struct var_length_int varint;
+    struct VarLengthInt varint;
     // debug print buffer
     char print_buffer[MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN];
     // debug print buffer
@@ -2675,8 +2675,8 @@ struct GmidEvent *GmidEvent_new_from_buffer(
         command_without_channel = current_command & 0xf0;
     }
 
-    memset(&varint, 0, sizeof(struct var_length_int));
-    varint_value_to_int32(&buffer[pos], 4, &varint);
+    memset(&varint, 0, sizeof(struct VarLengthInt));
+    VarLengthInt_value_to_int32(&buffer[pos], 4, &varint);
 
     if (varint.num_bytes < 1)
     {
@@ -2695,7 +2695,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     {
         memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-        int32_t varint_value = varint_get_value_big(&varint);
+        int32_t varint_value = VarLengthInt_get_value_big(&varint);
         snprintf(print_buffer, MIDI_DESCRIPTION_TEXT_BUFFER_LEN, "delta time: %d (varint=0x%06x)", varint.standard_value, varint_value);
         fflush_printf(stdout, "%s\n", print_buffer);
     }
@@ -2707,8 +2707,8 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     event->file_offset = *pos_ptr;
 
     // Set delta time. Absolute time won't be set until all events are added to the track.
-    varint_copy(&event->cseq_delta_time, &varint);
-    varint_copy(&event->midi_delta_time, &varint);
+    VarLengthInt_copy(&event->cseq_delta_time, &varint);
+    VarLengthInt_copy(&event->midi_delta_time, &varint);
 
     /**
      * If current command channel is known, set that on event.
@@ -3213,8 +3213,8 @@ struct GmidEvent *GmidEvent_new_from_buffer(
             int velocity = buffer[pos++];
             local_bytes_read++;
 
-            memset(&varint, 0, sizeof(struct var_length_int));
-            varint_value_to_int32(&buffer[pos], 4, &varint);
+            memset(&varint, 0, sizeof(struct VarLengthInt));
+            VarLengthInt_value_to_int32(&buffer[pos], 4, &varint);
             pos += varint.num_bytes;
             local_bytes_read += varint.num_bytes;
 
@@ -3610,8 +3610,8 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                 // inherit existing event timing information,
                 // but overwrite midi->cseq
                 seq_loop_start->absolute_time = event->absolute_time;
-                varint_copy(&seq_loop_start->cseq_delta_time, &event->midi_delta_time);
-                varint_copy(&seq_loop_start->midi_delta_time, &event->midi_delta_time);
+                VarLengthInt_copy(&seq_loop_start->cseq_delta_time, &event->midi_delta_time);
+                VarLengthInt_copy(&seq_loop_start->midi_delta_time, &event->midi_delta_time);
 
                 if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG)
                 {
@@ -3691,8 +3691,8 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                                     // inherit existing event timing information,
                                     // but overwrite midi->cseq
                                     seq_loop_end->absolute_time = midi_end_event->absolute_time;
-                                    varint_copy(&seq_loop_end->cseq_delta_time, &midi_end_event->midi_delta_time);
-                                    varint_copy(&seq_loop_end->midi_delta_time, &midi_end_event->midi_delta_time);
+                                    VarLengthInt_copy(&seq_loop_end->cseq_delta_time, &midi_end_event->midi_delta_time);
+                                    VarLengthInt_copy(&seq_loop_end->midi_delta_time, &midi_end_event->midi_delta_time);
 
                                     // done with the end node, insert new node before current.
                                     new_node = LinkedListNode_new();
@@ -4327,7 +4327,7 @@ void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack)
         if (current_node_event->cseq_valid)
         {
             cseq_time_delta = (int)(current_node_event->absolute_time - cseq_prev_absolute_time);
-            int32_to_varint(cseq_time_delta, &current_node_event->cseq_delta_time);
+            int32_to_VarLengthInt(cseq_time_delta, &current_node_event->cseq_delta_time);
             cseq_prev_absolute_time = current_node_event->absolute_time;
             // do not set midi delta time here.
         }
@@ -4336,7 +4336,7 @@ void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack)
         if (current_node_event->midi_valid)
         {
             midi_time_delta = (int)(current_node_event->absolute_time - midi_prev_absolute_time);
-            int32_to_varint(midi_time_delta, &current_node_event->midi_delta_time);
+            int32_to_VarLengthInt(midi_time_delta, &current_node_event->midi_delta_time);
             midi_prev_absolute_time = current_node_event->absolute_time;
             // do not set cseq delta time here.
         }
@@ -4440,7 +4440,7 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
     struct GmidEvent *event_off;
     struct LinkedListNode *node;
     struct LinkedListNode *node_off;
-    struct var_length_int varint;
+    struct VarLengthInt varint;
 
     char *debug_printf_buffer;
     debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
@@ -4501,14 +4501,14 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
                             if (duplicate_stack == 0)
                             {
                                 long absolute_delta = event_off->absolute_time - event->absolute_time;
-                                memset(&varint, 0, sizeof(struct var_length_int));
-                                int32_to_varint((int32_t)absolute_delta, &varint);
+                                memset(&varint, 0, sizeof(struct VarLengthInt));
+                                int32_to_VarLengthInt((int32_t)absolute_delta, &varint);
 
                                 // set "easy access" value for duration.
                                 // Offset 0 and 1 are note and velocity, so start at 2.
                                 event->cseq_command_parameters[2] = (int32_t)absolute_delta;
                                 // write duration into cseq parameters.
-                                varint_write_value_big(&event->cseq_command_parameters_raw[2], &varint);
+                                VarLengthInt_write_value_big(&event->cseq_command_parameters_raw[2], &varint);
                                 // update byte length of parameters to write.
                                 event->cseq_command_parameters_raw_len += varint.num_bytes;
                                 // flag cseq now as valid.
@@ -4518,7 +4518,7 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
 
                                 if (g_verbosity >= VERBOSE_DEBUG)
                                 {
-                                    int32_t varint_value = varint_get_value_big(&varint);
+                                    int32_t varint_value = VarLengthInt_get_value_big(&varint);
                                     printf("set valid cseq note on, duration=%ld, varint=0x%08x\n", absolute_delta, varint_value);
                                     
                                     memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
@@ -4958,7 +4958,7 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
         }
 
         // write varint delta time value
-        varint_write_value_big(&buffer[write_len], &event->midi_delta_time);
+        VarLengthInt_write_value_big(&buffer[write_len], &event->midi_delta_time);
         write_len += event->midi_delta_time.num_bytes;
 
         // if this is a "running status" then no need to write command, otherwise write command bytes
@@ -5047,7 +5047,7 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
         }
 
         // write varint delta time value
-        varint_write_value_big(&buffer[write_len], &event->cseq_delta_time);
+        VarLengthInt_write_value_big(&buffer[write_len], &event->cseq_delta_time);
         write_len += event->cseq_delta_time.num_bytes;
 
         // if this is a "running status" then no need to write command, otherwise write command bytes
@@ -5091,14 +5091,14 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
-void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi)
+void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &track->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &track->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &track->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &track->ck_data_size, 4, 1);
 
-    file_info_fwrite(fi, track->data, track->ck_data_size, 1);
+    FileInfo_fwrite(fi, track->data, track->ck_data_size, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -5108,17 +5108,17 @@ void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi)
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
-void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi)
+void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     int i;
 
-    file_info_fwrite_bswap(fi, &midi_file->ck_id, 4, 1);
-    file_info_fwrite_bswap(fi, &midi_file->ck_data_size, 4, 1);
-    file_info_fwrite_bswap(fi, &midi_file->format, 2, 1);
-    file_info_fwrite_bswap(fi, &midi_file->num_tracks, 2, 1);
-    file_info_fwrite_bswap(fi, &midi_file->division, 2, 1);
+    FileInfo_fwrite_bswap(fi, &midi_file->ck_id, 4, 1);
+    FileInfo_fwrite_bswap(fi, &midi_file->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &midi_file->format, 2, 1);
+    FileInfo_fwrite_bswap(fi, &midi_file->num_tracks, 2, 1);
+    FileInfo_fwrite_bswap(fi, &midi_file->division, 2, 1);
 
     for (i=0; i<midi_file->num_tracks; i++)
     {
@@ -5133,18 +5133,18 @@ void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi)
  * @param cseq: Compressed N64 MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
-void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi)
+void CseqFile_fwrite(struct CseqFile *cseq, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     int i;
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
     {
-        file_info_fwrite_bswap(fi, &cseq->track_offset[i], 4, 1);
+        FileInfo_fwrite_bswap(fi, &cseq->track_offset[i], 4, 1);
     }
 
-    file_info_fwrite_bswap(fi, &cseq->division, 4, 1);
-    file_info_fwrite(fi, cseq->compressed_data, cseq->compressed_data_len, 1);
+    FileInfo_fwrite_bswap(fi, &cseq->division, 4, 1);
+    FileInfo_fwrite(fi, cseq->compressed_data, cseq->compressed_data_len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -5183,7 +5183,7 @@ size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_l
             // time is valid, but delta time is wrong and about to be updated.
             if (event->cseq_delta_time.num_bytes > 0)
             {
-                varint_value = varint_get_value_big(&event->cseq_delta_time);
+                varint_value = VarLengthInt_get_value_big(&event->cseq_delta_time);
             }
 
             write_len = sprintf(
@@ -5216,7 +5216,7 @@ size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_l
             // time is valid, but delta time is wrong and about to be updated.
             if (event->midi_delta_time.num_bytes > 0)
             {
-                varint_value = varint_get_value_big(&event->midi_delta_time);
+                varint_value = VarLengthInt_get_value_big(&event->midi_delta_time);
             }
 
             write_len = sprintf(
@@ -5307,7 +5307,7 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     
     if (options->runtime_pattern_file != NULL)
     {
-        file_info_free(options->runtime_pattern_file);
+        FileInfo_free(options->runtime_pattern_file);
         options->runtime_pattern_file = NULL;
     }
 

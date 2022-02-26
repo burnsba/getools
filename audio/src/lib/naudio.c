@@ -49,11 +49,11 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
 struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset);
 struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset);
 
-void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi);
-void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi);
-void ALSound_write_inst(struct ALSound *sound, struct file_info *fi);
-void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *fi);
-void ALBank_write_inst(struct ALBank *bank, struct file_info *fi);
+void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct FileInfo *fi);
+void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct FileInfo *fi);
+void ALSound_write_inst(struct ALSound *sound, struct FileInfo *fi);
+void ALInstrument_write_inst(struct ALInstrument *instrument, struct FileInfo *fi);
+void ALBank_write_inst(struct ALBank *bank, struct FileInfo *fi);
 
 void ALADPCMLoop_free(struct ALADPCMLoop *loop);
 void ALRawLoop_free(struct ALRawLoop *loop);
@@ -275,7 +275,7 @@ struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t l
  * @param book: codebook to write.
  * @param fi: file to write to.
 */
-void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
+void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -295,15 +295,15 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
 
     memset(line_buffer, 0, WRITE_BUFFER_LEN);
     line_length = sprintf(line_buffer, "order=%d;\n", book->order);
-    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
 
     memset(line_buffer, 0, WRITE_BUFFER_LEN);
     line_length = sprintf(line_buffer, "npredictors=%d;\n", book->npredictors);
-    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
 
     memset(line_buffer, 0, WRITE_BUFFER_LEN);
     line_length = sprintf(line_buffer, "book=\n");
-    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
 
     num_rows = book->order * book->npredictors;
     pos = 0;
@@ -317,7 +317,7 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
 
             memset(line_buffer, 0, WRITE_BUFFER_LEN);
             line_length = sprintf(line_buffer, "%6d, ", val);
-            file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+            FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
         }
 
         val = book->book[pos];
@@ -334,12 +334,12 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
 
         memset(line_buffer, 0, WRITE_BUFFER_LEN);
         line_length = sprintf(line_buffer, "%6d%c\n", val, last);
-        file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+        FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
     }
 
     memset(line_buffer, 0, WRITE_BUFFER_LEN);
     line_length = sprintf(line_buffer, "\n\n");
-    file_info_fwrite(fi, line_buffer, (size_t)line_length, 1);
+    FileInfo_fwrite(fi, line_buffer, (size_t)line_length, 1);
     
     TRACE_LEAVE(__func__)
 }
@@ -348,9 +348,9 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct file_info *fi)
  * Writes {@code struct ALEnvelope} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param envelope: object to write.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
+void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -360,45 +360,45 @@ void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "envelope %s", envelope->text_id);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", envelope->ctl_write_order);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     // the following options are always written, even if zero.
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackTime = %d;\n", envelope->attack_time);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"attackVolume = %d;\n", envelope->attack_volume);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayTime = %d;\n", envelope->decay_time);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"decayVolume = %d;\n", envelope->decay_volume);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"releaseTime = %d;\n", envelope->release_time);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -472,9 +472,9 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
  * Writes {@code struct ALKeyMap} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param keymap: object to write.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
+void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -484,49 +484,49 @@ void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "keymap %s", keymap->text_id);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", keymap->ctl_write_order);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     // the following options are always written, even if zero.
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMin = %d;\n", keymap->velocity_min);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"velocityMax = %d;\n", keymap->velocity_max);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMin = %d;\n", keymap->key_min);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyMax = %d;\n", keymap->key_max);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keyBase = %d;\n", keymap->key_base);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"detune = %d;\n", keymap->detune);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -868,9 +868,9 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
  * Writes {@code struct ALSound} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param sound: object to write.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
+void ALSound_write_inst(struct ALSound *sound, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -892,66 +892,66 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "sound %s", sound->text_id);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"metaCtlWriteOrder = %d;\n", sound->ctl_write_order);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     if (sound->wavetable != NULL)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"use (\"%s\");\n", sound->wavetable->aifc_path);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# wavetable_offset = 0x%06x;\n", sound->wavetable_offset);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
+            FileInfo_fwrite(fi, g_write_buffer, len, 1);
         }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
     
     if (sound->sample_pan != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", sound->sample_pan);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
     
     if (sound->sample_volume != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", sound->sample_volume);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
     
     if (sound->flags != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", sound->flags);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
     
     if (sound->envelope != NULL)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"envelope = %s;\n", sound->envelope->text_id);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# envelope_offset = 0x%06x;\n", sound->envelope_offset);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
+            FileInfo_fwrite(fi, g_write_buffer, len, 1);
         }
     }
     
@@ -959,23 +959,23 @@ void ALSound_write_inst(struct ALSound *sound, struct file_info *fi)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"keymap = %s;\n", sound->keymap->text_id);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# keymap_offset = 0x%06x;\n", sound->keymap_offset);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
+            FileInfo_fwrite(fi, g_write_buffer, len, 1);
         }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -1109,9 +1109,9 @@ struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, 
  * Writes {@code struct ALInstrument} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param instrument: object to write.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *fi)
+void ALInstrument_write_inst(struct ALInstrument *instrument, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -1131,129 +1131,129 @@ void ALInstrument_write_inst(struct ALInstrument *instrument, struct file_info *
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "instrument %s", instrument->text_id);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     if (instrument->volume != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"volume = %d;\n", instrument->volume);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->pan != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"pan = %d;\n", instrument->pan);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->priority != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"priority = %d;\n", instrument->priority);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->flags != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"flags = %d;\n", instrument->flags);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->trem_type != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremType = %d;\n", instrument->trem_type);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->trem_rate != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremRate = %d;\n", instrument->trem_rate);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->trem_depth != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDepth = %d;\n", instrument->trem_depth);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->trem_delay != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"tremDelay = %d;\n", instrument->trem_delay);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->vib_type != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibType = %d;\n", instrument->vib_type);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->vib_rate != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibRate = %d;\n", instrument->vib_rate);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->vib_depth != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDepth = %d;\n", instrument->vib_depth);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->vib_delay != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"vibDelay = %d;\n", instrument->vib_delay);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     if (instrument->bend_range != 0)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"bendRange = %d;\n", instrument->bend_range);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
     
     // Skip writing declaration above, but always write references.
     for (i=0; i<instrument->sound_count; i++)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sound [%d] = %s;\n", i, instrument->sounds[i]->text_id);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# sound_offset = 0x%06x;\n", instrument->sound_offsets[i]);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
+            FileInfo_fwrite(fi, g_write_buffer, len, 1);
         }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -1358,9 +1358,9 @@ struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl
  * Writes {@code struct ALBank} to .inst file, using current file seek position.
  * Writes any child information as well.
  * @param bank: object to write.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
+void ALBank_write_inst(struct ALBank *bank, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -1378,38 +1378,38 @@ void ALBank_write_inst(struct ALBank *bank, struct file_info *fi)
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "bank %s", bank->text_id);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, " {\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"sampleRate = %d;\n", bank->sample_rate);
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     // Skip writing declaration above, but always write references.
     for (i=0; i<bank->inst_count; i++)
     {
         memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
         len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"instrument [%d] = %s;\n", i, bank->instruments[i]->text_id);
-        file_info_fwrite(fi, g_write_buffer, len, 1);
+        FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
         if (g_verbosity >= VERBOSE_DEBUG)
         {
             memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
             len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, TEXT_INDENT"# inst_offset = 0x%06x;\n", bank->inst_offsets[i]);
-            file_info_fwrite(fi, g_write_buffer, len, 1);
+            FileInfo_fwrite(fi, g_write_buffer, len, 1);
         }
     }
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "}\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "\n");
-    file_info_fwrite(fi, g_write_buffer, len, 1);
+    FileInfo_fwrite(fi, g_write_buffer, len, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -1438,7 +1438,7 @@ struct ALBankFile *ALBankFile_new()
  * @param ctl_file: .ctl file.
  * @returns: pointer to new bank file.
 */
-struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
+struct ALBankFile *ALBankFile_new_from_ctl(struct FileInfo *ctl_file)
 {
     TRACE_ENTER(__func__)
 
@@ -1446,7 +1446,7 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct file_info *ctl_file)
     int i;
 
     uint8_t *ctl_file_contents;
-    file_info_get_file_contents(ctl_file, &ctl_file_contents);
+    FileInfo_get_file_contents(ctl_file, &ctl_file_contents);
 
     struct ALBankFile *bank_file = ALBankFile_new();
     struct CtlParseContext *context = CtlParseContext_new();
@@ -1515,19 +1515,19 @@ void ALBankFile_write_inst(struct ALBankFile *bank_file, char* inst_filename)
 {
     TRACE_ENTER(__func__)
 
-    struct file_info *output;
+    struct FileInfo *output;
     int i;
 
     ALBankFile_clear_visited_flags(bank_file);
 
-    output = file_info_fopen(inst_filename, "w");
+    output = FileInfo_fopen(inst_filename, "w");
 
     for (i=0; i<bank_file->bank_count; i++)
     {
         ALBank_write_inst(bank_file->banks[i], output);
     }
 
-    file_info_free(output);
+    FileInfo_free(output);
 
     TRACE_LEAVE(__func__)
 }

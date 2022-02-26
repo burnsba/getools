@@ -318,8 +318,8 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    struct file_info *input_file;
-    struct file_info *output_file;
+    struct FileInfo *input_file;
+    struct FileInfo *output_file;
     struct WavFile *wav_file = NULL;
     struct AdpcmAifcFile *aifc_file = NULL;
     uint8_t *audio_data = NULL;
@@ -449,7 +449,7 @@ int main(int argc, char **argv)
     // done with threshold setup,
     // setup audio data
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
 
     if (string_ends_with(input_filename, WAV_DEFAULT_EXTENSION))
     {
@@ -503,7 +503,7 @@ int main(int argc, char **argv)
         run_predictors);
 
     // done with input file and audio containers
-    file_info_free(input_file);
+    FileInfo_free(input_file);
 
     if (wav_file != NULL)
     {
@@ -516,11 +516,11 @@ int main(int argc, char **argv)
     }
 
     // write result
-    output_file = file_info_fopen(output_filename, "wb");
+    output_file = FileInfo_fopen(output_filename, "wb");
     ALADPCMBook_write_coef(book, output_file);
 
     // done with output
-    file_info_free(output_file);
+    FileInfo_free(output_file);
     ALADPCMBook_free(book);
 
     return 0;

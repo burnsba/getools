@@ -359,13 +359,13 @@ struct WavSampleChunk *WavSampleChunk_new(int number_loops);
 struct WavDataChunk *WavDataChunk_new(void);
 struct WavFmtChunk *WavFmtChunk_new(void);
 struct WavFile *WavFile_new(size_t num_chunks);
-struct WavFile *WavFile_new_from_file(struct file_info *fi);
+struct WavFile *WavFile_new_from_file(struct FileInfo *fi);
 
-void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct file_info *fi);
-void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct file_info *fi);
-void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi);
-void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi);
-void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi);
+void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct FileInfo *fi);
+void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct FileInfo *fi);
+void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct FileInfo *fi);
+void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct FileInfo *fi);
+void WavFile_fwrite(struct WavFile *wav_file, struct FileInfo *fi);
 
 void WavSampleLoop_free(struct WavSampleLoop *loop);
 void WavSampleChunk_free(struct WavSampleChunk *chunk);

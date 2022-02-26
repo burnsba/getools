@@ -180,8 +180,8 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    struct file_info *input;
-    struct file_info *output;
+    struct FileInfo *input;
+    struct FileInfo *output;
 
     // number of .seq files listed in the .sbk header
     int32_t in_seq_count = 0;
@@ -221,20 +221,20 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-    input = file_info_fopen(input_filename, "rb");
+    input = FileInfo_fopen(input_filename, "rb");
 
     input_file_contents = (uint8_t *)malloc(input->len);
     if (input_file_contents == NULL)
     {
         perror("malloc");
-		file_info_free(input);
+		FileInfo_free(input);
         exit(EXIT_CODE_MALLOC);
     }
 
-    file_info_fread(input, input_file_contents, input->len, 1);
+    FileInfo_fread(input, input_file_contents, input->len, 1);
 
     // done with input file, it's in memory now.
-    file_info_free(input);
+    FileInfo_free(input);
 
     in_seq_count = ((int32_t*)input_file_contents)[0];
     in_seq_count = BSWAP16_INLINE(in_seq_count);
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
             // be quiet gcc
         }
 
-        output = file_info_fopen(output_filename, "wb");
+        output = FileInfo_fopen(output_filename, "wb");
 
         if (g_verbosity > 1)
         {
@@ -350,9 +350,9 @@ int main(int argc, char **argv)
         }
 
         // write to output, straight from the input file in memory
-        file_info_fwrite(output, &input_file_contents[(size_t)seq_address], seq_len, 1);
+        FileInfo_fwrite(output, &input_file_contents[(size_t)seq_address], seq_len, 1);
 
-        file_info_free(output);
+        FileInfo_free(output);
         output = NULL;
     }
 

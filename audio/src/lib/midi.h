@@ -394,12 +394,12 @@ struct GmidEvent {
     /**
      * Delta time of event when the event is used in compressed MIDI format track.
     */
-    struct var_length_int cseq_delta_time;
+    struct VarLengthInt cseq_delta_time;
     
     /**
      * Delta time of event when the event is used in standard MIDI track.
     */
-    struct var_length_int midi_delta_time;
+    struct VarLengthInt midi_delta_time;
 
     /**
      * Absolute time of event, since start of track.
@@ -560,7 +560,7 @@ struct MidiConvertOptions {
     enum GAUDIO_PATTERN_ALGORITHM pattern_algorithm;
 
     // not a configuration option, used at runtime.
-    struct file_info *runtime_pattern_file;
+    struct FileInfo *runtime_pattern_file;
     struct LinkedList *runtime_patterns_list;
 };
 
@@ -571,11 +571,11 @@ extern int g_midi_debug_loop_delta;
 // seq declarations
 
 struct CseqFile *CseqFile_new(void);
-struct CseqFile *CseqFile_new_from_file(struct file_info *fi);
+struct CseqFile *CseqFile_new_from_file(struct FileInfo *fi);
 struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConvertOptions *options);
 void CseqFile_free(struct CseqFile *cseq);
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file_info *pattern_file);
-void CseqFile_fwrite(struct CseqFile *cseq, struct file_info *fi);
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct FileInfo *pattern_file);
+void CseqFile_fwrite(struct CseqFile *cseq, struct FileInfo *fi);
 
 // midi declarations
 
@@ -584,11 +584,11 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack);
 struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
 struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConvertOptions *options);
-struct MidiFile *MidiFile_new_from_file(struct file_info *fi);
+struct MidiFile *MidiFile_new_from_file(struct FileInfo *fi);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
-void MidiTrack_fwrite(struct MidiTrack *track, struct file_info *fi);
-void MidiFile_fwrite(struct MidiFile *midi_file, struct file_info *fi);
+void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi);
+void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi);
 
 // common (GmidTrack, GmidEvent) declarations
 

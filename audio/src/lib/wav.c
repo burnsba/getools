@@ -15,10 +15,10 @@ static uint32_t g_wav_cue_point_id = 0;
 
 // forward declarations
 
-static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
-static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
-static struct WavSampleLoop *WavSampleLoop_new_from_file(struct file_info *fi);
-static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi, int32_t ck_data_size);
+static struct WavDataChunk *WavDataChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
+static struct WavFmtChunk *WavFmtChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
+static struct WavSampleLoop *WavSampleLoop_new_from_file(struct FileInfo *fi);
+static struct WavSampleChunk *WavSampleChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size);
 
 // end forward declarations
 
@@ -140,7 +140,7 @@ struct WavFile *WavFile_new(size_t num_chunks)
  * @param fi: wav file.
  * @returns: pointer to new {@code struct WavFile}.
 */
-struct WavFile *WavFile_new_from_file(struct file_info *fi)
+struct WavFile *WavFile_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -162,15 +162,15 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .wav file: header too short\n", __func__, __LINE__);
     }
 
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
 
     struct WavFile *wav = (struct WavFile *)malloc_zero(1, sizeof(struct WavFile));
 
-    file_info_fread(fi, &wav->ck_id, 4, 1);
+    FileInfo_fread(fi, &wav->ck_id, 4, 1);
     BSWAP32(wav->ck_id);
 
-    file_info_fread(fi, &wav->ck_data_size, 4, 1);
-    file_info_fread(fi, &wav->form_type, 4, 1);
+    FileInfo_fread(fi, &wav->ck_data_size, 4, 1);
+    FileInfo_fread(fi, &wav->form_type, 4, 1);
     BSWAP32(wav->form_type);
 
     if (wav->ck_id != WAV_RIFF_CHUNK_ID)
@@ -200,10 +200,10 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
             pos += 8;
             chunk_count++;
 
-            file_info_fread(fi, &chunk_id, 4, 1);
+            FileInfo_fread(fi, &chunk_id, 4, 1);
             BSWAP32(chunk_id);
 
-            file_info_fread(fi, &chunk_size, 4, 1);
+            FileInfo_fread(fi, &chunk_size, 4, 1);
 
             switch (chunk_id)
             {
@@ -238,7 +238,7 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
                 {
                     chunk_count--;
                 }
-                file_info_fseek(fi, chunk_size, SEEK_CUR);
+                FileInfo_fseek(fi, chunk_size, SEEK_CUR);
                 break;
             }
 
@@ -470,16 +470,16 @@ void WavFile_free(struct WavFile *wav_file)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct file_info *fi)
+void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite(fi, &loop->cue_point_id, 4, 1);
-    file_info_fwrite(fi, &loop->loop_type, 4, 1);
-    file_info_fwrite(fi, &loop->start, 4, 1);
-    file_info_fwrite(fi, &loop->end, 4, 1);
-    file_info_fwrite(fi, &loop->fraction, 4, 1);
-    file_info_fwrite(fi, &loop->play_count, 4, 1);
+    FileInfo_fwrite(fi, &loop->cue_point_id, 4, 1);
+    FileInfo_fwrite(fi, &loop->loop_type, 4, 1);
+    FileInfo_fwrite(fi, &loop->start, 4, 1);
+    FileInfo_fwrite(fi, &loop->end, 4, 1);
+    FileInfo_fwrite(fi, &loop->fraction, 4, 1);
+    FileInfo_fwrite(fi, &loop->play_count, 4, 1);
 
 
     TRACE_LEAVE(__func__)
@@ -490,22 +490,22 @@ void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct file_info *fi)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct file_info *fi)
+void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
 
-    file_info_fwrite(fi, &chunk->manufacturer, 4, 1);
-    file_info_fwrite(fi, &chunk->product, 4, 1);
-    file_info_fwrite(fi, &chunk->sample_period, 4, 1);
-    file_info_fwrite(fi, &chunk->midi_unity_note, 4, 1);
-    file_info_fwrite(fi, &chunk->midi_pitch_fraction, 4, 1);
-    file_info_fwrite(fi, &chunk->smpte_format, 4, 1);
-    file_info_fwrite(fi, &chunk->smpte_offset, 4, 1);
-    file_info_fwrite(fi, &chunk->num_sample_loops, 4, 1);
-    file_info_fwrite(fi, &chunk->sample_loop_bytes, 4, 1);
+    FileInfo_fwrite(fi, &chunk->manufacturer, 4, 1);
+    FileInfo_fwrite(fi, &chunk->product, 4, 1);
+    FileInfo_fwrite(fi, &chunk->sample_period, 4, 1);
+    FileInfo_fwrite(fi, &chunk->midi_unity_note, 4, 1);
+    FileInfo_fwrite(fi, &chunk->midi_pitch_fraction, 4, 1);
+    FileInfo_fwrite(fi, &chunk->smpte_format, 4, 1);
+    FileInfo_fwrite(fi, &chunk->smpte_offset, 4, 1);
+    FileInfo_fwrite(fi, &chunk->num_sample_loops, 4, 1);
+    FileInfo_fwrite(fi, &chunk->sample_loop_bytes, 4, 1);
 
     if (chunk->num_sample_loops > 0)
     {
@@ -527,16 +527,16 @@ void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct file_info *fi)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
+void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
 
     if (chunk->ck_data_size > 0)
     {
-        file_info_fwrite(fi, chunk->data, (size_t)chunk->ck_data_size, 1);
+        FileInfo_fwrite(fi, chunk->data, (size_t)chunk->ck_data_size, 1);
     }
 
     TRACE_LEAVE(__func__)
@@ -547,18 +547,18 @@ void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct file_info *fi)
  * @param chunk: Chunk to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
+void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
-    file_info_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
-    file_info_fwrite(fi, &chunk->ck_data_size, 4, 1);
-    file_info_fwrite(fi, &chunk->audio_format, 2, 1);
-    file_info_fwrite(fi, &chunk->num_channels, 2, 1);
-    file_info_fwrite(fi, &chunk->sample_rate, 4, 1);
-    file_info_fwrite(fi, &chunk->byte_rate, 4, 1);
-    file_info_fwrite(fi, &chunk->block_align, 2, 1);
-    file_info_fwrite(fi, &chunk->bits_per_sample, 2, 1);
+    FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
+    FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
+    FileInfo_fwrite(fi, &chunk->audio_format, 2, 1);
+    FileInfo_fwrite(fi, &chunk->num_channels, 2, 1);
+    FileInfo_fwrite(fi, &chunk->sample_rate, 4, 1);
+    FileInfo_fwrite(fi, &chunk->byte_rate, 4, 1);
+    FileInfo_fwrite(fi, &chunk->block_align, 2, 1);
+    FileInfo_fwrite(fi, &chunk->bits_per_sample, 2, 1);
 
     TRACE_LEAVE(__func__)
 }
@@ -569,15 +569,15 @@ void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct file_info *fi)
  * @param wav_file: wav to write.
  * @param fi: File handle to write to, using current offset.
 */
-void WavFile_fwrite(struct WavFile *wav_file, struct file_info *fi)
+void WavFile_fwrite(struct WavFile *wav_file, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     int i;
 
-    file_info_fwrite_bswap(fi, &wav_file->ck_id, 4, 1);
-    file_info_fwrite(fi, &wav_file->ck_data_size, 4, 1);
-    file_info_fwrite_bswap(fi, &wav_file->form_type, 4, 1);
+    FileInfo_fwrite_bswap(fi, &wav_file->ck_id, 4, 1);
+    FileInfo_fwrite(fi, &wav_file->ck_data_size, 4, 1);
+    FileInfo_fwrite_bswap(fi, &wav_file->form_type, 4, 1);
 
     for (i=0; i<wav_file->chunk_count; i++)
     {
@@ -707,7 +707,7 @@ void WavFile_append_smpl_chunk(struct WavFile *wav_file, struct WavSampleChunk *
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new data chunk.
 */
-static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct WavDataChunk *WavDataChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -722,7 +722,7 @@ static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int
     }
 
     p->data = (uint8_t *)malloc_zero(1, (size_t)(ck_data_size));
-    file_info_fread(fi, p->data, (size_t)(ck_data_size), 1);
+    FileInfo_fread(fi, p->data, (size_t)(ck_data_size), 1);
 
     TRACE_LEAVE(__func__)
 
@@ -735,7 +735,7 @@ static struct WavDataChunk *WavDataChunk_new_from_file(struct file_info *fi, int
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new fmt chunk.
 */
-static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct WavFmtChunk *WavFmtChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -749,12 +749,12 @@ static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid data chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
-    file_info_fread(fi, &p->audio_format, 2, 1);
-    file_info_fread(fi, &p->num_channels, 2, 1);
-    file_info_fread(fi, &p->sample_rate, 4, 1);
-    file_info_fread(fi, &p->byte_rate, 4, 1);
-    file_info_fread(fi, &p->block_align, 2, 1);
-    file_info_fread(fi, &p->bits_per_sample, 2, 1);
+    FileInfo_fread(fi, &p->audio_format, 2, 1);
+    FileInfo_fread(fi, &p->num_channels, 2, 1);
+    FileInfo_fread(fi, &p->sample_rate, 4, 1);
+    FileInfo_fread(fi, &p->byte_rate, 4, 1);
+    FileInfo_fread(fi, &p->block_align, 2, 1);
+    FileInfo_fread(fi, &p->bits_per_sample, 2, 1);
 
     TRACE_LEAVE(__func__)
 
@@ -767,18 +767,18 @@ static struct WavFmtChunk *WavFmtChunk_new_from_file(struct file_info *fi, int32
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new WavSampleLoop.
 */
-static struct WavSampleLoop *WavSampleLoop_new_from_file(struct file_info *fi)
+static struct WavSampleLoop *WavSampleLoop_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
     struct WavSampleLoop *p = (struct WavSampleLoop *)malloc_zero(1, sizeof(struct WavSampleLoop));
  
-    file_info_fread(fi, &p->cue_point_id, 4, 1);
-    file_info_fread(fi, &p->loop_type, 4, 1);
-    file_info_fread(fi, &p->start, 4, 1);
-    file_info_fread(fi, &p->end, 4, 1);
-    file_info_fread(fi, &p->fraction, 4, 1);
-    file_info_fread(fi, &p->play_count, 4, 1);
+    FileInfo_fread(fi, &p->cue_point_id, 4, 1);
+    FileInfo_fread(fi, &p->loop_type, 4, 1);
+    FileInfo_fread(fi, &p->start, 4, 1);
+    FileInfo_fread(fi, &p->end, 4, 1);
+    FileInfo_fread(fi, &p->fraction, 4, 1);
+    FileInfo_fread(fi, &p->play_count, 4, 1);
 
     TRACE_LEAVE(__func__)
 
@@ -791,7 +791,7 @@ static struct WavSampleLoop *WavSampleLoop_new_from_file(struct file_info *fi)
  * @param ck_data_size: chunk size in bytes.
  * @returns: pointer to new loop chunk.
 */
-static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi, int32_t ck_data_size)
+static struct WavSampleChunk *WavSampleChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
 
@@ -806,15 +806,15 @@ static struct WavSampleChunk *WavSampleChunk_new_from_file(struct file_info *fi,
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid smpl chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
-    file_info_fread(fi, &p->manufacturer, 4, 1);
-    file_info_fread(fi, &p->product, 4, 1);
-    file_info_fread(fi, &p->sample_period, 4, 1);
-    file_info_fread(fi, &p->midi_unity_note, 4, 1);
-    file_info_fread(fi, &p->midi_pitch_fraction, 4, 1);
-    file_info_fread(fi, &p->smpte_format, 4, 1);
-    file_info_fread(fi, &p->smpte_offset, 4, 1);
-    file_info_fread(fi, &p->num_sample_loops, 4, 1);
-    file_info_fread(fi, &p->sample_loop_bytes, 4, 1);
+    FileInfo_fread(fi, &p->manufacturer, 4, 1);
+    FileInfo_fread(fi, &p->product, 4, 1);
+    FileInfo_fread(fi, &p->sample_period, 4, 1);
+    FileInfo_fread(fi, &p->midi_unity_note, 4, 1);
+    FileInfo_fread(fi, &p->midi_pitch_fraction, 4, 1);
+    FileInfo_fread(fi, &p->smpte_format, 4, 1);
+    FileInfo_fread(fi, &p->smpte_offset, 4, 1);
+    FileInfo_fread(fi, &p->num_sample_loops, 4, 1);
+    FileInfo_fread(fi, &p->sample_loop_bytes, 4, 1);
 
     p->loops = (struct WavSampleLoop **)malloc_zero(p->num_sample_loops, sizeof(struct WavSampleLoop*));
 

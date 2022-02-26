@@ -193,8 +193,8 @@ int main(int argc, char **argv)
 {
     struct MidiFile *midi_file;
     struct CseqFile *cseq_file;
-    struct file_info *input_file;
-    struct file_info *output_file;
+    struct FileInfo *input_file;
+    struct FileInfo *output_file;
     struct MidiConvertOptions *convert_options;
     f_GmidTrack_callback unroll_action = NULL;
 
@@ -238,11 +238,11 @@ int main(int argc, char **argv)
         unroll_action = write_seq_track;
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
     cseq_file = CseqFile_new_from_file(input_file);
 
     // done with input file
-    file_info_free(input_file);
+    FileInfo_free(input_file);
     input_file = NULL;
 
     convert_options = MidiConvertOptions_new();
@@ -261,14 +261,14 @@ int main(int argc, char **argv)
     cseq_file = NULL;
 
     // write to output file
-    output_file = file_info_fopen(output_filename, "wb");
+    output_file = FileInfo_fopen(output_filename, "wb");
     MidiFile_fwrite(midi_file, output_file);
 
     // done with MIDI file
     MidiFile_free(midi_file);
     midi_file = NULL;
 
-    file_info_free(output_file);
+    FileInfo_free(output_file);
     MidiConvertOptions_free(convert_options);
     
     return 0;
@@ -278,7 +278,7 @@ static void write_seq_track(struct GmidTrack *gtrack)
 {
     TRACE_ENTER(__func__)
 
-    struct file_info *fi;
+    struct FileInfo *fi;
     char new_filename[MAX_FILENAME_LEN];
     char new_extension[20];
     
@@ -288,9 +288,9 @@ static void write_seq_track(struct GmidTrack *gtrack)
     sprintf(new_extension, "-track-%03d%s", gtrack->cseq_track_index, MIDI_N64_DEFAULT_EXTENSION);
     change_filename_extension(output_filename, new_filename, new_extension, MAX_FILENAME_LEN);
 
-    fi = file_info_fopen(new_filename, "wb");
-    file_info_fwrite(fi, gtrack->cseq_data, gtrack->cseq_data_len, 1);
-    file_info_free(fi);
+    fi = FileInfo_fopen(new_filename, "wb");
+    FileInfo_fwrite(fi, gtrack->cseq_data, gtrack->cseq_data_len, 1);
+    FileInfo_free(fi);
 
     TRACE_LEAVE(__func__)
 }

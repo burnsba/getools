@@ -390,17 +390,17 @@ size_t get_file_contents(char *path, uint8_t **buffer)
  * not point to any allocated memory; memory will be allocated in function.
  * @returns: number of bytes read from file (also, length of buffer).
 */
-size_t file_info_get_file_contents(struct file_info *fi, uint8_t **buffer)
+size_t FileInfo_get_file_contents(struct FileInfo *fi, uint8_t **buffer)
 {
     TRACE_ENTER(__func__)
 
     size_t f_result;
 
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
 
     *buffer = (uint8_t *)malloc_zero(1, fi->len);
 
-    f_result = file_info_fread(fi, *buffer, fi->len, 1);
+    f_result = FileInfo_fread(fi, *buffer, fi->len, 1);
 
     TRACE_LEAVE(__func__)
 
@@ -408,13 +408,13 @@ size_t file_info_get_file_contents(struct file_info *fi, uint8_t **buffer)
 }
 
 /**
- * struct file_info wrapper to fopen.
+ * struct FileInfo wrapper to fopen.
  * Allocates memory for filename, sets internal state, and file length.
  * @param filename: path/filename to open.
  * @param mode: file open mode.
- * @returns: pointer to new {@code struct file_info} that was allocated.
+ * @returns: pointer to new {@code struct FileInfo} that was allocated.
 */
-struct file_info *file_info_fopen(char *filename, const char *mode)
+struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
 {
     TRACE_ENTER(__func__)
 
@@ -422,7 +422,7 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 
     size_t filename_len = strlen(filename);
 
-    struct file_info *fi = (struct file_info *)malloc_zero(1, sizeof(struct file_info));
+    struct FileInfo *fi = (struct FileInfo *)malloc_zero(1, sizeof(struct FileInfo));
 
     if (filename_len > 0)
     {
@@ -481,14 +481,14 @@ struct file_info *file_info_fopen(char *filename, const char *mode)
 }
 
 /**
- * struct file_info wrapper to fread.
- * @param fi: file_info.
+ * struct FileInfo wrapper to fread.
+ * @param fi: FileInfo.
  * @param output_buffer: buffer to write read result into. Thus must already be allocated.
  * @param size: size of each element to read.
  * @param n: number of elements to read.
  * @returns: number of bytes read (not number of elements read like fread).
 */
-size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, size_t n)
+size_t FileInfo_fread(struct FileInfo *fi, void *output_buffer, size_t size, size_t n)
 {
     TRACE_ENTER(__func__)
 
@@ -519,13 +519,13 @@ size_t file_info_fread(struct file_info *fi, void *output_buffer, size_t size, s
 }
 
 /**
- * struct file_info wrapper to fseek.
- * @param fi: file_info.
+ * struct FileInfo wrapper to fseek.
+ * @param fi: FileInfo.
  * @param __off: seek amount offset.
  * @param __whence: from where to seek. (SEEK_SET, SEEK_CUR, SEEK_END)
  * @returns: fseek result.
 */
-int file_info_fseek(struct file_info *fi, long __off, int __whence)
+int FileInfo_fseek(struct FileInfo *fi, long __off, int __whence)
 {
     TRACE_ENTER(__func__)
 
@@ -556,10 +556,10 @@ int file_info_fseek(struct file_info *fi, long __off, int __whence)
 
 /**
  * Returns current position of underlying file stream.
- * @param fi: file_info.
+ * @param fi: FileInfo.
  * @returns: ftell result.
 */
-long file_info_ftell(struct file_info *fi)
+long FileInfo_ftell(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -581,14 +581,14 @@ long file_info_ftell(struct file_info *fi)
 }
 
 /**
- * struct file_info wrapper to fwrite.
- * @param fi: file_info.
+ * struct FileInfo wrapper to fwrite.
+ * @param fi: FileInfo.
  * @param data: data to write.
  * @param size: size of each element to write.
  * @param n: number of elements to write.
  * @returns: number of bytes written (not number of elements written like fwrite).
 */
-size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, size_t n)
+size_t FileInfo_fwrite(struct FileInfo *fi, const void *data, size_t size, size_t n)
 {
     TRACE_ENTER(__func__)
 
@@ -627,17 +627,17 @@ size_t file_info_fwrite(struct file_info *fi, const void *data, size_t size, siz
 }
 
 /**
- * struct file_info wrapper to fwrite, with possible byte swapping before writing.
+ * struct FileInfo wrapper to fwrite, with possible byte swapping before writing.
  * If the size of the element(s) being written is 2 or 4 then the value will be
  * swapped via 16 bit swap or 32 bit swap respectively. Otherwise the value
  * is written unchanged.
- * @param fi: file_info.
+ * @param fi: FileInfo.
  * @param data: data to write.
  * @param size: size of each element to write.
  * @param n: number of elements to write.
  * @returns: number of bytes written (not number of elements written like fwrite).
 */
-size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t size, size_t n)
+size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size, size_t n)
 {
     TRACE_ENTER(__func__)
     
@@ -709,11 +709,11 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 }
 
 /**
- * struct file_info wrapper to fclose.
- * @param fi: file_info.
+ * struct FileInfo wrapper to fclose.
+ * @param fi: FileInfo.
  * @returns: fclose result.
 */
-int file_info_fclose(struct file_info *fi)
+int FileInfo_fclose(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -739,9 +739,9 @@ int file_info_fclose(struct file_info *fi)
  * Frees all memory associated with the struct, including itself.
  * If internal state indicates the file handle is still open
  * the {@code flcose} is called on the file handle.
- * @param fi: file_info.
+ * @param fi: FileInfo.
 */
-void file_info_free(struct file_info *fi)
+void FileInfo_free(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -753,7 +753,7 @@ void file_info_free(struct file_info *fi)
 
     if (fi->filename != NULL)
     {
-        // Filename was malloc'd and copied when file_info first created.
+        // Filename was malloc'd and copied when FileInfo first created.
         free(fi->filename);
     }
 
@@ -1148,7 +1148,7 @@ int string_ends_with(const char * str, const char * suffix)
  * @param in: int value to convert.
  * @param varint: out parameter. Must be previously allocated. Will set value and num_bytes.
 */
-void int32_to_varint(int32_t in, struct var_length_int *varint)
+void int32_to_VarLengthInt(int32_t in, struct VarLengthInt *varint)
 {
     TRACE_ENTER(__func__)
 
@@ -1194,7 +1194,7 @@ void int32_to_varint(int32_t in, struct var_length_int *varint)
  * @param max_bytes: max number of bytes to read from buffer.
  * @param varint: out parameter. Will set varint values according to values read from buffer.
 */
-void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int *varint)
+void VarLengthInt_value_to_int32(uint8_t *buffer, int max_bytes, struct VarLengthInt *varint)
 {
     TRACE_ENTER(__func__)
 
@@ -1255,7 +1255,7 @@ void varint_value_to_int32(uint8_t *buffer, int max_bytes, struct var_length_int
  * @param dest: destination varint.
  * @param source: source varint.
 */
-void varint_copy(struct var_length_int *dest, struct var_length_int* source)
+void VarLengthInt_copy(struct VarLengthInt *dest, struct VarLengthInt* source)
 {
     TRACE_ENTER(__func__)
 
@@ -1293,7 +1293,7 @@ void varint_copy(struct var_length_int *dest, struct var_length_int* source)
  * @param dest: buffer to write to.
  * @param source: varint source.
 */
-void varint_write_value_little(uint8_t *dest, struct var_length_int* source)
+void VarLengthInt_write_value_little(uint8_t *dest, struct VarLengthInt* source)
 {
     TRACE_ENTER(__func__)
 
@@ -1329,7 +1329,7 @@ void varint_write_value_little(uint8_t *dest, struct var_length_int* source)
  * @param dest: buffer to write to.
  * @param source: varint source.
 */
-void varint_write_value_big(uint8_t *dest, struct var_length_int* source)
+void VarLengthInt_write_value_big(uint8_t *dest, struct VarLengthInt* source)
 {
     TRACE_ENTER(__func__)
 
@@ -1365,7 +1365,7 @@ void varint_write_value_big(uint8_t *dest, struct var_length_int* source)
  * @param source: varint source.
  * @returns: value as 32 bit signed integer.
 */
-int32_t varint_get_value_little(struct var_length_int* source)
+int32_t VarLengthInt_get_value_little(struct VarLengthInt* source)
 {
     TRACE_ENTER(__func__)
 
@@ -1403,7 +1403,7 @@ int32_t varint_get_value_little(struct var_length_int* source)
  * @param source: varint source.
  * @returns: value as 32 bit signed integer.
 */
-int32_t varint_get_value_big(struct var_length_int* source)
+int32_t VarLengthInt_get_value_big(struct VarLengthInt* source)
 {
     TRACE_ENTER(__func__)
 

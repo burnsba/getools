@@ -181,9 +181,9 @@ void read_opts(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    struct file_info *coef_file;
-    struct file_info *input_file;
-    struct file_info *output_file;
+    struct FileInfo *coef_file;
+    struct FileInfo *input_file;
+    struct FileInfo *output_file;
     struct AdpcmAifcFile *aifc;
     struct WavFile *wav;
 
@@ -220,20 +220,20 @@ int main(int argc, char **argv)
 
     if (opt_coef_file == 1)
     {
-        coef_file = file_info_fopen(coef_filename, "rb");
+        coef_file = FileInfo_fopen(coef_filename, "rb");
         book = ALADPCMBook_new_from_coef(coef_file);
-        file_info_free(coef_file);
+        FileInfo_free(coef_file);
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
     wav = WavFile_new_from_file(input_file);
-    file_info_free(input_file);
+    FileInfo_free(input_file);
 
     aifc = AdpcmAifcFile_new_from_wav(wav, book);
 
-    output_file = file_info_fopen(output_filename, "wb");
+    output_file = FileInfo_fopen(output_filename, "wb");
     AdpcmAifcFile_fwrite(aifc, output_file);
-    file_info_free(output_file);
+    FileInfo_free(output_file);
 
     if (book != NULL)
     {

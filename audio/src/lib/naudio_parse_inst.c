@@ -2506,7 +2506,7 @@ static void resolve_references(struct InstParseContext *context, struct ALBankFi
  * @param fi: file info object of file to parse.
  * @returns: new bank file parsed from .inst file.
 */
-struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
+struct ALBankFile *ALBankFile_new_from_inst(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
@@ -2602,9 +2602,9 @@ struct ALBankFile *ALBankFile_new_from_inst(struct file_info *fi)
     memset(line_buffer, 0, MAX_FILENAME_LEN);
 
     // read .inst file into memory
-    file_info_fseek(fi, 0, SEEK_SET);
+    FileInfo_fseek(fi, 0, SEEK_SET);
     file_contents = (char *)malloc_zero(1, fi->len);
-    len = file_info_fread(fi, file_contents, fi->len, 1);
+    len = FileInfo_fread(fi, file_contents, fi->len, 1);
 
     struct ALBankFile *bank_file = ALBankFile_new();
 

@@ -179,8 +179,8 @@ int main(int argc, char **argv)
 {
     struct MidiFile *midi_file;
     struct CseqFile *cseq_file;
-    struct file_info *input_file;
-    struct file_info *output_file;
+    struct FileInfo *input_file;
+    struct FileInfo *output_file;
     struct MidiConvertOptions *convert_options;
 
     read_opts(argc, argv);
@@ -217,11 +217,11 @@ int main(int argc, char **argv)
         fflush(stdout);
     }
 
-    input_file = file_info_fopen(input_filename, "rb");
+    input_file = FileInfo_fopen(input_filename, "rb");
     midi_file = MidiFile_new_from_file(input_file);
 
     // done with input file
-    file_info_free(input_file);
+    FileInfo_free(input_file);
     input_file = NULL;
 
     convert_options = MidiConvertOptions_new();
@@ -239,14 +239,14 @@ int main(int argc, char **argv)
     midi_file = NULL;
 
     // write to output file
-    output_file = file_info_fopen(output_filename, "wb");
+    output_file = FileInfo_fopen(output_filename, "wb");
     CseqFile_fwrite(cseq_file, output_file);
 
     // done with cseq file
     CseqFile_free(cseq_file);
     cseq_file = NULL;
 
-    file_info_free(output_file);
+    FileInfo_free(output_file);
     MidiConvertOptions_free(convert_options);
 
     return 0;
