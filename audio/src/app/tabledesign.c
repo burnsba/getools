@@ -458,7 +458,7 @@ int main(int argc, char **argv)
         // didn't exit, so must be valid.
         if (wav_file->data_chunk == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wav_file->data_chunk is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, wav_file->data_chunk is NULL\n", __func__, __LINE__);
         }
 
         encoding = DATA_ENCODING_LSB;
@@ -472,7 +472,7 @@ int main(int argc, char **argv)
         // didn't exit, so must be valid.
         if (aifc_file->sound_chunk == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file->sound_chunk is NULL\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, aifc_file->sound_chunk is NULL\n", __func__, __LINE__);
         }
 
         encoding = DATA_ENCODING_MSB;
@@ -481,7 +481,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s %d> file (extension) not supported: %s\n", __func__, __LINE__, input_filename);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, file (extension) not supported: %s\n", __func__, __LINE__, input_filename);
     }
 
     if (opt_run_threshold_mode != THRESHOLD_MODE_DEFAULT_UNKOWN)

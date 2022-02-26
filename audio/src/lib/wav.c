@@ -631,7 +631,7 @@ double WavFile_get_frequency(struct WavFile *wav_file)
 
     if (wav_file->fmt_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: fmt chunk not found\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> fmt chunk not found\n", __func__, __LINE__);
     }
 
     return (double)wav_file->fmt_chunk->sample_rate;
@@ -651,7 +651,7 @@ void WavFile_set_frequency(struct WavFile *wav_file, double frequency)
 
     if (wav_file->fmt_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: fmt chunk not found\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> fmt chunk not found\n", __func__, __LINE__);
     }
 
     wav_file->fmt_chunk->sample_rate = (int32_t)frequency;

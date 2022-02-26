@@ -316,12 +316,12 @@ void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents
 
                 if (sound == NULL)
                 {
-                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound is NULL\n", __func__);
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
                 }
 
                 if (sound->wavetable == NULL)
                 {
-                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: sound->wavetable is NULL\n", __func__);
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound->wavetable is NULL\n", __func__, __LINE__);
                 }
 
                 if (sound->wavetable->visited == 0)

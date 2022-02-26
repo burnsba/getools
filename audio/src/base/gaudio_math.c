@@ -56,7 +56,7 @@ int32_t divide_round_down(int32_t num, int32_t den)
 
     if (den == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: divide_round_down: divide by zero\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> divide_round_down: divide by zero\n", __func__, __LINE__);
     }
 
     result = num / den;

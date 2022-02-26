@@ -585,7 +585,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            stderr_exit(EXIT_CODE_GENERAL, "invalid inst_search_mode %d\n", inst_search_mode);
+            stderr_exit(EXIT_CODE_GENERAL, "error, invalid inst_search_mode %d\n", inst_search_mode);
         }
 
         keybase = keymap->key_base;

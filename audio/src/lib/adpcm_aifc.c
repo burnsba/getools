@@ -81,7 +81,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi)
 
     if (fi->len < 12)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: header too short\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: header too short\n", __func__, __LINE__);
     }
 
     FileInfo_fseek(fi, 0, SEEK_SET);
@@ -99,12 +99,12 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi)
 
     if (p->ck_id != ADPCM_AIFC_FORM_CHUNK_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", __func__, ADPCM_AIFC_FORM_CHUNK_ID, p->ck_id);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: FORM chunk id failed. Expected 0x%08x, read 0x%08x.\n", __func__, __LINE__, ADPCM_AIFC_FORM_CHUNK_ID, p->ck_id);
     }
 
     if (p->form_type != ADPCM_AIFC_FORM_TYPE_ID)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", __func__, ADPCM_AIFC_FORM_TYPE_ID, p->form_type);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: FORM type id failed. Expected 0x%08x, read 0x%08x.\n", __func__, __LINE__, ADPCM_AIFC_FORM_TYPE_ID, p->form_type);
     }
 
     // As the file is scanned, supported chunks will be parsed and added to a list.
@@ -181,22 +181,22 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi)
 
     if (chunk_count < 3)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: needs more chonk\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: needs more chonk\n", __func__, __LINE__);
     }
 
     if (seen_comm == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing COMM chunk\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: missing COMM chunk\n", __func__, __LINE__);
     }
 
     if (seen_appl == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing APPL chunk\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: missing APPL chunk\n", __func__, __LINE__);
     }
 
     if (seen_ssnd == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid .aifc file: missing SSND chunk\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: missing SSND chunk\n", __func__, __LINE__);
     }
 
     p->chunk_count = chunk_count;
@@ -363,7 +363,7 @@ void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *
                 // 0x16 is sizeof other stuff in the chunk header
                 if (code_book_pos > chunk->base.ck_data_size - 0x16)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%s: attempt to read past end of codebook\n", __func__);
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> attempt to read past end of codebook\n", __func__, __LINE__);
                 }
 
                 // careful, this needs to pass a signed 16 bit int to bswap, and then sign extend promote to 32 bit.
@@ -862,7 +862,7 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
         // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
         if (g_verbosity >= VERBOSE_DEBUG)
         {
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, buffer_len);
+            printf("%s %d> write_len=%ld\n", __func__, __LINE__, buffer_len);
         }
     }
     else if (aaf->comm_chunk->compression_type == ADPCM_AIFC_VAPC_COMPRESSION_TYPE_ID)
@@ -986,7 +986,7 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
         // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_ENCODE
         if (g_verbosity >= VERBOSE_DEBUG)
         {
-            printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+            printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
         }
     }
     else
@@ -1055,12 +1055,12 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
     if (aaf == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
     }
 
     if (aaf->comm_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf->comm_chunk is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf->comm_chunk is NULL\n", __func__, __LINE__);
     }
 
     no_loop_chunk = aaf->loop_chunk == NULL
@@ -1099,7 +1099,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%d\n", __func__, __LINE__, num_16 * 2);
+                printf("%s %d> write_len=%d\n", __func__, __LINE__, num_16 * 2);
             }
 
             TRACE_LEAVE(__func__)
@@ -1138,24 +1138,24 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (aaf->loop_chunk->nloops != 1)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, __LINE__, aaf->loop_chunk->nloops);
             }
 
             loop_data = aaf->loop_chunk->loop_data;
 
             if (loop_data == NULL)
             {
-                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_data pointer is NULL\n", __func__, __LINE__);
             }
 
             if (loop_data->start < 0)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid loop_data->start offset: %d\n", __func__, __LINE__, loop_data->start);
             }
 
             if (loop_data->end < 0)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid loop_data->end offset: %d\n", __func__, __LINE__, loop_data->end);
             }
 
             // `start` is the starting sample, samples are 16 bits, so multiply by 2 to get offset into buffer.
@@ -1163,7 +1163,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (loop_start_position > (size_t)ssnd_data_size)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop start offset %ld is after end of ssnd data offset %d\n", __func__, __LINE__, loop_start_position, ssnd_data_size);
             }
 
             // same as above
@@ -1171,12 +1171,12 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (loop_end_position > (size_t)ssnd_data_size)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %ld is after end of ssnd data offset %d\n", __func__, loop_end_position, ssnd_data_size);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop end offset %ld is after end of ssnd data offset %d\n", __func__, __LINE__, loop_end_position, ssnd_data_size);
             }
 
             if (loop_start_position > loop_end_position)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: loop end offset %ld is before loop start offset %d\n", __func__, loop_end_position, loop_start_position);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop end offset %ld is before loop start offset %d\n", __func__, __LINE__, loop_end_position, loop_start_position);
             }
 
             // checks above should ensure this is valid.
@@ -1185,7 +1185,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: loop_start_position=0x%08lx, loop_end_position=0x%08lx\n", __func__, __LINE__, loop_start_position, loop_end_position);
+                printf("%s %d> loop_start_position=0x%08lx, loop_end_position=0x%08lx\n", __func__, __LINE__, loop_start_position, loop_end_position);
             }
 
             // copy samples up to one (sample) less than the start loop position
@@ -1214,7 +1214,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
+                printf("%s %d> loop_times=%d\n", __func__, __LINE__, loop_times);
             }
 
             /**
@@ -1255,7 +1255,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
             }
 
             TRACE_LEAVE(__func__)
@@ -1292,7 +1292,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
             }
         }
         else
@@ -1338,36 +1338,36 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (aaf->loop_chunk->nloops != 1)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, aaf->loop_chunk->nloops);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> N64 only supports single loop, aaf->loop_chunk->nloops=%d\n", __func__, __LINE__, aaf->loop_chunk->nloops);
             }
 
             loop_data = aaf->loop_chunk->loop_data;
 
             if (loop_data == NULL)
             {
-                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data pointer is NULL\n", __func__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_data pointer is NULL\n", __func__, __LINE__);
             }
 
             if (loop_data->start < 0)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->start offset: %d\n", __func__, loop_data->start);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid loop_data->start offset: %d\n", __func__, __LINE__, loop_data->start);
             }
 
             if (loop_data->end < 0)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop_data->end offset: %d\n", __func__, loop_data->end);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid loop_data->end offset: %d\n", __func__, __LINE__, loop_data->end);
             }
 
             loop_start_position = ((loop_data->start >> 4) + 1) * 9;
 
             if (loop_start_position > (size_t)ssnd_data_size)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: loop start offset %ld is after end of ssnd data offset %d\n", __func__, loop_start_position, ssnd_data_size);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop start offset %ld is after end of ssnd data offset %d\n", __func__, __LINE__, loop_start_position, ssnd_data_size);
             }
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: loop_start_position=0x%08lx, loop_data->end=0x%08x\n", __func__, __LINE__, loop_start_position, loop_data->end);
+                printf("%s %d> loop_start_position=0x%08lx, loop_data->end=0x%08x\n", __func__, __LINE__, loop_start_position, loop_data->end);
             }
 
             interval16_times = loop_data->end >> 4;
@@ -1376,7 +1376,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
+                printf("%s %d> interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
             }
 
             // decode frames until the loop end offset (closest multiple of 16)
@@ -1395,8 +1395,8 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                printf("%s %d> interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
+                printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
             }
 
             // now decode one more entire frame (if required), but only write delta bytes.
@@ -1408,7 +1408,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                    printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
                 }
             }
 
@@ -1422,7 +1422,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: loop_times=%d\n", __func__, __LINE__, loop_times);
+                printf("%s %d> loop_times=%d\n", __func__, __LINE__, loop_times);
             }
 
             for (i=0; i<loop_times; i++)
@@ -1432,7 +1432,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: loop i=%d\n", __func__, __LINE__, i);
+                    printf("%s %d> loop i=%d\n", __func__, __LINE__, i);
                 }
                 
                 // Load initial loop state.
@@ -1444,7 +1444,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: frame_buffer: \n", __func__, __LINE__);
+                    printf("%s %d> frame_buffer: \n", __func__, __LINE__);
                 }
 
                 while (state_frame_buffer_index < (ADPCM_AIFC_LOOP_STATE_LEN / ADPCM_LOOP_STATE_ELEMENT_SIZE))
@@ -1475,7 +1475,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
+                    printf("%s %d> interval16_offset=0x%08lx, interval16_delta=%ld\n", __func__, __LINE__, interval16_offset, interval16_delta);
                 }
 
                 // Write preliminary loop framebuffer data.
@@ -1485,7 +1485,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                    printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
                 }
 
                 // Calculate number of (full) frames to decode.
@@ -1514,8 +1514,8 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                 if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                 {
-                    printf("%s %d: interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
-                    printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                    printf("%s %d> interval16_counter=%ld\n", __func__, __LINE__, interval16_counter);
+                    printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
                 }
 
                 // Decode any remainder data after the last full frame.
@@ -1528,14 +1528,14 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 
                     if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
                     {
-                        printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                        printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
                     }
                 }
             }
 
             if (DEBUG_ADPCMAIFCFILE_DECODE && g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
             }
 
             // now just regular decode until end of file
@@ -1549,7 +1549,7 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
             // last debug statement, not protected by DEBUG_ADPCMAIFCFILE_DECODE
             if (g_verbosity >= VERBOSE_DEBUG)
             {
-                printf("%s %d: write_len=%ld\n", __func__, __LINE__, write_len);
+                printf("%s %d> write_len=%ld\n", __func__, __LINE__, write_len);
             }
         }
 
@@ -1792,12 +1792,12 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
 
     if (aifc_file == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aifc_file is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file is NULL\n", __func__, __LINE__);
     }
 
     if (aifc_file->sound_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aifc_file->sound_chunk is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file->sound_chunk is NULL\n", __func__, __LINE__);
     }
 
     // start with regular ssnd chunk size
@@ -1817,14 +1817,14 @@ size_t AdpcmAifcFile_estimate_inflate_size(struct AdpcmAifcFile *aifc_file)
 
             if (loop_data == NULL)
             {
-                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: loop_data is NULL\n", __func__);
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop_data is NULL\n", __func__, __LINE__);
             }
 
             current_loop_size = loop_data->end - loop_data->start;
 
             if (current_loop_size < 0)
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s: invalid loop size: %d\n", __func__, current_loop_size);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid loop size: %d\n", __func__, __LINE__, current_loop_size);
             }
 
             if (aifc_file->loop_chunk->loop_data->count > 0)
@@ -2429,12 +2429,12 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
 
     if (aaf == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: aaf is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
     }
 
     if (aaf->codes_chunk == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s:  aaf->codes_chunk is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>  aaf->codes_chunk is NULL\n", __func__, __LINE__);
     }
 
     // grab order from file for convenience
@@ -2610,7 +2610,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
 
     if (ck_data_size - (5 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN) <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid APPL chunk data size: %d\n", __func__, ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid APPL chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
     struct AdpcmAifcApplicationChunk *ret;
@@ -2694,7 +2694,7 @@ static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file
     else
     {
         // no terminating zero, requires explicit length
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Unsupported APPL chunk: %.*s\n", __func__, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Unsupported APPL chunk: %.*s\n", __func__, __LINE__, ADPCM_AIFC_VADPCM_APPL_NAME_LEN, code_string);
     }
 
     TRACE_LEAVE(__func__)
@@ -2718,7 +2718,7 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct File
 
     if (ck_data_size - 8 <= 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: Invalid SSND chunk data size: %d\n", __func__, ck_data_size);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid SSND chunk data size: %d\n", __func__, __LINE__, ck_data_size);
     }
 
     FileInfo_fread(fi, &p->offset, 4, 1);

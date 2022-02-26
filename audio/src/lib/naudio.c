@@ -2119,27 +2119,27 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
 
     if (detune < -100)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: (-100) - 100\n", __func__, detune);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> detune=%d out of range. Valid range: (-100) - 100\n", __func__, __LINE__, detune);
     }
 
     if (detune > 100)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: detune=%d out of range. Valid range: (-100) - 100\n", __func__, detune);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> detune=%d out of range. Valid range: (-100) - 100\n", __func__, __LINE__, detune);
     }
 
     if (keybase < 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: keybase=%d out of range. Valid range: 0-127\n", __func__, keybase);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> keybase=%d out of range. Valid range: 0-127\n", __func__, __LINE__, keybase);
     }
 
     if (keybase > 127)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: keybase=%d out of range. Valid range: 0-127\n", __func__, keybase);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> keybase=%d out of range. Valid range: 0-127\n", __func__, __LINE__, keybase);
     }
 
     if (hw_sample_rate < 1.0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: invalid hw_sample_rate=%f\n", __func__, hw_sample_rate);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid hw_sample_rate=%f\n", __func__, __LINE__, hw_sample_rate);
     }
 
     // formula is:

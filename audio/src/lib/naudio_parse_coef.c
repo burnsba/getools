@@ -286,14 +286,14 @@ static void set_current_property_value_int(struct CoefParseContext *context)
     {
         if (errno == ERANGE)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse context->property_value_buffer as integer: %s\n", context->property_value_buffer);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> error (range), cannot parse context->property_value_buffer as integer: %s\n", __func__, __LINE__, context->property_value_buffer);
         }
 
         context->current_value_int = val;
     }
     else
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse context->property_value_buffer as integer: %s\n", context->property_value_buffer);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, cannot parse context->property_value_buffer as integer: %s\n", __func__, __LINE__, context->property_value_buffer);
     }
 
     TRACE_LEAVE(__func__)
@@ -844,7 +844,7 @@ struct ALADPCMBook *ALADPCMBook_new_from_coef(struct FileInfo *fi)
             break;
 
             default:
-            stderr_exit(EXIT_CODE_GENERAL, "Invalid parse state: %d\n", state);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid parse state: %d\n", __func__, __LINE__, state);
         }
     }
 

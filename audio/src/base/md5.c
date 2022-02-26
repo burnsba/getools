@@ -94,12 +94,12 @@ void md5_hash(char *str, size_t str_len, char *digest)
 
     if (str == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: str is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> str is NULL\n", __func__, __LINE__);
     }
    
     if (digest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: digest is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> digest is NULL\n", __func__, __LINE__);
     }
    
     // Initialize variables:

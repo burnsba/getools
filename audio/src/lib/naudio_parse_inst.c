@@ -1155,14 +1155,14 @@ static void set_array_index_int(struct InstParseContext *context)
     {
         if (errno == ERANGE)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse context->array_index_value as integer: %s\n", context->array_index_value);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> error (range), cannot parse context->array_index_value as integer: %s\n", __func__, __LINE__, context->array_index_value);
         }
 
         context->array_index_int = val;
     }
     else
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse context->array_index_value as integer: %s\n", context->array_index_value);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, cannot parse context->array_index_value as integer: %s\n", __func__, __LINE__, context->array_index_value);
     }
 
     TRACE_LEAVE(__func__)
@@ -1196,14 +1196,14 @@ static void set_current_property_value_int(struct InstParseContext *context)
     {
         if (errno == ERANGE)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "error (range), cannot parse context->property_value_buffer as integer: %s\n", context->property_value_buffer);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> error (range), cannot parse context->property_value_buffer as integer: %s\n", __func__, __LINE__, context->property_value_buffer);
         }
 
         context->current_value_int = val;
     }
     else
     {
-        stderr_exit(EXIT_CODE_GENERAL, "error, cannot parse context->property_value_buffer as integer: %s\n", context->property_value_buffer);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, cannot parse context->property_value_buffer as integer: %s\n", __func__, __LINE__, context->property_value_buffer);
     }
 
     TRACE_LEAVE(__func__)

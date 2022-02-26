@@ -74,12 +74,12 @@ void *malloc_zero(size_t count, size_t item_size)
 
     if (malloc_size == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: malloc_size is zero.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> malloc_size is zero.\n", __func__, __LINE__);
     }
 
     if (malloc_size > MAX_MALLOC_SIZE)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: malloc_size=%ld exceeds sanity check max malloc size %d.\n", __func__, malloc_size, MAX_MALLOC_SIZE);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> malloc_size=%ld exceeds sanity check max malloc size %d.\n", __func__, __LINE__, malloc_size, MAX_MALLOC_SIZE);
     }
 
     outp = malloc(malloc_size);
@@ -205,7 +205,7 @@ int mkpath(const char* path)
 
     if (len > MAX_FILENAME_LEN)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: error, mkpath name too long.\n", __func__);
+        stderr_exit(EXIT_CODE_IO, "%s %d> error, mkpath name too long.\n", __func__, __LINE__);
     }
 
     memset(local_path, 0, MAX_FILENAME_LEN);
@@ -221,7 +221,7 @@ int mkpath(const char* path)
             {
                 if (errno != EEXIST)
                 {
-                    stderr_exit(EXIT_CODE_IO, "%s: mkpath error, could not create dir at step %s.\n", __func__, local_path);
+                    stderr_exit(EXIT_CODE_IO, "%s %d> mkpath error, could not create dir at step %s.\n", __func__, __LINE__, local_path);
                 }
             }
             else
@@ -240,7 +240,7 @@ int mkpath(const char* path)
     {
         if (errno != EEXIST)
         {
-            stderr_exit(EXIT_CODE_IO, "%s: mkpath error, could not create dir %s.\n", __func__, path);
+            stderr_exit(EXIT_CODE_IO, "%s %d> mkpath error, could not create dir %s.\n", __func__, __LINE__, path);
         }
     }
     else
@@ -334,12 +334,12 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     input = fopen(path, "rb");
     if (input == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: Cannot open file: %s\n", __func__, path);
+        stderr_exit(EXIT_CODE_IO, "%s %d> Cannot open file: %s\n", __func__, __LINE__, path);
     }
 
     if (fseek(input, 0, SEEK_END) != 0)
     {
-        fflush_printf(stderr, "%s: error attempting to seek to end of file %s\n", __func__, path);
+        fflush_printf(stderr, "%s %d> error attempting to seek to end of file %s\n", __func__, __LINE__, path);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -353,14 +353,14 @@ size_t get_file_contents(char *path, uint8_t **buffer)
 
     if(fseek(input, 0, SEEK_SET) != 0)
     {
-        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, path);
+        fflush_printf(stderr, "%s %d> error attempting to seek to beginning of file %s\n", __func__, __LINE__, path);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
 
     if (input_filesize > MAX_INPUT_FILESIZE)
     {
-        fflush_printf(stderr, "%s: error, filesize=%ld is larger than max supported=%d\n", __func__, input_filesize, MAX_INPUT_FILESIZE);
+        fflush_printf(stderr, "%s %d> error, filesize=%ld is larger than max supported=%d\n", __func__, __LINE__, input_filesize, MAX_INPUT_FILESIZE);
         fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -370,7 +370,7 @@ size_t get_file_contents(char *path, uint8_t **buffer)
     f_result = fread((void *)*buffer, 1, input_filesize, input);
     if(f_result != input_filesize || ferror(input))
     {
-        fflush_printf(stderr, "%s: error reading file [%s], expected to read %ld bytes, but read %ld\n", __func__, path, input_filesize, f_result);
+        fflush_printf(stderr, "%s %d> error reading file [%s], expected to read %ld bytes, but read %ld\n", __func__, __LINE__, path, input_filesize, f_result);
 		fclose(input);
         exit(EXIT_CODE_IO);
     }
@@ -434,7 +434,7 @@ struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
     fi->fp = fopen(filename, mode);
     if (fi->fp == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: Cannot open file: %s\n", __func__, filename);
+        stderr_exit(EXIT_CODE_IO, "%s %d> Cannot open file: %s\n", __func__, __LINE__, filename);
     }
 
     stat(filename, &st);
@@ -444,7 +444,7 @@ struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
 
     if(fseek(fi->fp, 0, SEEK_END) != 0)
     {
-        fflush_printf(stderr, "%s: error attempting to seek to end of file %s\n", __func__, filename);
+        fflush_printf(stderr, "%s %d> error attempting to seek to end of file %s\n", __func__, __LINE__, filename);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -463,14 +463,14 @@ struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
 
     if(fseek(fi->fp, 0, SEEK_SET) != 0)
     {
-        fflush_printf(stderr, "%s: error attempting to seek to beginning of file %s\n", __func__, fi->filename);
+        fflush_printf(stderr, "%s %d> error attempting to seek to beginning of file %s\n", __func__, __LINE__, fi->filename);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
 
     if (fi->len > MAX_INPUT_FILESIZE)
     {
-        fflush_printf(stderr, "%s: error, filesize=%ld is larger than max supported=%d\n", __func__, fi->len, MAX_INPUT_FILESIZE);
+        fflush_printf(stderr, "%s %d> error, filesize=%ld is larger than max supported=%d\n", __func__, __LINE__, fi->len, MAX_INPUT_FILESIZE);
         fclose(fi->fp);
         exit(EXIT_CODE_GENERAL);
     }
@@ -496,19 +496,19 @@ size_t FileInfo_fread(struct FileInfo *fi, void *output_buffer, size_t size, siz
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_IO, "%s %d> fi is NULL\n", __func__, __LINE__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: fi->fp not valid\n", __func__);
+        stderr_exit(EXIT_CODE_IO, "%s %d> fi->fp not valid\n", __func__, __LINE__);
     }
 
     size_t f_result = fread((void *)output_buffer, size, n, fi->fp);
     
     if(f_result != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "%s: error reading file [%s], expected to read %ld elements, but read %ld\n", __func__, fi->filename, n, f_result);
+        fflush_printf(stderr, "%s %d> error reading file [%s], expected to read %ld elements, but read %ld\n", __func__, __LINE__, fi->filename, n, f_result);
 		fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -531,12 +531,12 @@ int FileInfo_fseek(struct FileInfo *fi, long __off, int __whence)
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, fi->fp not valid\n", __func__, __LINE__);
     }
 
     int ret = fseek(fi->fp, __off, __whence);
@@ -544,7 +544,7 @@ int FileInfo_fseek(struct FileInfo *fi, long __off, int __whence)
     if (ret != 0)
     {
         int fseek_errno = errno;
-        fflush_printf(stderr, "%s: error attempting to seek file %s, offset=%ld, whence=%d, return=%d, errno=%d\n", __func__, fi->filename, __off, __whence, ret, fseek_errno);
+        fflush_printf(stderr, "%s %d> error attempting to seek file %s, offset=%ld, whence=%d, return=%d, errno=%d\n", __func__, __LINE__, fi->filename, __off, __whence, ret, fseek_errno);
         fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -565,12 +565,12 @@ long FileInfo_ftell(struct FileInfo *fi)
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, fi is NULL\n", __func__, __LINE__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, fi->fp not valid\n", __func__, __LINE__);
     }
 
     long ret = ftell(fi->fp);
@@ -599,24 +599,24 @@ size_t FileInfo_fwrite(struct FileInfo *fi, const void *data, size_t size, size_
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, fi is NULL\n", __func__, __LINE__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: error, fi->fp not valid\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> error, fi->fp not valid\n", __func__, __LINE__);
     }
 
     if (size == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: element size is zero.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> element size is zero.\n", __func__, __LINE__);
     }
 
     ret = fwrite(data, size, n, fi->fp);
     
     if (ret != n || ferror(fi->fp))
     {
-        fflush_printf(stderr, "%s: error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, n, ret);
+        fflush_printf(stderr, "%s %d> error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, __LINE__, n, ret);
 		fclose(fi->fp);
         exit(EXIT_CODE_IO);
     }
@@ -647,12 +647,12 @@ size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size,
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, fi is NULL\n", __func__, __LINE__);
     }
 
     if (fi->_fp_state != 1)
     {
-        stderr_exit(EXIT_CODE_IO, "%s: error, fi->fp not valid\n", __func__);
+        stderr_exit(EXIT_CODE_IO, "%s %d> error, fi->fp not valid\n", __func__, __LINE__);
     }
 
     if (size == 2)
@@ -664,7 +664,7 @@ size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size,
 
             if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "%s: error writing to file, expected to write 1 element, but wrote %ld\n", __func__, f_result);
+                fflush_printf(stderr, "%s %d> error writing to file, expected to write 1 element, but wrote %ld\n", __func__, __LINE__, f_result);
                 fclose(fi->fp);
                 exit(EXIT_CODE_IO);
             }
@@ -681,7 +681,7 @@ size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size,
 
             if (f_result != 1 || ferror(fi->fp))
             {
-                fflush_printf(stderr, "%s: error writing to file, expected to write 1 element, but wrote %ld\n", __func__, 1, f_result);
+                fflush_printf(stderr, "%s %d> error writing to file, expected to write 1 element, but wrote %ld\n", __func__, __LINE__, 1, f_result);
                 fclose(fi->fp);
                 exit(EXIT_CODE_IO);
             }
@@ -695,7 +695,7 @@ size_t FileInfo_fwrite_bswap(struct FileInfo *fi, const void *data, size_t size,
 
         if (f_result != n || ferror(fi->fp))
         {
-            fflush_printf(stderr, "%s: error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, n, f_result);
+            fflush_printf(stderr, "%s %d> error writing to file, expected to write %ld elements, but wrote %ld\n", __func__, __LINE__, n, f_result);
             fclose(fi->fp);
             exit(EXIT_CODE_IO);
         }
@@ -719,7 +719,7 @@ int FileInfo_fclose(struct FileInfo *fi)
 
     if (fi == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: error, fi is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> error, fi is NULL\n", __func__, __LINE__);
     }
 
     int ret = 0;
@@ -790,12 +790,12 @@ void bswap16_chunk(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, dest is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>error, dest is NULL\n", __func__, __LINE__);
     }
 
     if (src == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, src is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>error, src is NULL\n", __func__, __LINE__);
     }
 
     if (dest == src)
@@ -838,12 +838,12 @@ void bswap32_chunk(void *dest, const void *src, size_t num)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, dest is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>error, dest is NULL\n", __func__, __LINE__);
     }
 
     if (src == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s error, src is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>error, src is NULL\n", __func__, __LINE__);
     }
 
     for (i=0; i<num; i++)
@@ -874,12 +874,12 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct Linked
 
     if (names_file_contents == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: names_file_contents is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> names_file_contents is NULL.\n", __func__, __LINE__);
     }
 
     if (names == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: names is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> names is NULL.\n", __func__, __LINE__);
     }
 
     size_t i;
@@ -1111,7 +1111,7 @@ void change_filename_extension(char *input_filename, char *output_filename, char
 
     if (len + ext_len > max_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: can't change extension, output_filename buffer too short.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> can't change extension, output_filename buffer too short.\n", __func__, __LINE__);
     }
 
     strncpy(output_filename, input_filename, len);
@@ -1154,7 +1154,7 @@ void int32_to_VarLengthInt(int32_t in, struct VarLengthInt *varint)
 
     if (varint == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> varint is NULL.\n", __func__, __LINE__);
     }
 
     int num_bytes = 0;
@@ -1205,17 +1205,17 @@ void VarLengthInt_value_to_int32(uint8_t *buffer, int max_bytes, struct VarLengt
 
     if (buffer == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: buffer is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL.\n", __func__, __LINE__);
     }
 
     if (varint == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: varint is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> varint is NULL.\n", __func__, __LINE__);
     }
 
     if (max_bytes < 1 || max_bytes > VAR_INT_MAX_BYTES)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s parameter error, max_bytes=%d out of range. Max supported=%d\n", __func__, max_bytes, VAR_INT_MAX_BYTES);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>parameter error, max_bytes=%d out of range. Max supported=%d\n", __func__, __LINE__, max_bytes, VAR_INT_MAX_BYTES);
     }
 
     while (!done && bytes_read <= max_bytes)
@@ -1235,7 +1235,7 @@ void VarLengthInt_value_to_int32(uint8_t *buffer, int max_bytes, struct VarLengt
 
     if (!done)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s parse error.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>parse error.\n", __func__, __LINE__);
     }
 
     memset(varint->value_bytes, 0, VAR_INT_MAX_BYTES+1);
@@ -1261,17 +1261,17 @@ void VarLengthInt_copy(struct VarLengthInt *dest, struct VarLengthInt* source)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL.\n", __func__, __LINE__);
     }
 
     if (source == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint has zero bytes set.\n", __func__, __LINE__);
     }
 
     int i;
@@ -1299,17 +1299,17 @@ void VarLengthInt_write_value_little(uint8_t *dest, struct VarLengthInt* source)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL.\n", __func__, __LINE__);
     }
 
     if (source == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint has zero bytes set.\n", __func__, __LINE__);
     }
 
     int i;
@@ -1335,17 +1335,17 @@ void VarLengthInt_write_value_big(uint8_t *dest, struct VarLengthInt* source)
 
     if (dest == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: dest is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> dest is NULL.\n", __func__, __LINE__);
     }
 
     if (source == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint has zero bytes set.\n", __func__, __LINE__);
     }
 
     int i;
@@ -1371,17 +1371,17 @@ int32_t VarLengthInt_get_value_little(struct VarLengthInt* source)
 
     if (source == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes > 4)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint larger than int32.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint larger than int32.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint has zero bytes set.\n", __func__, __LINE__);
     }
 
     int i;
@@ -1409,17 +1409,17 @@ int32_t VarLengthInt_get_value_big(struct VarLengthInt* source)
 
     if (source == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: source is NULL.\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes > 4)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint larger than int32.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint larger than int32.\n", __func__, __LINE__);
     }
 
     if (source->num_bytes == 0)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: varint has zero bytes set.\n", __func__);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> varint has zero bytes set.\n", __func__, __LINE__);
     }
 
     int i;

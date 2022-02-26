@@ -588,7 +588,7 @@ struct CseqFile *CseqFile_new_from_file(struct FileInfo *fi)
 
     if (p->non_empty_num_tracks > CSEQ_FILE_NUM_TRACKS)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: non_empty_num_tracks %d exceeds %d.\n", __func__, p->non_empty_num_tracks, CSEQ_FILE_NUM_TRACKS);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> non_empty_num_tracks %d exceeds %d.\n", __func__, __LINE__, p->non_empty_num_tracks, CSEQ_FILE_NUM_TRACKS);
     }
 
     TRACE_LEAVE(__func__)
@@ -1570,7 +1570,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
 
         if ((int)pos - diff < 0)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: cseq_track %d references diff %d before start of file, position %ld.\n", __func__, track->cseq_track_index, diff, pos);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> cseq_track %d references diff %d before start of file, position %ld.\n", __func__, __LINE__, track->cseq_track_index, diff, pos);
         }
 
         // write pattern to disk if needed
@@ -2818,7 +2818,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 local_bytes_read++;
                 if (b != 0x03)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%s: %s: expected len=0x03 but read '0x%x', pos=%ld.\n", __func__, MIDI_COMMAND_NAME_TEMPO, b, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> %s: expected len=0x03 but read '0x%x', pos=%ld.\n", __func__, __LINE__, MIDI_COMMAND_NAME_TEMPO, b, pos);
                 }
 
                 int tempo = 0;
@@ -2887,7 +2887,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 local_bytes_read++;
                 if (b != 0xff)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%s: %s: expected end of command byte 0xff but read '0x%x', pos=%ld.\n", __func__, CSEQ_COMMAND_NAME_LOOP_START, b, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> %s: expected end of command byte 0xff but read '0x%x', pos=%ld.\n", __func__, __LINE__, CSEQ_COMMAND_NAME_LOOP_START, b, pos);
                 }
 
                 // optional debug print
@@ -3011,7 +3011,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 local_bytes_read++;
                 if (b != 0x00)
                 {
-                    stderr_exit(EXIT_CODE_GENERAL, "%s: %s: expected end of command byte 0x00 but read '0x%x', pos=%ld.\n", __func__, MIDI_COMMAND_NAME_END_OF_TRACK, b, pos);
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> %s: expected end of command byte 0x00 but read '0x%x', pos=%ld.\n", __func__, __LINE__, MIDI_COMMAND_NAME_END_OF_TRACK, b, pos);
                 }
 
                 // optional debug print
@@ -3047,12 +3047,12 @@ struct GmidEvent *GmidEvent_new_from_buffer(
         }
         else if (b == CSEQ_COMMAND_BYTE_PATTERN && buffer_type == MIDI_IMPLEMENTATION_SEQ)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s: parse error -- invalid compressed MIDI, \"pattern\" command not allowed. pos=%ld.\n", __func__, pos);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- invalid compressed MIDI, \"pattern\" command not allowed. pos=%ld.\n", __func__, __LINE__, pos);
         }
         else if (message_type == MIDI_COMMAND_BYTE_NOTE_OFF && buffer_type == MIDI_IMPLEMENTATION_SEQ)
         {
             // note off
-            stderr_exit(EXIT_CODE_GENERAL, "%s: parse error -- invalid compressed MIDI, \"note off\" command not allowed. pos=%d.\n", __func__, pos);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- invalid compressed MIDI, \"note off\" command not allowed. pos=%d.\n", __func__, __LINE__, pos);
         }
         else if (message_type == MIDI_COMMAND_BYTE_NOTE_OFF && buffer_type == MIDI_IMPLEMENTATION_STANDARD)
         {
@@ -4743,7 +4743,7 @@ void midi_note_to_name(int note, char* result, size_t max_length)
         break;
 
         default:
-        stderr_exit(EXIT_CODE_GENERAL, "%s: note=%d note supported.\n", __func__, note);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> note=%d note supported.\n", __func__, __LINE__, note);
         break;
     }
 
@@ -4822,7 +4822,7 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
         }
     }
 
-    stderr_exit(EXIT_CODE_GENERAL, "%s: midi command not supported: 0x%04x.\n", __func__, event->command);
+    stderr_exit(EXIT_CODE_GENERAL, "%s %d> midi command not supported: 0x%04x.\n", __func__, __LINE__, event->command);
 
     TRACE_LEAVE(__func__)
 
@@ -4901,7 +4901,7 @@ int32_t GmidEvent_get_cseq_command(struct GmidEvent *event)
         }
     }
 
-    stderr_exit(EXIT_CODE_GENERAL, "%s: seq command not supported: 0x%04x.\n", __func__, event->command);
+    stderr_exit(EXIT_CODE_GENERAL, "%s %d> seq command not supported: 0x%04x.\n", __func__, __LINE__, event->command);
 
     TRACE_LEAVE(__func__)
 
@@ -4989,7 +4989,7 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 
     if (write_len > max_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: write_len %ld exceeded max_len %ld when writing to buffer.\n", __func__, write_len, max_len);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> write_len %ld exceeded max_len %ld when writing to buffer.\n", __func__, __LINE__, write_len, max_len);
     }
 
     TRACE_LEAVE(__func__)
@@ -5078,7 +5078,7 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 
     if (write_len > max_len)
     {
-        stderr_exit(EXIT_CODE_GENERAL, "%s: write_len %ld exceeded max_len %ld when writing to buffer.\n", __func__, write_len, max_len);
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> write_len %ld exceeded max_len %ld when writing to buffer.\n", __func__, __LINE__, write_len, max_len);
     }
 
     TRACE_LEAVE(__func__)

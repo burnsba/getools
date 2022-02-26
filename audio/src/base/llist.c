@@ -33,7 +33,7 @@ void LinkedList_append_node(struct LinkedList *root, struct LinkedListNode *node
     {
         if (root->tail == NULL)
         {
-            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: tail is NULL\n", __func__);
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> tail is NULL\n", __func__, __LINE__);
         }
 
         node->prev = root->tail;
@@ -420,17 +420,17 @@ void LinkedListNode_insert_before(struct LinkedList *root, struct LinkedListNode
 
     if (current == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: current is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current is NULL\n", __func__, __LINE__);
     }
 
     if (to_insert == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: to_insert is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> to_insert is NULL\n", __func__, __LINE__);
     }
 
     if (to_insert == current)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: cant insert before self\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> cant insert before self\n", __func__, __LINE__);
     }
 
     to_insert->next = current;
@@ -469,12 +469,12 @@ void LinkedListNode_swap(struct LinkedList *root, struct LinkedListNode *first, 
 
     if (first == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: first is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> first is NULL\n", __func__, __LINE__);
     }
 
     if (second == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: second is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> second is NULL\n", __func__, __LINE__);
     }
 
     if (first == second)
@@ -742,7 +742,7 @@ static struct LinkedListNode *LinkedListNode_merge(struct LinkedListNode *first,
     }
     else if (first == NULL && second == NULL)
     {
-        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s: second is NULL\n", __func__);
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> second is NULL\n", __func__, __LINE__);
     }
    
     int compare = compare_callback(first, second);
