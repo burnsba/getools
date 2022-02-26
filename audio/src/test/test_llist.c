@@ -25,6 +25,11 @@ void linked_list_all(int *run_count, int *pass_count, int *fail_count)
 
         llist_root_append_node(root, first);
 
+        if (root == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root is NULL\n", __func__, __LINE__);
+        }
+
         check = 1;
         check &= root->count == 1;
         check &= root->root == root->tail;
@@ -38,6 +43,27 @@ void linked_list_all(int *run_count, int *pass_count, int *fail_count)
         check &= root->root == first;
         check &= root->tail != NULL;
         check &= root->tail == second;
+
+        if (root->root == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->tail == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->tail is NULL\n", __func__, __LINE__);
+        }
+
+        if (first == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: first is NULL\n", __func__, __LINE__);
+        }
+
+        if (second == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: second is NULL\n", __func__, __LINE__);
+        }
+
         check &= root->root->next == second;
         check &= root->tail->prev == first;
         check &= first->next == second;
@@ -74,11 +100,31 @@ void linked_list_all(int *run_count, int *pass_count, int *fail_count)
         struct llist_node *node_a = llist_node_new();
         llist_root_append_node(root, node_a);
 
+        if (root == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root is NULL\n", __func__, __LINE__);
+        }
+
+        if (second == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: second is NULL\n", __func__, __LINE__);
+        }
+
+        if (node_a == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: node_a is NULL\n", __func__, __LINE__);
+        }
+
         check &= second->next == node_a;
         check &= node_a->prev == second;
 
         struct llist_node *third = llist_node_new();
         llist_node_insert_before(root, node_a, third);
+
+        if (third == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: third is NULL\n", __func__, __LINE__);
+        }
 
         check &= root->count == 4;
         
@@ -133,6 +179,36 @@ void linked_list_all(int *run_count, int *pass_count, int *fail_count)
         llist_root_append_node(root, node);
 
         llist_root_merge_sort(root, llist_node_TestKeyValue_compare_smaller_key);
+
+        if (root == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->root == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->root->data == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root->data is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->root->next == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root->next is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->root->next->data == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root->next->data is NULL\n", __func__, __LINE__);
+        }
+
+        if (root->root->next->next == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: root->root->next->next is NULL\n", __func__, __LINE__);
+        }
 
         check = 1;
         check &= root->count == 3;

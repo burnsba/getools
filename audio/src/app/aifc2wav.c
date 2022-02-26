@@ -583,6 +583,10 @@ int main(int argc, char **argv)
                 stderr_exit(EXIT_CODE_GENERAL, "error reading \"%s\", cannot find keymap with id \"%s\"\n", inst_filename, inst_val);
             }
         }
+        else
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "invalid inst_search_mode %d\n", inst_search_mode);
+        }
 
         keybase = keymap->key_base;
         detune = keymap->detune;

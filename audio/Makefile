@@ -3,7 +3,7 @@ default: all
 
 # c compiler
 CC := gcc
-CFLAGS := -g -Wall -Wextra -pedantic -Wunreachable-code -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmissing-include-dirs -Wno-unused-parameter -Wuninitialized
+CFLAGS := -O2 -g -Wall -Wextra -pedantic -Wunreachable-code -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmissing-include-dirs -Wno-unused-parameter -Wuninitialized
 LINKERS := -lm
 
 # root location of source files (no trailing slash)

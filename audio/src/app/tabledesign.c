@@ -322,8 +322,8 @@ int main(int argc, char **argv)
     struct file_info *output_file;
     struct WavFile *wav_file = NULL;
     struct AdpcmAifcFile *aifc_file = NULL;
-    uint8_t *audio_data;
-    size_t audio_data_len;
+    uint8_t *audio_data = NULL;
+    size_t audio_data_len = 0;
     enum DATA_ENCODING encoding = DATA_ENCODING_LSB;
     struct ALADPCMBook *book;
     struct codebook_threshold_parameters threshold_parameters;

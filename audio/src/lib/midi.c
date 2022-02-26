@@ -1036,7 +1036,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     {
         if (gmidi_tracks[i] != NULL)
         {
-            free(gmidi_tracks[i]);
+            GmidTrack_free(gmidi_tracks[i]);
         }
     }
 
@@ -2352,14 +2352,9 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
 
     // it's possible the last byte of the file is part of the last int value,
     // check for that here
-    if (buffer_pos > 0)
+    if (match != NULL && buffer_pos > 0)
     {
         int file_value;
-
-        if (buffer_pos == 0)
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d> attempted to add empty value as integer (line position %d), pos=%ld, source line=%d, state=%d\n", __func__, __LINE__, line_buffer_pos, pos, current_line_number, state);
-        }
         
         file_value = parse_int(number_buffer);
         memset(number_buffer, 0, NUM_BUFFER_SIZE);
@@ -2649,7 +2644,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     uint8_t b;
     // most recent command channel
     int command_channel = -1;
-    int command_without_channel;
+    int command_without_channel = 0;
     // temp varint for parsing/copying values
     struct var_length_int varint;
     // debug print buffer
@@ -3806,7 +3801,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
             // Search event list until finding start event, based on
             // end event dual pointer.
             struct GmidEvent *start_event = start_node->data;
-            if (start_event == end_event->dual)
+            if (start_event != NULL && start_event == end_event->dual)
             {
                 long byte_offset = 0;
 
@@ -5295,13 +5290,16 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     {
         struct llist_node *node;
         node = options->runtime_patterns_list->root;
+
         while (node != NULL)
         {
             struct SeqPatternMatch *match = node->data;
             if (match != NULL)
             {
                 SeqPatternMatch_free(match);
+                node->data = NULL;
             }
+
             node = node->next;
         }
 
@@ -5311,7 +5309,7 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     
     if (options->runtime_pattern_file != NULL)
     {
-        file_info_fclose(options->runtime_pattern_file);
+        file_info_free(options->runtime_pattern_file);
         options->runtime_pattern_file = NULL;
     }
 

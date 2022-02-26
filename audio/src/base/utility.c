@@ -753,6 +753,7 @@ void file_info_free(struct file_info *fi)
 
     if (fi->filename != NULL)
     {
+        // Filename was malloc'd and copied when file_info first created.
         free(fi->filename);
     }
 

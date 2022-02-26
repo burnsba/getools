@@ -77,5 +77,16 @@ make check
 Test status is printed as it runs, it should end with a line similar to the following:
 
 ```
-74 tests run, 74 pass, 0 fail
+118 tests run, 118 pass, 0 fail
 ```
+
+If clang is installed, static analysis can be performed with
+
+```
+make clean
+scan-build-11 make
+```
+
+Note: debian command is `scan-build-11`.
+
+This should only report some dead assignments and dead increments.

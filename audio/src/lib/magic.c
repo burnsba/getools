@@ -165,10 +165,10 @@ struct ALADPCMBook *estimate_codebook(
     double *frame_measures;
     double frame_measures_median;
     enum CODEBOOK_THRESHOLD_MODE threshold_mode;
-    double frame_measure_threshold_min;
-    double frame_measure_threshold_max;
-    double frame_measure_quantile_min;
-    double frame_measure_quantile_max;
+    double frame_measure_threshold_min = 0.0;
+    double frame_measure_threshold_max = 1e300;
+    double frame_measure_quantile_min = 0.0;
+    double frame_measure_quantile_max = 1.0;
     size_t sound_data_pos;
     int ar_frame_count;
     int axb_solved;
@@ -531,6 +531,11 @@ double autocorrelation_vector(double *previous, double *current, size_t len, int
     if (lag < 0)
     {
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid lag: %d\n", __func__, __LINE__, lag);
+    }
+
+    if (lag > TABLE_MAX_ORDER)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d> invalid lag: %d, exceeds max value of \n", __func__, __LINE__, lag, TABLE_MAX_ORDER);
     }
 
     int out_index;

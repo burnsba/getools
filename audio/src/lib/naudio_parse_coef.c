@@ -472,7 +472,7 @@ struct ALADPCMBook *ALADPCMBook_new_from_coef(struct file_info *fi)
     /**
      * Current character read or being processed.
     */
-    char c;
+    char c = 0;
 
     /**
      * Character `c` as integer. Promoted to int to status as valid
