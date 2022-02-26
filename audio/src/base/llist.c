@@ -458,10 +458,12 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
 
 /**
  * Swaps two nodes, updating all pointers accordingly.
+ * @param root: optional, but required to update root and tail pointers
+ * if those are swapped.
  * @param first: first node to swap.
  * @param second: second node to swap.
 */
-void llist_node_swap(struct llist_node *first, struct llist_node *second)
+void llist_node_swap(struct llist_root *root, struct llist_node *first, struct llist_node *second)
 {
     TRACE_ENTER(__func__)
 
@@ -492,19 +494,49 @@ void llist_node_swap(struct llist_node *first, struct llist_node *second)
     second->prev = first_prev;
     second->next = first_next;
 
+    if (root != NULL)
+    {
+        if (root->root == first)
+        {
+            root->root = second;
+        }
+        else if (root->root == second)
+        {
+            root->root = first;
+        }
+
+        if (root->tail == first)
+        {
+            root->tail = second;
+        }
+        else if (root->tail == second)
+        {
+            root->tail = first;
+        }
+    }
+
+    if (first_next == second || second_next == first)
+    {
+        // this can't be NULL
+        first->prev = second;
+        second->next = first;
+    }
+    else
+    {
+        if (first_next != NULL)
+        {
+            first_next->prev = second;
+        }
+
+        if (second_prev != NULL)
+        {
+            second_prev->next = first;
+        }
+    }
+
     if (first_prev != NULL)
     {
         first_prev->next = second;
-    }
-
-    if (first_next != NULL)
-    {
-        first_next->prev = second;
-    }
-
-    if (second_prev != NULL)
-    {
-        second_prev->next = first;
     }
 
     if (second_next != NULL)

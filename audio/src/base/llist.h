@@ -102,7 +102,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node);
 void llist_node_detach(struct llist_root *root, struct llist_node *node);
 void llist_node_move(struct llist_root *dest, struct llist_root *src, struct llist_node *node);
 void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert);
-void llist_node_swap(struct llist_node *first, struct llist_node *second);
+void llist_node_swap(struct llist_root *root, struct llist_node *first, struct llist_node *second);
 
 void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback);
 void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1);

@@ -36,7 +36,7 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -74,7 +74,7 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -146,7 +146,7 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -257,7 +257,7 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -338,7 +338,7 @@ void string_hash_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }

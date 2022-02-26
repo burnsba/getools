@@ -46,7 +46,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -64,7 +64,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -82,7 +82,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -100,7 +100,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -118,7 +118,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -136,7 +136,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -154,7 +154,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -172,7 +172,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }
@@ -190,7 +190,7 @@ void test_md5_all(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             print16(digest);
             *fail_count = *fail_count + 1;
         }

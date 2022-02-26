@@ -131,7 +131,7 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -186,7 +186,7 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -241,7 +241,7 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -296,7 +296,7 @@ static void test_autocorrelation_vector(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -356,7 +356,7 @@ static void test_autocorrelation_matrix(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -412,7 +412,7 @@ static void test_autocorrelation_matrix(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -468,7 +468,7 @@ static void test_autocorrelation_matrix(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -524,7 +524,7 @@ static void test_autocorrelation_matrix(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -606,7 +606,7 @@ static void test_autocorrelation_matrix(int *run_count, int *pass_count, int *fa
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -700,7 +700,7 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -774,7 +774,7 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -848,7 +848,7 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -922,7 +922,7 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -994,7 +994,7 @@ static void test_lu_decomp_solve(int *run_count, int *pass_count, int *fail_coun
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1053,7 +1053,7 @@ static void test_stable_kfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1109,7 +1109,7 @@ static void test_stable_kfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1165,7 +1165,7 @@ static void test_stable_kfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1221,7 +1221,7 @@ static void test_stable_kfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1280,7 +1280,7 @@ static void test_afromk(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1336,7 +1336,7 @@ static void test_afromk(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1392,7 +1392,7 @@ static void test_afromk(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1448,7 +1448,7 @@ static void test_afromk(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1507,7 +1507,7 @@ static void test_rfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1563,7 +1563,7 @@ static void test_rfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1619,7 +1619,7 @@ static void test_rfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1675,7 +1675,7 @@ static void test_rfroma(int *run_count, int *pass_count, int *fail_count)
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1734,7 +1734,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1790,7 +1790,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1846,7 +1846,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1902,7 +1902,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -1958,7 +1958,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2014,7 +2014,7 @@ static void test_levinson_durbin_recursion(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2076,7 +2076,7 @@ static void test_codebook_row_from_predictors(int *run_count, int *pass_count, i
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2135,7 +2135,7 @@ static void test_codebook_row_from_predictors(int *run_count, int *pass_count, i
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2196,7 +2196,7 @@ static void test_codebook_row_from_predictors(int *run_count, int *pass_count, i
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2257,7 +2257,7 @@ static void test_codebook_row_from_predictors(int *run_count, int *pass_count, i
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2310,7 +2310,7 @@ static void test_ALADPCMBook_set_predictor(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2391,7 +2391,7 @@ static void test_ALADPCMBook_set_predictor(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2472,7 +2472,7 @@ static void test_ALADPCMBook_set_predictor(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
@@ -2557,7 +2557,7 @@ static void test_ALADPCMBook_set_predictor(int *run_count, int *pass_count, int 
         }
         else
         {
-            printf("%s %d>fail\n", __func__, __LINE__);
+            printf("%s %d> fail\n", __func__, __LINE__);
             *fail_count = *fail_count + 1;
         }
     }
