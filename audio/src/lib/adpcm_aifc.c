@@ -113,14 +113,14 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
     pos = ftell(fi->fp);
     chunk_count = 0;
 
-    struct llist_root chunk_list;
-    memset(&chunk_list, 0, sizeof(struct llist_root));
+    struct LinkedList chunk_list;
+    memset(&chunk_list, 0, sizeof(struct LinkedList));
 
     while (pos < fi->len)
     {
         if (pos + 8 < fi->len)
         {
-            struct llist_node *chunk_node;
+            struct LinkedListNode *chunk_node;
 
             pos += 8;
             chunk_count++;
@@ -135,30 +135,30 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
             {
                 case ADPCM_AIFC_COMMON_CHUNK_ID:
                 seen_comm++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)AdpcmAifcCommChunk_new_from_file(fi, chunk_size);
-                llist_root_append_node(&chunk_list, chunk_node);
+                LinkedList_append_node(&chunk_list, chunk_node);
                 break;
                 
                 case ADPCM_AIFC_APPLICATION_CHUNK_ID:
                 seen_appl++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)AdpcmAifcApplicationChunk_new_from_file(fi, chunk_size);
                 if (chunk_node->data != NULL)
                 {
-                    llist_root_append_node(&chunk_list, chunk_node);
+                    LinkedList_append_node(&chunk_list, chunk_node);
                 }
                 else
                 {
-                    llist_node_free(NULL, chunk_node);
+                    LinkedListNode_free(NULL, chunk_node);
                 }
                 break;
                 
                 case ADPCM_AIFC_SOUND_CHUNK_ID:
                 seen_ssnd++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)AdpcmAifcSoundChunk_new_from_file(fi, chunk_size);
-                llist_root_append_node(&chunk_list, chunk_node);
+                LinkedList_append_node(&chunk_list, chunk_node);
                 break;
 
                 default:
@@ -204,14 +204,14 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
     // Done with FORM header.
     // Now iterate the list and assign pointers.
-    struct llist_node *node = chunk_list.root;
+    struct LinkedListNode *node = chunk_list.head;
     chunk_count = 0;
 
     // This will overriter the base AdpcmAifcFile convenience pointers if there
     // are duplicate chunks.
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
 
         chunk_id = *(uint32_t *)node->data;
         switch (chunk_id)
@@ -242,7 +242,7 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct file_info *fi)
 
         p->chunks[chunk_count] = node->data;
 
-        llist_node_free(NULL, node);
+        LinkedListNode_free(NULL, node);
         node = next;
         chunk_count++;
     }

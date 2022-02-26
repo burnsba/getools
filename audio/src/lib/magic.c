@@ -174,8 +174,8 @@ struct ALADPCMBook *estimate_codebook(
     int axb_solved;
     int stable;
     int i;
-    struct llist_root *ar_frames;
-    struct llist_node *node;
+    struct LinkedList *ar_frames;
+    struct LinkedListNode *node;
 
     // init
     frame_buffer = (int16_t *)malloc_zero(FRAME_DECODE_BUFFER_LEN, sizeof(int16_t));
@@ -188,7 +188,7 @@ struct ALADPCMBook *estimate_codebook(
     acf_r = (double *)malloc_zero(order, sizeof(double));
     predictor_coefficients = (double *)malloc_zero(order, sizeof(double));
 
-    ar_frames = llist_root_new();
+    ar_frames = LinkedList_new();
     
     tally_container = (double **)malloc_zero(TABLE_MAX_PREDICTORS, sizeof(double*));
 
@@ -308,9 +308,9 @@ struct ALADPCMBook *estimate_codebook(
         rfroma(ar_parameters, (size_t)order, acf_r);
 
         struct frame_data* fd = frame_data_new((size_t)main_while_count, norm, acf_r, (size_t)order);
-        node = llist_node_new();
+        node = LinkedListNode_new();
         node->data = fd;
-        llist_root_append_node(ar_frames, node);
+        LinkedList_append_node(ar_frames, node);
 
         ar_frame_count++;
 
@@ -373,10 +373,10 @@ continue_while_frame_read:
             printf("threshold filtering: min=%g max=%g\n", frame_measure_threshold_min, frame_measure_threshold_max);
         }
 
-        node = ar_frames->root;
+        node = ar_frames->head;
         while (node != NULL)
         {
-            struct llist_node *next_node;
+            struct LinkedListNode *next_node;
             struct frame_data* fd = node->data;
 
             next_node = node->next;
@@ -386,7 +386,7 @@ continue_while_frame_read:
                 if (fd->norm > frame_measure_threshold_max || fd->norm < frame_measure_threshold_min)
                 {
                     frame_data_free(fd);
-                    llist_node_free(ar_frames, node);
+                    LinkedListNode_free(ar_frames, node);
                     filter_remove_count++;
                 }
             }
@@ -409,7 +409,7 @@ continue_while_frame_read:
     */
     size_t captures = ar_frames->count;
     size_t capture_index = 0;
-    node = ar_frames->root;
+    node = ar_frames->head;
     while (node != NULL)
     {
         struct frame_data* fd = node->data;
@@ -460,7 +460,7 @@ continue_while_frame_read:
 
     // cleanup
 
-    node = ar_frames->root;
+    node = ar_frames->head;
     while (node != NULL)
     {
         struct frame_data *fd = node->data;
@@ -472,7 +472,7 @@ continue_while_frame_read:
 
         node = node->next;
     }
-    llist_node_root_free(ar_frames);
+    LinkedList_free(ar_frames);
 
     free(frame_buffer);
     free(previous_frame_buffer_f64);

@@ -78,7 +78,7 @@ struct CoefParseContext {
     /**
      * List of code book values read.
     */
-    struct llist_root *book_val;
+    struct LinkedList *book_val;
 
     struct ALADPCMBook *book;
 };
@@ -187,7 +187,7 @@ static struct CoefParseContext *CoefParseContext_new()
     
     context->current_property = (struct RuntimeTypeInfo *)malloc_zero(1, sizeof(struct RuntimeTypeInfo));
     
-    context->book_val = llist_root_new();
+    context->book_val = LinkedList_new();
 
     context->book = (struct ALADPCMBook *)malloc_zero(1, sizeof(struct ALADPCMBook));
 
@@ -209,7 +209,7 @@ static void CoefParseContext_free(struct CoefParseContext *context)
     free(context->property_value_buffer);
     free(context->property_name_buffer);
 
-    llist_node_root_free(context->book_val);
+    LinkedList_free(context->book_val);
     
     free(context);
 
@@ -370,12 +370,12 @@ static void apply_property_on_book(struct CoefParseContext *context)
                 context->current_value_int = INT16_MIN;
             }
             
-            struct llist_node *node = llist_node_new();
+            struct LinkedListNode *node = LinkedListNode_new();
 
             // codebook values are stored big endian
             node->data_local = BSWAP16_INLINE((uint16_t)context->current_value_int);
 
-            llist_root_append_node(context->book_val, node);
+            LinkedList_append_node(context->book_val, node);
 
             context->list_count++;
         }
@@ -410,7 +410,7 @@ static void check_resolve(struct CoefParseContext *context)
     }
 
     struct ALADPCMBook *book = context->book;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     int i;
 
     if (book->order == 0)
@@ -437,7 +437,7 @@ static void check_resolve(struct CoefParseContext *context)
     book->book = (int16_t *)malloc_zero(1, book_bytes);
 
     for (
-        i = 0, node = context->book_val->root;
+        i = 0, node = context->book_val->head;
         (size_t)i < context->book_val->count && node != NULL;
         i++, node = node->next)
     {

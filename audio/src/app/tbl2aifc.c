@@ -54,7 +54,7 @@ static char ctl_filename[MAX_FILENAME_LEN] = {0};
 static char tbl_filename[MAX_FILENAME_LEN] = {0};
 static char inst_filename[MAX_FILENAME_LEN] = {0};
 static char names_filename[MAX_FILENAME_LEN] = {0};
-static struct llist_root user_names = {0};
+static struct LinkedList user_names = {0};
 static int generate_aifc = 1;
 static int generate_inst = 1;
 
@@ -345,7 +345,7 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER(__func__)
 
-    static struct llist_node *name_node = NULL;
+    static struct LinkedListNode *name_node = NULL;
     size_t len = 0;
 
     // only apply user specified filename if there are unclaimed names
@@ -355,7 +355,7 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
 
         if (wavetable->id == 0)
         {
-            name_node = user_names.root;
+            name_node = user_names.head;
         }
 
         if (name_node != NULL)
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
         parse_names(names_file_contents, file_length, &user_names);
         free(names_file_contents);
 
-        // llist_node_string_data_print(&user_names);
+        // LinkedListNode_string_data_print(&user_names);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -510,8 +510,8 @@ int main(int argc, char **argv)
         free(tbl_file_contents);
     }
 
-    llist_node_free_string_data(&user_names);
-    llist_node_root_free_children(&user_names);
+    LinkedListNode_free_string_data(&user_names);
+    LinkedList_free_children(&user_names);
     
     ALBankFile_free(bank_file);
 

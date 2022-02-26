@@ -62,7 +62,7 @@ struct InstParseContext {
      * been declared.
      * 
      * Some of these blocks also abuse the `struct AL-` and store a list
-     * of unmet dependencies (llist_root) on a pointer in the object.
+     * of unmet dependencies (LinkedList) on a pointer in the object.
      * This is resolved and removed once parsing is complete.
      * 
      * For objects that don't use a list (only have single child dependency),
@@ -1313,7 +1313,7 @@ static void apply_property_on_instance_bank(struct InstParseContext *context)
     {
         case INST_BANK_PROPERTY_INSTRUMENT_ARR_ENTRY:
         {
-            struct llist_node *node;
+            struct LinkedListNode *node;
             struct KeyValue *kvp;
 
             if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
@@ -1324,14 +1324,14 @@ static void apply_property_on_instance_bank(struct InstParseContext *context)
             // borrow inst_offsets property to store list of references.
             if (bank->inst_offsets == NULL)
             {
-                bank->inst_offsets = (void *)llist_root_new();
+                bank->inst_offsets = (void *)LinkedList_new();
             }
 
             kvp = KeyValue_new_value(context->property_value_buffer);
             kvp->key = context->array_index_int;
-            node = llist_node_new();
+            node = LinkedListNode_new();
             node->data = kvp;
-            llist_root_append_node((struct llist_root*)bank->inst_offsets, node);
+            LinkedList_append_node((struct LinkedList*)bank->inst_offsets, node);
         }
         break;
 
@@ -1551,7 +1551,7 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
 
         case INST_INSTRUMENT_PROPERTY_SOUND_ARR_ENTRY:
         {
-            struct llist_node *node;
+            struct LinkedListNode *node;
             struct KeyValue *kvp;
 
             if (DEBUG_PARSE_INST && g_verbosity >= VERBOSE_DEBUG)
@@ -1562,14 +1562,14 @@ void apply_property_on_instance_instrument(struct InstParseContext *context)
             // borrow sound_offsets property to store list of references.
             if (instrument->sound_offsets == NULL)
             {
-                instrument->sound_offsets = (void *)llist_root_new();
+                instrument->sound_offsets = (void *)LinkedList_new();
             }
 
             kvp = KeyValue_new_value(context->property_value_buffer);
             kvp->key = context->array_index_int;
-            node = llist_node_new();
+            node = LinkedListNode_new();
             node->data = kvp;
-            llist_root_append_node((struct llist_root*)instrument->sound_offsets, node);
+            LinkedList_append_node((struct LinkedList*)instrument->sound_offsets, node);
         }
         break;
 
@@ -2278,13 +2278,13 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
     char *htkey;
     int count;
     int i;
-    struct llist_root *need_names;
-    struct llist_node *node;
+    struct LinkedList *need_names;
+    struct LinkedListNode *node;
     struct KeyValue *kvp;
     struct ALSound *sound;
 
     // sound_offsets was borrowed as list container.
-    need_names = (struct llist_root *)instrument->sound_offsets;
+    need_names = (struct LinkedList *)instrument->sound_offsets;
 
     if (need_names == NULL)
     {
@@ -2298,18 +2298,18 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
 
     if (count == 0)
     {
-        llist_node_root_free(need_names);
+        LinkedList_free(need_names);
 
         TRACE_LEAVE(__func__)
         return;
     }
 
     // sort nodes by array index ("key" property, not "value") read from .inst file, smallest to largest.
-    llist_root_merge_sort(need_names, llist_node_KeyValue_compare_smaller_key);
+    LinkedList_merge_sort(need_names, LinkedListNode_KeyValue_compare_smaller_key);
 
     instrument->sounds = (struct ALSound **)malloc_zero(instrument->sound_count, sizeof(void*));
 
-    node = need_names->root;
+    node = need_names->head;
     for (i=0; node != NULL; i++, node = node->next)
     {
         kvp = node->data;
@@ -2344,7 +2344,7 @@ static void resolve_references_instrument(struct InstParseContext *context, stru
         node->data = NULL;
     }
 
-    llist_node_root_free(need_names);
+    LinkedList_free(need_names);
 
     instrument->sound_offsets = NULL;
 
@@ -2369,13 +2369,13 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
     char *htkey;
     int count;
     int i;
-    struct llist_root *need_names;
-    struct llist_node *node;
+    struct LinkedList *need_names;
+    struct LinkedListNode *node;
     struct KeyValue *kvp;
     struct ALInstrument *instrument;
 
     // inst_offsets was borrowed as list container.
-    need_names = (struct llist_root *)bank->inst_offsets;
+    need_names = (struct LinkedList *)bank->inst_offsets;
 
     if (need_names == NULL)
     {
@@ -2389,18 +2389,18 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
 
     if (count == 0)
     {
-        llist_node_root_free(need_names);
+        LinkedList_free(need_names);
 
         TRACE_LEAVE(__func__)
         return;
     }
 
     // sort nodes by array index ("key" property, not "value") read from .inst file, smallest to largest.
-    llist_root_merge_sort(need_names, llist_node_KeyValue_compare_smaller_key);
+    LinkedList_merge_sort(need_names, LinkedListNode_KeyValue_compare_smaller_key);
 
     bank->instruments = (struct ALInstrument **)malloc_zero(bank->inst_count, sizeof(void*));
 
-    node = need_names->root;
+    node = need_names->head;
     for (i=0; node != NULL; i++, node = node->next)
     {
         kvp = node->data;
@@ -2435,7 +2435,7 @@ static void resolve_references_bank(struct InstParseContext *context, struct ALB
         node->data = NULL;
     }
 
-    llist_node_root_free(need_names);
+    LinkedList_free(need_names);
 
     bank->inst_offsets = NULL;
     

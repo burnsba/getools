@@ -49,7 +49,7 @@ void TestKeyValue_free(struct TestKeyValue *tkvp)
     }
 }
 
-int llist_node_TestKeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second)
+int LinkedListNode_TestKeyValue_compare_smaller_key(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     int ret;
 

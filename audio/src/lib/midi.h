@@ -494,7 +494,7 @@ struct GmidTrack {
     /**
      * List of cseq/MIDI events.
     */
-    struct llist_root *events;
+    struct LinkedList *events;
 
     /**
      * Size in bytes of data buffer.
@@ -561,7 +561,7 @@ struct MidiConvertOptions {
 
     // not a configuration option, used at runtime.
     struct file_info *runtime_pattern_file;
-    struct llist_root *runtime_patterns_list;
+    struct LinkedList *runtime_patterns_list;
 };
 
 #define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
@@ -616,12 +616,12 @@ void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
 void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
-void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct llist_root *matches);
+void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct LinkedList *matches);
 void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track);
 void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct MidiConvertOptions *options);
-void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches);
-void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct llist_root *matches);
-int where_SeqPatternMatch_is_track(struct llist_node *node, int arg1);
+void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct LinkedList *matches);
+void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct LinkedList *matches);
+int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1);
 void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack);
 
 // options

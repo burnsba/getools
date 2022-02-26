@@ -862,13 +862,13 @@ void bswap32_chunk(void *dest, const void *src, size_t num)
  * Lines that begin with a '#' (after zero or more whitespace) are ignored.
  * Non alphanumeric characters are ignored except: -_,.()[]
  * Space characters are accepted within.
- * If the processed line is non-empty, a new {@code struct string_data struct llist_node}
+ * If the processed line is non-empty, a new {@code struct string_data} (list node)
  * is allocated and appended to the list of names.
  * @param names_file_contents: buffer containing file content.
  * @param file_length: size in bytes of file content array.
  * @param names: linked list to append names to. Must be previously allocated.
 */
-void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names)
+void parse_names(uint8_t *names_file_contents, size_t file_length, struct LinkedList *names)
 {
     TRACE_ENTER(__func__)
 
@@ -966,9 +966,9 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
 
             if (current_len > 0)
             {
-                struct llist_node *node = llist_node_string_data_new();
+                struct LinkedListNode *node = LinkedListNode_string_data_new();
                 set_string_data((struct string_data *)node->data, name_buffer, current_len);
-                llist_root_append_node(names, node);
+                LinkedList_append_node(names, node);
                 memset(name_buffer, 0, MAX_FILENAME_LEN);
             }
 
@@ -987,9 +987,9 @@ void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_
 
     if (current_len > 0)
     {
-        struct llist_node *node = llist_node_string_data_new();
+        struct LinkedListNode *node = LinkedListNode_string_data_new();
         set_string_data((struct string_data *)node->data, name_buffer, current_len);
-        llist_root_append_node(names, node);
+        LinkedList_append_node(names, node);
         memset(name_buffer, 0, MAX_FILENAME_LEN);
     }
 

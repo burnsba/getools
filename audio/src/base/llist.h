@@ -6,7 +6,7 @@
 /**
  * Simple double linked list node.
 */
-struct llist_node
+struct LinkedListNode
 {
     /**
      * Internal id.
@@ -26,18 +26,18 @@ struct llist_node
     /**
      * Next node.
     */
-    struct llist_node *next;
+    struct LinkedListNode *next;
 
     /**
      * Previous node.
     */
-    struct llist_node *prev;
+    struct LinkedListNode *prev;
 };
 
 /**
  * Simple double linked list root object.
 */
-struct llist_root
+struct LinkedList
 {
     /**
      * Number of nodes in the list.
@@ -47,12 +47,12 @@ struct llist_root
     /**
      * First node in the list.
     */
-    struct llist_node *root;
+    struct LinkedListNode *head;
 
     /**
      * Last node in the list.
     */
-    struct llist_node *tail;
+    struct LinkedListNode *tail;
 };
 
 /**
@@ -76,36 +76,38 @@ struct string_data
  * (1, 0, -1). Value of -1 accepts the first node, value of zero means the nodes
  * should be considered equal, and a value of 1 accepts the second node.
 */
-typedef int (*f_llist_node_compare)(struct llist_node *, struct llist_node *);
+typedef int (*f_LinkedListNode_compare)(struct LinkedListNode *, struct LinkedListNode *);
 
 /**
  * function that accepts single node and returns bool result. Value
  * of 1 indicates the node should be accepted, value of zero means
  * node should not be accepted.
 */
-typedef int (*f_llist_node_filter)(struct llist_node *node);
-typedef int (*f_llist_node_filter_i)(struct llist_node *node, int arg1);
+typedef int (*f_LinkedListNode_filter)(struct LinkedListNode *node);
+typedef int (*f_LinkedListNode_filter_i)(struct LinkedListNode *node, int arg1);
 
-void llist_root_append_node(struct llist_root *root, struct llist_node *node);
-struct llist_node *llist_node_new(void);
-struct llist_node *llist_node_string_data_new(void);
-struct llist_root *llist_root_new(void);
-struct llist_node *llist_node_copy(struct llist_node *source);
+struct LinkedListNode *LinkedListNode_new(void);
+struct LinkedListNode *LinkedListNode_string_data_new(void);
+struct LinkedList *LinkedList_new(void);
+struct LinkedListNode *LinkedListNode_copy(struct LinkedListNode *source);
+
+void LinkedList_append_node(struct LinkedList *root, struct LinkedListNode *node);
+void LinkedList_free(struct LinkedList *root);
+void LinkedList_free_children(struct LinkedList *root);
+void LinkedList_free_only_self(struct LinkedList *root);
+void LinkedListNode_free(struct LinkedList *root, struct LinkedListNode *node);
+void LinkedListNode_detach(struct LinkedList *root, struct LinkedListNode *node);
+void LinkedListNode_move(struct LinkedList *dest, struct LinkedList *src, struct LinkedListNode *node);
+void LinkedListNode_insert_before(struct LinkedList *root, struct LinkedListNode *current, struct LinkedListNode *to_insert);
+void LinkedListNode_swap(struct LinkedList *root, struct LinkedListNode *first, struct LinkedListNode *second);
+
+void LinkedListNode_free_string_data(struct LinkedList *root);
+void LinkedListNode_string_data_print(struct LinkedList *root);
 void set_string_data(struct string_data *sd, char *text, size_t len);
 void string_data_free(struct string_data *sd);
-void llist_node_string_data_print(struct llist_root *root);
-void llist_node_root_free_children(struct llist_root *root);
-void llist_node_root_free(struct llist_root *root);
-void llist_node_root_free_only_self(struct llist_root *root);
-void llist_node_free_string_data(struct llist_root *root);
-void llist_node_free(struct llist_root *root, struct llist_node *node);
-void llist_node_detach(struct llist_root *root, struct llist_node *node);
-void llist_node_move(struct llist_root *dest, struct llist_root *src, struct llist_node *node);
-void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert);
-void llist_node_swap(struct llist_root *root, struct llist_node *first, struct llist_node *second);
 
-void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback);
-void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1);
-void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback);
-int llist_node_KeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second);
+void LinkedList_where(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter filter_callback);
+void LinkedList_where_i(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter_i filter_callback, int arg1);
+void LinkedList_merge_sort(struct LinkedList *root, f_LinkedListNode_compare compare_callback);
+int LinkedListNode_KeyValue_compare_smaller_key(struct LinkedListNode *first, struct LinkedListNode *second);
 #endif

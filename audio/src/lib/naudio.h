@@ -275,7 +275,7 @@ struct ALWaveTable {
     /**
      * A list of all `ALSound` that are known to reference this object.
     */
-    struct llist_root *parents;
+    struct LinkedList *parents;
 
     /**
      * Flag to indicate if this object has been written to destination yet.
@@ -349,7 +349,7 @@ struct ALKeyMap {
     /**
      * A list of all `ALSound` that are known to reference this object.
     */
-    struct llist_root *parents;
+    struct LinkedList *parents;
 
     /**
      * Flag to indicate if this object has been written to destination yet.
@@ -421,7 +421,7 @@ struct ALEnvelope {
     /**
      * A list of all `ALSound` that are known to reference this object.
     */
-    struct llist_root *parents;
+    struct LinkedList *parents;
 
     /**
      * Flag to indicate if this object has been written to destination yet.
@@ -518,7 +518,7 @@ struct ALSound {
     /**
      * A list of all `ALInstrument` that are known to reference this object.
     */
-    struct llist_root *parents;
+    struct LinkedList *parents;
 
     /**
      * Flag to indicate if this object has been written to destination yet.
@@ -618,7 +618,7 @@ struct ALInstrument {
     /**
      * A list of all `ALBank` that are known to reference this object.
     */
-    struct llist_root *parents;
+    struct LinkedList *parents;
 
     /**
      * Flag to indicate if this object has been written to destination yet.

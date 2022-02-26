@@ -35,9 +35,9 @@ void midi_all(int *run_count, int *pass_count, int *fail_count)
 }
 
 #define DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST 0
-void parse_seq_bytes_to_event_list(uint8_t *data, size_t buffer_len, struct llist_root *event_list)
+void parse_seq_bytes_to_event_list(uint8_t *data, size_t buffer_len, struct LinkedList *event_list)
 {
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct GmidEvent *event;
     size_t track_pos;
     int32_t command;
@@ -90,9 +90,9 @@ void parse_seq_bytes_to_event_list(uint8_t *data, size_t buffer_len, struct llis
             command = 0;
         }
 
-        node = llist_node_new();
+        node = LinkedListNode_new();
         node->data = event;
-        llist_root_append_node(event_list, node);
+        LinkedList_append_node(event_list, node);
     }
 
 #if DEBUG_PARSE_SEQ_BYTES_TO_EVENT_LIST

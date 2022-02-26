@@ -44,7 +44,7 @@ static int opt_names_file = 0;
 static char input_filename[MAX_FILENAME_LEN] = {0};
 static char output_filename[MAX_FILENAME_LEN] = {0};
 static char names_filename[MAX_FILENAME_LEN] = {0};
-static struct llist_root user_names = {0};
+static struct LinkedList user_names = {0};
 
 static struct option long_options[] =
 {
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
     uint16_t seq_len;
 
     // current name node from the list of user supplied names.
-    struct llist_node *name_node = NULL;
+    struct LinkedListNode *name_node = NULL;
 
     read_opts(argc, argv);
 
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
         parse_names(names_file_contents, file_length, &user_names);
         free(names_file_contents);
 
-        // llist_node_string_data_print(&user_names);
+        // LinkedListNode_string_data_print(&user_names);
     }
 
     // 4 is to skip the first 32 bits (seq count + padding)
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 
             if (i == 0)
             {
-                name_node = user_names.root;
+                name_node = user_names.head;
             }
 
             if (name_node != NULL)
@@ -358,8 +358,8 @@ int main(int argc, char **argv)
 
     free(input_file_contents);
 
-    llist_node_free_string_data(&user_names);
-    llist_node_root_free_children(&user_names);
+    LinkedListNode_free_string_data(&user_names);
+    LinkedList_free_children(&user_names);
 
     return 0;
 }

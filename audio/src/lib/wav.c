@@ -188,14 +188,14 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
     // be added to the wav container chunk list.
     pos = ftell(fi->fp);
 
-    struct llist_root chunk_list;
-    memset(&chunk_list, 0, sizeof(struct llist_root));
+    struct LinkedList chunk_list;
+    memset(&chunk_list, 0, sizeof(struct LinkedList));
 
     while (pos < fi->len)
     {
         if (pos + 8 < fi->len)
         {
-            struct llist_node *chunk_node;
+            struct LinkedListNode *chunk_node;
 
             pos += 8;
             chunk_count++;
@@ -209,23 +209,23 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
             {
                 case WAV_FMT_CHUNK_ID:
                 seen_fmt++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)WavFmtChunk_new_from_file(fi, chunk_size);
-                llist_root_append_node(&chunk_list, chunk_node);
+                LinkedList_append_node(&chunk_list, chunk_node);
                 break;
                 
                 case WAV_DATA_CHUNK_ID:
                 seen_data++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)WavDataChunk_new_from_file(fi, chunk_size);
-                llist_root_append_node(&chunk_list, chunk_node);
+                LinkedList_append_node(&chunk_list, chunk_node);
                 break;
                 
                 case WAV_SMPL_CHUNK_ID:
                 seen_smpl++;
-                chunk_node = llist_node_new();
+                chunk_node = LinkedListNode_new();
                 chunk_node->data = (void *)WavSampleChunk_new_from_file(fi, chunk_size);
-                llist_root_append_node(&chunk_list, chunk_node);
+                LinkedList_append_node(&chunk_list, chunk_node);
                 break;
 
                 default:
@@ -270,14 +270,14 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
     // Done with FORM header.
     // Now iterate the list and assign pointers.
-    struct llist_node *node = chunk_list.root;
+    struct LinkedListNode *node = chunk_list.head;
     chunk_count = 0;
 
     // This will overwrite the base WavFile convenience pointers if there
     // are duplicate chunks.
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
 
         chunk_id = *(uint32_t *)node->data;
         switch (chunk_id)
@@ -297,7 +297,7 @@ struct WavFile *WavFile_new_from_file(struct file_info *fi)
 
         wav->chunks[chunk_count] = node->data;
 
-        llist_node_free(NULL, node);
+        LinkedListNode_free(NULL, node);
         node = next;
         chunk_count++;
     }

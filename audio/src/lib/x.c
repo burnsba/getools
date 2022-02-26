@@ -32,9 +32,9 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
 static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
 static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr);
 
-static int llist_node_sound_keymap_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
-static int llist_node_sound_envelope_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
-static int llist_node_sound_write_order_compare_smaller(struct llist_node *first, struct llist_node *second);
+static int LinkedListNode_sound_keymap_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
+static int LinkedListNode_sound_envelope_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
+static int LinkedListNode_sound_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 
 // end forward declarations
 
@@ -689,8 +689,8 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
     struct file_info *output;
     int bank_count;
-    struct llist_root *list_sounds = llist_root_new();
-    struct llist_node *node;
+    struct LinkedList *list_sounds = LinkedList_new();
+    struct LinkedListNode *node;
     struct StringHashTable *seen = StringHashTable_new();
 
     // first step, collect everything
@@ -722,9 +722,9 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
                             {
                                 sound->visited = 1;
 
-                                node = llist_node_new();
+                                node = LinkedListNode_new();
                                 node->data = sound;
-                                llist_root_append_node(list_sounds, node);
+                                LinkedList_append_node(list_sounds, node);
                             }
                         }
                     }
@@ -740,7 +740,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
     }
     else if (bank_file->ctl_sort_method == CTL_SORT_METHOD_META)
     {
-        llist_root_merge_sort(list_sounds, llist_node_sound_write_order_compare_smaller);
+        LinkedList_merge_sort(list_sounds, LinkedListNode_sound_write_order_compare_smaller);
     }
     else
     {
@@ -753,7 +753,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
     output = file_info_fopen(tbl_filename, "w");
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -790,7 +790,7 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 
     // done, cleanup.
 
-    llist_node_root_free(list_sounds);
+    LinkedList_free(list_sounds);
 
     file_info_free(output);
 
@@ -1511,7 +1511,7 @@ static void ALBankFile_write_natural_order_keymap_ctl(struct ALBankFile *bank_fi
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_keymap_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_keymap_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -1576,7 +1576,7 @@ static int llist_node_sound_keymap_write_order_compare_smaller(struct llist_node
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_envelope_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_envelope_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -1641,7 +1641,7 @@ static int llist_node_sound_envelope_write_order_compare_smaller(struct llist_no
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_write_order_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_write_order_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -1714,8 +1714,8 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
 
     int bank_count;
     int pos = *pos_ptr;
-    struct llist_root *list_sounds = llist_root_new();
-    struct llist_node *node;
+    struct LinkedList *list_sounds = LinkedList_new();
+    struct LinkedListNode *node;
 
     ALBankFile_clear_visited_flags(bank_file);
 
@@ -1750,9 +1750,9 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
                         {
                             sound->visited = 1;
 
-                            node = llist_node_new();
+                            node = LinkedListNode_new();
                             node->data = sound;
-                            llist_root_append_node(list_sounds, node);
+                            LinkedList_append_node(list_sounds, node);
                         }
                     }
                 }
@@ -1760,10 +1760,10 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
         }
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_envelope_write_order_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_envelope_write_order_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -1787,7 +1787,7 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
     *pos_ptr = pos;
 
     // cleanup
-    llist_node_root_free(list_sounds);
+    LinkedList_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }
@@ -1808,8 +1808,8 @@ static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file,
 
     int bank_count;
     int pos = *pos_ptr;
-    struct llist_root *list_sounds = llist_root_new();
-    struct llist_node *node;
+    struct LinkedList *list_sounds = LinkedList_new();
+    struct LinkedListNode *node;
 
     ALBankFile_clear_visited_flags(bank_file);
 
@@ -1844,9 +1844,9 @@ static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file,
                         {
                             sound->visited = 1;
 
-                            node = llist_node_new();
+                            node = LinkedListNode_new();
                             node->data = sound;
-                            llist_root_append_node(list_sounds, node);
+                            LinkedList_append_node(list_sounds, node);
                         }
                     }
                 }
@@ -1854,10 +1854,10 @@ static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file,
         }
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_keymap_write_order_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_keymap_write_order_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -1881,7 +1881,7 @@ static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file,
     *pos_ptr = pos;
 
     // cleanup
-    llist_node_root_free(list_sounds);
+    LinkedList_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }
@@ -1967,8 +1967,8 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
 
     int bank_count;
     int pos = *pos_ptr;
-    struct llist_root *list_sounds = llist_root_new();
-    struct llist_node *node;
+    struct LinkedList *list_sounds = LinkedList_new();
+    struct LinkedListNode *node;
 
     ALBankFile_clear_visited_flags(bank_file);
 
@@ -2003,9 +2003,9 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
                         {
                             sound->visited = 1;
 
-                            node = llist_node_new();
+                            node = LinkedListNode_new();
                             node->data = sound;
-                            llist_root_append_node(list_sounds, node);
+                            LinkedList_append_node(list_sounds, node);
                         }
                     }
                 }
@@ -2013,10 +2013,10 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
         }
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_write_order_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_write_order_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -2039,7 +2039,7 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
     *pos_ptr = pos;
 
     // cleanup
-    llist_node_root_free(list_sounds);
+    LinkedList_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }

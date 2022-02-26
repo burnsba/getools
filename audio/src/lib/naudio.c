@@ -542,13 +542,13 @@ void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent)
 
     if (keymap->parents == NULL)
     {
-        keymap->parents = llist_root_new();
+        keymap->parents = LinkedList_new();
     }
 
-    struct llist_node *node = llist_node_new();
+    struct LinkedListNode *node = LinkedListNode_new();
     node->data = parent;
 
-    llist_root_append_node(keymap->parents, node);
+    LinkedList_append_node(keymap->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -564,13 +564,13 @@ void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent)
 
     if (envelope->parents == NULL)
     {
-        envelope->parents = llist_root_new();
+        envelope->parents = LinkedList_new();
     }
 
-    struct llist_node *node = llist_node_new();
+    struct LinkedListNode *node = LinkedListNode_new();
     node->data = parent;
 
-    llist_root_append_node(envelope->parents, node);
+    LinkedList_append_node(envelope->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -586,13 +586,13 @@ void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *paren
 
     if (wavetable->parents == NULL)
     {
-        wavetable->parents = llist_root_new();
+        wavetable->parents = LinkedList_new();
     }
 
-    struct llist_node *node = llist_node_new();
+    struct LinkedListNode *node = LinkedListNode_new();
     node->data = parent;
 
-    llist_root_append_node(wavetable->parents, node);
+    LinkedList_append_node(wavetable->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -608,13 +608,13 @@ void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent)
 
     if (sound->parents == NULL)
     {
-        sound->parents = llist_root_new();
+        sound->parents = LinkedList_new();
     }
 
-    struct llist_node *node = llist_node_new();
+    struct LinkedListNode *node = LinkedListNode_new();
     node->data = parent;
 
-    llist_root_append_node(sound->parents, node);
+    LinkedList_append_node(sound->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -630,13 +630,13 @@ void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *par
 
     if (instrument->parents == NULL)
     {
-        instrument->parents = llist_root_new();
+        instrument->parents = LinkedList_new();
     }
 
-    struct llist_node *node = llist_node_new();
+    struct LinkedListNode *node = LinkedListNode_new();
     node->data = parent;
 
-    llist_root_append_node(instrument->parents, node);
+    LinkedList_append_node(instrument->parents, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -1603,7 +1603,7 @@ void ALEnvelope_notify_parents_null(struct ALEnvelope *envelope)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
 
     if (envelope == NULL || envelope->parents == NULL)
     {
@@ -1611,10 +1611,10 @@ void ALEnvelope_notify_parents_null(struct ALEnvelope *envelope)
         return;
     }
 
-    node = envelope->parents->root;
+    node = envelope->parents->head;
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
         struct ALSound *sound = node->data;
 
         if (sound != NULL)
@@ -1622,7 +1622,7 @@ void ALEnvelope_notify_parents_null(struct ALEnvelope *envelope)
             if (sound->envelope == envelope)
             {
                 sound->envelope = NULL;
-                llist_node_free(envelope->parents, node);
+                LinkedListNode_free(envelope->parents, node);
             }
         }
 
@@ -1650,7 +1650,7 @@ void ALEnvelope_free(struct ALEnvelope *envelope)
 
     if (envelope->parents != NULL)
     {
-        llist_node_root_free(envelope->parents);
+        LinkedList_free(envelope->parents);
         envelope->parents= NULL;
     }
 
@@ -1668,7 +1668,7 @@ void ALKeyMap_notify_parents_null(struct ALKeyMap *keymap)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
 
     if (keymap == NULL || keymap->parents == NULL)
     {
@@ -1676,10 +1676,10 @@ void ALKeyMap_notify_parents_null(struct ALKeyMap *keymap)
         return;
     }
 
-    node = keymap->parents->root;
+    node = keymap->parents->head;
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
         struct ALSound *sound = node->data;
 
         if (sound != NULL)
@@ -1687,7 +1687,7 @@ void ALKeyMap_notify_parents_null(struct ALKeyMap *keymap)
             if (sound->keymap == keymap)
             {
                 sound->keymap = NULL;
-                llist_node_free(keymap->parents, node);
+                LinkedListNode_free(keymap->parents, node);
             }
         }
 
@@ -1715,7 +1715,7 @@ void ALKeyMap_free(struct ALKeyMap *keymap)
 
     if (keymap->parents != NULL)
     {
-        llist_node_root_free(keymap->parents);
+        LinkedList_free(keymap->parents);
         keymap->parents= NULL;
     }
 
@@ -1733,7 +1733,7 @@ void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
 
     if (wavetable == NULL || wavetable->parents == NULL)
     {
@@ -1741,10 +1741,10 @@ void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable)
         return;
     }
 
-    node = wavetable->parents->root;
+    node = wavetable->parents->head;
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
         struct ALSound *sound = node->data;
 
         if (sound != NULL)
@@ -1752,7 +1752,7 @@ void ALWaveTable_notify_parents_null(struct ALWaveTable *wavetable)
             if (sound->wavetable == wavetable)
             {
                 sound->wavetable = NULL;
-                llist_node_free(wavetable->parents, node);
+                LinkedListNode_free(wavetable->parents, node);
             }
         }
 
@@ -1808,7 +1808,7 @@ void ALWaveTable_free(struct ALWaveTable *wavetable)
 
     if (wavetable->parents != NULL)
     {
-        llist_node_root_free(wavetable->parents);
+        LinkedList_free(wavetable->parents);
         wavetable->parents= NULL;
     }
 
@@ -1826,7 +1826,7 @@ void ALSound_notify_parents_null(struct ALSound *sound)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
 
     if (sound == NULL || sound->parents == NULL)
     {
@@ -1835,10 +1835,10 @@ void ALSound_notify_parents_null(struct ALSound *sound)
     }
 
     // Iterate each parent reference on `this`
-    node = sound->parents->root;
+    node = sound->parents->head;
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
         struct ALInstrument *instrument = node->data;
         int remove_flag = 0;
 
@@ -1852,7 +1852,7 @@ void ALSound_notify_parents_null(struct ALSound *sound)
                 struct ALSound *instrument_sound = instrument->sounds[i];
 
                 // If the current `this->parent->child` points to `this`,
-                // set the pointer to NULL. Mark the llist_node for deletion,
+                // set the pointer to NULL. Mark the LinkedListNode for deletion,
                 // but it can't be removed yet in case there's another 
                 // reference to `this`.
                 if (instrument_sound == sound)
@@ -1865,7 +1865,7 @@ void ALSound_notify_parents_null(struct ALSound *sound)
 
         if (remove_flag)
         {
-            llist_node_free(sound->parents, node);
+            LinkedListNode_free(sound->parents, node);
         }
 
         node = next;
@@ -1910,7 +1910,7 @@ void ALSound_free(struct ALSound *sound)
 
     if (sound->parents != NULL)
     {
-        llist_node_root_free(sound->parents);
+        LinkedList_free(sound->parents);
         sound->parents= NULL;
     }
 
@@ -1928,7 +1928,7 @@ void ALInstrument_notify_parents_null(struct ALInstrument *instrument)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
 
     if (instrument == NULL || instrument->parents == NULL)
     {
@@ -1937,10 +1937,10 @@ void ALInstrument_notify_parents_null(struct ALInstrument *instrument)
     }
 
     // Iterate each parent reference on `this`
-    node = instrument->parents->root;
+    node = instrument->parents->head;
     while (node != NULL)
     {
-        struct llist_node *next = node->next;
+        struct LinkedListNode *next = node->next;
         struct ALBank *bank = node->data;
         int remove_flag = 0;
 
@@ -1954,7 +1954,7 @@ void ALInstrument_notify_parents_null(struct ALInstrument *instrument)
                 struct ALInstrument *bank_instrument = bank->instruments[i];
 
                 // If the current `this->parent->child` points to `this`,
-                // set the pointer to NULL. Mark the llist_node for deletion,
+                // set the pointer to NULL. Mark the LinkedListNode for deletion,
                 // but it can't be removed yet in case there's another 
                 // reference to `this`.
                 if (bank_instrument == instrument)
@@ -1967,7 +1967,7 @@ void ALInstrument_notify_parents_null(struct ALInstrument *instrument)
 
         if (remove_flag)
         {
-            llist_node_free(instrument->parents, node);
+            LinkedListNode_free(instrument->parents, node);
         }
 
         node = next;
@@ -2016,7 +2016,7 @@ void ALInstrument_free(struct ALInstrument *instrument)
 
     if (instrument->parents != NULL)
     {
-        llist_node_root_free(instrument->parents);
+        LinkedList_free(instrument->parents);
         instrument->parents= NULL;
     }
 
@@ -2603,7 +2603,7 @@ static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_keymap_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_keymap_offset_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -2668,7 +2668,7 @@ static int llist_node_sound_keymap_offset_compare_smaller(struct llist_node *fir
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_envelope_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_envelope_offset_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -2733,7 +2733,7 @@ static int llist_node_sound_envelope_offset_compare_smaller(struct llist_node *f
  * @param second: second node
  * @returns: comparison result
 */
-static int llist_node_sound_offset_compare_smaller(struct llist_node *first, struct llist_node *second)
+static int LinkedListNode_sound_offset_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -2809,8 +2809,8 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
      * iterate sounds list and set envelope write_order from sort order.
     */
 
-    struct llist_root *list_sounds = llist_root_new();
-    struct llist_node *node;
+    struct LinkedList *list_sounds = LinkedList_new();
+    struct LinkedListNode *node;
     int bank_count;
     int write_order;
 
@@ -2852,9 +2852,9 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
 
                             sound->visited = 1;
 
-                            node = llist_node_new();
+                            node = LinkedListNode_new();
                             node->data = sound;
-                            llist_root_append_node(list_sounds, node);
+                            LinkedList_append_node(list_sounds, node);
                         }
                     }
                 }
@@ -2862,13 +2862,13 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
         }
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_offset_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_offset_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
     // start at non-zero.
     write_order = 1;
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -2883,13 +2883,13 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
         node = node->next;
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_envelope_offset_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_envelope_offset_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
     // start at non-zero.
     write_order = 1;
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -2904,13 +2904,13 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
         node = node->next;
     }
 
-    llist_root_merge_sort(list_sounds, llist_node_sound_keymap_offset_compare_smaller);
+    LinkedList_merge_sort(list_sounds, LinkedListNode_sound_keymap_offset_compare_smaller);
     ALBankFile_clear_visited_flags(bank_file);
 
     // start at non-zero.
     write_order = 1;
 
-    node = list_sounds->root;
+    node = list_sounds->head;
     while (node != NULL)
     {
         struct ALSound *sound = (struct ALSound *)node->data;
@@ -2925,7 +2925,7 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
         node = node->next;
     }
 
-    llist_node_root_free(list_sounds);
+    LinkedList_free(list_sounds);
 
     TRACE_LEAVE(__func__)
 }

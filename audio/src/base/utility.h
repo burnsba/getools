@@ -92,7 +92,7 @@ size_t file_info_fwrite_bswap(struct file_info *fi, const void *data, size_t siz
 int file_info_fclose(struct file_info *fi);
 void file_info_free(struct file_info *fi);
 
-void parse_names(uint8_t *names_file_contents, size_t file_length, struct llist_root *names);
+void parse_names(uint8_t *names_file_contents, size_t file_length, struct LinkedList *names);
 void get_filename(char *string, char *filename, size_t max_len);
 void change_filename_extension(char *input_filename, char *output_filename, char *new_extension, size_t max_len);
 int string_ends_with(const char * str, const char * suffix);

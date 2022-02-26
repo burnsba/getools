@@ -11,22 +11,22 @@
  * Support for a simple text node is included.
 */
 
-static int32_t next_llist_node_id = 0;
+static int32_t next_node_id = 0;
 
 /**
  * Appends a node to the list and increments list count.
  * @param root: list to add node to.
  * @param node: node to add to list.
 */
-void llist_root_append_node(struct llist_root *root, struct llist_node *node)
+void LinkedList_append_node(struct LinkedList *root, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
 
     root->count++;
 
-    if (root->root == NULL)
+    if (root->head == NULL)
     {
-        root->root = node;
+        root->head = node;
         root->tail = node;
     }
     else
@@ -48,14 +48,14 @@ void llist_root_append_node(struct llist_root *root, struct llist_node *node)
  * Allocates memory for a new node.
  * @returns: pointer to new node.
 */
-struct llist_node *llist_node_new()
+struct LinkedListNode *LinkedListNode_new()
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
+    struct LinkedListNode *node = (struct LinkedListNode *)malloc_zero(1, sizeof(struct LinkedListNode));
 
-    node->id = next_llist_node_id;
-    next_llist_node_id++;
+    node->id = next_node_id;
+    next_node_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -67,7 +67,7 @@ struct llist_node *llist_node_new()
  * Pointer of data is copied, beware duplicate references.
  * @returns: pointer to new node.
 */
-struct llist_node *llist_node_copy(struct llist_node *source)
+struct LinkedListNode *LinkedListNode_copy(struct LinkedListNode *source)
 {
     TRACE_ENTER(__func__)
 
@@ -76,10 +76,10 @@ struct llist_node *llist_node_copy(struct llist_node *source)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
+    struct LinkedListNode *node = (struct LinkedListNode *)malloc_zero(1, sizeof(struct LinkedListNode));
 
-    node->id = next_llist_node_id;
-    next_llist_node_id++;
+    node->id = next_node_id;
+    next_node_id++;
 
     node->data = source->data;
     node->data_local = source->data_local;
@@ -93,11 +93,11 @@ struct llist_node *llist_node_copy(struct llist_node *source)
  * Allocates memory for a new root.
  * @returns: pointer to new root.
 */
-struct llist_root *llist_root_new()
+struct LinkedList *LinkedList_new()
 {
     TRACE_ENTER(__func__)
 
-    struct llist_root *root = (struct llist_root *)malloc_zero(1, sizeof(struct llist_root));
+    struct LinkedList *root = (struct LinkedList *)malloc_zero(1, sizeof(struct LinkedList));
 
     TRACE_LEAVE(__func__)
 
@@ -108,15 +108,15 @@ struct llist_root *llist_root_new()
  * Allocates memory for a new node, and for a {@code struct string_data} data node.
  * @returns: pointer to new node.
 */
-struct llist_node *llist_node_string_data_new()
+struct LinkedListNode *LinkedListNode_string_data_new()
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node = (struct llist_node *)malloc_zero(1, sizeof(struct llist_node));
+    struct LinkedListNode *node = (struct LinkedListNode *)malloc_zero(1, sizeof(struct LinkedListNode));
     node->data = (struct string_data *)malloc_zero(1, sizeof(struct string_data));
 
-    node->id = next_llist_node_id;
-    next_llist_node_id++;
+    node->id = next_node_id;
+    next_node_id++;
 
     TRACE_LEAVE(__func__)
 
@@ -171,11 +171,11 @@ void string_data_free(struct string_data *sd)
 /**
  * Iterates a list of {@code struct string_data} and prints the text contents.
 */
-void llist_node_string_data_print(struct llist_root *root)
+void LinkedListNode_string_data_print(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node = root->root;
+    struct LinkedListNode *node = root->head;
     while (node != NULL)
     {
         struct string_data *sd = (struct string_data *)node->data;
@@ -201,11 +201,11 @@ void llist_node_string_data_print(struct llist_root *root)
  * @param root: list to remove node from. Optional. If not used, pass NULL.
  * @param node: node to remove from list.
 */
-void llist_node_free(struct llist_root *root, struct llist_node *node)
+void LinkedListNode_free(struct LinkedList *root, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
 
-    llist_node_detach(root, node);
+    LinkedListNode_detach(root, node);
 
     free(node);
 
@@ -223,7 +223,7 @@ void llist_node_free(struct llist_root *root, struct llist_node *node)
  * @param root: list to remove node from. Optional. If not used, pass NULL.
  * @param node: node to remove from list.
 */
-void llist_node_detach(struct llist_root *root, struct llist_node *node)
+void LinkedListNode_detach(struct LinkedList *root, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
 
@@ -233,14 +233,14 @@ void llist_node_detach(struct llist_root *root, struct llist_node *node)
         return;
     }
 
-    struct llist_node *next = node->next;
-    struct llist_node *prev = node->prev;
+    struct LinkedListNode *next = node->next;
+    struct LinkedListNode *prev = node->prev;
     int is_root = 0;
     int is_tail = 0;
 
     if (root != NULL)
     {
-        is_root = node == root->root;
+        is_root = node == root->head;
         is_tail = node == root->tail;
     }
 
@@ -263,7 +263,7 @@ void llist_node_detach(struct llist_root *root, struct llist_node *node)
 
         if (is_root)
         {
-            root->root = next;
+            root->head = next;
         }
 
         if (is_tail)
@@ -282,7 +282,7 @@ void llist_node_detach(struct llist_root *root, struct llist_node *node)
  * If root is NULL then nothing happens.
  * @param root: list to iterate and free child nodes.
 */
-void llist_node_root_free_children(struct llist_root *root)
+void LinkedList_free_children(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
@@ -292,8 +292,8 @@ void llist_node_root_free_children(struct llist_root *root)
         return;
     }
 
-    struct llist_node *node = root->root;
-    struct llist_node *next;
+    struct LinkedListNode *node = root->head;
+    struct LinkedListNode *next;
 
     while (node != NULL)
     {
@@ -302,7 +302,7 @@ void llist_node_root_free_children(struct llist_root *root)
         node = next;
     }
 
-    root->root = NULL;
+    root->head = NULL;
     root->tail = NULL;
     root->count = 0;
 
@@ -315,7 +315,7 @@ void llist_node_root_free_children(struct llist_root *root)
  * If root is NULL then nothing happens.
  * @param root: list to iterate and free child nodes.
 */
-void llist_node_free_string_data(struct llist_root *root)
+void LinkedListNode_free_string_data(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
@@ -325,7 +325,7 @@ void llist_node_free_string_data(struct llist_root *root)
         return;
     }
 
-    struct llist_node *node = root->root;
+    struct LinkedListNode *node = root->head;
 
     while (node != NULL)
     {
@@ -355,7 +355,7 @@ void llist_node_free_string_data(struct llist_root *root)
  * If root is NULL then nothing happens.
  * @param root: list to iterate and free.
 */
-void llist_node_root_free(struct llist_root *root)
+void LinkedList_free(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
@@ -365,8 +365,8 @@ void llist_node_root_free(struct llist_root *root)
         return;
     }
 
-    struct llist_node *node = root->root;
-    struct llist_node *next;
+    struct LinkedListNode *node = root->head;
+    struct LinkedListNode *next;
 
     while (node != NULL)
     {
@@ -375,7 +375,7 @@ void llist_node_root_free(struct llist_root *root)
         node = next;
     }
 
-    root->root = NULL;
+    root->head = NULL;
     root->tail = NULL;
     root->count = 0;
 
@@ -389,7 +389,7 @@ void llist_node_root_free(struct llist_root *root)
  * remain unchanged.
  * @param root: root element to free.
 */
-void llist_node_root_free_only_self(struct llist_root *root)
+void LinkedList_free_only_self(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
@@ -399,7 +399,7 @@ void llist_node_root_free_only_self(struct llist_root *root)
         return;
     }
 
-    root->root = NULL;
+    root->head = NULL;
     root->tail = NULL;
     root->count = 0;
 
@@ -414,7 +414,7 @@ void llist_node_root_free_only_self(struct llist_root *root)
  * @param current: current reference node.
  * @param to_insert: new node to insert.
 */
-void llist_node_insert_before(struct llist_root *root, struct llist_node *current, struct llist_node *to_insert)
+void LinkedListNode_insert_before(struct LinkedList *root, struct LinkedListNode *current, struct LinkedListNode *to_insert)
 {
     TRACE_ENTER(__func__)
 
@@ -447,9 +447,9 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
     {
         root->count++;
 
-        if (current == root->root)
+        if (current == root->head)
         {
-            root->root = to_insert;
+            root->head = to_insert;
         }
     }
 
@@ -463,7 +463,7 @@ void llist_node_insert_before(struct llist_root *root, struct llist_node *curren
  * @param first: first node to swap.
  * @param second: second node to swap.
 */
-void llist_node_swap(struct llist_root *root, struct llist_node *first, struct llist_node *second)
+void LinkedListNode_swap(struct LinkedList *root, struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -483,10 +483,10 @@ void llist_node_swap(struct llist_root *root, struct llist_node *first, struct l
         return;
     }
 
-    struct llist_node *first_prev = first->prev;
-    struct llist_node *first_next = first->next;
-    struct llist_node *second_prev = second->prev;
-    struct llist_node *second_next = second->next;
+    struct LinkedListNode *first_prev = first->prev;
+    struct LinkedListNode *first_next = first->next;
+    struct LinkedListNode *second_prev = second->prev;
+    struct LinkedListNode *second_next = second->next;
 
     first->prev = second_prev;
     first->next = second_next;
@@ -496,13 +496,13 @@ void llist_node_swap(struct llist_root *root, struct llist_node *first, struct l
 
     if (root != NULL)
     {
-        if (root->root == first)
+        if (root->head == first)
         {
-            root->root = second;
+            root->head = second;
         }
-        else if (root->root == second)
+        else if (root->head == second)
         {
-            root->root = first;
+            root->head = first;
         }
 
         if (root->tail == first)
@@ -555,7 +555,7 @@ void llist_node_swap(struct llist_root *root, struct llist_node *first, struct l
  * @param src: source list to remove from.
  * @param node: node to mode.
 */
-void llist_node_move(struct llist_root *dest, struct llist_root *src, struct llist_node *node)
+void LinkedListNode_move(struct LinkedList *dest, struct LinkedList *src, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
 
@@ -574,8 +574,8 @@ void llist_node_move(struct llist_root *dest, struct llist_root *src, struct lli
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> node is NULL\n", __func__, __LINE__);
     }
 
-    llist_node_detach(src, node);
-    llist_root_append_node(dest, node);
+    LinkedListNode_detach(src, node);
+    LinkedList_append_node(dest, node);
 
     TRACE_LEAVE(__func__)
 }
@@ -589,7 +589,7 @@ void llist_node_move(struct llist_root *dest, struct llist_root *src, struct lli
  * @param filter_callback: Callback function which accepts a node and returns 1
  * if node should match, zero otherwise.
 */
-void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llist_node_filter filter_callback)
+void LinkedList_where(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter filter_callback)
 {
     TRACE_ENTER(__func__)
 
@@ -603,11 +603,11 @@ void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llis
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
-    struct llist_node *copy;
+    struct LinkedListNode *node;
+    struct LinkedListNode *copy;
     int do_copy;
 
-    node = source->root;
+    node = source->head;
     while (node != NULL)
     {
         do_copy = 0;
@@ -623,8 +623,8 @@ void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llis
 
         if (do_copy)
         {
-            copy = llist_node_copy(node);
-            llist_root_append_node(dest, copy);
+            copy = LinkedListNode_copy(node);
+            LinkedList_append_node(dest, copy);
         }
 
         node = node->next;
@@ -643,7 +643,7 @@ void llist_root_where(struct llist_root *dest, struct llist_root *source, f_llis
  * if node should match, zero otherwise.
  * @param arg1: Integer argument to pass into callback.
 */
-void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_llist_node_filter_i filter_callback, int arg1)
+void LinkedList_where_i(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter_i filter_callback, int arg1)
 {
     TRACE_ENTER(__func__)
 
@@ -662,16 +662,16 @@ void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_ll
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> filter_callback is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
-    struct llist_node *copy;
+    struct LinkedListNode *node;
+    struct LinkedListNode *copy;
 
-    node = source->root;
+    node = source->head;
     while (node != NULL)
     {
         if (filter_callback(node, arg1))
         {
-            copy = llist_node_copy(node);
-            llist_root_append_node(dest, copy);
+            copy = LinkedListNode_copy(node);
+            LinkedList_append_node(dest, copy);
         }
 
         node = node->next;
@@ -688,12 +688,12 @@ void llist_root_where_i(struct llist_root *dest, struct llist_root *source, f_ll
  * @param firstptr: out parameter. Will contain pointer to first node in first half of the list (head node).
  * @param secondptr: out parameter. Will contain pointer to first node in second half of the list.
 */
-static void llist_node_split(struct llist_node *head, struct llist_node **firstptr, struct llist_node **secondptr)
+static void LinkedListNode_split(struct LinkedListNode *head, struct LinkedListNode **firstptr, struct LinkedListNode **secondptr)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *fast;
-    struct llist_node *slow;
+    struct LinkedListNode *fast;
+    struct LinkedListNode *slow;
    
     slow = head;
     fast = head->next;
@@ -724,11 +724,11 @@ static void llist_node_split(struct llist_node *head, struct llist_node **firstp
  * @param compare_callback: function that accepts two nodes and returns comparison result (1, 0, -1).
  * @returns: comparison winner.
 */
-static struct llist_node *llist_node_merge(struct llist_node *first, struct llist_node *second, f_llist_node_compare compare_callback)
+static struct LinkedListNode *LinkedListNode_merge(struct LinkedListNode *first, struct LinkedListNode *second, f_LinkedListNode_compare compare_callback)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *result;
+    struct LinkedListNode *result;
    
     if (first == NULL && second != NULL)
     {
@@ -750,12 +750,12 @@ static struct llist_node *llist_node_merge(struct llist_node *first, struct llis
     if (compare == 0 || compare == -1)
     {
         result = first;
-        result->next = llist_node_merge(first->next, second, compare_callback);
+        result->next = LinkedListNode_merge(first->next, second, compare_callback);
     }
     else
     {
         result = second;
-        result->next = llist_node_merge(first, second->next, compare_callback);
+        result->next = LinkedListNode_merge(first, second->next, compare_callback);
     }
 
     TRACE_LEAVE(__func__)
@@ -769,13 +769,13 @@ static struct llist_node *llist_node_merge(struct llist_node *first, struct llis
  * @param headptr: reference to pointer to node at start of list to sort.
  * @param compare_callback: function that accepts two nodes and returns comparison result (1, 0, -1).
 */
-static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_compare compare_callback)
+static void LinkedListNode_merge_sort(struct LinkedListNode **headptr, f_LinkedListNode_compare compare_callback)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *head = *headptr;
-    struct llist_node *firstptr;
-    struct llist_node *secondptr;
+    struct LinkedListNode *head = *headptr;
+    struct LinkedListNode *firstptr;
+    struct LinkedListNode *secondptr;
    
     if (head == NULL || head->next == NULL)
     {
@@ -783,12 +783,12 @@ static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_comp
         return;
     }
    
-    llist_node_split(head, &firstptr, &secondptr);
+    LinkedListNode_split(head, &firstptr, &secondptr);
    
-    llist_node_merge_sort(&firstptr, compare_callback);
-    llist_node_merge_sort(&secondptr, compare_callback);
+    LinkedListNode_merge_sort(&firstptr, compare_callback);
+    LinkedListNode_merge_sort(&secondptr, compare_callback);
    
-    *headptr = llist_node_merge(firstptr, secondptr, compare_callback);
+    *headptr = LinkedListNode_merge(firstptr, secondptr, compare_callback);
 
     TRACE_LEAVE(__func__)
 }
@@ -800,17 +800,17 @@ static void llist_node_merge_sort(struct llist_node **headptr, f_llist_node_comp
  *     (1, 0, -1). Value of -1 prefers the accepts the first node, value of zero means the nodes
  *     should be considered equal, and a value of 1 accepts the second node.
 */
-void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare_callback)
+void LinkedList_merge_sort(struct LinkedList *root, f_LinkedListNode_compare compare_callback)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_node *node;
-    struct llist_node *prev;
+    struct LinkedListNode *node;
+    struct LinkedListNode *prev;
    
-    llist_node_merge_sort(&root->root, compare_callback);
+    LinkedListNode_merge_sort(&root->head, compare_callback);
    
     // pointers to `prev` and root->tail are now broken, iterate the list and fix those
-    node = root->root;
+    node = root->head;
     prev = NULL;
     while (node != NULL)
     {
@@ -832,7 +832,7 @@ void llist_root_merge_sort(struct llist_root *root, f_llist_node_compare compare
  * @param second: second node
  * @returns: comparison result
 */
-int llist_node_KeyValue_compare_smaller_key(struct llist_node *first, struct llist_node *second)
+int LinkedListNode_KeyValue_compare_smaller_key(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 

@@ -46,7 +46,7 @@ struct StringHashBucket {
      * Linked list of bucket entries.
      * Type: `struct StringHashBucketEntry`.
     */
-    struct llist_root *entry_list;
+    struct LinkedList *entry_list;
 };
 
 /**
@@ -145,7 +145,7 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
 
@@ -184,10 +184,10 @@ void StringHashTable_add(struct StringHashTable *root, char *key, void *data)
     entry = StringHashBucketEntry_new(key);
     entry->data = data;
 
-    node = llist_node_new();
+    node = LinkedListNode_new();
     node->data = entry;
 
-    llist_root_append_node(bucket->entry_list, node);
+    LinkedList_append_node(bucket->entry_list, node);
 
     ht->num_entries++;
 
@@ -207,7 +207,7 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
 
@@ -251,7 +251,7 @@ int StringHashTable_contains(struct StringHashTable *root, char *key)
         return 0;
     }
 
-    node = bucket->entry_list->root;
+    node = bucket->entry_list->head;
     while (node != NULL)
     {
         entry = (struct StringHashBucketEntry *)node->data;
@@ -353,8 +353,8 @@ void StringHashTable_foreach(struct StringHashTable *root, StringHash_callback a
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_root *list;
-    struct llist_node *node;
+    struct LinkedList *list;
+    struct LinkedListNode *node;
     uint32_t i;
 
     if (root == NULL)
@@ -378,7 +378,7 @@ void StringHashTable_foreach(struct StringHashTable *root, StringHash_callback a
             list = bucket->entry_list;
             if (list != NULL)
             {
-                node = list->root;
+                node = list->head;
                 while (node != NULL)
                 {
                     entry = node->data;
@@ -414,8 +414,8 @@ int StringHashTable_any(struct StringHashTable *root, StringHash_bool_callback a
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_root *list;
-    struct llist_node *node;
+    struct LinkedList *list;
+    struct LinkedListNode *node;
     uint32_t i;
 
     if (first != NULL)
@@ -444,7 +444,7 @@ int StringHashTable_any(struct StringHashTable *root, StringHash_bool_callback a
             list = bucket->entry_list;
             if (list != NULL)
             {
-                node = list->root;
+                node = list->head;
                 while (node != NULL)
                 {
                     entry = node->data;
@@ -490,7 +490,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
     void *result;
@@ -533,7 +533,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
         stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table bucket is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
-    node = bucket->entry_list->root;
+    node = bucket->entry_list->head;
     while (node != NULL)
     {
         entry = (struct StringHashBucketEntry *)node->data;
@@ -550,7 +550,7 @@ static void *StringHashTable_pop_common(struct StringHashTable *root, char *key,
             if (pop)
             {
                 StringHashBucketEntry_free(entry);
-                llist_node_free(bucket->entry_list, node);
+                LinkedListNode_free(bucket->entry_list, node);
                 
                 ht->num_entries--;
             }
@@ -583,7 +583,7 @@ const char *StringHashTable_peek_next_key(struct StringHashTable *root)
     struct StringHashTable_internal *ht;
     struct StringHashBucket *bucket;
     struct StringHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t i;
 
     if (root == NULL)
@@ -611,7 +611,7 @@ const char *StringHashTable_peek_next_key(struct StringHashTable *root)
 
         if (bucket != NULL)
         {
-            node = bucket->entry_list->root;
+            node = bucket->entry_list->head;
             while (node != NULL)
             {
                 entry = (struct StringHashBucketEntry *)node->data;
@@ -704,7 +704,7 @@ static struct StringHashBucket *StringHashBucket_new()
 
     struct StringHashBucket *p = (struct StringHashBucket *)malloc_zero(1, sizeof(struct StringHashBucket));
 
-    p->entry_list = llist_root_new();
+    p->entry_list = LinkedList_new();
 
     TRACE_LEAVE(__func__)
 
@@ -728,9 +728,9 @@ static void StringHashBucket_free(struct StringHashBucket *bucket)
     if (bucket->entry_list != NULL)
     {
         struct StringHashBucketEntry *data;
-        struct llist_node *node;
+        struct LinkedListNode *node;
 
-        node = bucket->entry_list->root;
+        node = bucket->entry_list->head;
 
         while (node != NULL)
         {
@@ -744,7 +744,7 @@ static void StringHashBucket_free(struct StringHashBucket *bucket)
             node = node->next;
         }
 
-        llist_node_root_free(bucket->entry_list);
+        LinkedList_free(bucket->entry_list);
         bucket->entry_list = NULL;
     }
 

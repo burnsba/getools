@@ -71,9 +71,9 @@ struct SeqPatternMatch {
 
 // forward declarations
 
-int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_node *second);
-int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_node *second);
-int llist_node_SeqPatternMatch_compare_smaller(struct llist_node *first, struct llist_node *second);
+int LinkedListNode_gmidevent_compare_larger(struct LinkedListNode *first, struct LinkedListNode *second);
+int LinkedListNode_gmidevent_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
+int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 static struct SeqUnrollGrow *SeqUnrollGrow_new(void);
 static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int diff, int pattern_length);
 static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj);
@@ -90,7 +90,7 @@ static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTAT
  * @param second: second node
  * @returns: comparison result
 */
-int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_node *second)
+int LinkedListNode_gmidevent_compare_larger(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -154,7 +154,7 @@ int llist_node_gmidevent_compare_larger(struct llist_node *first, struct llist_n
  * @param second: second node
  * @returns: comparison result
 */
-int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_node *second)
+int LinkedListNode_gmidevent_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -219,7 +219,7 @@ int llist_node_gmidevent_compare_smaller(struct llist_node *first, struct llist_
  * @param second: second node
  * @returns: comparison result
 */
-int llist_node_SeqPatternMatch_compare_smaller(struct llist_node *first, struct llist_node *second)
+int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second)
 {
     TRACE_ENTER(__func__)
 
@@ -704,7 +704,7 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         // Sort events by absolute time. This is needed because
         // the applied duration from the note-on can move
         // the new note-off event substantially.
-        llist_root_merge_sort(gtrack->events, llist_node_gmidevent_compare_smaller);
+        LinkedList_merge_sort(gtrack->events, LinkedListNode_gmidevent_compare_smaller);
 
         // Fix delta times, due to adding note-off events.
         GmidTrack_delta_from_absolute(gtrack);
@@ -776,8 +776,8 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
 
     struct CseqFile *result;
     struct GmidTrack **gmidi_tracks;
-    struct llist_root *track_event_holder;
-    struct llist_node *node;
+    struct LinkedList *track_event_holder;
+    struct LinkedListNode *node;
     int i;
     int source_track_index;
     char *debug_printf_buffer;
@@ -808,7 +808,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     }
 
     // collect events seen while parsing the current track.
-    track_event_holder = llist_root_new();
+    track_event_holder = LinkedList_new();
 
     for (source_track_index=0; source_track_index<midi->num_tracks; source_track_index++)
     {
@@ -902,9 +902,9 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
                 command = 0;
             }
 
-            node = llist_node_new();
+            node = LinkedListNode_new();
             node->data = event;
-            llist_root_append_node(track_event_holder, node);
+            LinkedList_append_node(track_event_holder, node);
         }
 
         if (g_verbosity >= VERBOSE_DEBUG)
@@ -924,8 +924,8 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         // to correct track.
         while (track_event_holder->count > 0)
         {
-            node = track_event_holder->root;
-            llist_node_move(gmidi_tracks[destination_track]->events, track_event_holder, node);
+            node = track_event_holder->head;
+            LinkedListNode_move(gmidi_tracks[destination_track]->events, track_event_holder, node);
         }
     }
 
@@ -949,7 +949,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         GmidTrack_cseq_note_on_from_midi(gmidi_tracks[i]);
 
         // Sort events by absolute time
-        llist_root_merge_sort(gmidi_tracks[i]->events, llist_node_gmidevent_compare_smaller);
+        LinkedList_merge_sort(gmidi_tracks[i]->events, LinkedListNode_gmidevent_compare_smaller);
 
         GmidTrack_delta_from_absolute(gmidi_tracks[i]);
 
@@ -1048,7 +1048,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         free(cseq_data_buffer);
     }
 
-    llist_node_root_free(track_event_holder);
+    LinkedList_free(track_event_holder);
 
     TRACE_LEAVE(__func__)
     return result;   
@@ -1083,7 +1083,7 @@ struct GmidTrack *GmidTrack_new()
     TRACE_ENTER(__func__)
 
     struct GmidTrack *p = (struct GmidTrack *)malloc_zero(1, sizeof(struct GmidTrack));
-    p->events = llist_root_new();
+    p->events = LinkedList_new();
 
     TRACE_LEAVE(__func__)
 
@@ -1133,9 +1133,9 @@ void GmidTrack_free(struct GmidTrack *track)
     if (track->events != NULL)
     {
         struct GmidEvent *data;
-        struct llist_node *node;
+        struct LinkedListNode *node;
 
-        node = track->events->root;
+        node = track->events->head;
 
         while (node != NULL)
         {
@@ -1149,7 +1149,7 @@ void GmidTrack_free(struct GmidTrack *track)
             node = node->next;
         }
 
-        llist_node_root_free(track->events);
+        LinkedList_free(track->events);
         track->events = NULL;
     }
 
@@ -1284,8 +1284,8 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
     size_t compressed_read_len = 0;
     char pattern_write_buffer[WRITE_BUFFER_LEN];
 
-    struct llist_root *loop_stack;
-    struct llist_node *node;
+    struct LinkedList *loop_stack;
+    struct LinkedListNode *node;
     int loop_state_start = 0;
     int loop_state_start_number = 0;
     int previous_loop_state_start_number = -1;
@@ -1304,7 +1304,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
     // inside a loop, then add that to the offset, so the value will
     // be correct for an unrolled seq.
     // This list is a stack to track amount of bytes that need to be added.
-    loop_stack = llist_root_new();
+    loop_stack = LinkedList_new();
 
     // rough guess here, might resize during iteration, will adjust at the end too.
     size_t new_size = (size_t)((float)cseq->track_lengths[track->cseq_track_index] * 1.5f);
@@ -1401,9 +1401,9 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
                     grow->file_offset = pos - 3;
                     loop_current_offset = 0;
 
-                    node = llist_node_new();
+                    node = LinkedListNode_new();
                     node->data = grow;
-                    llist_root_append_node(loop_stack, node);
+                    LinkedList_append_node(loop_stack, node);
                 }
              
                 loop_state_start = 0;
@@ -1521,7 +1521,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
             // current loop is done, free memory
             SeqUnrollGrow_free(grow);
             node->data = NULL;
-            llist_node_free(loop_stack, node);
+            LinkedListNode_free(loop_stack, node);
 
             // adjust current current totals and continue
             pos++;
@@ -1612,7 +1612,7 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct file
     // set data length
     track->cseq_data_len = unrolled_pos;
 
-    llist_node_root_free(loop_stack);
+    LinkedList_free(loop_stack);
 
     TRACE_LEAVE(__func__)
 }
@@ -1680,7 +1680,7 @@ void CseqFile_no_unroll_copy(struct CseqFile *cseq, struct GmidTrack *track)
  * byte address that would be written into buffer.
  * @param matches: Adds pattern markers to this list. Must be previously allocated.
 */
-void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct llist_root *matches)
+void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct LinkedList *matches)
 {
     TRACE_ENTER(__func__)
 
@@ -1713,7 +1713,7 @@ void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *writ
      * to calculate patterns for the track.
     */
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct SeqPatternMatch *match;
     int pos;
     int compare_pos;
@@ -1794,9 +1794,9 @@ void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *writ
 
                     match = SeqPatternMatch_new_values(start_pattern_pos, diff, pattern_length);
 
-                    node = llist_node_new();
+                    node = LinkedListNode_new();
                     node->data = match;
-                    llist_root_append_node(matches, node);
+                    LinkedList_append_node(matches, node);
 
                     break;
                 }
@@ -1876,7 +1876,7 @@ void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *writ
  * @param buffer_len: Size in bytes of {@code write_buffer}.
  * @param matches: List of {@code struct SeqPatternMatch} to apply.
 */
-void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct llist_root *matches)
+void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct LinkedList *matches)
 {
     TRACE_ENTER(__func__)
 
@@ -1900,7 +1900,7 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current_buffer_pos is null\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct SeqPatternMatch *match;
     int pos;
     int lower_limit;
@@ -1916,7 +1916,7 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
     if (matches != NULL)
     {
         matches_count = matches->count;
-        llist_root_merge_sort(matches, llist_node_SeqPatternMatch_compare_smaller);
+        LinkedList_merge_sort(matches, LinkedListNode_SeqPatternMatch_compare_smaller);
     }
 
     match_index = 0;
@@ -2008,8 +2008,8 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
             // the list of events for end events and check if it's in range.
             // If so, adjust the event in the list (just to be nice), but more
             // importantly, update cseq_data.
-            struct llist_node *end_node;
-            end_node = gtrack->events->root;
+            struct LinkedListNode *end_node;
+            end_node = gtrack->events->head;
             while (end_node != NULL)
             {
                 struct GmidEvent *end_event = end_node->data;
@@ -2072,7 +2072,7 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
         {
             if (match_index == 0)
             {
-                node = matches->root;
+                node = matches->head;
             }
             else
             {
@@ -2157,7 +2157,7 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
  * @param options: Conversion options, notably filename to parse.
  * @param matches: List to append results to. Must be previously allocated.
 */
-void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct llist_root *matches)
+void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct LinkedList *matches)
 {
     TRACE_ENTER(__func__)
 
@@ -2183,7 +2183,7 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> pattern_file->len == 0\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct SeqPatternMatch *match;
     uint8_t *file_contents;
     int pos;
@@ -2340,9 +2340,9 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
                 case 3:
                 {
                     match->pattern_length = file_value;
-                    node = llist_node_new();
+                    node = LinkedListNode_new();
                     node->data = match;
-                    llist_root_append_node(matches, node);
+                    LinkedList_append_node(matches, node);
                     line_values = 0;
                 }
                 break;
@@ -2369,9 +2369,9 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
             case 3:
             {
                 match->pattern_length = file_value;
-                node = llist_node_new();
+                node = LinkedListNode_new();
                 node->data = match;
-                llist_root_append_node(matches, node);
+                LinkedList_append_node(matches, node);
                 line_values = 0;
             }
             break;
@@ -2397,7 +2397,7 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
  * @param arg1: track number to compare to.
  * @returns: 1 if {@code SeqPatternMatch->track_number} equals track number, 0 otherwise.
 */
-int where_SeqPatternMatch_is_track(struct llist_node *node, int arg1)
+int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1)
 {
     TRACE_ENTER(__func__)
 
@@ -2434,8 +2434,8 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
 {
     TRACE_ENTER(__func__)
 
-    struct llist_root *matches;
-    struct llist_node *node;
+    struct LinkedList *matches;
+    struct LinkedListNode *node;
     struct SeqPatternMatch *match;
     int apply_patterns;
     int is_double_reference;
@@ -2444,7 +2444,7 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
     // two references to data, resulting in double free.
     is_double_reference = 0;
     apply_patterns = 1;
-    matches = llist_root_new();
+    matches = LinkedList_new();
 
     // by default, apply naive pattern compression.
     if (options == NULL)
@@ -2460,11 +2460,11 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
 
         if (options->runtime_patterns_list == NULL)
         {
-            options->runtime_patterns_list = llist_root_new();
+            options->runtime_patterns_list = LinkedList_new();
             GmidTrack_get_pattern_matches_file(options, options->runtime_patterns_list);
         }
 
-        llist_root_where_i(matches, options->runtime_patterns_list, where_SeqPatternMatch_is_track, gtrack->cseq_track_index);
+        LinkedList_where_i(matches, options->runtime_patterns_list, where_SeqPatternMatch_is_track, gtrack->cseq_track_index);
         is_double_reference = 1;
     }
     else if (options->no_pattern_compression == 0)
@@ -2502,7 +2502,7 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
     }
 
     // cleanup.
-    node = matches->root;
+    node = matches->head;
     while (node != NULL)
     {
         match = (struct SeqPatternMatch *)node->data;
@@ -2516,7 +2516,7 @@ void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_
         node = node->next;
     }
 
-    llist_node_root_free(matches);
+    LinkedList_free(matches);
 
     TRACE_LEAVE(__func__)
 }
@@ -3545,9 +3545,9 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
-    struct llist_node *new_node;
-    struct llist_node *end_node;
+    struct LinkedListNode *node;
+    struct LinkedListNode *new_node;
+    struct LinkedListNode *end_node;
     struct GmidEvent *event;
     struct GmidEvent *midi_count_event;
     struct GmidEvent *midi_end_event;
@@ -3577,7 +3577,7 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
      * function call to fix up end event offsets (which also requires
      * all in-between delta times be accurate).
     */
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
@@ -3619,9 +3619,9 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                 }
 
                 // done with the start node, insert new node before current.
-                new_node = llist_node_new();
+                new_node = LinkedListNode_new();
                 new_node->data = seq_loop_start;
-                llist_node_insert_before(gtrack->events, node, new_node);
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
 
                 // if the next node is the non standard MIDI loop count then a loop end node should exist.
                 if (node->next != NULL
@@ -3695,15 +3695,13 @@ void GmidTrack_midi_to_cseq_loop(struct GmidTrack *gtrack)
                                     varint_copy(&seq_loop_end->midi_delta_time, &midi_end_event->midi_delta_time);
 
                                     // done with the end node, insert new node before current.
-                                    new_node = llist_node_new();
+                                    new_node = LinkedListNode_new();
                                     new_node->data = seq_loop_end;
-                                    llist_node_insert_before(gtrack->events, end_node, new_node);
+                                    LinkedListNode_insert_before(gtrack->events, end_node, new_node);
 
                                     // set flags
                                     midi_end_event->flags |= MIDI_MIDI_EVENT_LOOP_END_HANDLED;
                                     found_end = 1;
-
-                                    //llist_root_append_node(fix_end_delta_list, new_node);
                                 }
                             }
                         }
@@ -3755,21 +3753,21 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
 {
     TRACE_ENTER(__func__)
 
-    struct llist_root *fix_end_delta_list;
-    struct llist_node *end_node;
-    struct llist_node *node;
+    struct LinkedList *fix_end_delta_list;
+    struct LinkedListNode *end_node;
+    struct LinkedListNode *node;
     struct GmidEvent *event;
     char *debug_printf_buffer;
 
     debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
 
-    fix_end_delta_list = llist_root_new();
+    fix_end_delta_list = LinkedList_new();
 
     /**
      * First iterate all events in the track and extract just
      * the seq loop end events.
     */
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
@@ -3777,7 +3775,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
             && event->cseq_valid
             && event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META)
         {
-            llist_root_append_node(fix_end_delta_list, node);
+            LinkedList_append_node(fix_end_delta_list, node);
         }
         node = node->next;
     }
@@ -3788,14 +3786,14 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
      * Iterate the event list between start and end to compute the byte offset.
      * Then set the end event byte offset to this value.
     */
-    end_node = fix_end_delta_list->root;
+    end_node = fix_end_delta_list->head;
     while (end_node != NULL)
     {
         // Set the end event from node.
         struct GmidEvent *end_event = end_node->data;
 
         // Declare start node, need to find start event
-        struct llist_node *start_node = gtrack->events->root;
+        struct LinkedListNode *start_node = gtrack->events->head;
         while (start_node != NULL)
         {
             // Search event list until finding start event, based on
@@ -3896,7 +3894,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
         end_node = end_node->next;
     }
 
-    llist_node_root_free_only_self(fix_end_delta_list);
+    LinkedList_free_only_self(fix_end_delta_list);
 
     free(debug_printf_buffer);
 
@@ -3916,13 +3914,13 @@ void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct GmidEvent *event;
 
     gtrack->cseq_track_size_bytes = 0;
     gtrack->midi_track_size_bytes = 0;
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     for (; node != NULL; node = node->next)
     {
         event = (struct GmidEvent *)node->data;
@@ -3962,15 +3960,15 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
-    struct llist_node *search_node;
+    struct LinkedListNode *node;
+    struct LinkedListNode *search_node;
     struct GmidEvent *event;
     struct GmidEvent *search_event;
-    struct llist_root *duplicate_start;
-    struct llist_node *duplicate_node;
+    struct LinkedList *duplicate_start;
+    struct LinkedListNode *duplicate_node;
     struct GmidEvent *duplicate_event;
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
@@ -4010,10 +4008,10 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                             {
                                 if (duplicate_start == NULL)
                                 {
-                                    duplicate_start = llist_root_new();
-                                    duplicate_node = llist_node_new();
+                                    duplicate_start = LinkedList_new();
+                                    duplicate_node = LinkedListNode_new();
                                     duplicate_node->data = search_event;
-                                    llist_root_append_node(duplicate_start, duplicate_node);
+                                    LinkedList_append_node(duplicate_start, duplicate_node);
                                 }
                             }
                         }
@@ -4047,7 +4045,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                             // if the starting node didn't match, check to see if any others did
                             if (match == 0 && duplicate_start != NULL)
                             {
-                                duplicate_node = duplicate_start->root;
+                                duplicate_node = duplicate_start->head;
                                 while (duplicate_node != NULL && match == 0)
                                 {
                                     duplicate_event = (struct GmidEvent *)duplicate_node->data;
@@ -4078,7 +4076,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
 
                 if (duplicate_start != NULL)
                 {
-                    llist_node_root_free(duplicate_start);
+                    LinkedList_free(duplicate_start);
                     duplicate_start = NULL;
                 }
 
@@ -4124,9 +4122,9 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
-    struct llist_node *new_node;
-    struct llist_node *search_node;
+    struct LinkedListNode *node;
+    struct LinkedListNode *new_node;
+    struct LinkedListNode *search_node;
     struct GmidEvent *seq_event;
     struct GmidEvent *seq_end_event;
     struct GmidEvent *midi_start_event;
@@ -4137,7 +4135,7 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
     // that should be included in the command.
     uint8_t track_channel = gtrack->cseq_track_index & 0xf;
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         seq_event = (struct GmidEvent *)node->data;
@@ -4176,9 +4174,9 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
                     midi_start_event->absolute_time = seq_event->absolute_time;
 
                     // insert in event list, before corresponding seq event.
-                    new_node = llist_node_new();
+                    new_node = LinkedListNode_new();
                     new_node->data = midi_start_event;
-                    llist_node_insert_before(gtrack->events, node, new_node);
+                    LinkedListNode_insert_before(gtrack->events, node, new_node);
                 }
                 else
                 {
@@ -4253,12 +4251,12 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
 
                     // insert in event list, before corresponding seq event.
                     // The order should be new start node, then new count node.
-                    new_node = llist_node_new();
+                    new_node = LinkedListNode_new();
                     new_node->data = midi_start_event;
-                    llist_node_insert_before(gtrack->events, node, new_node);
-                    new_node = llist_node_new();
+                    LinkedListNode_insert_before(gtrack->events, node, new_node);
+                    new_node = LinkedListNode_new();
                     new_node->data = midi_count_event;
-                    llist_node_insert_before(gtrack->events, node, new_node);
+                    LinkedListNode_insert_before(gtrack->events, node, new_node);
 
                     // unfortunately the node containing the seq end event
                     // isn't available, even though it's now known to exist.
@@ -4278,9 +4276,9 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
                         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> search_node is NULL\n", __func__, __LINE__);
                     }
 
-                    new_node = llist_node_new();
+                    new_node = LinkedListNode_new();
                     new_node->data = midi_end_event;
-                    llist_node_insert_before(gtrack->events, search_node, new_node);
+                    LinkedListNode_insert_before(gtrack->events, search_node, new_node);
                 }
             }
         }
@@ -4311,13 +4309,13 @@ void GmidTrack_delta_from_absolute(struct GmidTrack *gtrack)
      * Note: list must be sorted first!
     */
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     long cseq_prev_absolute_time = 0;
     long midi_prev_absolute_time = 0;
     int cseq_time_delta;
     int midi_time_delta;
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         struct GmidEvent *current_node_event = (struct GmidEvent *)node->data;
@@ -4365,10 +4363,10 @@ void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack)
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
     }
 
-    struct llist_node *node;
+    struct LinkedListNode *node;
     struct GmidEvent *event;
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
@@ -4376,7 +4374,7 @@ void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack)
         if (event->command == MIDI_COMMAND_BYTE_NOTE_ON)
         {
             struct GmidEvent *noteoff = GmidEvent_new();
-            struct llist_node *temp_node;
+            struct LinkedListNode *temp_node;
 
             // duration was decoded from varint when it was saved into command_parameters[2]
             noteoff->absolute_time = event->absolute_time + (long)event->cseq_command_parameters[2];
@@ -4409,12 +4407,12 @@ void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack)
             noteoff->dual = event;
             event->dual = noteoff;
 
-            temp_node = llist_node_new();
+            temp_node = LinkedListNode_new();
             temp_node->data = noteoff;
             
             // Don't want to append the temp_node anywhere forward in the list since
             // that's still being iterated. Therefore just insert before current.
-            llist_node_insert_before(gtrack->events, node, temp_node);
+            LinkedListNode_insert_before(gtrack->events, node, temp_node);
         }
 
         node = node->next;
@@ -4440,8 +4438,8 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
 
     struct GmidEvent *event;
     struct GmidEvent *event_off;
-    struct llist_node *node;
-    struct llist_node *node_off;
+    struct LinkedListNode *node;
+    struct LinkedListNode *node_off;
     struct var_length_int varint;
 
     char *debug_printf_buffer;
@@ -4452,7 +4450,7 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack)
         printf("begin %s\n", __func__);
     }
 
-    node = gtrack->events->root;
+    node = gtrack->events->head;
     while (node != NULL)
     {
         event = (struct GmidEvent *)node->data;
@@ -4572,7 +4570,7 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
     }
 
     struct GmidEvent *event;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     size_t track_pos;
     size_t buffer_len;
     int32_t command;
@@ -4627,11 +4625,11 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
             command = 0;
         }
 
-        node = llist_node_new();
+        node = LinkedListNode_new();
         node->data = event;
         // The command channel in the event specifies the track number, so
         // add the new event to the appropriate track linked list.
-        llist_root_append_node(gtrack->events, node);
+        LinkedList_append_node(gtrack->events, node);
     }
 
     free(debug_printf_buffer);
@@ -4937,7 +4935,7 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 
     size_t write_len = 0;
     int32_t previous_command = 0;
-    struct llist_node *node = gtrack->events->root;
+    struct LinkedListNode *node = gtrack->events->head;
     uint8_t rev[4];
     int32_t command;
 
@@ -5026,7 +5024,7 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 
     size_t write_len = 0;
     int32_t previous_command = 0;
-    struct llist_node *node = gtrack->events->root;
+    struct LinkedListNode *node = gtrack->events->head;
     uint8_t rev[4];
     int32_t command;
 
@@ -5288,8 +5286,8 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
 
     if (options->runtime_patterns_list != NULL)
     {
-        struct llist_node *node;
-        node = options->runtime_patterns_list->root;
+        struct LinkedListNode *node;
+        node = options->runtime_patterns_list->head;
 
         while (node != NULL)
         {
@@ -5303,7 +5301,7 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
             node = node->next;
         }
 
-        llist_node_root_free(options->runtime_patterns_list);
+        LinkedList_free(options->runtime_patterns_list);
         options->runtime_patterns_list = NULL;
     }
     
@@ -5382,14 +5380,14 @@ static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTAT
     if (g_verbosity >= VERBOSE_DEBUG)
     {
         char *debug_printf_buffer;
-        struct llist_node *node;
+        struct LinkedListNode *node;
         struct GmidEvent *event;
 
         debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
 
         printf("Print track midi # %d, cseq # %d\n", track->midi_track_index, track->cseq_track_index);
 
-        node = track->events->root;
+        node = track->events->head;
         while (node != NULL)
         {
             event = (struct GmidEvent *)node->data;

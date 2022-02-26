@@ -46,7 +46,7 @@ struct IntHashBucket {
      * Linked list of bucket entries.
      * Type: `struct IntHashBucketEntry`.
     */
-    struct llist_root *entry_list;
+    struct LinkedList *entry_list;
 };
 
 /**
@@ -145,7 +145,7 @@ void IntHashTable_add(struct IntHashTable *root, uint32_t key, void *data)
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
 
@@ -174,10 +174,10 @@ void IntHashTable_add(struct IntHashTable *root, uint32_t key, void *data)
     entry = IntHashBucketEntry_new(key);
     entry->data = data;
 
-    node = llist_node_new();
+    node = LinkedListNode_new();
     node->data = entry;
 
-    llist_root_append_node(bucket->entry_list, node);
+    LinkedList_append_node(bucket->entry_list, node);
 
     ht->num_entries++;
 
@@ -197,7 +197,7 @@ int IntHashTable_contains(struct IntHashTable *root, uint32_t key)
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
 
@@ -231,7 +231,7 @@ int IntHashTable_contains(struct IntHashTable *root, uint32_t key)
         return 0;
     }
 
-    node = bucket->entry_list->root;
+    node = bucket->entry_list->head;
     while (node != NULL)
     {
         entry = (struct IntHashBucketEntry *)node->data;
@@ -335,7 +335,7 @@ int IntHashTable_peek_next_key(struct IntHashTable *root, uint32_t *key)
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t i;
 
     *key = 0;
@@ -365,7 +365,7 @@ int IntHashTable_peek_next_key(struct IntHashTable *root, uint32_t *key)
 
         if (bucket != NULL)
         {
-            node = bucket->entry_list->root;
+            node = bucket->entry_list->head;
             if (node != NULL)
             {
                 entry = (struct IntHashBucketEntry *)node->data;
@@ -400,8 +400,8 @@ void IntHashTable_foreach(struct IntHashTable *root, IntHash_callback action)
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_root *list;
-    struct llist_node *node;
+    struct LinkedList *list;
+    struct LinkedListNode *node;
     uint32_t i;
 
     if (root == NULL)
@@ -425,7 +425,7 @@ void IntHashTable_foreach(struct IntHashTable *root, IntHash_callback action)
             list = bucket->entry_list;
             if (list != NULL)
             {
-                node = list->root;
+                node = list->head;
                 while (node != NULL)
                 {
                     entry = node->data;
@@ -461,8 +461,8 @@ int IntHashTable_any(struct IntHashTable *root, IntHash_bool_callback action, vo
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_node *node;
-    struct llist_root *list;
+    struct LinkedListNode *node;
+    struct LinkedList *list;
     uint32_t i;
 
     if (first != NULL)
@@ -491,7 +491,7 @@ int IntHashTable_any(struct IntHashTable *root, IntHash_bool_callback action, vo
             list = bucket->entry_list;
             if (list != NULL)
             {
-                node = list->root;
+                node = list->head;
                 while (node != NULL)
                 {
                     entry = node->data;
@@ -537,7 +537,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
     struct IntHashTable_internal *ht;
     struct IntHashBucket *bucket;
     struct IntHashBucketEntry *entry;
-    struct llist_node *node;
+    struct LinkedListNode *node;
     uint32_t bucket_index;
     uint32_t hash;
     void *result;
@@ -570,7 +570,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
         stderr_exit(EXIT_CODE_GENERAL, "%s (flag=%s): hash table bucket is empty, key=%s\n", __func__, pop?"pop":"get", key);
     }
 
-    node = bucket->entry_list->root;
+    node = bucket->entry_list->head;
     while (node != NULL)
     {
         entry = (struct IntHashBucketEntry *)node->data;
@@ -587,7 +587,7 @@ static void *IntHashTable_pop_common(struct IntHashTable *root, uint32_t key, in
             if (pop)
             {
                 IntHashBucketEntry_free(entry);
-                llist_node_free(bucket->entry_list, node);
+                LinkedListNode_free(bucket->entry_list, node);
 
                 ht->num_entries--;
             }
@@ -674,7 +674,7 @@ static struct IntHashBucket *IntHashBucket_new()
 
     struct IntHashBucket *p = (struct IntHashBucket *)malloc_zero(1, sizeof(struct IntHashBucket));
 
-    p->entry_list = llist_root_new();
+    p->entry_list = LinkedList_new();
 
     TRACE_LEAVE(__func__)
 
@@ -698,9 +698,9 @@ static void IntHashBucket_free(struct IntHashBucket *bucket)
     if (bucket->entry_list != NULL)
     {
         struct IntHashBucketEntry *data;
-        struct llist_node *node;
+        struct LinkedListNode *node;
 
-        node = bucket->entry_list->root;
+        node = bucket->entry_list->head;
 
         while (node != NULL)
         {
@@ -714,7 +714,7 @@ static void IntHashBucket_free(struct IntHashBucket *bucket)
             node = node->next;
         }
 
-        llist_node_root_free(bucket->entry_list);
+        LinkedList_free(bucket->entry_list);
         bucket->entry_list = NULL;
     }
 
