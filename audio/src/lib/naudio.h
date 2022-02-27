@@ -31,7 +31,7 @@
  * The .inst file needs named references for objects. This is the max
  * name length, including trailing '\0'.
 */
-#define INST_OBJ_ID_STRING_LEN 30
+#define INST_OBJ_ID_STRING_LEN 100
 
 /**
  * The .ctl file must begin with this two byte sequence (big endian).

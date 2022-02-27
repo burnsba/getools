@@ -34,8 +34,10 @@ static int opt_sort_natural = 0;
 static int opt_sort_meta = 0;
 static int opt_sample_rate = 0;
 static int user_sample_rate = 0;
-static char input_filename[MAX_FILENAME_LEN] = {0};
-static char output_filename[MAX_FILENAME_LEN] = {0};
+static char *input_filename = NULL;
+static size_t input_filename_len = 0;
+static char *output_filename = NULL;
+static size_t output_filename_len = 0;
 
 #define LONG_OPT_DEBUG               1003
 #define LONG_OPT_SORT_NATURAL        2001
@@ -95,7 +97,6 @@ void read_opts(int argc, char **argv)
 {
     int option_index = 0;
     int ch;
-    int str_len;
 
     while ((ch = getopt_long(argc, argv, "n:o:r:qv", long_options, &option_index)) != -1)
     {
@@ -105,18 +106,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (input_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, input filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(input_filename, optarg, str_len);
+                input_filename = (char *)malloc_zero(input_filename_len + 1, 1);
+                input_filename_len = snprintf(input_filename, input_filename_len, "%s", optarg);
             }
             break;
 
@@ -124,18 +122,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (output_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, output filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(output_filename, optarg, str_len);
+                output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
+                output_filename_len = snprintf(output_filename, output_filename_len, "%s", optarg);
             }
             break;
 
@@ -211,7 +206,9 @@ int main(int argc, char **argv)
 {
     struct FileInfo *input_file;
     char *ctl_filename;
+    size_t ctl_filename_len;
     char *tbl_filename;
+    size_t tbl_filename_len;
     struct ALBankFile *bank_file;
 
     read_opts(argc, argv);
@@ -222,22 +219,33 @@ int main(int argc, char **argv)
         exit(0);
     }
 
-    ctl_filename = (char *)malloc_zero(1, MAX_FILENAME_LEN);
-    tbl_filename = (char *)malloc_zero(1, MAX_FILENAME_LEN);
-
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        change_filename_extension(input_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
-        change_filename_extension(input_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        ctl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_CTL_DEFAULT_EXTENSION); // overallocate
+        ctl_filename = (char *)malloc_zero(ctl_filename_len + 1, 1);
+
+        change_filename_extension(input_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, ctl_filename_len);
+
+        tbl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_TBL_DEFAULT_EXTENSION); // overallocate
+        tbl_filename = (char *)malloc_zero(tbl_filename_len + 1, 1);
+
+        change_filename_extension(input_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, tbl_filename_len);
     }
     /**
      * Else, the user provided output filename, but still set extenesion.
     */
     else
     {
-        change_filename_extension(output_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
-        change_filename_extension(output_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        ctl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_CTL_DEFAULT_EXTENSION); // overallocate
+        ctl_filename = (char *)malloc_zero(ctl_filename_len + 1, 1);
+
+        change_filename_extension(output_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, ctl_filename_len);
+
+        tbl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_TBL_DEFAULT_EXTENSION); // overallocate
+        tbl_filename = (char *)malloc_zero(tbl_filename_len + 1, 1);
+
+        change_filename_extension(output_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, tbl_filename_len);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -246,10 +254,10 @@ int main(int argc, char **argv)
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("opt_input_file: %d\n", opt_input_file);
         printf("opt_output_file: %d\n", opt_output_file);
-        printf("input_filename: %s\n", input_filename);
-        printf("output_filename: %s\n", output_filename);
-        printf("ctl_filename: %s\n", ctl_filename);
-        printf("tbl_filename: %s\n", tbl_filename);
+        printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
+        printf("output_filename: %s\n", output_filename != NULL ? output_filename : "NULL");
+        printf("ctl_filename: %s\n", ctl_filename != NULL ? ctl_filename : "NULL");
+        printf("tbl_filename: %s\n", tbl_filename != NULL ? tbl_filename : "NULL");
         printf("opt_sort_meta: %d\n", opt_sort_meta);
         printf("opt_sort_natural: %d\n", opt_sort_natural);
         printf("opt_sample_rate: %d\n", opt_sample_rate);
@@ -316,6 +324,18 @@ int main(int argc, char **argv)
 
     free(tbl_filename);
     free(ctl_filename);
+
+    if (input_filename != NULL)
+    {
+        free(input_filename);
+        input_filename = NULL;
+    }
+
+    if (output_filename != NULL)
+    {
+        free(output_filename);
+        output_filename = NULL;
+    }
     
     return 0;
 }

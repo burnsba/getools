@@ -785,8 +785,6 @@ struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 
     wavetable->self_offset = load_from_offset;
 
-    memset(g_write_buffer, 0, WRITE_BUFFER_LEN);
-
     if (wavetable_init_callback_ptr == NULL)
     {
         wavetable_init_callback_ptr = ALWaveTable_init_default_set_aifc_path;
@@ -2780,13 +2778,27 @@ static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL\n", __func__, __LINE__);
     }
 
-    size_t len;
-    len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+    size_t filesystem_path_len = 0;
+    char *filesystem_path;
 
-    // g_write_buffer has terminating '\0', but that's not counted in len
-    len++;
-    wavetable->aifc_path = (char *)malloc_zero(len, 1);
-    strncpy(wavetable->aifc_path, g_write_buffer, len);
+    char *local_output_dir = ""; // empty string
+    char *local_filename_prefix = ""; // empty string
+
+    if (g_output_dir != NULL)
+    {
+        local_output_dir = g_output_dir;
+    }
+
+    if (g_filename_prefix != NULL)
+    {
+        local_filename_prefix = g_filename_prefix;
+    }
+
+    filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+    filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+    filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+
+    wavetable->aifc_path = filesystem_path;
 
     TRACE_LEAVE(__func__)
 }

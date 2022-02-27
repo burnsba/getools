@@ -30,12 +30,14 @@ char g_write_buffer[WRITE_BUFFER_LEN] = {0};
  * Output destination directory.
  * Should have trailing slash.
 */
-char g_output_dir[MAX_FILENAME_LEN] = {0};
+char *g_output_dir = NULL;
+size_t g_output_dir_len = 0;
 
 /**
  * Anything to prepend to output filename.
 */
-char g_filename_prefix[MAX_FILENAME_LEN] = {0};
+char *g_filename_prefix = NULL;
+size_t g_filename_prefix_len = 0;
 
 /**
  * When this flag is set, the raw sound about to be encoded into a

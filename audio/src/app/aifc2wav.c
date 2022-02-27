@@ -65,10 +65,13 @@ static int opt_inst_val = 0;
 static int opt_force_freq_adjust = 0;
 static int opt_write_smpl = 0;
 static int opt_no_freq_adjust = 0;
-static char input_filename[MAX_FILENAME_LEN] = {0};
-static char output_filename[MAX_FILENAME_LEN] = {0};
-static char inst_filename[MAX_FILENAME_LEN] = {0};
-static char inst_val[MAX_FILENAME_LEN] = {0};
+static char *input_filename = NULL;
+static size_t input_filename_len = 0;
+static char *output_filename = NULL;
+static size_t output_filename_len = 0;
+static char *inst_filename = NULL;
+static size_t inst_filename_len = 0;
+static char inst_val[MAX_FILENAME_LEN] = { 0 };
 static int freq_adjust_mode = FREQ_ADJUST_NONE;
 static int inst_search_mode = INST_FILE_SEARCH_DEFAULT_UNKNOWN;
 static int keybase = 0;
@@ -202,18 +205,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (input_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, input filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(input_filename, optarg, str_len);
+                input_filename = (char *)malloc_zero(input_filename_len + 1, 1);
+                input_filename_len = snprintf(input_filename, input_filename_len, "%s", optarg);
             }
             break;
 
@@ -221,18 +221,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (output_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, output filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(output_filename, optarg, str_len);
+                output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
+                output_filename_len = snprintf(output_filename, output_filename_len, "%s", optarg);
             }
             break;
 
@@ -343,18 +340,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_inst_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                inst_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (inst_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, inst filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(inst_filename, optarg, str_len);
+                inst_filename = (char *)malloc_zero(inst_filename_len + 1, 1);
+                inst_filename_len = snprintf(inst_filename, inst_filename_len, "%s", optarg);
 
                 if (freq_adjust_mode == FREQ_ADJUST_DEFAULT_UNKNOWN || freq_adjust_mode == FREQ_ADJUST_NONE)
                 {
@@ -503,7 +497,10 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        change_filename_extension(input_filename, output_filename, WAV_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, WAV_DEFAULT_EXTENSION); // overallocate
+        output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
+
+        change_filename_extension(input_filename, output_filename, WAV_DEFAULT_EXTENSION, output_filename_len);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -512,15 +509,15 @@ int main(int argc, char **argv)
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("opt_input_file: %d\n", opt_input_file);
         printf("opt_output_file: %d\n", opt_output_file);
-        printf("input_filename: %s\n", input_filename);
-        printf("output_filename: %s\n", output_filename);
+        printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
+        printf("output_filename: %s\n", output_filename != NULL ? output_filename : "NULL");
         printf("opt_loop_count: %d\n", opt_loop_count);
         printf("g_AdpcmLoopInfiniteExportCount: %d\n", g_AdpcmLoopInfiniteExportCount);
         printf("opt_force_freq_adjust: %d\n", opt_force_freq_adjust);
         printf("opt_inst_file: %d\n", opt_inst_file);
         printf("opt_inst_search: %d\n", opt_inst_search);
         printf("opt_inst_val: %d\n", opt_inst_val);
-        printf("inst_filename: %s\n", inst_filename);
+        printf("inst_filename: %s\n", inst_filename != NULL ? inst_filename : "NULL");
         printf("inst_val: %s\n", inst_val);
         printf("freq_adjust_mode: %d\n", freq_adjust_mode);
         printf("inst_search_mode: %d\n", inst_search_mode);
@@ -677,6 +674,24 @@ int main(int argc, char **argv)
     wav_file = NULL;
 
     FileInfo_free(output_file);
+
+    if (input_filename != NULL)
+    {
+        free(input_filename);
+        input_filename = NULL;
+    }
+
+    if (output_filename != NULL)
+    {
+        free(output_filename);
+        output_filename = NULL;
+    }
+
+    if (inst_filename != NULL)
+    {
+        free(inst_filename);
+        inst_filename = NULL;
+    }
     
     return 0;
 }

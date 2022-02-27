@@ -50,10 +50,14 @@ static int opt_user_filename_prefix = 0;
 static int opt_inst_file = 0;
 static int opt_output_mode = 0;
 static int opt_names_file = 0;
-static char ctl_filename[MAX_FILENAME_LEN] = {0};
-static char tbl_filename[MAX_FILENAME_LEN] = {0};
-static char inst_filename[MAX_FILENAME_LEN] = {0};
-static char names_filename[MAX_FILENAME_LEN] = {0};
+static char *ctl_filename = NULL;
+static size_t ctl_filename_len = 0;
+static char *tbl_filename = NULL;
+static size_t tbl_filename_len = 0;
+static char *inst_filename = NULL;
+static size_t inst_filename_len = 0;
+static char *names_filename = NULL;
+static size_t names_filename_len = 0;
 static struct LinkedList user_names = {0};
 static int generate_aifc = 1;
 static int generate_inst = 1;
@@ -146,18 +150,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_ctl_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                ctl_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (ctl_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, ctl filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(ctl_filename, optarg, str_len);
+                ctl_filename = (char *)malloc_zero(ctl_filename_len + 1, 1);
+                ctl_filename_len = snprintf(ctl_filename, ctl_filename_len, "%s", optarg);
             }
             break;
 
@@ -165,18 +166,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_tbl_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                tbl_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (tbl_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, tbl filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(tbl_filename, optarg, str_len);
+                tbl_filename = (char *)malloc_zero(tbl_filename_len + 1, 1);
+                tbl_filename_len = snprintf(tbl_filename, tbl_filename_len, "%s", optarg);
             }
             break;
 
@@ -208,17 +206,17 @@ void read_opts(int argc, char **argv)
                     }
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 2)
+                if (optarg[str_len - 1] != PATH_SEPERATOR)
                 {
-                    str_len = MAX_FILENAME_LEN - 2;
+                    g_output_dir_len = snprintf(NULL, 0, "%s%c", optarg, PATH_SEPERATOR);
+                    g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
+                    g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s%c", optarg, PATH_SEPERATOR);
                 }
-
-                strncpy(g_output_dir, optarg, str_len);
-
-                if (g_output_dir[str_len] != PATH_SEPERATOR)
+                else
                 {
-                    g_output_dir[str_len+1] = PATH_SEPERATOR;
-                    g_output_dir[str_len+2] = '\0';
+                    g_output_dir_len = snprintf(NULL, 0, "%s", optarg);
+                    g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
+                    g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s", optarg);
                 }
             }
             break;
@@ -227,19 +225,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_user_filename_prefix = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (g_filename_prefix_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, filename prefix not specified\n");
                 }
 
-                // 4 characters allocated for digits
-                if (str_len > MAX_FILENAME_LEN - 5)
-                {
-                    str_len = MAX_FILENAME_LEN - 5;
-                }
-
-                strncpy(g_filename_prefix, optarg, str_len);
+                g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
+                g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", optarg);
             }
             break;
 
@@ -247,18 +241,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_names_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                names_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (names_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, names filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(names_filename, optarg, str_len);
+                names_filename = (char *)malloc_zero(names_filename_len + 1, 1);
+                names_filename_len = snprintf(names_filename, names_filename_len, "%s", optarg);
             }
             break;
 
@@ -301,18 +292,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_inst_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                inst_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (inst_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, inst filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(inst_filename, optarg, str_len);
+                inst_filename = (char *)malloc_zero(inst_filename_len + 1, 1);
+                inst_filename_len = snprintf(inst_filename, inst_filename_len, "%s", optarg);
             }
             break;
 
@@ -346,7 +334,21 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     TRACE_ENTER(__func__)
 
     static struct LinkedListNode *name_node = NULL;
-    size_t len = 0;
+    size_t filesystem_path_len = 0;
+    char *filesystem_path;
+
+    char *local_output_dir = ""; // empty string
+    char *local_filename_prefix = ""; // empty string
+
+    if (g_output_dir != NULL)
+    {
+        local_output_dir = g_output_dir;
+    }
+
+    if (g_filename_prefix != NULL)
+    {
+        local_filename_prefix = g_filename_prefix;
+    }
 
     // only apply user specified filename if there are unclaimed names
     if (opt_names_file && (size_t)wavetable->id < user_names.count)
@@ -366,11 +368,15 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
         // Only use non empty filename
         if (sd != NULL && sd->len > 0)
         {
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%s", g_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%s%s", local_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+            filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%s", local_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
         }
         else
         {
-            len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+            filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
         }
 
         if (name_node != NULL)
@@ -381,13 +387,12 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     else
     {
         // same as above.
-        len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+        filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+        filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+        filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
     }
 
-    // g_write_buffer has terminating '\0', but that's not counted in len
-    wavetable->aifc_path = (char *)malloc_zero(1, len + 1);
-    strncpy(wavetable->aifc_path, g_write_buffer, len);
-    // no need for explicit '\0' since strncpy is one less than malloc_zero
+    wavetable->aifc_path = filesystem_path;
 
     TRACE_LEAVE(__func__)
 }
@@ -418,35 +423,26 @@ int main(int argc, char **argv)
         // if user didn't supply output directory use the default
         if (!opt_dir)
         {
-            strncpy(g_output_dir, DEFAULT_OUT_DIR, MAX_FILENAME_LEN);
-        }
-        else
-        {
-            // else, make sure it ends witih a trailing slash
-            int len = strlen(g_output_dir);
-            if (len > (MAX_FILENAME_LEN - 2))
-            {
-                len = MAX_FILENAME_LEN - 2;
-            }
-
-            if (g_output_dir[len - 1] != PATH_SEPERATOR)
-            {
-                g_output_dir[len] = PATH_SEPERATOR;
-                g_output_dir[len+1] = '\0';
-            }
+            g_output_dir_len = snprintf(NULL, 0, "%s", DEFAULT_OUT_DIR);
+            g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
+            g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s", DEFAULT_OUT_DIR);
         }
     }
 
     // if user didn't supply filename_prefix use the default
     if (!opt_user_filename_prefix)
     {
-        strncpy(g_filename_prefix, DEFAULT_FILENAME_PREFIX, MAX_FILENAME_LEN);
+        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX);
+        g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
+        g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", DEFAULT_FILENAME_PREFIX);
     }
 
     // if user didn't supply inst filename use the default
     if (!opt_inst_file)
     {
-        strncpy(inst_filename, DEFAULT_INST_FILENAME, MAX_FILENAME_LEN);
+        inst_filename_len = snprintf(NULL, 0, "%s", DEFAULT_INST_FILENAME);
+        inst_filename = (char *)malloc_zero(inst_filename_len + 1, 1);
+        inst_filename_len = snprintf(inst_filename, inst_filename_len, "%s", DEFAULT_INST_FILENAME);
     }
 
     if (opt_names_file)
@@ -476,12 +472,12 @@ int main(int argc, char **argv)
         printf("generate_inst: %d\n", generate_inst);
         printf("opt_names_file: %d\n", opt_names_file);
         printf("user_names_count: %ld\n", user_names.count);
-        printf("g_output_dir: %s\n", g_output_dir);
-        printf("g_filename_prefix: %s\n", g_filename_prefix);
-        printf("ctl_filename: %s\n", ctl_filename);
-        printf("tbl_filename: %s\n", tbl_filename);
-        printf("inst_filename: %s\n", inst_filename);
-        printf("names_filename: %s\n", names_filename);
+        printf("g_output_dir: %s\n", g_output_dir != NULL ? g_output_dir : "NULL");
+        printf("g_filename_prefix: %s\n", g_filename_prefix != NULL ? g_filename_prefix : "NULL");
+        printf("ctl_filename: %s\n", ctl_filename != NULL ? ctl_filename : "NULL");
+        printf("tbl_filename: %s\n", tbl_filename != NULL ? tbl_filename : "NULL");
+        printf("inst_filename: %s\n", inst_filename != NULL ? inst_filename : "NULL");
+        printf("names_filename: %s\n", names_filename != NULL ? names_filename : "NULL");
     }
 
     if (use_other_aifc_dir)
@@ -516,6 +512,44 @@ int main(int argc, char **argv)
     ALBankFile_free(bank_file);
 
     FileInfo_free(ctl_file);
+
+    if (ctl_filename != NULL)
+    {
+        free(ctl_filename);
+        ctl_filename = NULL;
+    }
+
+    if (tbl_filename != NULL)
+    {
+        free(tbl_filename);
+        tbl_filename = NULL;
+    }
+
+    if (inst_filename != NULL)
+    {
+        free(inst_filename);
+        inst_filename = NULL;
+    }
+
+    if (names_filename != NULL)
+    {
+        free(names_filename);
+        names_filename = NULL;
+    }
+
+    if (g_filename_prefix != NULL)
+    {
+        free(g_filename_prefix);
+        g_filename_prefix = NULL;
+        g_filename_prefix_len = 0;
+    }
+
+    if (g_output_dir != NULL)
+    {
+        free(g_output_dir);
+        g_output_dir = NULL;
+        g_output_dir_len = 0;
+    }
 
     return 0;
 }

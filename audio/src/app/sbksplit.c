@@ -34,17 +34,18 @@
  * Following are `RareALSeqData` descriptions of the sequences in the file.
  * 
  * Following the header section are the individual .seq files in 1172
- * compressed format.
+7 * compressed format.
 */
 
 static int opt_help_flag = 0;
 static int opt_input_file = 0;
 static int opt_user_filename_prefix = 0;
 static int opt_names_file = 0;
-static char input_filename[MAX_FILENAME_LEN] = {0};
-static char output_filename[MAX_FILENAME_LEN] = {0};
-static char names_filename[MAX_FILENAME_LEN] = {0};
-static struct LinkedList user_names = {0};
+static char *input_filename = NULL;
+static size_t input_filename_len = 0;
+static char *names_filename = NULL;
+static size_t names_filename_len = 0;
+static struct LinkedList user_names = { 0 }; // init to zero
 
 static struct option long_options[] =
 {
@@ -104,18 +105,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (input_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, input filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(input_filename, optarg, str_len);
+                input_filename = (char *)malloc_zero(input_filename_len + 1, 1);
+                input_filename_len = snprintf(input_filename, input_filename_len, "%s", optarg);
             }
             break;
 
@@ -123,19 +121,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_user_filename_prefix = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (g_filename_prefix_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, filename prefix not specified\n");
                 }
 
-                // 4 characters allocated for digits
-                if (str_len > MAX_FILENAME_LEN - 5)
-                {
-                    str_len = MAX_FILENAME_LEN - 5;
-                }
-
-                strncpy(g_filename_prefix, optarg, str_len);
+                g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
+                g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", optarg);
             }
             break;
 
@@ -143,18 +137,15 @@ void read_opts(int argc, char **argv)
             {
                 opt_names_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                names_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (names_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, names filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(names_filename, optarg, str_len);
+                names_filename = (char *)malloc_zero(names_filename_len + 1, 1);
+                names_filename_len = snprintf(names_filename, names_filename_len, "%s", optarg);
             }
             break;
 
@@ -209,15 +200,17 @@ int main(int argc, char **argv)
     // if user didn't supply a prefix use the default
     if (!opt_user_filename_prefix)
     {
-        strncpy(g_filename_prefix, DEFAULT_FILENAME_PREFIX, MAX_FILENAME_LEN);
+        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX);
+        g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
+        g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", DEFAULT_FILENAME_PREFIX);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("opt_user_filename_prefix: %d\n", opt_user_filename_prefix);
         printf("opt_help_flag: %d\n", opt_help_flag);
-        printf("input_filename: %s\n", input_filename);
-        printf("g_filename_prefix: %s\n", g_filename_prefix);
+        printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
+        printf("g_filename_prefix: %s\n", g_filename_prefix != NULL ? g_filename_prefix : "NULL");
         fflush(stdout);
     }
 
@@ -268,6 +261,9 @@ int main(int argc, char **argv)
     // and then use those values to copy the .seq file (in memory) to the output file.
     for (i=0; i<in_seq_count; i++)
     {
+        size_t filesystem_path_len = 0;
+        char *filesystem_path;
+
         size_t write_len;
         seq_address = *(size_t*)(&input_file_contents[input_pos]);
         BSWAP32(seq_address);
@@ -296,9 +292,6 @@ int main(int argc, char **argv)
 
         // done with .sbk header for this file.
         
-        // generate output filename.
-        memset(output_filename, 0, MAX_FILENAME_LEN);
-
         // only apply user specified filename if there are unclaimed names
         if (opt_names_file && (size_t)i < user_names.count)
         {
@@ -317,13 +310,17 @@ int main(int argc, char **argv)
             // Only use non empty filename
             if (sd != NULL && sd->len > 0)
             {
-                write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
+                filesystem_path_len = snprintf(NULL, 0, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
+                filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+                filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
             }
             else
             {
                 // the getopts method should verify the prefix is within allowed length, including
                 // budget for digit characters.
-                write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+                filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+                filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+                filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
             }
 
             if (name_node != NULL)
@@ -334,7 +331,9 @@ int main(int argc, char **argv)
         else
         {
             // same as above.
-            write_len = snprintf(output_filename, MAX_FILENAME_LEN, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+            filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
+            filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
         }
 
         if (write_len > MAX_FILENAME_LEN)
@@ -342,17 +341,18 @@ int main(int argc, char **argv)
             // be quiet gcc
         }
 
-        output = FileInfo_fopen(output_filename, "wb");
+        output = FileInfo_fopen(filesystem_path, "wb");
 
         if (g_verbosity > 1)
         {
-            printf("writing entry %d to output file %s\n", i, output_filename);
+            printf("writing entry %d to output file %s\n", i, filesystem_path);
         }
 
         // write to output, straight from the input file in memory
         FileInfo_fwrite(output, &input_file_contents[(size_t)seq_address], seq_len, 1);
 
         FileInfo_free(output);
+        free(filesystem_path);
         output = NULL;
     }
 
@@ -360,6 +360,25 @@ int main(int argc, char **argv)
 
     LinkedListNode_free_string_data(&user_names);
     LinkedList_free_children(&user_names);
+
+    if (input_filename != NULL)
+    {
+        free(input_filename);
+        input_filename = NULL;
+    }
+
+    if (names_filename != NULL)
+    {
+        free(names_filename);
+        names_filename = NULL;
+    }
+
+    if (g_filename_prefix != NULL)
+    {
+        free(g_filename_prefix);
+        g_filename_prefix = NULL;
+        g_filename_prefix_len = 0;
+    }
 
     return 0;
 }

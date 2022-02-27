@@ -31,9 +31,12 @@ static int opt_coef_file = 0;
 static int opt_input_file = 0;
 static int opt_output_file = 0;
 static int opt_swap = 0;
-static char coef_filename[MAX_FILENAME_LEN] = {0};
-static char input_filename[MAX_FILENAME_LEN] = {0};
-static char output_filename[MAX_FILENAME_LEN] = {0};
+static char *input_filename = NULL;
+static size_t input_filename_len = 0;
+static char *output_filename = NULL;
+static size_t output_filename_len = 0;
+static char *coef_filename = NULL;
+static size_t coef_filename_len = 0;
 
 #define LONG_OPT_DEBUG        1003
 #define LONG_OPT_SWAP         2001
@@ -92,47 +95,24 @@ void read_opts(int argc, char **argv)
 {
     int option_index = 0;
     int ch;
-    int str_len;
 
     while ((ch = getopt_long(argc, argv, "n:o:c:d:qv", long_options, &option_index)) != -1)
     {
         switch (ch)
         {
-            case 'c':
-            {
-                opt_coef_file = 1;
-
-                str_len = strlen(optarg);
-                if (str_len < 1)
-                {
-                    stderr_exit(EXIT_CODE_GENERAL, "error, coef filename not specified\n");
-                }
-
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(coef_filename, optarg, str_len);
-            }
-            break;
-
             case 'n':
             {
                 opt_input_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (input_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, input filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
-                {
-                    str_len = MAX_FILENAME_LEN - 1;
-                }
-
-                strncpy(input_filename, optarg, str_len);
+                input_filename = (char *)malloc_zero(input_filename_len + 1, 1);
+                input_filename_len = snprintf(input_filename, input_filename_len, "%s", optarg);
             }
             break;
 
@@ -140,18 +120,31 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                str_len = strlen(optarg);
-                if (str_len < 1)
+                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (output_filename_len < 1)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "error, output filename not specified\n");
                 }
 
-                if (str_len > MAX_FILENAME_LEN - 1)
+                output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
+                output_filename_len = snprintf(output_filename, output_filename_len, "%s", optarg);
+            }
+            break;
+
+            case 'c':
+            {
+                opt_coef_file = 1;
+
+                coef_filename_len = snprintf(NULL, 0, "%s", optarg);
+
+                if (coef_filename_len < 1)
                 {
-                    str_len = MAX_FILENAME_LEN - 1;
+                    stderr_exit(EXIT_CODE_GENERAL, "error, coef filename not specified\n");
                 }
 
-                strncpy(output_filename, optarg, str_len);
+                coef_filename = (char *)malloc_zero(coef_filename_len + 1, 1);
+                coef_filename_len = snprintf(coef_filename, coef_filename_len, "%s", optarg);
             }
             break;
 
@@ -200,7 +193,10 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        change_filename_extension(input_filename, output_filename, AIFC_DEFAULT_EXTENSION, MAX_FILENAME_LEN);
+        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, AIFC_DEFAULT_EXTENSION); // overallocate
+        output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
+
+        change_filename_extension(input_filename, output_filename, AIFC_DEFAULT_EXTENSION, output_filename_len);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
@@ -208,11 +204,11 @@ int main(int argc, char **argv)
         printf("g_verbosity: %d\n", g_verbosity);
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("opt_coef_file: %d\n", opt_coef_file);
-        printf("coef_filename: %s\n", coef_filename);
+        printf("coef_filename: %s\n", coef_filename != NULL ? coef_filename : "NULL");
         printf("opt_input_file: %d\n", opt_input_file);
-        printf("input_filename: %s\n", input_filename);
+        printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
         printf("opt_output_file: %d\n", opt_output_file);
-        printf("output_filename: %s\n", output_filename);
+        printf("output_filename: %s\n", output_filename != NULL ? output_filename : "NULL");
         printf("opt_swap: %d\n", opt_swap);
         printf("g_encode_bswap: %d\n", g_encode_bswap);
         fflush(stdout);
@@ -245,6 +241,24 @@ int main(int argc, char **argv)
 
     AdpcmAifcFile_free(aifc);
     aifc = NULL;
+
+    if (input_filename != NULL)
+    {
+        free(input_filename);
+        input_filename = NULL;
+    }
+
+    if (output_filename != NULL)
+    {
+        free(output_filename);
+        output_filename = NULL;
+    }
+
+    if (coef_filename != NULL)
+    {
+        free(coef_filename);
+        coef_filename = NULL;
+    }
 
     return 0;
 }
