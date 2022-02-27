@@ -143,6 +143,11 @@ struct WavFile *WavFile_new(size_t num_chunks)
 struct WavFile *WavFile_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     size_t pos;
     uint32_t chunk_id;
@@ -473,6 +478,16 @@ void WavFile_free(struct WavFile *wav_file)
 void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (loop == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     FileInfo_fwrite(fi, &loop->cue_point_id, 4, 1);
     FileInfo_fwrite(fi, &loop->loop_type, 4, 1);
@@ -480,7 +495,6 @@ void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct FileInfo *fi)
     FileInfo_fwrite(fi, &loop->end, 4, 1);
     FileInfo_fwrite(fi, &loop->fraction, 4, 1);
     FileInfo_fwrite(fi, &loop->play_count, 4, 1);
-
 
     TRACE_LEAVE(__func__)
 }
@@ -493,6 +507,16 @@ void WavSampleLoop_fwrite(struct WavSampleLoop *loop, struct FileInfo *fi)
 void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -530,6 +554,16 @@ void WavSampleChunk_fwrite(struct WavSampleChunk *chunk, struct FileInfo *fi)
 void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -550,6 +584,16 @@ void WavDataChunk_fwrite(struct WavDataChunk *chunk, struct FileInfo *fi)
 void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     FileInfo_fwrite(fi, &chunk->ck_data_size, 4, 1);
@@ -572,6 +616,16 @@ void WavFmtChunk_fwrite(struct WavFmtChunk *chunk, struct FileInfo *fi)
 void WavFile_fwrite(struct WavFile *wav_file, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (wav_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wav_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
 
@@ -628,6 +682,11 @@ void WavFile_fwrite(struct WavFile *wav_file, struct FileInfo *fi)
 double WavFile_get_frequency(struct WavFile *wav_file)
 {
     TRACE_ENTER(__func__)
+    
+    if (wav_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wav_file is NULL\n", __func__, __LINE__);
+    }
 
     if (wav_file->fmt_chunk == NULL)
     {
@@ -648,6 +707,11 @@ double WavFile_get_frequency(struct WavFile *wav_file)
 void WavFile_set_frequency(struct WavFile *wav_file, double frequency)
 {
     TRACE_ENTER(__func__)
+    
+    if (wav_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wav_file is NULL\n", __func__, __LINE__);
+    }
 
     if (wav_file->fmt_chunk == NULL)
     {
@@ -710,6 +774,11 @@ void WavFile_append_smpl_chunk(struct WavFile *wav_file, struct WavSampleChunk *
 static struct WavDataChunk *WavDataChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     struct WavDataChunk *p = (struct WavDataChunk *)malloc_zero(1, sizeof(struct WavDataChunk));
 
@@ -738,6 +807,11 @@ static struct WavDataChunk *WavDataChunk_new_from_file(struct FileInfo *fi, int3
 static struct WavFmtChunk *WavFmtChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     struct WavFmtChunk *p = (struct WavFmtChunk *)malloc_zero(1, sizeof(struct WavFmtChunk));
 
@@ -770,6 +844,11 @@ static struct WavFmtChunk *WavFmtChunk_new_from_file(struct FileInfo *fi, int32_
 static struct WavSampleLoop *WavSampleLoop_new_from_file(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     struct WavSampleLoop *p = (struct WavSampleLoop *)malloc_zero(1, sizeof(struct WavSampleLoop));
  
@@ -794,6 +873,11 @@ static struct WavSampleLoop *WavSampleLoop_new_from_file(struct FileInfo *fi)
 static struct WavSampleChunk *WavSampleChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
     struct WavSampleChunk *p = (struct WavSampleChunk *)malloc_zero(1, sizeof(struct WavSampleChunk));

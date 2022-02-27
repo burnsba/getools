@@ -225,6 +225,16 @@ static void CoefParseContext_free(struct CoefParseContext *context)
 */
 static void buffer_append_inc(char *buffer, int *position, char c)
 {
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (position == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> position is NULL\n", __func__, __LINE__);
+    }
+
     buffer[*position] = c;
     *position = *position + 1;
 }
@@ -238,6 +248,16 @@ static void buffer_append_inc(char *buffer, int *position, char c)
 static void get_property(const char *property_name, struct RuntimeTypeInfo *property)
 {
     TRACE_ENTER(__func__)
+    
+    if (property_name == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> property_name is NULL\n", __func__, __LINE__);
+    }
+    
+    if (property == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> property is NULL\n", __func__, __LINE__);
+    }
 
     int i;
 
@@ -268,6 +288,11 @@ static void get_property(const char *property_name, struct RuntimeTypeInfo *prop
 static void set_current_property_value_int(struct CoefParseContext *context)
 {
     TRACE_ENTER(__func__)
+    
+    if (context == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> context is NULL\n", __func__, __LINE__);
+    }
 
     int val;
     char *pend = NULL;
@@ -458,6 +483,11 @@ static void check_resolve(struct CoefParseContext *context)
 struct ALADPCMBook *ALADPCMBook_new_from_coef(struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     /**
      * Debug helper, contains text of current line.

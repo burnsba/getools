@@ -22,6 +22,16 @@ void LinkedList_append_node(struct LinkedList *root, struct LinkedListNode *node
 {
     TRACE_ENTER(__func__)
 
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> root is NULL\n", __func__, __LINE__);
+    }
+
+    if (node == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> node is NULL\n", __func__, __LINE__);
+    }
+
     root->count++;
 
     if (root->head == NULL)
@@ -134,6 +144,16 @@ void set_string_data(struct string_data *sd, char *text, size_t len)
 {
     TRACE_ENTER(__func__)
 
+    if (sd == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sd is NULL\n", __func__, __LINE__);
+    }
+
+    if (text == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> text is NULL\n", __func__, __LINE__);
+    }
+
     // string is always non-null but can be empty, is that a problem?
     sd->text = (char*)malloc_zero(1, len + 1);
     memcpy(sd->text, text, len);
@@ -175,6 +195,11 @@ void LinkedListNode_string_data_print(struct LinkedList *root)
 {
     TRACE_ENTER(__func__)
 
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> rot is NULL\n", __func__, __LINE__);
+    }
+
     struct LinkedListNode *node = root->head;
     while (node != NULL)
     {
@@ -204,6 +229,12 @@ void LinkedListNode_string_data_print(struct LinkedList *root)
 void LinkedListNode_free(struct LinkedList *root, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
+
+    if (node == NULL)
+    {
+        TRACE_LEAVE(__func__)
+        return;
+    }
 
     LinkedListNode_detach(root, node);
 
@@ -803,6 +834,11 @@ static void LinkedListNode_merge_sort(struct LinkedListNode **headptr, f_LinkedL
 void LinkedList_merge_sort(struct LinkedList *root, f_LinkedListNode_compare compare_callback)
 {
     TRACE_ENTER(__func__)
+
+    if (root == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> root is NULL\n", __func__, __LINE__);
+    }
 
     struct LinkedListNode *node;
     struct LinkedListNode *prev;

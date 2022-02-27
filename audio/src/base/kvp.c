@@ -33,7 +33,7 @@ struct KeyValue *KeyValue_new()
 /**
  * Allocates memory for a new {@code struct KeyValue} and value and
  * copies string into value.
- * @param value: string to copy.
+ * @param value: string to copy. Can be NULL.
  * @returns: pointer to new object.
 */
 struct KeyValue *KeyValue_new_value(char *value)
@@ -100,7 +100,7 @@ struct KeyValuePointer *KeyValuePointer_new()
 /**
  * Allocates memory for a new {@code struct KeyValuePointer} and
  * copies pointer into value.
- * @param value: pointer to copy.
+ * @param value: pointer to copy. Can be NULL.
  * @returns: pointer to new object.
 */
 struct KeyValuePointer *KeyValuePointer_new_value(void *value)

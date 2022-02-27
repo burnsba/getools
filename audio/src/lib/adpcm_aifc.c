@@ -79,6 +79,11 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_from_file(struct FileInfo *fi)
     int seen_appl = 0;
     int seen_ssnd = 0;
 
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     if (fi->len < 12)
     {
         stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid .aifc file: header too short\n", __func__, __LINE__);
@@ -311,6 +316,11 @@ struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new(uint32_t compression_type)
 void AdpcmAifcCodebookChunk_decode_aifc_codebook(struct AdpcmAifcCodebookChunk *chunk)
 {
     TRACE_ENTER(__func__)
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
 
     int i,j;
     int code_book_pos = 0;
@@ -549,6 +559,16 @@ void AdpcmAifcCommChunk_fwrite(struct AdpcmAifcCommChunk *chunk, struct FileInfo
 {
     TRACE_ENTER(__func__)
 
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     int remaining_bytes = chunk->ck_data_size;
 
     FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
@@ -595,6 +615,16 @@ void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, s
 {
     TRACE_ENTER(__func__)
 
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     FileInfo_fwrite_bswap(fi, &chunk->ck_id, 4, 1);
     FileInfo_fwrite_bswap(fi, &chunk->ck_data_size, 4, 1);
     FileInfo_fwrite_bswap(fi, &chunk->application_signature, 4, 1);
@@ -613,6 +643,16 @@ void AdpcmAifcApplicationChunk_fwrite(struct AdpcmAifcApplicationChunk *chunk, s
 void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     size_t table_size;
 
@@ -638,6 +678,16 @@ void AdpcmAifcCodebookChunk_fwrite(struct AdpcmAifcCodebookChunk *chunk, struct 
 void AdpcmAifcSoundChunk_fwrite(struct AdpcmAifcSoundChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     size_t table_size;
 
@@ -665,6 +715,16 @@ void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct FileInfo *f
 {
     TRACE_ENTER(__func__)
 
+    if (loop == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> loop is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     FileInfo_fwrite_bswap(fi, &loop->start, 4, 1);
     FileInfo_fwrite_bswap(fi, &loop->end, 4, 1);
     FileInfo_fwrite_bswap(fi, &loop->count, 4, 1);
@@ -682,6 +742,16 @@ void AdpcmAifcLoopData_fwrite(struct AdpcmAifcLoopData *loop, struct FileInfo *f
 void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (chunk == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> chunk is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
 
@@ -707,6 +777,16 @@ void AdpcmAifcLoopChunk_fwrite(struct AdpcmAifcLoopChunk *chunk, struct FileInfo
 void AdpcmAifcFile_fwrite(struct AdpcmAifcFile *aaf, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
 
@@ -1031,6 +1111,11 @@ size_t AdpcmAifcFile_encode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t b
 size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t max_len)
 {
     TRACE_ENTER(__func__)
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
 
     size_t write_len = 0;
     size_t ssnd_chunk_pos = 0;
@@ -1577,19 +1662,23 @@ size_t AdpcmAifcFile_decode(struct AdpcmAifcFile *aaf, uint8_t *buffer, size_t m
 */
 int32_t AdpcmAifcFile_get_int_sample_rate(struct AdpcmAifcFile *aaf)
 {
+    TRACE_ENTER(__func__)
+
     if (aaf == NULL)
     {
-        return -1;
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
     }
 
     if (aaf->comm_chunk == NULL)
     {
+        TRACE_LEAVE(__func__)
         return -1;
     }
 
     f80 float_sample_rate;
     memcpy(&float_sample_rate, &aaf->comm_chunk->sample_rate, 10);
 
+    TRACE_LEAVE(__func__)
     return (int32_t)float_sample_rate;
 }
 
@@ -1862,6 +1951,16 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct FileInfo *fi, size_t *sou
 {
     TRACE_ENTER(__func__)
 
+    if (path == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> path is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     if (g_verbosity >= VERBOSE_DEBUG)
     {
         printf("Open file \"%s\" to write to .tbl\n", path);
@@ -1891,6 +1990,16 @@ size_t AdpcmAifcFile_path_write_tbl(char *path, struct FileInfo *fi, size_t *sou
 size_t AdpcmAifcFile_write_tbl(struct AdpcmAifcFile *aifc_file, struct FileInfo *fi, size_t *sound_data_len)
 {
     TRACE_ENTER(__func__)
+
+    if (aifc_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aifc_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     if (aifc_file->sound_chunk == NULL)
     {
@@ -2437,6 +2546,11 @@ void AdpcmAifcFile_decode_frame(struct AdpcmAifcFile *aaf, int32_t *frame_buffer
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>  aaf->codes_chunk is NULL\n", __func__, __LINE__);
     }
 
+    if (frame_buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> frame_buffer is NULL\n", __func__, __LINE__);
+    }
+
     // grab order from file for convenience
     order = aaf->codes_chunk->order;
 
@@ -2552,6 +2666,11 @@ static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct FileIn
 {
     TRACE_ENTER(__func__)
 
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     int remaining_bytes;
 
     struct AdpcmAifcCommChunk *p = (struct AdpcmAifcCommChunk *)malloc_zero(1, sizeof(struct AdpcmAifcCommChunk));
@@ -2607,6 +2726,11 @@ static struct AdpcmAifcCommChunk *AdpcmAifcCommChunk_new_from_file(struct FileIn
 static struct AdpcmAifcApplicationChunk *AdpcmAifcApplicationChunk_new_from_file(struct FileInfo *fi, int32_t ck_data_size)
 {
     TRACE_ENTER(__func__)
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     if (ck_data_size - (5 + ADPCM_AIFC_VADPCM_APPL_NAME_LEN) <= 0)
     {
@@ -2712,6 +2836,11 @@ static struct AdpcmAifcSoundChunk *AdpcmAifcSoundChunk_new_from_file(struct File
 {
     TRACE_ENTER(__func__)
 
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     struct AdpcmAifcSoundChunk *p = (struct AdpcmAifcSoundChunk *)malloc_zero(1, sizeof(struct AdpcmAifcSoundChunk));
     p->ck_id = ADPCM_AIFC_SOUND_CHUNK_ID;
     p->ck_data_size = ck_data_size;
@@ -2749,6 +2878,21 @@ static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chun
 {
     TRACE_ENTER(__func__)
 
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+
+    if (ssnd_chunk_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ssnd_chunk_pos is NULL\n", __func__, __LINE__);
+    }
+
+    if (eof == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> eof is NULL\n", __func__, __LINE__);
+    }
+
     // careful with the comparison, valgrind will confirm if reading past allocated size though.
     if (*ssnd_chunk_pos >= (size_t)(aaf->sound_chunk->ck_data_size - 8))
     {
@@ -2777,6 +2921,16 @@ static uint8_t get_sound_chunk_byte(struct AdpcmAifcFile *aaf, size_t *ssnd_chun
 static void write_frame_output(uint8_t *out, int32_t *data, size_t size)
 {
     TRACE_ENTER(__func__)
+
+    if (out == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> out is NULL\n", __func__, __LINE__);
+    }
+
+    if (data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> data is NULL\n", __func__, __LINE__);
+    }
 
     size_t i;
     for (i=0; i<size; i++)

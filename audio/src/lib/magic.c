@@ -137,6 +137,11 @@ struct ALADPCMBook *estimate_codebook(
 
     TRACE_ENTER(__func__)
 
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
+
     const int frame_buffer_s16_byte_size = FRAME_DECODE_BUFFER_LEN * sizeof(int16_t);
     const int frame_buffer_f64_byte_size = FRAME_DECODE_BUFFER_LEN * sizeof(double);
     const double epsilon = 1e-6;
@@ -1232,6 +1237,11 @@ void ALADPCMBook_set_predictor(struct ALADPCMBook *book, double *row, int predic
     if (book == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> book is NULL\n", __func__, __LINE__);
+    }
+
+    if (row == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> row is NULL\n", __func__, __LINE__);
     }
 
     int i;

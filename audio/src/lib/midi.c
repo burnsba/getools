@@ -606,6 +606,11 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack)
 {
     TRACE_ENTER(__func__)
 
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
+    }
+
     struct MidiTrack *p = (struct MidiTrack *)malloc_zero(1, sizeof(struct MidiTrack));
 
     p->ck_id = MIDI_TRACK_CHUNK_ID;
@@ -2403,6 +2408,7 @@ int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1)
 
     if (node == NULL)
     {
+        TRACE_LEAVE(__func__)
         return 0;
     }
 
@@ -2410,6 +2416,7 @@ int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1)
 
     if (match == NULL)
     {
+        TRACE_LEAVE(__func__)
         return 0;
     }
 
@@ -2433,6 +2440,21 @@ int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1)
 void GmidTrack_roll_entry(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, size_t buffer_len, struct MidiConvertOptions *options)
 {
     TRACE_ENTER(__func__)
+
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
+    }
+
+    if (write_buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> write_buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (current_buffer_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> current_buffer_pos is NULL\n", __func__, __LINE__);
+    }
 
     struct LinkedList *matches;
     struct LinkedListNode *node;
@@ -4648,6 +4670,11 @@ void midi_controller_to_name(int controller, char *result, size_t max_length)
 {
     TRACE_ENTER(__func__)
 
+    if (result == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> result is NULL\n", __func__, __LINE__);
+    }
+
     switch (controller)
     {
         case MIDI_CONTROLLER_BANK_SELECT    : snprintf(result, max_length, "bank select"); break;
@@ -4683,6 +4710,11 @@ void midi_controller_to_name(int controller, char *result, size_t max_length)
 void midi_note_to_name(int note, char* result, size_t max_length)
 {
     TRACE_ENTER(__func__)
+
+    if (result == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> result is NULL\n", __func__, __LINE__);
+    }
 
     int octave = -1;
 
@@ -4763,6 +4795,11 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
 {
     TRACE_ENTER(__func__)
 
+    if (event == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> event is NULL\n", __func__, __LINE__);
+    }
+
     int upper = (0xff00 & event->command) >> 8;
 
     if (event->command == MIDI_COMMAND_BYTE_NOTE_OFF)
@@ -4841,6 +4878,11 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
 int32_t GmidEvent_get_cseq_command(struct GmidEvent *event)
 {
     TRACE_ENTER(__func__)
+
+    if (event == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> event is NULL\n", __func__, __LINE__);
+    }
 
     /**
      * Maybe refactor this to split yet another parameter into two properties ...
@@ -5095,6 +5137,16 @@ void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
 
+    if (track == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> track is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     FileInfo_fwrite_bswap(fi, &track->ck_id, 4, 1);
     FileInfo_fwrite_bswap(fi, &track->ck_data_size, 4, 1);
 
@@ -5111,6 +5163,16 @@ void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi)
 void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (midi_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
 
@@ -5136,6 +5198,16 @@ void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi)
 void CseqFile_fwrite(struct CseqFile *cseq, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+
+    if (cseq == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> cseq is NULL\n", __func__, __LINE__);
+    }
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int i;
     for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
@@ -5376,6 +5448,11 @@ static void SeqPatternMatch_free(struct SeqPatternMatch *obj)
 static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTATION type)
 {
     TRACE_ENTER(__func__)
+
+    if (track == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> track is NULL\n", __func__, __LINE__);
+    }
 
     if (g_verbosity >= VERBOSE_DEBUG)
     {

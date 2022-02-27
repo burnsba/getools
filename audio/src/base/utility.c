@@ -39,6 +39,11 @@ void stderr_exit(int exit_code, const char *format, ...)
 */
 void fflush_printf(FILE *stream, const char *format, ...)
 {
+    if (stream == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> stream is NULL\n", __func__, __LINE__);
+    }
+
     va_list args;
     va_start(args, format);
     vfprintf(stream, format, args);
@@ -54,6 +59,11 @@ void fflush_printf(FILE *stream, const char *format, ...)
 */
 void fflush_string(FILE *stream, const char *str)
 {
+    if (stream == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> stream is NULL\n", __func__, __LINE__);
+    }
+
     fprintf(stream, str);
     fflush(stream);
 }
@@ -199,6 +209,11 @@ int mkpath(const char* path)
 {
     TRACE_ENTER(__func__)
 
+    if (path == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> path is NULL\n", __func__, __LINE__);
+    }
+
     size_t len = strlen(path);
     char local_path[MAX_FILENAME_LEN];
     char *p;
@@ -324,6 +339,11 @@ size_t get_file_contents(char *path, uint8_t **buffer)
 {
     TRACE_ENTER(__func__)
 
+    if (path == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> path is NULL\n", __func__, __LINE__);
+    }
+
     FILE *input;
 
     size_t f_result;
@@ -394,6 +414,11 @@ size_t FileInfo_get_file_contents(struct FileInfo *fi, uint8_t **buffer)
 {
     TRACE_ENTER(__func__)
 
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
     size_t f_result;
 
     FileInfo_fseek(fi, 0, SEEK_SET);
@@ -417,6 +442,11 @@ size_t FileInfo_get_file_contents(struct FileInfo *fi, uint8_t **buffer)
 struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
 {
     TRACE_ENTER(__func__)
+
+    if (filename == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> filename is NULL\n", __func__, __LINE__);
+    }
 
     struct stat st;
 
@@ -491,6 +521,16 @@ struct FileInfo *FileInfo_fopen(char *filename, const char *mode)
 size_t FileInfo_fread(struct FileInfo *fi, void *output_buffer, size_t size, size_t n)
 {
     TRACE_ENTER(__func__)
+
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
+
+    if (output_buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> output_buffer is NULL\n", __func__, __LINE__);
+    }
 
     size_t num_bytes = size*n;
 
@@ -1460,6 +1500,21 @@ size_t fill_16bit_buffer(
 {
     TRACE_ENTER(__func__)
 
+    if (samples == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> samples is NULL\n", __func__, __LINE__);
+    }
+
+    if (sound_data == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound_data is NULL\n", __func__, __LINE__);
+    }
+
+    if (sound_data_pos == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound_data_pos is NULL\n", __func__, __LINE__);
+    }
+
     int i, sample_index;
     size_t bytes_read = 0;
     size_t max_i = 2 * samples_required; // 16 bit samples
@@ -1542,6 +1597,11 @@ void convert_s16_f64(int16_t *source, size_t len, double *dest)
 long parse_int(char *buffer)
 {
     TRACE_ENTER(__func__)
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> buffer is NULL\n", __func__, __LINE__);
+    }
 
     int res;
     char *pend = NULL;

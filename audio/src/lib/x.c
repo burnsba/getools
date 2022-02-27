@@ -49,6 +49,16 @@ static int LinkedListNode_sound_write_order_compare_smaller(struct LinkedListNod
 struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBank *bank)
 {
     TRACE_ENTER(__func__)
+    
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
+    }
+    
+    if (bank == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank is NULL\n", __func__, __LINE__);
+    }
 
     int expected_chunk_count = 2; // COMM, SSND.
     int alloc_chunk_count = 0;
@@ -151,6 +161,26 @@ struct AdpcmAifcFile *AdpcmAifcFile_new_full(struct ALSound *sound, struct ALBan
 void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint8_t *tbl_file_contents, struct ALBank *bank)
 {
     TRACE_ENTER(__func__)
+    
+    if (aaf == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> aaf is NULL\n", __func__, __LINE__);
+    }
+    
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
+    }
+    
+    if (tbl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> tbl_file_contents is NULL\n", __func__, __LINE__);
+    }
+    
+    if (bank == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank is NULL\n", __func__, __LINE__);
+    }
 
     aaf->ck_data_size = 0;
 
@@ -278,6 +308,26 @@ void load_aifc_from_sound(struct AdpcmAifcFile *aaf, struct ALSound *sound, uint
 void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tbl_file_contents, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
+    }
+    
+    if (bank == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank is NULL\n", __func__, __LINE__);
+    }
+    
+    if (tbl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> tbl_file_contents is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     struct AdpcmAifcFile *aaf = AdpcmAifcFile_new_full(sound, bank);
 
@@ -298,6 +348,16 @@ void write_sound_to_aifc(struct ALSound *sound, struct ALBank *bank, uint8_t *tb
 void write_bank_to_aifc(struct ALBankFile *bank_file, uint8_t *tbl_file_contents)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (tbl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> tbl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     struct FileInfo *output;
     int i,j,k;
@@ -680,6 +740,16 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 {
     TRACE_ENTER(__func__)
 
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (tbl_filename == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: tbl_filename is NULL\n", __func__, __LINE__);
+    }
+
     /**
      * Need to honor the sort method.
      * Iterate the bank file and collect all wavetable objects.
@@ -810,6 +880,16 @@ void ALBankFile_write_tbl(struct ALBankFile *bank_file, char* tbl_filename)
 void ALBankFile_write_ctl(struct ALBankFile *bank_file, char* ctl_filename)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (ctl_filename == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: ctl_filename is NULL\n", __func__, __LINE__);
+    }
 
     /**
      * Generally the `offset` doesn't need to be written until after
@@ -1028,6 +1108,21 @@ struct ALRawLoop *ALRawLoop_new_from_aifc_loop(struct AdpcmAifcLoopChunk *loop_c
 static void ALSound_write_ctl(struct ALSound *sound, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: sound is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     uint32_t t32; // temp
     int pos = *pos_ptr;
@@ -1274,6 +1369,21 @@ static void ALEnvelope_write_ctl(struct ALEnvelope *envelope, uint8_t *buffer, s
 {
     TRACE_ENTER(__func__)
 
+    if (envelope == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: envelope is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
+
     uint32_t t32; // temp
     int pos = *pos_ptr;
 
@@ -1320,6 +1430,21 @@ static void ALKeyMap_write_ctl(struct ALKeyMap *keymap, uint8_t *buffer, size_t 
 {
     TRACE_ENTER(__func__)
 
+    if (keymap == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: keymap is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
+
     int pos = *pos_ptr;
 
     if ((size_t)(pos + 8) > buffer_size)
@@ -1365,6 +1490,21 @@ static void ALKeyMap_write_ctl(struct ALKeyMap *keymap, uint8_t *buffer, size_t 
 static void ALBankFile_write_natural_order_envelope_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     int pos = *pos_ptr;
@@ -1440,6 +1580,21 @@ static void ALBankFile_write_natural_order_envelope_ctl(struct ALBankFile *bank_
 static void ALBankFile_write_natural_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     int pos = *pos_ptr;
@@ -1712,6 +1867,21 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
 {
     TRACE_ENTER(__func__)
 
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
+
     int bank_count;
     int pos = *pos_ptr;
     struct LinkedList *list_sounds = LinkedList_new();
@@ -1805,6 +1975,21 @@ static void ALBankFile_write_meta_order_envelope_ctl(struct ALBankFile *bank_fil
 static void ALBankFile_write_meta_order_keymap_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     int pos = *pos_ptr;
@@ -1900,6 +2085,21 @@ static void ALBankFile_write_natural_order_sound_ctl(struct ALBankFile *bank_fil
 {
     TRACE_ENTER(__func__)
 
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
+
     int bank_count;
     int pos = *pos_ptr;
 
@@ -1964,6 +2164,21 @@ static void ALBankFile_write_natural_order_sound_ctl(struct ALBankFile *bank_fil
 static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     int pos = *pos_ptr;
@@ -2057,6 +2272,21 @@ static void ALBankFile_write_meta_order_sound_ctl(struct ALBankFile *bank_file, 
 static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     uint32_t t32;
@@ -2194,6 +2424,21 @@ static void ALBankFile_write_instrument_ctl(struct ALBankFile *bank_file, uint8_
 static void ALBankFile_write_bank_ctl(struct ALBankFile *bank_file, uint8_t *buffer, size_t buffer_size, int *pos_ptr)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
+
+    if (buffer == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: buffer is NULL\n", __func__, __LINE__);
+    }
+
+    if (pos_ptr == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: pos_ptr is NULL\n", __func__, __LINE__);
+    }
 
     int bank_count;
     uint32_t t32;
@@ -2356,6 +2601,11 @@ static void ALWaveTable_populate_from_aifc(struct ALWaveTable *wavetable, struct
 static void ALBankFile_populate_wavetables_from_aifc(struct ALBankFile *bank_file)
 {
     TRACE_ENTER(__func__)
+
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: bank_file is NULL\n", __func__, __LINE__);
+    }
 
     ALBankFile_clear_visited_flags(bank_file);
 

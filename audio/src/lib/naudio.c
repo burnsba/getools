@@ -25,7 +25,7 @@ struct CtlParseContext {
 
 /**
  * Callback to initialize wavetable object.
- * If not set externally, will be set to @see ALWaveTable_init_default_set_aifc_path.
+ * If not set externally, will be set to {@code ALWaveTable_init_default_set_aifc_path}.
 */
 wavetable_init_callback wavetable_init_callback_ptr = NULL;
 
@@ -87,6 +87,11 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file);
 struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
 
@@ -121,6 +126,11 @@ struct ALADPCMLoop *ALADPCMLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t
 struct ALADPCMBook *ALADPCMBook_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
     
     int32_t input_pos = load_from_offset;
     int book_bytes;
@@ -188,6 +198,11 @@ struct ALADPCMBook *ALADPCMBook_new(int order, int npredictors)
 struct ALRawLoop *ALRawLoop_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
 
@@ -235,6 +250,11 @@ struct ALEnvelope *ALEnvelope_new()
 struct ALEnvelope *ALEnvelope_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
 
@@ -282,6 +302,11 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct FileInfo *fi)
     if (book == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> book is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
     }
 
     int line_length;
@@ -353,6 +378,16 @@ void ALADPCMBook_write_coef(struct ALADPCMBook *book, struct FileInfo *fi)
 void ALEnvelope_write_inst(struct ALEnvelope *envelope, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (envelope == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> envelope is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int len;
 
@@ -431,6 +466,11 @@ struct ALKeyMap *ALKeyMap_new()
 struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
 
@@ -477,6 +517,16 @@ struct ALKeyMap *ALKeyMap_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_
 void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (keymap == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> keymap is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int len;
 
@@ -539,6 +589,16 @@ void ALKeyMap_write_inst(struct ALKeyMap *keymap, struct FileInfo *fi)
 void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent)
 {
     TRACE_ENTER(__func__)
+    
+    if (keymap == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> keymap is NULL\n", __func__, __LINE__);
+    }
+    
+    if (parent == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> parent is NULL\n", __func__, __LINE__);
+    }
 
     if (keymap->parents == NULL)
     {
@@ -561,6 +621,16 @@ void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent)
 void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent)
 {
     TRACE_ENTER(__func__)
+    
+    if (envelope == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> envelope is NULL\n", __func__, __LINE__);
+    }
+    
+    if (parent == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> parent is NULL\n", __func__, __LINE__);
+    }
 
     if (envelope->parents == NULL)
     {
@@ -583,6 +653,16 @@ void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent)
 void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *parent)
 {
     TRACE_ENTER(__func__)
+    
+    if (wavetable == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL\n", __func__, __LINE__);
+    }
+    
+    if (parent == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> parent is NULL\n", __func__, __LINE__);
+    }
 
     if (wavetable->parents == NULL)
     {
@@ -605,6 +685,16 @@ void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *paren
 void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent)
 {
     TRACE_ENTER(__func__)
+    
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
+    }
+    
+    if (parent == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> parent is NULL\n", __func__, __LINE__);
+    }
 
     if (sound->parents == NULL)
     {
@@ -627,6 +717,16 @@ void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent)
 void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *parent)
 {
     TRACE_ENTER(__func__)
+    
+    if (instrument == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> instrument is NULL\n", __func__, __LINE__);
+    }
+    
+    if (parent == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> parent is NULL\n", __func__, __LINE__);
+    }
 
     if (instrument->parents == NULL)
     {
@@ -673,6 +773,11 @@ struct ALWaveTable *ALWaveTable_new()
 struct ALWaveTable *ALWaveTable_new_from_ctl(uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
     
     int32_t input_pos = load_from_offset;
 
@@ -773,6 +878,16 @@ struct ALSound *ALSound_new()
 struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (context == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> context is NULL\n", __func__, __LINE__);
+    }
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
 
@@ -873,6 +988,16 @@ struct ALSound *ALSound_new_from_ctl(struct CtlParseContext *context, uint8_t *c
 void ALSound_write_inst(struct ALSound *sound, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (sound == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int len;
 
@@ -1010,6 +1135,16 @@ struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, 
 {
     TRACE_ENTER(__func__)
     
+    if (context == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> context is NULL\n", __func__, __LINE__);
+    }
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
+    
     int32_t input_pos = load_from_offset;
     int i;
 
@@ -1114,6 +1249,16 @@ struct ALInstrument *ALInstrument_new_from_ctl(struct CtlParseContext *context, 
 void ALInstrument_write_inst(struct ALInstrument *instrument, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (instrument == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> instrument is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int len;
     int i;
@@ -1287,6 +1432,16 @@ struct ALBank *ALBank_new()
 struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl_file_contents, int32_t load_from_offset)
 {
     TRACE_ENTER(__func__)
+    
+    if (context == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> context is NULL\n", __func__, __LINE__);
+    }
+    
+    if (ctl_file_contents == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file_contents is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = load_from_offset;
     int i;
@@ -1363,6 +1518,16 @@ struct ALBank *ALBank_new_from_ctl(struct CtlParseContext *context, uint8_t *ctl
 void ALBank_write_inst(struct ALBank *bank, struct FileInfo *fi)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank is NULL\n", __func__, __LINE__);
+    }
+    
+    if (fi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> fi is NULL\n", __func__, __LINE__);
+    }
 
     int len;
     int i;
@@ -1441,6 +1606,11 @@ struct ALBankFile *ALBankFile_new()
 struct ALBankFile *ALBankFile_new_from_ctl(struct FileInfo *ctl_file)
 {
     TRACE_ENTER(__func__)
+    
+    if (ctl_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> ctl_file is NULL\n", __func__, __LINE__);
+    }
 
     int32_t input_pos = 0;
     int i;
@@ -1514,6 +1684,16 @@ struct ALBankFile *ALBankFile_new_from_ctl(struct FileInfo *ctl_file)
 void ALBankFile_write_inst(struct ALBankFile *bank_file, char* inst_filename)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (inst_filename == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> inst_filename is NULL\n", __func__, __LINE__);
+    }
 
     struct FileInfo *output;
     int i;
@@ -2163,16 +2343,20 @@ double detune_frequency(double hw_sample_rate, int keybase, int detune)
 struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, const char *keymap_text_id)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (keymap_text_id == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> keymap_text_id is NULL\n", __func__, __LINE__);
+    }
 
     int bank_index;
     int instrument_index;
     int sound_index;
-
-    if (bank_file == NULL)
-    {
-        TRACE_LEAVE(__func__)
-        return NULL;
-    }
 
     for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
     {
@@ -2222,16 +2406,20 @@ struct ALKeyMap *ALBankFile_find_keymap_with_name(struct ALBankFile *bank_file, 
 struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, const char *sound_text_id)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (sound_text_id == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> sound_text_id is NULL\n", __func__, __LINE__);
+    }
 
     int bank_index;
     int instrument_index;
     int sound_index;
-
-    if (bank_file == NULL)
-    {
-        TRACE_LEAVE(__func__)
-        return NULL;
-    }
 
     for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
     {
@@ -2278,16 +2466,20 @@ struct ALSound *ALBankFile_find_sound_with_name(struct ALBankFile *bank_file, co
 struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_file, const char *search_filename)
 {
     TRACE_ENTER(__func__)
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
+    
+    if (search_filename == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> search_filename is NULL\n", __func__, __LINE__);
+    }
 
     int bank_index;
     int instrument_index;
     int sound_index;
-
-    if (bank_file == NULL)
-    {
-        TRACE_LEAVE(__func__)
-        return NULL;
-    }
 
     for (bank_index=0; bank_index<bank_file->bank_count; bank_index++)
     {
@@ -2335,14 +2527,13 @@ struct ALSound *ALBankFile_find_sound_by_aifc_filename(struct ALBankFile *bank_f
 void ALBankFile_clear_visited_flags(struct ALBankFile *bank_file)
 {
     TRACE_ENTER(__func__)
-
-    int bank_count;
-
+    
     if (bank_file == NULL)
     {
-        TRACE_LEAVE(__func__)
-        return;
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
     }
+
+    int bank_count;
 
     for (bank_count=0; bank_count<bank_file->bank_count; bank_count++)
     {
@@ -2583,6 +2774,11 @@ static void CtlParseContext_free(struct CtlParseContext *context)
 static void ALWaveTable_init_default_set_aifc_path(struct ALWaveTable *wavetable)
 {
     TRACE_ENTER(__func__)
+    
+    if (wavetable == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> wavetable is NULL\n", __func__, __LINE__);
+    }
 
     size_t len;
     len = snprintf(g_write_buffer, WRITE_BUFFER_LEN, "%s%s%04d%s", g_output_dir, g_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
@@ -2808,6 +3004,11 @@ static void ALBankFile_set_write_order_by_offset(struct ALBankFile *bank_file)
      * sort the sounds list by envelope offset.
      * iterate sounds list and set envelope write_order from sort order.
     */
+    
+    if (bank_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> bank_file is NULL\n", __func__, __LINE__);
+    }
 
     struct LinkedList *list_sounds = LinkedList_new();
     struct LinkedListNode *node;
