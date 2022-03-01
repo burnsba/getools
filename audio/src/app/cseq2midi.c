@@ -27,6 +27,7 @@ static int opt_output_file = 0;
 static int opt_write_seq_track = 0;
 static int opt_no_pattern_compression = 0;
 static int opt_use_pattern_file = 0;
+static int opt_export_invalid_loop = 0;
 static char *input_filename = NULL;
 static size_t input_filename_len = 0;
 static char *output_filename = NULL;
@@ -40,6 +41,7 @@ static size_t pattern_filename_len = 0;
 #define LONG_OPT_WRITE_SEQ_TRACK   2001
 #define LONG_OPT_NO_PATTERN_COMPRESSION   2002
 #define LONG_OPT_PATTERN_FILE  2003
+#define LONG_OPT_EXPORT_INVALID_LOOP  2004
 
 static struct option long_options[] =
 {
@@ -49,6 +51,7 @@ static struct option long_options[] =
     {"write-seq-tracks",     no_argument,       NULL,  LONG_OPT_WRITE_SEQ_TRACK },
     {"no-pattern-compression",    no_argument,  NULL,  LONG_OPT_NO_PATTERN_COMPRESSION },
     {"pattern-file",        required_argument,  NULL,  LONG_OPT_PATTERN_FILE },
+    {"export-invalid-loop", no_argument,        NULL,  LONG_OPT_EXPORT_INVALID_LOOP },
     {"quiet",        no_argument,               NULL,  'q' },
     {"verbose",      no_argument,               NULL,  'v' },
     {"debug",        no_argument,               NULL,   LONG_OPT_DEBUG },
@@ -87,6 +90,11 @@ void print_help(const char * invoke)
     printf("    --pattern-file=FILE           Saves all pattern markers (with track number) to\n");
     printf("                                  specified file. Only applies when pattern compression\n");
     printf("                                  is not disabled.\n");
+    printf("    --export-invalid-loop         The retail version of the game has 72 invalid seq loop events\n");
+    printf("                                  (no start, no end, invalid offset, etc), this flag will\n");
+    printf("                                  convert those events to MIDI system exclusive command to \n");
+    printf("                                  include in output. Otherwise these events are not included\n");
+    printf("                                  in the output file.\n");
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
@@ -166,6 +174,10 @@ void read_opts(int argc, char **argv)
                 opt_no_pattern_compression = 1;
                 break;
 
+            case LONG_OPT_EXPORT_INVALID_LOOP:
+                opt_export_invalid_loop = 1;
+                break;
+
             case LONG_OPT_DEBUG:
                 g_verbosity = VERBOSE_DEBUG;
                 break;
@@ -226,6 +238,7 @@ int main(int argc, char **argv)
         printf("opt_no_pattern_compression: %d\n", opt_no_pattern_compression);
         printf("opt_use_pattern_file: %d\n", opt_use_pattern_file);
         printf("pattern_filename: %s\n", pattern_filename != NULL ? pattern_filename : "NULL");
+        printf("opt_export_invalid_loop: %d\n", opt_export_invalid_loop);
         fflush(stdout);
     }
 
@@ -244,6 +257,7 @@ int main(int argc, char **argv)
     convert_options = MidiConvertOptions_new();
     convert_options->post_unroll_action = unroll_action;
     convert_options->no_pattern_compression = opt_no_pattern_compression;
+    convert_options->sysex_seq_loops = opt_export_invalid_loop;
     if (opt_use_pattern_file)
     {
         convert_options->use_pattern_marker_file = 1;

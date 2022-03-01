@@ -733,6 +733,11 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         // delta events are changed in order to calculate offsets correctly.
         GmidTrack_pair_cseq_loop_events(gtrack, patterns);
 
+        // Mark invalid seq loops as invalid.
+        // Create MIDI sysex events (custom events) for invalid seq loop events according to user option.
+        // This needs to happen after GmidTrack_pair_cseq_loop_events.
+        GmidTrack_invalid_cseq_loop_to_sysex(gtrack, !options->sysex_seq_loops);
+
         // Create midi note off events from the seq note-on events.
         // This will break delta events for the track.
         GmidTrack_midi_note_off_from_cseq(gtrack);
@@ -3915,9 +3920,9 @@ void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack)
 /**
  * Iterate the event list of a track, and for each seq meta loop start event and loop
  * end event, ensure there is a matching reference and set the {@code GmidEvent->dual} pointer to it.
- * If the loop start event already has a dual pointer set, no changes are made to that event.
- * If the start event exists without matching end event, flag the start event
- * with {@code MIDI_MALFORMED_EVENT_LOOP}. This method needs to be run before any changes are made to
+ * If the event already has a dual pointer set, no changes are made to that event.
+ * All remaining loop events will be flagged with {@code MIDI_MALFORMED_EVENT_LOOP}.
+ * This method needs to be run before any changes are made to
  * the event list, otherwise offsets will be incorrect and this can fail.
 */
 void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList *patterns)
@@ -4147,6 +4152,163 @@ void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList
                 event->flags |= MIDI_MALFORMED_EVENT_LOOP;
             }
         }
+        node = node->next;
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates list of events and a new custom gaudio sysex event is created
+ * to capture malformed seq loop events. These are placed prior to the seq
+ * loop events. The seq loop events are then no longer treated as valid
+ * in the event list ({@code cseq_valid} is cleared).
+ * This must be run after {@code GmidTrack_pair_cseq_loop_events}.
+ * @param gtrack: track to update.
+ * @param no_create: When set, will only clear {@code cseq_valid} on invalid events,
+ * no sysex events will be created.
+*/
+void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_create)
+{
+    TRACE_ENTER(__func__)
+
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
+    }
+
+    struct LinkedListNode *node;
+    struct LinkedListNode *sysex_node;
+    struct GmidEvent *event;
+    struct GmidEvent *sysex_event;
+    uint8_t b;
+    int i;
+    int source_index, dest_index;
+
+    node = gtrack->events->head;
+    while (node != NULL)
+    {
+        event = (struct GmidEvent *)node->data;
+        if (event != NULL
+            && event->dual == NULL
+            && (event->flags & MIDI_MALFORMED_EVENT_LOOP) > 0
+            && (
+                event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META
+                || event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META
+            )
+        )
+        {
+            // Invalidate base seq event.
+            event->cseq_valid = 0;
+            event->midi_valid = 0;
+
+            if (no_create == 0)
+            {
+                if (event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META)
+                {
+                    // copy values shared by start and end
+                    sysex_event = GmidEvent_new();
+                    sysex_event->command = MIDI_COMMAND_BYTE_SYSEX_START;
+                    sysex_event->midi_command_len = MIDI_COMMAND_LEN_SYSEX;
+                    sysex_event->midi_valid = 1;
+                    sysex_event->command_channel = -1;
+                    sysex_event->absolute_time = event->absolute_time;
+                    sysex_event->file_offset = event->file_offset;
+                    sysex_event->flags = event->flags;
+                    VarLengthInt_copy(&sysex_event->cseq_delta_time, &event->cseq_delta_time);
+                    VarLengthInt_copy(&sysex_event->midi_delta_time, &event->midi_delta_time);
+
+                    // sysex start loop values
+                    sysex_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_START;
+                    sysex_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_START;
+                    sysex_event->midi_command_parameters[0] = MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL;
+                    sysex_event->midi_command_parameters_raw[0] = MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL;
+                    sysex_event->midi_command_parameters[1] = MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX;
+                    sysex_event->midi_command_parameters_raw[1] = MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX;
+                    sysex_event->midi_command_parameters[2] = CSEQ_COMMAND_BYTE_LOOP_START;
+                    sysex_event->midi_command_parameters_raw[2] = CSEQ_COMMAND_BYTE_LOOP_START;
+
+                    source_index = 0;
+                    dest_index = 3;
+                    for (i=0; i<1; i++)
+                    {
+                        // loop number
+                        b = (event->midi_command_parameters_raw[source_index] & 0xf0) >> 4;
+                        sysex_event->midi_command_parameters[dest_index] = b;
+                        sysex_event->midi_command_parameters_raw[dest_index] = b;
+                        dest_index++;
+
+                        b = (event->midi_command_parameters_raw[source_index] & 0x0f);
+                        sysex_event->midi_command_parameters[dest_index] = b;
+                        sysex_event->midi_command_parameters_raw[dest_index] = b;
+                        dest_index++;
+
+                        source_index++;
+                    }
+
+                    sysex_event->midi_command_parameters[5] = MIDI_COMMAND_BYTE_SYSEX_END;
+                    sysex_event->midi_command_parameters_raw[5] = MIDI_COMMAND_BYTE_SYSEX_END;
+
+                    // add to event list
+                    sysex_node = LinkedListNode_new();
+                    sysex_node->data = sysex_event;
+                    LinkedListNode_insert_before(gtrack->events, node, sysex_node);
+                }
+                else if (event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META)
+                {
+                    // copy values shared by start and end
+                    sysex_event = GmidEvent_new();
+                    sysex_event->command = MIDI_COMMAND_BYTE_SYSEX_START;
+                    sysex_event->midi_command_len = MIDI_COMMAND_LEN_SYSEX;
+                    sysex_event->midi_valid = 1;
+                    sysex_event->command_channel = -1;
+                    sysex_event->absolute_time = event->absolute_time;
+                    sysex_event->file_offset = event->file_offset;
+                    sysex_event->flags = event->flags;
+                    VarLengthInt_copy(&sysex_event->cseq_delta_time, &event->cseq_delta_time);
+                    VarLengthInt_copy(&sysex_event->midi_delta_time, &event->midi_delta_time);
+
+                    // sysex start loop values
+                    sysex_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_END;
+                    sysex_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END;
+                    sysex_event->midi_command_parameters[0] = MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL;
+                    sysex_event->midi_command_parameters_raw[0] = MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL;
+                    sysex_event->midi_command_parameters[1] = MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX;
+                    sysex_event->midi_command_parameters_raw[1] = MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX;
+                    sysex_event->midi_command_parameters[2] = CSEQ_COMMAND_BYTE_LOOP_END;
+                    sysex_event->midi_command_parameters_raw[2] = CSEQ_COMMAND_BYTE_LOOP_END;
+
+                    source_index = 0;
+                    dest_index = 3;
+                    for (i=0; i<6; i++)
+                    {
+                        // source byte[0]: loop count
+                        // source byte[1]: loop count2
+                        // source byte[2-5]: loop end offset to loop start
+                        b = (event->midi_command_parameters_raw[source_index] & 0xf0) >> 4;
+                        sysex_event->midi_command_parameters[dest_index] = b;
+                        sysex_event->midi_command_parameters_raw[dest_index] = b;
+                        dest_index++;
+
+                        b = (event->midi_command_parameters_raw[source_index] & 0x0f);
+                        sysex_event->midi_command_parameters[dest_index] = b;
+                        sysex_event->midi_command_parameters_raw[dest_index] = b;
+                        dest_index++;
+
+                        source_index++;
+                    }
+
+                    sysex_event->midi_command_parameters[15] = MIDI_COMMAND_BYTE_SYSEX_END;
+                    sysex_event->midi_command_parameters_raw[15] = MIDI_COMMAND_BYTE_SYSEX_END;
+
+                    // add to event list
+                    sysex_node = LinkedListNode_new();
+                    sysex_node->data = sysex_event;
+                    LinkedListNode_insert_before(gtrack->events, node, sysex_node);
+                }
+            }
+        }
+
         node = node->next;
     }
 
@@ -4865,6 +5027,11 @@ int32_t GmidEvent_get_midi_command(struct GmidEvent *event)
         TRACE_LEAVE(__func__)
         return MIDI_COMMAND_BYTE_PITCH_BEND | event->command_channel;
     }
+    else if (event->command == MIDI_COMMAND_BYTE_SYSEX_START)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_SYSEX_START;
+    }
     else if (upper == 0xff)
     {
         int lower = 0xff & event->command;
@@ -4952,6 +5119,12 @@ int32_t GmidEvent_get_cseq_command(struct GmidEvent *event)
     {
         TRACE_LEAVE(__func__)
         return MIDI_COMMAND_BYTE_PITCH_BEND | event->command_channel;
+    }
+    // shared with midi
+    else if (event->command == MIDI_COMMAND_BYTE_SYSEX_START)
+    {
+        TRACE_LEAVE(__func__)
+        return MIDI_COMMAND_BYTE_SYSEX_START;
     }
     else if (upper == 0xff)
     {

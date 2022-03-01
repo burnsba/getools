@@ -119,7 +119,9 @@
 #define CSEQ_COMMAND_BYTE_LOOP_END 0x2d
 #define CSEQ_COMMAND_BYTE_LOOP_END_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_LOOP_END)
 #define CSEQ_COMMAND_NAME_LOOP_END "cseq Loop End"
+// loop count, loop count2, offset
 #define CSEQ_COMMAND_PARAM_BYTE_LOOP_END 6
+// loop count, loop count2, offset
 #define CSEQ_COMMAND_NUM_PARAM_LOOP_END 3
 
 /*
@@ -133,7 +135,9 @@
 #define CSEQ_COMMAND_BYTE_LOOP_START 0x2e
 #define CSEQ_COMMAND_BYTE_LOOP_START_WITH_META  (0xff00 | CSEQ_COMMAND_BYTE_LOOP_START)
 #define CSEQ_COMMAND_NAME_LOOP_START "cseq Loop Start"
+// loop number, closing byte
 #define CSEQ_COMMAND_PARAM_BYTE_LOOP_START 2
+// loop number, closing byte
 #define CSEQ_COMMAND_NUM_PARAM_LOOP_START 2
 
 #define MIDI_COMMAND_LEN_END_OF_TRACK 3
@@ -156,6 +160,55 @@
 #define CSEQ_COMMAND_NAME_PATTERN "cseq pattern"
 #define CSEQ_COMMAND_PARAM_BYTE_PATTERN 3
 #define CSEQ_COMMAND_NUM_PARAM_PATTERN 2
+
+/**
+ * There are too many variations on malformed seq loop events in the retail game
+ * to reliably convert to midi and back to seq. Therefore, adding a sysex event
+ * to capture the bad event and store as MIDI, and then convert back to seq.
+ * Values from the event will be split into upper and lower bytes to avoid
+ * transmitting a set most-significant bit inside data values. E.g., the value
+ * of 0x87 will be transmitted 0x08 0x07.
+ * 
+ * -----------------------------------------------------------------------------
+ * Loop start event.
+ * -----------------
+ * The only value of interest is the loop number: [a][b]
+ * Will be translated to the following:
+ *     0xf0 0x7d 0x47 0x2e [a][b] 0xf7
+ *     0xff 0x06 0x03 0x2e [a][b]
+ * -----------------------------------------------------------------------------
+ * Loop end event.
+ * -----------------
+ * Loop count (1): [a][b]
+ * Loop count (2): [c][d]
+ * Start offset: [e][f] [g][h] [i][j] [k][l]
+ * Will be translated to the following:
+ *     0xf0 0x7d 0x47 0x2d [a][b] [c][d] [e][f] [g][h] [i][j] [k][l] 0xf7
+*/
+#define MIDI_COMMAND_LEN_SYSEX 1
+#define MIDI_COMMAND_BYTE_SYSEX_START 0xf0
+#define MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL 0x7d
+#define MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX 0x47
+#define MIDI_COMMAND_BYTE_SYSEX_END 0xf7
+
+// all bytes after 0xf0, individually
+#define MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_START 6
+#define MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_START 6
+
+// all bytes after 0xf0, individually
+#define MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END 16
+#define MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_END 16
+
+
+
+
+
+// needs to be as long as the longest possible paramaters
+#define GMID_EVENT_PARAMTER_BYTE_LEN   MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END
+#define GMID_EVENT_PARAMTER_LEN        MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_END
+
+
+
 
 #define MIDI_DESCRIPTION_TEXT_BUFFER_LEN 60
 
@@ -355,9 +408,6 @@ struct MidiFile {
     */
     struct MidiTrack **tracks;
 };
-
-#define GMID_EVENT_PARAMTER_BYTE_LEN 8
-#define GMID_EVENT_PARAMTER_LEN 4
 
 /**
  * gaudio MIDI format event.
@@ -564,6 +614,15 @@ struct MidiConvertOptions {
     char *pattern_marker_filename;
 
     /**
+     * Flag to indicate whether invalid seq loops should be supported.
+     * When set for cseq->midi conversion, will escape invalid loop events
+     * to gaudio sysex events.
+     * When set for midi->cseq conversion, will parse gaudio sysex into
+     * invalid seq loop events.
+    */
+    int sysex_seq_loops;
+
+    /**
      * Which pattern substitution algorithm to use.
     */
     enum GAUDIO_PATTERN_ALGORITHM pattern_algorithm;
@@ -624,6 +683,7 @@ void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack);
 void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack);
 void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
 void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList *patterns);
+void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_create);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct LinkedList *matches);
