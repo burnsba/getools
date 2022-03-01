@@ -123,14 +123,6 @@ void print_help(const char * invoke)
     printf("    -q,--quiet                    suppress output\n");
     printf("    -v,--verbose                  more output\n");
     printf("\n");
-    // printf("\n");
-    // printf(".inst mode options:\n");
-    // printf("\n");
-    // printf("    sound output mode: --mode=s\n");
-    // printf("        no additional options\n");
-    // printf("\n");
-    // printf("    music output mode: --mode=m\n");
-    // printf("        -s,--sample-rate=NUM      sample rate, between 0 and 65536 HZ\n");
 
     printf("\n");
     fflush(stdout);
@@ -150,7 +142,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_ctl_file = 1;
 
-                ctl_filename_len = snprintf(NULL, 0, "%s", optarg);
+                ctl_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (ctl_filename_len < 1)
                 {
@@ -166,7 +158,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_tbl_file = 1;
 
-                tbl_filename_len = snprintf(NULL, 0, "%s", optarg);
+                tbl_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (tbl_filename_len < 1)
                 {
@@ -208,13 +200,13 @@ void read_opts(int argc, char **argv)
 
                 if (optarg[str_len - 1] != PATH_SEPERATOR)
                 {
-                    g_output_dir_len = snprintf(NULL, 0, "%s%c", optarg, PATH_SEPERATOR);
+                    g_output_dir_len = snprintf(NULL, 0, "%s%c", optarg, PATH_SEPERATOR) + 1;
                     g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
                     g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s%c", optarg, PATH_SEPERATOR);
                 }
                 else
                 {
-                    g_output_dir_len = snprintf(NULL, 0, "%s", optarg);
+                    g_output_dir_len = snprintf(NULL, 0, "%s", optarg) + 1;
                     g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
                     g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s", optarg);
                 }
@@ -225,7 +217,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_user_filename_prefix = 1;
 
-                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg);
+                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (g_filename_prefix_len < 1)
                 {
@@ -241,7 +233,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_names_file = 1;
 
-                names_filename_len = snprintf(NULL, 0, "%s", optarg);
+                names_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (names_filename_len < 1)
                 {
@@ -292,7 +284,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_inst_file = 1;
 
-                inst_filename_len = snprintf(NULL, 0, "%s", optarg);
+                inst_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (inst_filename_len < 1)
                 {
@@ -368,13 +360,13 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
         // Only use non empty filename
         if (sd != NULL && sd->len > 0)
         {
-            filesystem_path_len = snprintf(NULL, 0, "%s%s%s", local_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%s%s", local_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION) + 1;
             filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
             filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%s", local_output_dir, sd->text, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
         }
         else
         {
-            filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION) + 1;
             filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
             filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
         }
@@ -387,7 +379,7 @@ static void wavetable_init_set_aifc_path(struct ALWaveTable *wavetable)
     else
     {
         // same as above.
-        filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
+        filesystem_path_len = snprintf(NULL, 0, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION) + 1;
         filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
         filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%04d%s", local_output_dir, local_filename_prefix, wavetable->id, NAUDIO_AIFC_OUT_DEFAULT_EXTENSION);
     }
@@ -423,7 +415,7 @@ int main(int argc, char **argv)
         // if user didn't supply output directory use the default
         if (!opt_dir)
         {
-            g_output_dir_len = snprintf(NULL, 0, "%s", DEFAULT_OUT_DIR);
+            g_output_dir_len = snprintf(NULL, 0, "%s", DEFAULT_OUT_DIR) + 1;
             g_output_dir = (char *)malloc_zero(g_output_dir_len + 1, 1);
             g_output_dir_len = snprintf(g_output_dir, g_output_dir_len, "%s", DEFAULT_OUT_DIR);
         }
@@ -432,7 +424,7 @@ int main(int argc, char **argv)
     // if user didn't supply filename_prefix use the default
     if (!opt_user_filename_prefix)
     {
-        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX);
+        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX) + 1;
         g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
         g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", DEFAULT_FILENAME_PREFIX);
     }
@@ -440,7 +432,7 @@ int main(int argc, char **argv)
     // if user didn't supply inst filename use the default
     if (!opt_inst_file)
     {
-        inst_filename_len = snprintf(NULL, 0, "%s", DEFAULT_INST_FILENAME);
+        inst_filename_len = snprintf(NULL, 0, "%s", DEFAULT_INST_FILENAME) + 1;
         inst_filename = (char *)malloc_zero(inst_filename_len + 1, 1);
         inst_filename_len = snprintf(inst_filename, inst_filename_len, "%s", DEFAULT_INST_FILENAME);
     }

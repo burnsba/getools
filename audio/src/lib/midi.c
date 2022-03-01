@@ -16,6 +16,11 @@
 int g_midi_parse_debug = 0;
 int g_midi_debug_loop_delta = 0;
 
+// Configuration flag, when set cseq will throw if start/end event don't match.
+// There are several malformed cseq tracks in the release version of goldeneye, so
+// this should be disabled when working with game files.
+int g_strict_cseq_loop_event = 0;
+
 static const int g_min_pattern_length = 6;        // according to guess
 static const int g_max_pattern_length = 0xff;     // according to programmer manual
 static const int g_max_pattern_distance = 0xfdff; // according to programmer manual
@@ -40,6 +45,14 @@ struct SeqUnrollGrow {
      * event begins at (without delta time)
     */
     int file_offset;
+};
+
+enum CSEQ_PATTERN_TYPE {
+    // unroll pattern sequence. 4 bytes compressed.
+    CSEQ_PATTERN_UNROLL = 0,
+
+    // escape pattern sequence. 2 bytes 0xfefe to 1 byte 0xfe.
+    CSEQ_PATTERN_ESCAPE
 };
 
 /**
@@ -67,6 +80,8 @@ struct SeqPatternMatch {
     
     // length of pattern to substitute, in bytes
     int pattern_length;
+
+    enum CSEQ_PATTERN_TYPE type;
 };
 
 // forward declarations
@@ -74,6 +89,7 @@ struct SeqPatternMatch {
 int LinkedListNode_gmidevent_compare_larger(struct LinkedListNode *first, struct LinkedListNode *second);
 int LinkedListNode_gmidevent_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
+static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int end_pos);
 static struct SeqUnrollGrow *SeqUnrollGrow_new(void);
 static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int diff, int pattern_length);
 static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj);
@@ -675,13 +691,25 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         }
 
         struct GmidTrack *gtrack = GmidTrack_new();
+        struct LinkedList *patterns = NULL;
+        struct LinkedListNode *pattern_node = NULL;
+        struct SeqPatternMatch *pattern = NULL;
 
         gtrack->midi_track_index = allocated_tracks;
         gtrack->cseq_track_index = i;
 
         if (opt_pattern_substitution)
         {
-            CseqFile_unroll(cseq, gtrack, pattern_file);
+            patterns = LinkedList_new();
+            CseqFile_unroll(cseq, gtrack, patterns);
+
+            if (pattern_file != NULL)
+            {
+                if (patterns->count > 0)
+                {
+                    write_patterns_to_file(patterns, pattern_file);
+                }
+            }
         }
         else
         {
@@ -696,11 +724,14 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         // parse seq format into common events
         GmidTrack_parse_CseqTrack(gtrack);
 
-        // The seq loop end event contains the count, but that's needed at the start,
-        // so resolve all dual pointers to make that available.
+        // The seq loop end event contains the loop iteration count, but that's needed in the MIDI
+        // loop start event, so resolve all dual pointers to make that available. One complication
+        // is that pattern substitution is applied before loop end offset is calculated, so
+        // unrolling above means the loop end offsets are now wrong. Pass in the list of patterns
+        // found unrolling the track to this method to adjust loop end offsets.
         // This needs to happen before any nodes are added, and before
         // delta events are changed in order to calculate offsets correctly.
-        GmidTrack_ensure_cseq_loop_dual(gtrack);
+        GmidTrack_pair_cseq_loop_events(gtrack, patterns);
 
         // Create midi note off events from the seq note-on events.
         // This will break delta events for the track.
@@ -731,7 +762,25 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         midi->tracks[allocated_tracks] = MidiTrack_new_from_GmidTrack(gtrack);
         allocated_tracks++;
 
+        // cleanup
         GmidTrack_free(gtrack);
+
+        if (patterns != NULL)
+        {
+            pattern_node = patterns->head;
+            while (pattern_node != NULL)
+            {
+                pattern = (struct SeqPatternMatch *)pattern_node->data;
+                if (pattern != NULL)
+                {
+                    SeqPatternMatch_free(pattern);
+                    pattern_node->data = NULL;
+                }
+                pattern_node = pattern_node->next;
+            }
+            
+            LinkedList_free(patterns);
+        }
     }
 
     if (pattern_file != NULL)
@@ -1265,10 +1314,10 @@ void MidiFile_free(struct MidiFile *midi)
  * {@code cseq->track_offset} and {@code cseq->track_lengths} must be set.
  * @param track: Existing Gmidtrack, cseq_data should be unallocated.
  * {@code track->cseq_track_index} must be set.
- * @param pattern_file: Optional. If not null, will append pattern marker
+ * @param patterns: Optional. If not null, will append pattern marker
  * sequences encountered while unrolling track.
 */
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct FileInfo *pattern_file)
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct LinkedList *patterns)
 {
     TRACE_ENTER(__func__)
 
@@ -1287,29 +1336,16 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
     size_t cseq_len = 0;
     uint8_t *temp_ptr;
     size_t compressed_read_len = 0;
-    char pattern_write_buffer[WRITE_BUFFER_LEN];
+    size_t total_pattern_unroll = 0;
 
-    struct LinkedList *loop_stack;
     struct LinkedListNode *node;
-    int loop_state_start = 0;
-    int loop_state_start_number = 0;
-    int previous_loop_state_start_number = -1;
-    int loop_state_end = 0;
-    int loop_current_offset = 0;
-    int32_t loop_state_end_offset = 0;
+    struct SeqPatternMatch *pattern;
     int pattern_counts = 0;
 
     if (track->cseq_data != NULL)
     {
         free(track->cseq_data);
     }
-
-    // The seq loop end event offset is calculated after pattern compression.
-    // This method will track the amount of bytes added due to unrolling
-    // inside a loop, then add that to the offset, so the value will
-    // be correct for an unrolled seq.
-    // This list is a stack to track amount of bytes that need to be added.
-    loop_stack = LinkedList_new();
 
     // rough guess here, might resize during iteration, will adjust at the end too.
     size_t new_size = (size_t)((float)cseq->track_lengths[track->cseq_track_index] * 1.5f);
@@ -1339,202 +1375,6 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
             track->cseq_data = temp_ptr;
         }
 
-        /**
-         * Simple state machine to match seq loop start event.
-         * If a start event is read, the current number of bytes that
-         * need to be added for this loop are pushed onto a stack (loop_current_offset).
-         * The counter is then reset since patterns can't cross loop boundaries.
-        */
-        switch (loop_state_start)
-        {
-            case 0:
-            {
-                loop_state_start_number = 0;
-
-                if (cseq->compressed_data[pos] == 0xff)
-                {
-                    loop_state_start++;
-                }
-                else
-                {
-                    loop_state_start = 0;
-                }
-            }
-            break;
-
-            case 1:
-            {
-                if (cseq->compressed_data[pos] == 0x2e)
-                {
-                    loop_state_start++;
-                }
-                else
-                {
-                    loop_state_start = 0;
-                }
-            }
-            break;
-
-            case 2:
-            {
-                /**
-                 * This is a hack, Archives channel 9 has two seq meta loop start
-                 * events for loop #0, this will ignore any duplicate loop start
-                 * for loop number the same as previous.
-                */
-                if (previous_loop_state_start_number == cseq->compressed_data[pos])
-                {
-                    // skip next 0xff, to start over back in state 0
-                    loop_state_start = 4;
-                }
-                else
-                {
-                    previous_loop_state_start_number = loop_state_start_number;
-                    loop_state_start_number = cseq->compressed_data[pos];
-                    loop_state_start++;
-                }
-            }
-            break;
-
-            case 3:
-            {
-                if (cseq->compressed_data[pos] == 0xff)
-                {
-                    struct SeqUnrollGrow *grow = SeqUnrollGrow_new();
-                    grow->start_grow = loop_current_offset;
-                    grow->loop_id = loop_state_start_number;
-                    grow->file_offset = pos - 3;
-                    loop_current_offset = 0;
-
-                    node = LinkedListNode_new();
-                    node->data = grow;
-                    LinkedList_append_node(loop_stack, node);
-                }
-             
-                loop_state_start = 0;
-                loop_state_start_number = 0;
-            }
-            break;
-
-            default:
-                loop_state_start = 0;
-            break;
-        }
-
-        /**
-         * Simple state machine to match seq loop end event.
-         * This captures the loop end event and reads the loop offset.
-        */
-        switch (loop_state_end)
-        {
-            case 0:
-            {
-                loop_state_end_offset = 0;
-
-                if (cseq->compressed_data[pos] == 0xff)
-                {
-                    loop_state_end++;
-                }
-                else
-                {
-                    loop_state_end = 0;
-                }
-            }
-            break;
-
-            case 1:
-            {
-                if (cseq->compressed_data[pos] == 0x2d)
-                {
-                    loop_state_end++;
-                }
-                else
-                {
-                    loop_state_end = 0;
-                }
-            }
-            break;
-
-            case 2:
-            case 3:
-            {
-                loop_state_end++;
-            }
-            break;
-
-            case 4:
-            {
-                loop_state_end_offset = cseq->compressed_data[pos];
-                loop_state_end++;
-            }
-            break;
-            case 5:
-            case 6:
-            case 7:
-            {
-                loop_state_end_offset <<= 8;
-                loop_state_end_offset |= cseq->compressed_data[pos];
-                loop_state_end++;
-            }
-            break;
-        }
-
-        /**
-         * If this is a loop end marker then the value of the loop offset
-         * needs to be intercepted and adjusted. The adjust amount comes
-         * from any patterns that were unrolled during this loop (loop_current_offset).
-         * Since patterns can't cross loop boundariers, the loop adjust
-         * amount is popped off stack, and the previous loop adjust amount
-         * is restored into loop_current_offset.
-        */
-        if (loop_state_end == 8)
-        {
-            loop_state_end = 0;
-
-            // adjust total offset back to parent loop container
-            node = loop_stack->tail;
-            struct SeqUnrollGrow *grow = (struct SeqUnrollGrow *)node->data;
-
-            if (grow == NULL)
-            {
-                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> grow is NULL\n", __func__, __LINE__);
-            }
-
-            // sanity check
-            if (grow->file_offset != (int)pos - loop_state_end_offset - 3)
-            {
-                stderr_exit(EXIT_CODE_GENERAL, "%s %d> loop end delta %d from cseq compressed file offset %ld does not equal current loop start position %d\n", __func__, __LINE__, loop_state_end_offset, pos, grow->file_offset);
-            }
-
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                printf("adjusting loop %d, cseq pos %ld, unroll pos %ld, by %d from %d to %d\n", grow->loop_id, pos, unrolled_pos, loop_current_offset, loop_state_end_offset, loop_state_end_offset + loop_current_offset);
-            }
-
-            // Adjust offset from cseq to count unrolled bytes added.
-            loop_state_end_offset += loop_current_offset;
-            
-            // back track into output buffer (3 out of 4 bytes) and set updated values.
-            track->cseq_data[unrolled_pos - 3] = (uint8_t)((loop_state_end_offset >> 24) & 0xff);
-            track->cseq_data[unrolled_pos - 2] = (uint8_t)((loop_state_end_offset >> 16) & 0xff);
-            track->cseq_data[unrolled_pos - 1] = (uint8_t)((loop_state_end_offset >> 8) & 0xff);
-            track->cseq_data[unrolled_pos] = (uint8_t)((loop_state_end_offset >> 0) & 0xff);
-
-            // pop total offset back to parent loop.
-            loop_current_offset = grow->start_grow;
-
-            // current loop is done, free memory
-            SeqUnrollGrow_free(grow);
-            node->data = NULL;
-            LinkedListNode_free(loop_stack, node);
-
-            // adjust current current totals and continue
-            pos++;
-            compressed_read_len++;
-            unrolled_pos++;
-            continue;
-        }
-
         // else this is a regular byte
         if (cseq->compressed_data[pos] != 0xfe)
         {
@@ -1550,7 +1390,24 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
         if (cseq->compressed_data[pos+1] == 0xfe)
         {
             track->cseq_data[unrolled_pos] = cseq->compressed_data[pos];
-            
+
+            if (patterns != NULL)
+            {
+                pattern = SeqPatternMatch_new_values(unrolled_pos, 0, 1);
+                pattern->track_number = track->cseq_track_index;
+                pattern->type = CSEQ_PATTERN_ESCAPE;
+                node = LinkedListNode_new();
+                node->data = pattern;
+                LinkedList_append_node(patterns, node);
+            }
+
+            total_pattern_unroll++;
+
+            if (g_verbosity >=  VERBOSE_DEBUG)
+            {
+                printf("found escape sequence. File offset=%ld, track pos=%ld. Total pattern unroll=%ld\n", pos, compressed_read_len, total_pattern_unroll);
+            }
+
             pos += 2;
             compressed_read_len += 2;
             unrolled_pos++;
@@ -1565,26 +1422,27 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
 
         length = cseq->compressed_data[pos + 3];
         pattern_counts++;
+        total_pattern_unroll += length;
 
         if (g_verbosity >=  VERBOSE_DEBUG)
         {
-            printf("found pattern of length %d, diff=%d, loop_current_offset=%d, pattern_counts=%d\n", length, diff, loop_current_offset, pattern_counts);
+            printf("found pattern. File offset=%ld, track pos=%ld, length=%d, diff=%d, pattern_counts=%d. Total pattern unroll=%ld\n", pos, compressed_read_len, length, diff, pattern_counts, total_pattern_unroll);
         }
-
-        loop_current_offset += length - 4;
 
         if ((int)pos - diff < 0)
         {
             stderr_exit(EXIT_CODE_GENERAL, "%s %d> cseq_track %d references diff %d before start of file, position %ld.\n", __func__, __LINE__, track->cseq_track_index, diff, pos);
         }
 
-        // write pattern to disk if needed
-        if (pattern_file != NULL)
+        // save pattern if needed
+        if (patterns != NULL)
         {
-            int sprintf_len;
-            memset(pattern_write_buffer, 0, WRITE_BUFFER_LEN);
-            sprintf_len = sprintf(pattern_write_buffer, "%d,%ld,%d,%d\n", track->cseq_track_index, unrolled_pos, diff, length);
-            FileInfo_fwrite(pattern_file, pattern_write_buffer, sprintf_len, 1);
+            pattern = SeqPatternMatch_new_values(unrolled_pos, diff, length);
+            pattern->track_number = track->cseq_track_index;
+            pattern->type = CSEQ_PATTERN_UNROLL;
+            node = LinkedListNode_new();
+            node->data = pattern;
+            LinkedList_append_node(patterns, node);
         }
 
         // ensure pattern bytes can fit in current allocation, otherwise resize.
@@ -1617,7 +1475,47 @@ void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct File
     // set data length
     track->cseq_data_len = unrolled_pos;
 
-    LinkedList_free(loop_stack);
+    // cleanup
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Iterates a list of patterns and writes to file.
+ * @param patterns: List of {@code struct SeqPatternMatch} to write.
+ * @param file: File to write to.
+*/
+void write_patterns_to_file(struct LinkedList *patterns, struct FileInfo *file)
+{
+    TRACE_ENTER(__func__)
+
+    if (patterns == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> patterns is null\n", __func__, __LINE__);
+    }
+
+    if (file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> file is null\n", __func__, __LINE__);
+    }
+
+    struct LinkedListNode *node;
+    struct SeqPatternMatch *pattern;
+    char pattern_write_buffer[WRITE_BUFFER_LEN];
+
+    node = patterns->head;
+    while (node != NULL)
+    {
+        pattern = (struct SeqPatternMatch *)node->data;
+        if (pattern != NULL && pattern->type == CSEQ_PATTERN_UNROLL)
+        {
+            int sprintf_len;
+            memset(pattern_write_buffer, 0, WRITE_BUFFER_LEN);
+            sprintf_len = sprintf(pattern_write_buffer, "%d,%d,%d,%d\n", pattern->track_number, pattern->start_pattern_pos, pattern->diff, pattern->pattern_length);
+            FileInfo_fwrite(file, pattern_write_buffer, sprintf_len, 1);
+        }
+        node = node->next;
+    }
 
     TRACE_LEAVE(__func__)
 }
@@ -1798,6 +1696,7 @@ void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *writ
                     pos_increment_amount = pattern_length;
 
                     match = SeqPatternMatch_new_values(start_pattern_pos, diff, pattern_length);
+                    match->type = CSEQ_PATTERN_UNROLL;
 
                     node = LinkedListNode_new();
                     node->data = match;
@@ -2324,6 +2223,7 @@ void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, stru
                 {
                     match = SeqPatternMatch_new();
                     match->track_number = file_value;
+                    match->type = CSEQ_PATTERN_UNROLL;
                     line_values++;
                 }
                 break;
@@ -3150,8 +3050,15 @@ struct GmidEvent *GmidEvent_new_from_buffer(
         }
         else if (message_type == MIDI_COMMAND_BYTE_PITCH_BEND /* regular and seq */)
         {
-            // Pitch Bend
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Pitch Bend not implemented, track index=%d, pos=%d.\n", __func__, __LINE__, pos);
+            command_without_channel = MIDI_COMMAND_BYTE_PITCH_BEND;
+
+            if (g_midi_parse_debug)
+            {
+                memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
+
+                snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "command %s: channel %d", MIDI_COMMAND_NAME_PITCH_BEND, command_channel);
+                fflush_printf(stdout, "%s\n", print_buffer);
+            }            
         }
         else
         {
@@ -3533,7 +3440,51 @@ struct GmidEvent *GmidEvent_new_from_buffer(
         else if (command_without_channel == MIDI_COMMAND_BYTE_PITCH_BEND /* regular and seq */)
         {
             // Pitch Bend
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Pitch Bend not implemented, buffer type=%d, pos=%ld.\n", __func__, __LINE__, buffer_type, pos);
+            if (pos + MIDI_COMMAND_PARAM_BYTE_PITCH_BEND > buffer_len)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing event\n", __func__, __LINE__, buffer_len);
+            }
+
+            // copy raw value in same endian, other values set at end.
+            memcpy(event->cseq_command_parameters_raw, &buffer[pos], MIDI_COMMAND_PARAM_BYTE_PITCH_BEND);
+            
+            // parse command values. Pitch bend is 14 bits, spread over two bytes (lower 7 bits each byte).
+            int lsb = buffer[pos++];
+            local_bytes_read++;
+            int msb = buffer[pos++];
+            local_bytes_read++;
+
+            int pitch_bend = (msb << 7) | lsb;
+
+            // optional debug print
+            if (g_midi_parse_debug)
+            {
+                memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
+
+                snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "%s: pitch bend=%d from lower=%d, upper=%d", MIDI_COMMAND_NAME_PITCH_BEND, pitch_bend, lsb, msb);
+                fflush_printf(stdout, "%s\n", print_buffer);
+            }
+
+            // save parsed data
+            event->command = MIDI_COMMAND_BYTE_PITCH_BEND;
+            event->dual = NULL;
+            event->cseq_valid = 1;
+            event->midi_valid = 1;
+
+            // cseq format
+            event->cseq_command_len = MIDI_COMMAND_LEN_PITCH_BEND;
+            event->cseq_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_PITCH_BEND;
+            event->cseq_command_parameters[0] = lsb;
+            event->cseq_command_parameters[1] = msb;
+            event->cseq_command_parameters_len = MIDI_COMMAND_NUM_PARAM_PITCH_BEND;
+
+            // convert to MIDI format (same as above)
+            memcpy(event->midi_command_parameters_raw, event->cseq_command_parameters_raw, MIDI_COMMAND_PARAM_BYTE_PITCH_BEND);
+            event->midi_command_len = MIDI_COMMAND_LEN_PITCH_BEND;
+            event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_PITCH_BEND;
+            event->midi_command_parameters[0] = lsb;
+            event->midi_command_parameters[1] = msb;
+            event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_PITCH_BEND;
         }
         else
         {
@@ -3962,18 +3913,14 @@ void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack)
 }
 
 /**
- * Iterate the event list of a track, and for each seq meta
- * loop start event and loop end event, ensure there is a matching
- * reference and set the {@code GmidEvent->dual} pointer to it.
- * If the loop start event already has a dual pointer set,
- * no changes are made to that event.
- * If the start event exists without matching end event,
- * flag the start event with {@code MIDI_MALFORMED_EVENT_LOOP}.
- * This method needs to be run before any changes are made to
- * the event list, otherwise offsets will be incorrect and
- * this can fail.
+ * Iterate the event list of a track, and for each seq meta loop start event and loop
+ * end event, ensure there is a matching reference and set the {@code GmidEvent->dual} pointer to it.
+ * If the loop start event already has a dual pointer set, no changes are made to that event.
+ * If the start event exists without matching end event, flag the start event
+ * with {@code MIDI_MALFORMED_EVENT_LOOP}. This method needs to be run before any changes are made to
+ * the event list, otherwise offsets will be incorrect and this can fail.
 */
-void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
+void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList *patterns)
 {
     TRACE_ENTER(__func__)
 
@@ -3990,6 +3937,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
     struct LinkedListNode *duplicate_node;
     struct GmidEvent *duplicate_event;
 
+    // Iterate the list of events and try to match start events to end events.
     node = gtrack->events->head;
     while (node != NULL)
     {
@@ -4010,7 +3958,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
 
                 duplicate_start = NULL;
 
-                search_node = node;
+                search_node = node->next;
                 while (search_node != NULL && match == 0)
                 {
                     search_event = (struct GmidEvent *)search_node->data;
@@ -4031,9 +3979,15 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                                 if (duplicate_start == NULL)
                                 {
                                     duplicate_start = LinkedList_new();
-                                    duplicate_node = LinkedListNode_new();
-                                    duplicate_node->data = search_event;
-                                    LinkedList_append_node(duplicate_start, duplicate_node);
+                                }
+
+                                duplicate_node = LinkedListNode_new();
+                                duplicate_node->data = search_event;
+                                LinkedList_append_node(duplicate_start, duplicate_node);
+
+                                if (g_verbosity >= VERBOSE_DEBUG)
+                                {
+                                    printf("found duplicate loop start event for loop %d\n", search_event->cseq_command_parameters[0]);
                                 }
                             }
                         }
@@ -4045,8 +3999,16 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                         {
                             int32_t fixed_delta;
                             int32_t compare_delta;
+                            int unroll_adjust = 0;
 
                             any_end++;
+
+                            if (patterns != NULL)
+                            {
+                                // escape byte sequence can be in the delta time of the loop end event.
+                                // Example: Facility track 6.
+                                unroll_adjust = measure_unroll_adjust(patterns, event->file_offset, search_event->file_offset + search_event->cseq_delta_time.num_bytes);
+                            }
 
                             fixed_delta = search_event->cseq_command_parameters[2];
                             compare_delta = (int32_t)(
@@ -4056,12 +4018,19 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                                 - event->file_offset
                                 - event->cseq_delta_time.num_bytes
                                 - event->cseq_command_parameters_raw_len);
-                            if (fixed_delta == compare_delta)
+                            if (fixed_delta + unroll_adjust == compare_delta)
                             {
                                 event->dual = search_event;
                                 search_event->dual = event;
 
                                 match = 1;
+                            }
+                            else
+                            {
+                                if (g_verbosity >= VERBOSE_DEBUG)
+                                {
+                                    printf("Found loop end event, but wrong offset. Event value=%d, actual offset=%d, unroll_adjust=%d\n", fixed_delta, compare_delta, unroll_adjust);
+                                }
                             }
 
                             // if the starting node didn't match, check to see if any others did
@@ -4071,6 +4040,15 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                                 while (duplicate_node != NULL && match == 0)
                                 {
                                     duplicate_event = (struct GmidEvent *)duplicate_node->data;
+
+                                    unroll_adjust = 0;
+                                    if (patterns != NULL)
+                                    {
+                                        // escape byte sequence can be in the delta time of the loop end event.
+                                        // Example: Facility track 6.
+                                        unroll_adjust = measure_unroll_adjust(patterns, event->file_offset, duplicate_event->file_offset + duplicate_event->cseq_delta_time.num_bytes);
+                                    }
+
                                     fixed_delta = search_event->cseq_command_parameters[2];
                                     compare_delta = (int32_t)(
                                         search_event->file_offset
@@ -4079,7 +4057,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                                         - duplicate_event->file_offset
                                         - duplicate_event->cseq_delta_time.num_bytes
                                         - duplicate_event->cseq_command_parameters_raw_len);
-                                    if (fixed_delta == compare_delta)
+                                    if (fixed_delta + unroll_adjust == compare_delta)
                                     {
                                         duplicate_event->dual = search_event;
                                         search_event->dual = duplicate_event;
@@ -4102,23 +4080,73 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
                     duplicate_start = NULL;
                 }
 
-                if (match == 0)
+                // Generally try to avoid throwing exception, should be able to
+                // just flag events as bad.
+                if (match == 0 && g_strict_cseq_loop_event)
                 {
-                    // This is a start loop event, and there is no end loop event in this track.
-                    // In that case, flag this start event as bad and don't try to process.
-                    // This happens on Archives channel 7.
-                    if (any_end == 0)
-                    {
-                        event->flags |= MIDI_MALFORMED_EVENT_LOOP;
-                    }
-                    else
-                    {
-                        stderr_exit(EXIT_CODE_GENERAL, "%s %d> can not find seq loop end event for loop start event at file offset %ld\n", __func__, __LINE__, event->file_offset);
-                    }
+                    /**
+                     * Archives channel 7.
+                     * DeathSolo, track 6. Start loop 0, start loop 0, end loop 0 (first), end loop offset 0x00ffffff.
+                     * DeathSolo, track 8. Start loop 0, start loop 0, end loop 0 (first), end loop offset 0x00ffffff.
+                     * ....
+                    */
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> can not find seq loop end event for loop start event at file offset %ld\n", __func__, __LINE__, event->file_offset);
                 }
             }
         }
 
+        node = node->next;
+    }
+
+    // Iterate list and flag any leftover events as bad.
+    node = gtrack->events->head;
+    while (node != NULL)
+    {
+        event = (struct GmidEvent *)node->data;
+        if (event != NULL)
+        {
+            if (event->dual == NULL
+                && (
+                    event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META
+                    || event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META
+                )
+            )
+            {
+                if (g_verbosity >= 1)
+                {
+                    if (event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META)
+                    {
+                        fflush_printf(
+                            stderr,
+                            "bad seq loop start. seq track %d, offset %ld, absolute time %ld, delta %d, loop number %d\n",
+                            gtrack->cseq_track_index,
+                            event->file_offset,
+                            event->absolute_time,
+                            event->cseq_delta_time.standard_value,
+                            event->cseq_command_parameters[0]);
+                    }
+                    else if (event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META)
+                    {
+                        fflush_printf(
+                            stderr,
+                            "bad seq loop end. seq track %d, offset %ld, absolute time %ld, delta %d, loop count %d, loop count2 %d, loop start offset %d\n",
+                            gtrack->cseq_track_index,
+                            event->file_offset,
+                            event->absolute_time,
+                            event->cseq_delta_time.standard_value,
+                            event->cseq_command_parameters[0],
+                            event->cseq_command_parameters[1],
+                            event->cseq_command_parameters[2]);
+                    }
+                    else
+                    {
+                        stderr_exit(EXIT_CODE_GENERAL, "%s %d> event command 0x%04x not supported\n", event->command);
+                    }
+                }
+
+                event->flags |= MIDI_MALFORMED_EVENT_LOOP;
+            }
+        }
         node = node->next;
     }
 
@@ -4130,7 +4158,7 @@ void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack)
  * is used to create a new standard MIDI, controller non-standard
  * loop/start/count event. These will be inserted in the correct
  * order, but delta times will be wrong.
- * Note: {@code GmidTrack_ensure_cseq_loop_dual} should be called
+ * Note: {@code GmidTrack_pair_cseq_loop_events} should be called
  * prior to this, or {@code MIDI_MALFORMED_EVENT_LOOP} needs to be
  * set in start event flag that doesn't have end event.
  * @param gtrack: track to update.
@@ -5260,8 +5288,9 @@ size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_l
 
             write_len = sprintf(
                 buffer,
-                "id=%d, abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
+                "id=%d, offset=%ld, abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
                 event->id,
+                event->file_offset,
                 event->absolute_time,
                 event->cseq_delta_time.standard_value,
                 varint_value,
@@ -5293,8 +5322,9 @@ size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_l
 
             write_len = sprintf(
                 buffer,
-                "id=%d, abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
+                "id=%d, offset=%ld, abs=%ld, delta=%d (0x%06x), chan=%d, command=0x%04x",
                 event->id,
+                event->file_offset,
                 event->absolute_time,
                 event->midi_delta_time.standard_value,
                 varint_value,
@@ -5386,6 +5416,54 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     free(options);
 
     TRACE_LEAVE(__func__)
+}
+
+
+/**
+ * Calculates the number of bytes adjusted between start and end track position
+ * due to pattern unrolling and escape sequences.
+ * @param patterns: List of patterns encountered in the track during unroll process.
+ * @param start_pos: Start position to begin looking for adjustments.
+ * @param end_pos: End position to stop looking for adjustments.
+*/
+static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int end_pos)
+{
+    TRACE_ENTER(__func__)
+
+    if (patterns == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> patterns is NULL\n", __func__, __LINE__);
+    }
+
+    struct LinkedListNode *node;
+    struct SeqPatternMatch *pattern;
+    int result = 0;
+
+    node = patterns->head;
+    while (node != NULL)
+    {
+        pattern = (struct SeqPatternMatch *)node->data;
+        if (pattern != NULL)
+        {
+            if (pattern->start_pattern_pos >= start_pos && pattern->start_pattern_pos <= end_pos)
+            {
+                if (pattern->type == CSEQ_PATTERN_UNROLL)
+                {
+                    // Pattern unroll added `length` bytes, but subtract size of command.
+                    result += pattern->pattern_length - (CSEQ_COMMAND_LEN_PATTERN + CSEQ_COMMAND_PARAM_BYTE_PATTERN);
+                }
+                else if (pattern->type == CSEQ_PATTERN_ESCAPE)
+                {
+                    // Escape sequence is net -1 byte.
+                    result -= pattern->pattern_length;
+                }
+            }
+        }
+        node = node->next;
+    }
+
+    TRACE_LEAVE(__func__)
+    return result;
 }
 
 static struct SeqUnrollGrow *SeqUnrollGrow_new(void)

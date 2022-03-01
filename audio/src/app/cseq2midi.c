@@ -106,7 +106,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+                input_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (input_filename_len < 1)
                 {
@@ -122,7 +122,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+                output_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (output_filename_len < 1)
                 {
@@ -138,7 +138,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_use_pattern_file = 1;
 
-                pattern_filename_len = snprintf(NULL, 0, "%s", optarg);
+                pattern_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (pattern_filename_len < 1)
                 {
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, MIDI_DEFAULT_EXTENSION); // overallocate
+        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, MIDI_DEFAULT_EXTENSION) + 1; // overallocate
         output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
 
         change_filename_extension(input_filename, output_filename, MIDI_DEFAULT_EXTENSION, output_filename_len);
@@ -220,8 +220,8 @@ int main(int argc, char **argv)
         printf("opt_help_flag: %d\n", opt_help_flag);
         printf("opt_input_file: %d\n", opt_input_file);
         printf("opt_output_file: %d\n", opt_output_file);
-        printf("input_filename: %s\n", input_filename != NULL ? pattern_filename : "NULL");
-        printf("output_filename: %s\n", output_filename != NULL ? pattern_filename : "NULL");
+        printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
+        printf("output_filename: %s\n", output_filename != NULL ? output_filename : "NULL");
         printf("opt_write_seq_track: %d\n", opt_write_seq_track);
         printf("opt_no_pattern_compression: %d\n", opt_no_pattern_compression);
         printf("opt_use_pattern_file: %d\n", opt_use_pattern_file);

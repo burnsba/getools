@@ -104,7 +104,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+                input_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (input_filename_len < 1)
                 {
@@ -120,7 +120,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+                output_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (output_filename_len < 1)
                 {
@@ -136,7 +136,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_coef_file = 1;
 
-                coef_filename_len = snprintf(NULL, 0, "%s", optarg);
+                coef_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (coef_filename_len < 1)
                 {
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, AIFC_DEFAULT_EXTENSION); // overallocate
+        output_filename_len = snprintf(NULL, 0, "%s%s", input_filename, AIFC_DEFAULT_EXTENSION) + 1; // overallocate
         output_filename = (char *)malloc_zero(output_filename_len + 1, 1);
 
         change_filename_extension(input_filename, output_filename, AIFC_DEFAULT_EXTENSION, output_filename_len);

@@ -95,7 +95,6 @@ void print_help(const char * invoke)
 void read_opts(int argc, char **argv)
 {
     int ch;
-    int str_len;
 
     while ((ch = getopt_long(argc, argv, "i:p:n:qvd", long_options, NULL)) != -1)
     {
@@ -105,7 +104,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+                input_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (input_filename_len < 1)
                 {
@@ -121,7 +120,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_user_filename_prefix = 1;
 
-                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg);
+                g_filename_prefix_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (g_filename_prefix_len < 1)
                 {
@@ -137,7 +136,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_names_file = 1;
 
-                names_filename_len = snprintf(NULL, 0, "%s", optarg);
+                names_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (names_filename_len < 1)
                 {
@@ -200,17 +199,21 @@ int main(int argc, char **argv)
     // if user didn't supply a prefix use the default
     if (!opt_user_filename_prefix)
     {
-        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX);
+        g_filename_prefix_len = snprintf(NULL, 0, "%s", DEFAULT_FILENAME_PREFIX) + 1;
         g_filename_prefix = (char *)malloc_zero(g_filename_prefix_len + 1, 1);
         g_filename_prefix_len = snprintf(g_filename_prefix, g_filename_prefix_len, "%s", DEFAULT_FILENAME_PREFIX);
     }
 
     if (g_verbosity >= VERBOSE_DEBUG)
     {
-        printf("opt_user_filename_prefix: %d\n", opt_user_filename_prefix);
         printf("opt_help_flag: %d\n", opt_help_flag);
+        printf("opt_input_file: %d\n", opt_input_file);
+        printf("opt_user_filename_prefix: %d\n", opt_user_filename_prefix);
+        printf("opt_names_file: %d\n", opt_names_file);
         printf("input_filename: %s\n", input_filename != NULL ? input_filename : "NULL");
         printf("g_filename_prefix: %s\n", g_filename_prefix != NULL ? g_filename_prefix : "NULL");
+        printf("opt_names_file: %d\n", opt_names_file);
+        printf("names_filename: %s\n", names_filename != NULL ? names_filename : "NULL");
         fflush(stdout);
     }
 
@@ -310,7 +313,7 @@ int main(int argc, char **argv)
             // Only use non empty filename
             if (sd != NULL && sd->len > 0)
             {
-                filesystem_path_len = snprintf(NULL, 0, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
+                filesystem_path_len = snprintf(NULL, 0, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION) + 1;
                 filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
                 filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%s%s", g_filename_prefix, sd->text, DEFAULT_EXTENSION);
             }
@@ -318,7 +321,7 @@ int main(int argc, char **argv)
             {
                 // the getopts method should verify the prefix is within allowed length, including
                 // budget for digit characters.
-                filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+                filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION) + 1;
                 filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
                 filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
             }
@@ -331,14 +334,9 @@ int main(int argc, char **argv)
         else
         {
             // same as above.
-            filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
+            filesystem_path_len = snprintf(NULL, 0, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION) + 1;
             filesystem_path = (char *)malloc_zero(filesystem_path_len + 1, 1);
             filesystem_path_len = snprintf(filesystem_path, filesystem_path_len, "%s%04d%s", g_filename_prefix, i, DEFAULT_EXTENSION);
-        }
-
-        if (write_len > MAX_FILENAME_LEN)
-        {
-            // be quiet gcc
         }
 
         output = FileInfo_fopen(filesystem_path, "wb");

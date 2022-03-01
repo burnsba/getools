@@ -33,6 +33,9 @@
 */
 #define MIDI_TRACK_CHUNK_ID 0x4D54726B /* 0x4D54726B = "MTrk" */
 
+// Values larger than this will flag the event as invalid (no matching start event).
+#define CSEQ_MAX_END_LOOP_OFFSET 0x1ffff
+
 #define CSEQ_FILE_NUM_TRACKS 16
 
 #define CSEQ_FILE_HEADER_SIZE_BYTES 0x44
@@ -79,8 +82,11 @@
 #define MIDI_COMMAND_PARAM_BYTE_CHANNEL_PRESSURE 1
 #define MIDI_COMMAND_NUM_PARAM_CHANNEL_PRESSURE 1
 
+#define MIDI_COMMAND_LEN_PITCH_BEND 1
 #define MIDI_COMMAND_BYTE_PITCH_BEND 0xe0
 #define MIDI_COMMAND_NAME_PITCH_BEND "Pitch Bend"
+#define MIDI_COMMAND_PARAM_BYTE_PITCH_BEND 2
+#define MIDI_COMMAND_NUM_PARAM_PITCH_BEND 2
 
 #define MIDI_COMMAND_BYTE_META 0xff
 #define MIDI_COMMAND_NAME_META "meta"
@@ -145,8 +151,11 @@
 #define CSEQ_COMMAND_PARAM_BYTE_END_OF_TRACK 0
 #define CSEQ_COMMAND_NUM_PARAM_END_OF_TRACK 0
 
+#define CSEQ_COMMAND_LEN_PATTERN 1
 #define CSEQ_COMMAND_BYTE_PATTERN 0xfe
 #define CSEQ_COMMAND_NAME_PATTERN "cseq pattern"
+#define CSEQ_COMMAND_PARAM_BYTE_PATTERN 3
+#define CSEQ_COMMAND_NUM_PARAM_PATTERN 2
 
 #define MIDI_DESCRIPTION_TEXT_BUFFER_LEN 60
 
@@ -567,6 +576,7 @@ struct MidiConvertOptions {
 #define MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN 255
 extern int g_midi_parse_debug;
 extern int g_midi_debug_loop_delta;
+extern int g_strict_cseq_loop_event;
 
 // seq declarations
 
@@ -574,7 +584,7 @@ struct CseqFile *CseqFile_new(void);
 struct CseqFile *CseqFile_new_from_file(struct FileInfo *fi);
 struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConvertOptions *options);
 void CseqFile_free(struct CseqFile *cseq);
-void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct FileInfo *pattern_file);
+void CseqFile_unroll(struct CseqFile *cseq, struct GmidTrack *track, struct LinkedList *patterns);
 void CseqFile_fwrite(struct CseqFile *cseq, struct FileInfo *fi);
 
 // midi declarations
@@ -613,7 +623,7 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack);
 void GmidTrack_midi_note_off_from_cseq(struct GmidTrack *gtrack);
 void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack);
 void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
-void GmidTrack_ensure_cseq_loop_dual(struct GmidTrack *gtrack);
+void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList *patterns);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct LinkedList *matches);
@@ -631,6 +641,7 @@ void MidiConvertOptions_free(struct MidiConvertOptions *obj);
 
 // helper methods
 
+void write_patterns_to_file(struct LinkedList *patterns, struct FileInfo *file);
 void midi_controller_to_name(int controller, char *result, size_t max_length);
 void midi_note_to_name(int note, char* result, size_t max_length);
 size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type);

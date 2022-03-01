@@ -106,7 +106,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_input_file = 1;
 
-                input_filename_len = snprintf(NULL, 0, "%s", optarg);
+                input_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (input_filename_len < 1)
                 {
@@ -122,7 +122,7 @@ void read_opts(int argc, char **argv)
             {
                 opt_output_file = 1;
 
-                output_filename_len = snprintf(NULL, 0, "%s", optarg);
+                output_filename_len = snprintf(NULL, 0, "%s", optarg) + 1;
 
                 if (output_filename_len < 1)
                 {
@@ -222,12 +222,12 @@ int main(int argc, char **argv)
     // if the user didn't provide an output filename, reuse the input filename.
     if (!opt_output_file)
     {
-        ctl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_CTL_DEFAULT_EXTENSION); // overallocate
+        ctl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_CTL_DEFAULT_EXTENSION) + 1; // overallocate
         ctl_filename = (char *)malloc_zero(ctl_filename_len + 1, 1);
 
         change_filename_extension(input_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, ctl_filename_len);
 
-        tbl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_TBL_DEFAULT_EXTENSION); // overallocate
+        tbl_filename_len = snprintf(NULL, 0, "%s%s", input_filename, NAUDIO_TBL_DEFAULT_EXTENSION) + 1; // overallocate
         tbl_filename = (char *)malloc_zero(tbl_filename_len + 1, 1);
 
         change_filename_extension(input_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, tbl_filename_len);
@@ -237,12 +237,12 @@ int main(int argc, char **argv)
     */
     else
     {
-        ctl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_CTL_DEFAULT_EXTENSION); // overallocate
+        ctl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_CTL_DEFAULT_EXTENSION) + 1; // overallocate
         ctl_filename = (char *)malloc_zero(ctl_filename_len + 1, 1);
 
         change_filename_extension(output_filename, ctl_filename, NAUDIO_CTL_DEFAULT_EXTENSION, ctl_filename_len);
 
-        tbl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_TBL_DEFAULT_EXTENSION); // overallocate
+        tbl_filename_len = snprintf(NULL, 0, "%s%s", output_filename, NAUDIO_TBL_DEFAULT_EXTENSION) + 1; // overallocate
         tbl_filename = (char *)malloc_zero(tbl_filename_len + 1, 1);
 
         change_filename_extension(output_filename, tbl_filename, NAUDIO_TBL_DEFAULT_EXTENSION, tbl_filename_len);
