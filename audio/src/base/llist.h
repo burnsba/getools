@@ -108,6 +108,7 @@ void string_data_free(struct string_data *sd);
 
 void LinkedList_where(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter filter_callback);
 void LinkedList_where_i(struct LinkedList *dest, struct LinkedList *source, f_LinkedListNode_filter_i filter_callback, int arg1);
+int LinkedList_any(struct LinkedList *source, f_LinkedListNode_filter filter_callback);
 void LinkedList_merge_sort(struct LinkedList *root, f_LinkedListNode_compare compare_callback);
 int LinkedListNode_KeyValue_compare_smaller_key(struct LinkedListNode *first, struct LinkedListNode *second);
 #endif

@@ -72,6 +72,7 @@ struct SeqPatternMatch {
 int LinkedListNode_gmidevent_compare_larger(struct LinkedListNode *first, struct LinkedListNode *second);
 int LinkedListNode_gmidevent_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
+int LinkedListNode_SeqPatternMatch_is_unroll(struct LinkedListNode *node);
 static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int end_pos);
 static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int diff, int pattern_length);
 static struct SeqPatternMatch *SeqPatternMatch_new(void);
@@ -265,6 +266,31 @@ int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first,
             {
                 ret = 0;
             }
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+
+    return ret;
+}
+
+/**
+ * Linked list callback to check if node is type {@code CSEQ_PATTERN_UNROLL}.
+ * @param node: node of type {@code struct SeqPatternMatch}.
+ * @returns: 1 if match, zero otherwise.
+*/
+int LinkedListNode_SeqPatternMatch_is_unroll(struct LinkedListNode *node)
+{
+    TRACE_ENTER(__func__)
+
+    int ret = 0;
+
+    if (node != NULL)
+    {
+        struct SeqPatternMatch *pattern = (struct SeqPatternMatch *)node;
+        if (pattern != NULL)
+        {
+            return pattern->type == CSEQ_PATTERN_UNROLL;
         }
     }
 
@@ -647,12 +673,6 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
     {
         post_unroll_action = options->post_unroll_action;
         opt_pattern_substitution = !options->no_pattern_compression; // negate
-
-        if (options->use_pattern_marker_file)
-        {
-            // seq->midi is write
-            pattern_file = FileInfo_fopen(options->pattern_marker_filename, "wb");
-        }
     }
 
     struct MidiFile *midi = MidiFile_new_tracks(MIDI_FORMAT_SIMULTANEOUS, cseq->non_empty_num_tracks);
@@ -684,10 +704,19 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
             patterns = LinkedList_new();
             CseqFile_unroll(cseq, gtrack, patterns);
 
-            if (pattern_file != NULL)
+            // only write patterns if user specified.
+            if (options != NULL && options->use_pattern_marker_file)
             {
-                if (patterns->count > 0)
+                // Only write patterns (and create file) if there's anything to write.
+                if (LinkedList_any(patterns, LinkedListNode_SeqPatternMatch_is_unroll))
                 {
+                    // only open file once, then preserve reference for future tracks.
+                    if (pattern_file == NULL)
+                    {
+                        // seq->midi is write
+                        pattern_file = FileInfo_fopen(options->pattern_marker_filename, "wb");
+                    }
+
                     write_patterns_to_file(patterns, pattern_file);
                 }
             }

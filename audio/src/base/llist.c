@@ -665,6 +665,47 @@ void LinkedList_where(struct LinkedList *dest, struct LinkedList *source, f_Link
 }
 
 /**
+ * This iterates a list and executes the bool callback on each item.
+ * Will stop iterating on the first non-negative result from callback.
+ * @param source: Source list to filter from.
+ * @param filter_callback: Callback function which accepts a node and returns 1
+ * if node should match, zero otherwise.
+*/
+int LinkedList_any(struct LinkedList *source, f_LinkedListNode_filter filter_callback)
+{
+    TRACE_ENTER(__func__)
+
+    if (source == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> source is NULL\n", __func__, __LINE__);
+    }
+
+    if (filter_callback == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> filter_callback is NULL\n", __func__, __LINE__);
+    }
+
+    struct LinkedListNode *node;
+
+    node = source->head;
+    while (node != NULL)
+    {
+        int result = filter_callback(node);
+
+        if (result != 0)
+        {
+            TRACE_LEAVE(__func__)
+            return result;
+        }
+
+        node = node->next;
+    }
+
+    TRACE_LEAVE(__func__)
+    return 0;
+}
+
+/**
 * This filters a source list into a destination list.
  * Matching nodes are copied (shallow) from one list to the other.
  * Beware duplicate references to data (beware double free).
