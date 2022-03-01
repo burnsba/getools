@@ -2583,6 +2583,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     // flag to indicate meta event or not.
     int read_command_values;
     int local_bytes_read;
+    int i;
 
     struct GmidEvent *event = NULL;
 
@@ -2969,7 +2970,172 @@ struct GmidEvent *GmidEvent_new_from_buffer(
             }
             else
             {
-                stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error (system command), buffer type=%d, pos=%ld.\n", __func__, __LINE__, buffer_type, pos);
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error (system command=0x%0x), buffer type=%d, pos=%ld.\n", __func__, __LINE__, b, buffer_type, pos);
+            }
+        }
+        else if (b == MIDI_COMMAND_BYTE_SYSEX_START && buffer_type == MIDI_IMPLEMENTATION_STANDARD)
+        {
+            // only supported sysex commands are the gaudio format sysex seq loop start and end.
+            int sysex_first;
+            int sysex_check; 
+            int escaped_command; 
+
+            command_without_channel = -1;
+            read_command_values = 0;
+
+            // 3 bytes to figure out what's being read
+            if (pos + 3 > buffer_len)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing system exclusive event\n", __func__, __LINE__, buffer_len);
+            }
+
+            // if this is a system command, then channel isn't included in event
+            event->command_channel = -1;
+
+            b = buffer[pos++];
+            local_bytes_read++;
+            sysex_first = b;
+
+            b = buffer[pos++];
+            local_bytes_read++;
+            sysex_check = b;
+
+            b = buffer[pos++];
+            local_bytes_read++;
+            escaped_command = b;
+
+            if (sysex_first != MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL
+                || sysex_check != MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- unsupport sysex command 0x%0x%0x. pos=%ld.\n", __func__, __LINE__, sysex_first, sysex_check, pos);
+            }
+
+            if (escaped_command != CSEQ_COMMAND_BYTE_LOOP_START 
+                && escaped_command != CSEQ_COMMAND_BYTE_LOOP_END)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- unsupport sysex command 0x%0x%0x%0x. pos=%ld.\n", __func__, __LINE__, sysex_first, sysex_check, escaped_command, pos);
+            }
+
+            if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_START)
+            {
+                // what is 3: two bytes for loop number, one byte for 0xf7
+                if (pos + 3 > buffer_len)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing system exclusive event\n", __func__, __LINE__, buffer_len);
+                }
+
+                int loop_number = 0;
+
+                // parse command values (split to escape into sysex).
+                loop_number = buffer[pos++];
+                local_bytes_read++;
+                loop_number <<= 4;
+                loop_number |= buffer[pos++];
+                local_bytes_read++;
+
+                b = buffer[pos++];
+                if (b != MIDI_COMMAND_BYTE_SYSEX_END)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> gaudio sysex escape %s: expected end of sysex command 0x%0x but read '0x%x', pos=%ld.\n", __func__, __LINE__, CSEQ_COMMAND_NAME_LOOP_START, MIDI_COMMAND_BYTE_SYSEX_END, b, pos);
+                }
+
+                // optional debug print
+                if (g_midi_parse_debug)
+                {
+                    memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
+
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s: loop number %d", CSEQ_COMMAND_NAME_LOOP_START, loop_number);
+                    fflush_printf(stdout, "%s\n", print_buffer);
+                }
+
+                // save parsed data
+                event->command = CSEQ_COMMAND_BYTE_LOOP_START_WITH_META;
+                event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 0;
+
+                // cseq format
+                event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_START;
+                event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_START;
+                event->cseq_command_parameters[0] = loop_number;
+                event->cseq_command_parameters_raw[0] = loop_number;
+                event->cseq_command_parameters[1] = 0xff;
+                event->cseq_command_parameters_raw[1] = 0xff;
+                event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_START;
+
+                // convert to MIDI format: not supported
+            }
+            else if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_END)
+            {
+                // what is 13: 12 bytes for loop seq end event, one byte for 0xf7
+                if (pos + 13 > buffer_len)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing system exclusive event\n", __func__, __LINE__, buffer_len);
+                }
+
+                int loop_count = 0;
+                int current_loop_count = 0;
+                int32_t loop_difference = 0;
+
+                // parse command values.
+                loop_count = buffer[pos++];
+                local_bytes_read++;
+                loop_count <<= 4;
+                loop_count |= buffer[pos++];
+                local_bytes_read++;
+
+                current_loop_count = buffer[pos++];
+                local_bytes_read++;
+                current_loop_count <<= 4;
+                current_loop_count |= buffer[pos++];
+                local_bytes_read++;
+
+                for (i=0; i<7; i++)
+                {
+                    loop_difference |= buffer[pos++];
+                    local_bytes_read++;
+                    loop_difference <<= 4;
+                }
+                loop_difference |= buffer[pos++];
+                local_bytes_read++;
+
+                b = buffer[pos++];
+                if (b != MIDI_COMMAND_BYTE_SYSEX_END)
+                {
+                    stderr_exit(EXIT_CODE_GENERAL, "%s %d> gaudio sysex escape %s: expected end of sysex command 0x%0x but read '0x%x', pos=%ld.\n", __func__, __LINE__, CSEQ_COMMAND_NAME_LOOP_START, MIDI_COMMAND_BYTE_SYSEX_END, b, pos);
+                }
+
+                // optional debug print
+                if (g_midi_parse_debug)
+                {
+                    memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
+
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s: count %d, current count %d, diff 0x%08x", CSEQ_COMMAND_NAME_LOOP_END, loop_count, current_loop_count, loop_difference);
+                    fflush_printf(stdout, "%s\n", print_buffer);
+                }
+
+                // save parsed data
+                event->command = CSEQ_COMMAND_BYTE_LOOP_END_WITH_META;
+                event->dual = NULL;
+                event->cseq_valid = 1;
+                event->midi_valid = 0;
+
+                // cseq format
+                event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_END;
+                event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
+                event->cseq_command_parameters[0] = loop_count;
+                event->cseq_command_parameters[1] = current_loop_count;
+                event->cseq_command_parameters[2] = loop_difference;
+                event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_END;
+
+                event->cseq_command_parameters_raw[0] = loop_count;
+                event->cseq_command_parameters_raw[1] = current_loop_count;
+                event->cseq_command_parameters_raw[2] = (loop_difference >> 24) & 0xff;
+                event->cseq_command_parameters_raw[3] = (loop_difference >> 16) & 0xff;
+                event->cseq_command_parameters_raw[4] = (loop_difference >> 8) & 0xff;
+                event->cseq_command_parameters_raw[5] = (loop_difference >> 0) & 0xff;
+
+                // convert to MIDI format: not supported
             }
         }
         else if (b == CSEQ_COMMAND_BYTE_PATTERN && buffer_type == MIDI_IMPLEMENTATION_SEQ)
@@ -3067,7 +3233,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
         }
         else
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error (command), buffer type=%d, pos=%ld.\n", __func__, __LINE__, buffer_type, pos);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error (command=0x%0x), buffer type=%d, pos=%ld.\n", __func__, __LINE__, b, buffer_type, pos);
         }
     }
 
@@ -4351,147 +4517,150 @@ void GmidTrack_cseq_to_midi_loop(struct GmidTrack *gtrack)
     while (node != NULL)
     {
         seq_event = (struct GmidEvent *)node->data;
-        if (seq_event != NULL)
+        if (seq_event != NULL
+            // Only evaluate events marked as valid. The GmidTrack_invalid_cseq_loop_to_sysex
+            // method might have filtered out events that should now be excluded from export.
+            && seq_event->cseq_valid == 1
+            // and loop start event
+            && seq_event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META)
         {
-            if (seq_event->command == CSEQ_COMMAND_BYTE_LOOP_START_WITH_META)
+            /**
+             * If this is seq meta start event without end event, it will only
+             * be possible to create a MIDI start event, not count or end.
+             * Set what's possible in the start event, then check
+             * whether that's the case or not.
+            */
+            int channel_unique_loop_number = seq_event->cseq_command_parameters[0];
+
+            // create MIDI loop start event.
+            midi_start_event = GmidEvent_new();
+            midi_start_event->cseq_valid = 0;
+            midi_start_event->midi_valid = 1;
+            
+            midi_start_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
+            midi_start_event->command_channel = track_channel;
+
+            midi_start_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
+            midi_start_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
+            midi_start_event->midi_command_parameters[0] = MIDI_CONTROLLER_LOOP_START;
+            midi_start_event->midi_command_parameters[1] = channel_unique_loop_number;
+            midi_start_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
+            midi_start_event->midi_command_parameters_raw[0] = MIDI_CONTROLLER_LOOP_START;
+            midi_start_event->midi_command_parameters_raw[1] = channel_unique_loop_number;
+
+            // Start event without end event. Set time then insert and continue.
+            // Note this is separate from cseq_valid value. 
+            if ((seq_event->flags & MIDI_MALFORMED_EVENT_LOOP) > 0)
+            {
+                // set absolute times
+                midi_start_event->absolute_time = seq_event->absolute_time;
+
+                // insert in event list, before corresponding seq event.
+                new_node = LinkedListNode_new();
+                new_node->data = midi_start_event;
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
+            }
+            else
             {
                 /**
-                 * If this is seq meta start event without end event, it will only
-                 * be possible to create a MIDI start event, not count or end.
-                 * Set what's possible in the start event, then check
-                 * whether that's the case or not.
+                 * else, seq meta end loop event should exist. That means the MIDI count
+                 * and MIDI end events can be created, and the dual pointers can be set.
                 */
-                int channel_unique_loop_number = seq_event->cseq_command_parameters[0];
+                seq_end_event = seq_event->dual;
 
-                // create MIDI loop start event.
-                midi_start_event = GmidEvent_new();
-                midi_start_event->cseq_valid = 0;
-                midi_start_event->midi_valid = 1;
+                if (seq_end_event == NULL)
+                {
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> seq_end_event is NULL\n", __func__, __LINE__);
+                }
+
+                int seq_loop_count = seq_end_event->cseq_command_parameters[0];
+
+                /**
+                 * MIDI loop spec states there are two controllers, one for (seq) loop counts 0-127
+                 * and the second for loop count (seq) 128-255. The MIDI value stored should
+                 * be between 0-127, using the second controller will add 128 to the loop count.
+                */
+                int midi_controller_loop_type =
+                    (seq_loop_count < 128)
+                    ? MIDI_CONTROLLER_LOOP_COUNT_0
+                    : MIDI_CONTROLLER_LOOP_COUNT_128;
+                int midi_loop_count = seq_loop_count;
+                while (midi_loop_count > 128)
+                {
+                    midi_loop_count -= 128;
+                }
+
+                // create MIDI loop count event.
+                midi_count_event = GmidEvent_new();
+                midi_count_event->cseq_valid = 0;
+                midi_count_event->midi_valid = 1;
                 
-                midi_start_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                midi_start_event->command_channel = track_channel;
+                midi_count_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
+                midi_count_event->command_channel = track_channel;
 
-                midi_start_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
-                midi_start_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
-                midi_start_event->midi_command_parameters[0] = MIDI_CONTROLLER_LOOP_START;
-                midi_start_event->midi_command_parameters[1] = channel_unique_loop_number;
-                midi_start_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
-                midi_start_event->midi_command_parameters_raw[0] = MIDI_CONTROLLER_LOOP_START;
-                midi_start_event->midi_command_parameters_raw[1] = channel_unique_loop_number;
+                midi_count_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
+                midi_count_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
+                midi_count_event->midi_command_parameters[0] = midi_controller_loop_type;
+                midi_count_event->midi_command_parameters[1] = midi_loop_count;
+                midi_count_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
+                midi_count_event->midi_command_parameters_raw[0] = midi_controller_loop_type;
+                midi_count_event->midi_command_parameters_raw[1] = midi_loop_count;
 
-                // start event without end event. Set time then insert and continue.
-                if ((seq_event->flags & MIDI_MALFORMED_EVENT_LOOP) > 0)
+                // create MIDI loop end event.
+                midi_end_event = GmidEvent_new();
+                midi_end_event->cseq_valid = 0;
+                midi_end_event->midi_valid = 1;
+                
+                midi_end_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
+                midi_end_event->command_channel = track_channel;
+
+                midi_end_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
+                midi_end_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
+                midi_end_event->midi_command_parameters[0] = MIDI_CONTROLLER_LOOP_END;
+                midi_end_event->midi_command_parameters[1] = channel_unique_loop_number;
+                midi_end_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
+                midi_end_event->midi_command_parameters_raw[0] = MIDI_CONTROLLER_LOOP_END;
+                midi_end_event->midi_command_parameters_raw[1] = channel_unique_loop_number;
+
+                // connect dual pointers.
+                midi_start_event->dual = midi_end_event->dual;
+                midi_end_event->dual = midi_start_event->dual;
+
+                // set absolute times
+                midi_start_event->absolute_time = seq_event->absolute_time;
+                midi_count_event->absolute_time = seq_event->absolute_time; // same as start
+                midi_end_event->absolute_time = seq_end_event->absolute_time;
+
+                // insert in event list, before corresponding seq event.
+                // The order should be new start node, then new count node.
+                new_node = LinkedListNode_new();
+                new_node->data = midi_start_event;
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
+                new_node = LinkedListNode_new();
+                new_node->data = midi_count_event;
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
+
+                // unfortunately the node containing the seq end event
+                // isn't available, even though it's now known to exist.
+                // Track that down in order to insert before it.
+                search_node = node;
+                while (search_node != NULL)
                 {
-                    // set absolute times
-                    midi_start_event->absolute_time = seq_event->absolute_time;
-
-                    // insert in event list, before corresponding seq event.
-                    new_node = LinkedListNode_new();
-                    new_node->data = midi_start_event;
-                    LinkedListNode_insert_before(gtrack->events, node, new_node);
+                    if (search_node->data == seq_end_event)
+                    {
+                        break;
+                    }
+                    search_node = search_node->next;
                 }
-                else
+
+                if (search_node == NULL)
                 {
-                    /**
-                     * else, seq meta end loop event should exist. That means the MIDI count
-                     * and MIDI end events can be created, and the dual pointers can be set.
-                    */
-                    seq_end_event = seq_event->dual;
-
-                    if (seq_end_event == NULL)
-                    {
-                        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> seq_end_event is NULL\n", __func__, __LINE__);
-                    }
-
-                    int seq_loop_count = seq_end_event->cseq_command_parameters[0];
-
-                    /**
-                     * MIDI loop spec states there are two controllers, one for (seq) loop counts 0-127
-                     * and the second for loop count (seq) 128-255. The MIDI value stored should
-                     * be between 0-127, using the second controller will add 128 to the loop count.
-                    */
-                    int midi_controller_loop_type =
-                        (seq_loop_count < 128)
-                        ? MIDI_CONTROLLER_LOOP_COUNT_0
-                        : MIDI_CONTROLLER_LOOP_COUNT_128;
-                    int midi_loop_count = seq_loop_count;
-                    while (midi_loop_count > 128)
-                    {
-                        midi_loop_count -= 128;
-                    }
-
-                    // create MIDI loop count event.
-                    midi_count_event = GmidEvent_new();
-                    midi_count_event->cseq_valid = 0;
-                    midi_count_event->midi_valid = 1;
-                    
-                    midi_count_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                    midi_count_event->command_channel = track_channel;
-
-                    midi_count_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
-                    midi_count_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
-                    midi_count_event->midi_command_parameters[0] = midi_controller_loop_type;
-                    midi_count_event->midi_command_parameters[1] = midi_loop_count;
-                    midi_count_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
-                    midi_count_event->midi_command_parameters_raw[0] = midi_controller_loop_type;
-                    midi_count_event->midi_command_parameters_raw[1] = midi_loop_count;
-
-                    // create MIDI loop end event.
-                    midi_end_event = GmidEvent_new();
-                    midi_end_event->cseq_valid = 0;
-                    midi_end_event->midi_valid = 1;
-                    
-                    midi_end_event->command = MIDI_COMMAND_BYTE_CONTROL_CHANGE;
-                    midi_end_event->command_channel = track_channel;
-
-                    midi_end_event->midi_command_len = MIDI_COMMAND_LEN_CONTROL_CHANGE;
-                    midi_end_event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_CONTROL_CHANGE;
-                    midi_end_event->midi_command_parameters[0] = MIDI_CONTROLLER_LOOP_END;
-                    midi_end_event->midi_command_parameters[1] = channel_unique_loop_number;
-                    midi_end_event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_CONTROL_CHANGE;
-                    midi_end_event->midi_command_parameters_raw[0] = MIDI_CONTROLLER_LOOP_END;
-                    midi_end_event->midi_command_parameters_raw[1] = channel_unique_loop_number;
-
-                    // connect dual pointers.
-                    midi_start_event->dual = midi_end_event->dual;
-                    midi_end_event->dual = midi_start_event->dual;
-
-                    // set absolute times
-                    midi_start_event->absolute_time = seq_event->absolute_time;
-                    midi_count_event->absolute_time = seq_event->absolute_time; // same as start
-                    midi_end_event->absolute_time = seq_end_event->absolute_time;
-
-                    // insert in event list, before corresponding seq event.
-                    // The order should be new start node, then new count node.
-                    new_node = LinkedListNode_new();
-                    new_node->data = midi_start_event;
-                    LinkedListNode_insert_before(gtrack->events, node, new_node);
-                    new_node = LinkedListNode_new();
-                    new_node->data = midi_count_event;
-                    LinkedListNode_insert_before(gtrack->events, node, new_node);
-
-                    // unfortunately the node containing the seq end event
-                    // isn't available, even though it's now known to exist.
-                    // Track that down in order to insert before it.
-                    search_node = node;
-                    while (search_node != NULL)
-                    {
-                        if (search_node->data == seq_end_event)
-                        {
-                            break;
-                        }
-                        search_node = search_node->next;
-                    }
-
-                    if (search_node == NULL)
-                    {
-                        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> search_node is NULL\n", __func__, __LINE__);
-                    }
-
-                    new_node = LinkedListNode_new();
-                    new_node->data = midi_end_event;
-                    LinkedListNode_insert_before(gtrack->events, search_node, new_node);
+                    stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> search_node is NULL\n", __func__, __LINE__);
                 }
+
+                new_node = LinkedListNode_new();
+                new_node->data = midi_end_event;
+                LinkedListNode_insert_before(gtrack->events, search_node, new_node);
             }
         }
 

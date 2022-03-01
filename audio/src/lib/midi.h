@@ -175,7 +175,6 @@
  * The only value of interest is the loop number: [a][b]
  * Will be translated to the following:
  *     0xf0 0x7d 0x47 0x2e [a][b] 0xf7
- *     0xff 0x06 0x03 0x2e [a][b]
  * -----------------------------------------------------------------------------
  * Loop end event.
  * -----------------
