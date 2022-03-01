@@ -965,8 +965,8 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
 
             command = GmidEvent_get_midi_command(event);
 
-            // only allow running status for the "regular" MIDI commands
-            if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+            // only allow running status for the "regular" MIDI commands (commands with channels)
+            if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
             {
                 command = 0;
             }
@@ -981,9 +981,15 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
             printf("finish parse track %d\n", source_track_index);
         }
 
-        if (destination_track < 0 || destination_track > CSEQ_FILE_NUM_TRACKS)
+        if (destination_track == -1)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d>: destination_track %d was not resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
+            fflush_printf(stderr, "destination track not resolved, assuming midi track %d\n", source_track_index);
+            destination_track = source_track_index;
+        }
+
+        if (destination_track > CSEQ_FILE_NUM_TRACKS)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid destination_track %d resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
         }
 
         gmidi_tracks[destination_track]->midi_track_index = source_track_index;
@@ -2594,6 +2600,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     int read_command_values;
     int local_bytes_read;
     int i;
+    int copy_current_command = current_command;
 
     struct GmidEvent *event = NULL;
 
@@ -3026,6 +3033,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- unsupport sysex command 0x%0x%0x%0x. pos=%ld.\n", __func__, __LINE__, sysex_first, sysex_check, escaped_command, pos);
             }
 
+            // parse straight into seq loop start event
             if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_START)
             {
                 // what is 3: two bytes for loop number, one byte for 0xf7
@@ -3075,6 +3083,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
 
                 // convert to MIDI format: not supported
             }
+            // parse straight into seq loop end event
             else if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_END)
             {
                 // what is 13: 12 bytes for loop seq end event, one byte for 0xf7
@@ -3251,7 +3260,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     {
         if (command_without_channel < 1)
         {
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid current_command.\n", __func__, __LINE__);
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d> Invalid current_command: 0x%08x\n", __func__, __LINE__, copy_current_command);
         }
 
         if (command_channel < 0)
@@ -4001,8 +4010,8 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
 
                             byte_offset += inc_amount;
 
-                            // only allow running status for the "regular" MIDI commands
-                            if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+                            // only allow running status for the "regular" MIDI commands (commands with channels)
+                            if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
                             {
                                 previous_command = 0;
                             }
@@ -5010,8 +5019,8 @@ void GmidTrack_parse_CseqTrack(struct GmidTrack *gtrack)
 
         command = GmidEvent_get_cseq_command(event);
 
-        // only allow running status for the "regular" MIDI commands
-        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        // only allow running status for the "regular" MIDI commands (commands with channels)
+        if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
         {
             command = 0;
         }
@@ -5395,8 +5404,8 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
             previous_command = command;
         }
 
-        // only allow running status for the "regular" MIDI commands
-        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        // only allow running status for the "regular" MIDI commands (commands with channels)
+        if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
         {
             previous_command = 0;
         }
@@ -5484,8 +5493,8 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
             previous_command = command;
         }
 
-        // only allow running status for the "regular" MIDI commands
-        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        // only allow running status for the "regular" MIDI commands (commands with channels)
+        if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
         {
             previous_command = 0;
         }

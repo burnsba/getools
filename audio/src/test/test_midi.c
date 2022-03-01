@@ -84,8 +84,8 @@ void parse_seq_bytes_to_event_list(uint8_t *data, size_t buffer_len, struct Link
 
         command = GmidEvent_get_midi_command(event);
 
-        // only allow running status for the "regular" MIDI commands
-        if ((command & 0xffffff00) != 0 || (command & 0xffffffff) == 0xff)
+        // only allow running status for the "regular" MIDI commands (commands with channels)
+        if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
         {
             command = 0;
         }
