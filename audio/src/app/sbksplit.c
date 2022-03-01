@@ -267,7 +267,6 @@ int main(int argc, char **argv)
         size_t filesystem_path_len = 0;
         char *filesystem_path;
 
-        size_t write_len;
         seq_address = *(size_t*)(&input_file_contents[input_pos]);
         BSWAP32(seq_address);
         input_pos +=4; /* sizeof (struct RareALSeqData.address) == 4 */

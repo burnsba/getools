@@ -30,23 +30,6 @@ static const int g_max_pattern_distance = 0xfdff; // according to programmer man
 // give every event a unique id
 static int g_event_id = 0;
 
-/**
- * Container used to unroll cseq patterns.
-*/
-struct SeqUnrollGrow {
-    // loop id, as specified in seq loop start event.
-    int loop_id;
-   
-    // number of bytes unrolled from patterns in the current loop
-    int start_grow;
-    
-    /**
-     * position in total cseq file the loop start
-     * event begins at (without delta time)
-    */
-    int file_offset;
-};
-
 enum CSEQ_PATTERN_TYPE {
     // unroll pattern sequence. 4 bytes compressed.
     CSEQ_PATTERN_UNROLL = 0,
@@ -90,9 +73,7 @@ int LinkedListNode_gmidevent_compare_larger(struct LinkedListNode *first, struct
 int LinkedListNode_gmidevent_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 int LinkedListNode_SeqPatternMatch_compare_smaller(struct LinkedListNode *first, struct LinkedListNode *second);
 static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int end_pos);
-static struct SeqUnrollGrow *SeqUnrollGrow_new(void);
 static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int diff, int pattern_length);
-static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj);
 static struct SeqPatternMatch *SeqPatternMatch_new(void);
 static void SeqPatternMatch_free(struct SeqPatternMatch *obj);
 static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTATION type);
@@ -5806,28 +5787,6 @@ static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int
 
     TRACE_LEAVE(__func__)
     return result;
-}
-
-static struct SeqUnrollGrow *SeqUnrollGrow_new(void)
-{
-    TRACE_ENTER(__func__)
-
-    struct SeqUnrollGrow *result = (struct SeqUnrollGrow *)malloc_zero(1, sizeof(struct SeqUnrollGrow));
-
-    TRACE_LEAVE(__func__)
-    return result;
-}
-
-static void SeqUnrollGrow_free(struct SeqUnrollGrow *obj)
-{
-    TRACE_ENTER(__func__)
-
-    if (obj != NULL)
-    {
-        free(obj);
-    }
-
-    TRACE_LEAVE(__func__)
 }
 
 static struct SeqPatternMatch *SeqPatternMatch_new(void)
