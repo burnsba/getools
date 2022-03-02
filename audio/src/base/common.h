@@ -44,6 +44,7 @@ enum DATA_ENCODING {
 };
 
 extern int g_verbosity;
+extern int g_term_colors;
 extern int g_output_mode;
 extern int g_encode_bswap;
 extern char g_write_buffer[WRITE_BUFFER_LEN];

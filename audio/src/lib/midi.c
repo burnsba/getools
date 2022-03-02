@@ -668,11 +668,13 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
     struct FileInfo *pattern_file = NULL;
     f_GmidTrack_callback post_unroll_action = NULL;
     int opt_pattern_substitution = 1; // enable by default
+    int no_create_sysex = 1; // do not create by default
 
     if (options != NULL)
     {
         post_unroll_action = options->post_unroll_action;
         opt_pattern_substitution = !options->no_pattern_compression; // negate
+        no_create_sysex = !options->sysex_seq_loops; // negate
     }
 
     struct MidiFile *midi = MidiFile_new_tracks(MIDI_FORMAT_SIMULTANEOUS, cseq->non_empty_num_tracks);
@@ -726,13 +728,13 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
             CseqFile_no_unroll_copy(cseq, gtrack);
         }
 
+        // parse seq format into common events
+        GmidTrack_parse_CseqTrack(gtrack);
+
         if (post_unroll_action != NULL)
         {
             post_unroll_action(gtrack);
         }
-
-        // parse seq format into common events
-        GmidTrack_parse_CseqTrack(gtrack);
 
         // The seq loop end event contains the loop iteration count, but that's needed in the MIDI
         // loop start event, so resolve all dual pointers to make that available. One complication
@@ -746,7 +748,7 @@ struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConver
         // Mark invalid seq loops as invalid.
         // Create MIDI sysex events (custom events) for invalid seq loop events according to user option.
         // This needs to happen after GmidTrack_pair_cseq_loop_events.
-        GmidTrack_invalid_cseq_loop_to_sysex(gtrack, !options->sysex_seq_loops);
+        GmidTrack_invalid_cseq_loop_to_sysex(gtrack, no_create_sysex);
 
         // Create midi note off events from the seq note-on events.
         // This will break delta events for the track.
@@ -1098,7 +1100,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     // cleanup.
     if (pattern_file != NULL)
     {
-        FileInfo_fclose(pattern_file);
+        FileInfo_free(pattern_file);
         pattern_file = NULL;
 
         if (options != NULL)
@@ -1945,7 +1947,9 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
                     // and it's after the current position in the source bytes
                     && (int)end_event->file_offset > pos
                     // and the loop delta says the loop starts before the current position
-                    && (int)end_event->file_offset - end_event->cseq_command_parameters[2] < pos)
+                    && (int)end_event->file_offset - end_event->cseq_command_parameters[2] < pos
+                    // and this isn't a sysex loop event imported from midi (which already has preset value)
+                    && (end_event->flags & MIDI_MALFORMED_EVENT_LOOP) == 0)
                 {
                     int loop_adjust = match->pattern_length - 4;
                     int adjust_byte_pos;
@@ -2521,6 +2525,9 @@ struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_t
             // copy into output buffer
             memcpy(&cseq->compressed_data[cseq_pointer_pos], track[i]->cseq_data, track[i]->cseq_data_len);
             cseq_pointer_pos += track[i]->cseq_data_len;
+
+            // set cseq track size
+            cseq->track_lengths[i] = track[i]->cseq_data_len;
         }
         else
         {
@@ -3034,6 +3041,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
             }
 
             // parse straight into seq loop start event
+            // mark loop event as bad.
             if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_START)
             {
                 // what is 3: two bytes for loop number, one byte for 0xf7
@@ -3066,6 +3074,8 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
+                event->flags |= MIDI_MALFORMED_EVENT_LOOP;
+
                 // save parsed data
                 event->command = CSEQ_COMMAND_BYTE_LOOP_START_WITH_META;
                 event->dual = NULL;
@@ -3084,6 +3094,7 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 // convert to MIDI format: not supported
             }
             // parse straight into seq loop end event
+            // mark loop event as bad.
             else if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_END)
             {
                 // what is 13: 12 bytes for loop seq end event, one byte for 0xf7
@@ -3132,6 +3143,8 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                     snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s: count %d, current count %d, diff 0x%08x", CSEQ_COMMAND_NAME_LOOP_END, loop_count, current_loop_count, loop_difference);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
+
+                event->flags |= MIDI_MALFORMED_EVENT_LOOP;
 
                 // save parsed data
                 event->command = CSEQ_COMMAND_BYTE_LOOP_END_WITH_META;
@@ -3921,6 +3934,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
     struct LinkedListNode *node;
     struct GmidEvent *event;
     char *debug_printf_buffer;
+    int i;
 
     debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
 
@@ -3936,11 +3950,17 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
         event = (struct GmidEvent *)node->data;
         if (event != NULL
             && event->cseq_valid
-            && event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META)
+            && event->command == CSEQ_COMMAND_BYTE_LOOP_END_WITH_META
+            && (event->flags & MIDI_MALFORMED_EVENT_LOOP) == 0)
         {
-            LinkedList_append_node(fix_end_delta_list, node);
+            LinkedList_append_node(fix_end_delta_list, LinkedListNode_copy(node));
         }
         node = node->next;
+    }
+
+    if (g_verbosity >= VERBOSE_DEBUG)
+    {
+        printf("GmidTrack_seq_fix_loop_end_delta: will adjust %ld loops\n", fix_end_delta_list->count);
     }
 
     /**
@@ -3953,7 +3973,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
     while (end_node != NULL)
     {
         // Set the end event from node.
-        struct GmidEvent *end_event = end_node->data;
+        struct GmidEvent *end_event = (struct GmidEvent *)end_node->data;
 
         // Declare start node, need to find start event
         struct LinkedListNode *start_node = gtrack->events->head;
@@ -3961,7 +3981,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
         {
             // Search event list until finding start event, based on
             // end event dual pointer.
-            struct GmidEvent *start_event = start_node->data;
+            struct GmidEvent *start_event = (struct GmidEvent *)start_node->data;
             if (start_event != NULL && start_event == end_event->dual)
             {
                 long byte_offset = 0;
@@ -3973,14 +3993,17 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
 
                 // Iterate between start event and end event to compute byte offset.
                 node = start_node;
-                while (node != NULL && node != end_node)
+
+                // node is a copy, so compare the thing that matters which is pointer to event.
+                while (node != NULL && node->data != end_node->data)
                 {
-                    struct GmidEvent *iter_event = node->data;
+                    struct GmidEvent *iter_event = (struct GmidEvent *)node->data;
                     if (iter_event != NULL)
                     {
                         if (iter_event->cseq_valid)
                         {
                             int inc_amount = 0;
+                            int escape_bytes = 0;
 
                             if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG)
                             {
@@ -3989,6 +4012,21 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
                                 debug_printf_buffer[debug_str_len] = '\n';
                                 fflush_string(stdout, debug_printf_buffer);
                             }
+
+                            for(i=0; i<iter_event->cseq_delta_time.num_bytes; i++)
+                            {
+                                if (iter_event->cseq_delta_time.value_bytes[i] == 0xfe)
+                                {
+                                    escape_bytes++;
+                                }
+                            }
+
+                            if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG && escape_bytes > 0)
+                            {
+                                printf("loop> + (escape_bytes=%d)\n", escape_bytes);
+                            }
+
+                            inc_amount += escape_bytes;
 
                             command = GmidEvent_get_cseq_command(iter_event);
 
@@ -4021,8 +4059,25 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
                     node = node->next;
                 }
 
-                if (node == end_node)
+                // node is a copy, so compare the thing that matters which is pointer to event.
+                if (node->data == end_node->data)
                 {
+                    int escape_bytes = 0;
+
+                    for(i=0; i<end_event->cseq_delta_time.num_bytes; i++)
+                    {
+                        if (end_event->cseq_delta_time.value_bytes[i] == 0xfe)
+                        {
+                            escape_bytes++;
+                        }
+                    }
+
+                    if (g_midi_debug_loop_delta && g_verbosity >= VERBOSE_DEBUG && escape_bytes > 0)
+                    {
+                        printf("loop (end event)> + (escape_bytes=%d)\n", escape_bytes);
+                    }
+
+                    byte_offset += escape_bytes;
                     byte_offset += CSEQ_COMMAND_LEN_LOOP_END + CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
                     byte_offset += end_event->cseq_delta_time.num_bytes;
 
@@ -4057,7 +4112,7 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
         end_node = end_node->next;
     }
 
-    LinkedList_free_only_self(fix_end_delta_list);
+    LinkedList_free(fix_end_delta_list);
 
     free(debug_printf_buffer);
 
@@ -4418,12 +4473,12 @@ void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_creat
                     for (i=0; i<1; i++)
                     {
                         // loop number
-                        b = (event->midi_command_parameters_raw[source_index] & 0xf0) >> 4;
+                        b = (event->cseq_command_parameters_raw[source_index] & 0xf0) >> 4;
                         sysex_event->midi_command_parameters[dest_index] = b;
                         sysex_event->midi_command_parameters_raw[dest_index] = b;
                         dest_index++;
 
-                        b = (event->midi_command_parameters_raw[source_index] & 0x0f);
+                        b = (event->cseq_command_parameters_raw[source_index] & 0x0f);
                         sysex_event->midi_command_parameters[dest_index] = b;
                         sysex_event->midi_command_parameters_raw[dest_index] = b;
                         dest_index++;
@@ -4470,12 +4525,12 @@ void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_creat
                         // source byte[0]: loop count
                         // source byte[1]: loop count2
                         // source byte[2-5]: loop end offset to loop start
-                        b = (event->midi_command_parameters_raw[source_index] & 0xf0) >> 4;
+                        b = (event->cseq_command_parameters_raw[source_index] & 0xf0) >> 4;
                         sysex_event->midi_command_parameters[dest_index] = b;
                         sysex_event->midi_command_parameters_raw[dest_index] = b;
                         dest_index++;
 
-                        b = (event->midi_command_parameters_raw[source_index] & 0x0f);
+                        b = (event->cseq_command_parameters_raw[source_index] & 0x0f);
                         sysex_event->midi_command_parameters[dest_index] = b;
                         sysex_event->midi_command_parameters_raw[dest_index] = b;
                         dest_index++;

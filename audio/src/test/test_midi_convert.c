@@ -914,4 +914,288 @@ void test_midi_convert(int *run_count, int *pass_count, int *fail_count)
             *fail_count = *fail_count + 1;
         }
     }
+
+    {
+        printf("round trip seq -- 7\n");
+        int pass = 1;
+        int pass_single;
+        *run_count = *run_count + 1;
+        
+        struct CseqFile *cseq_file;
+        struct MidiFile *midi_file;
+        struct MidiTrack *midi_track;
+        struct CseqFile *result_cseq_file;
+        struct MidiConvertOptions *convert_options;
+        int i;
+
+        uint8_t seq_data[] = {
+            0x00, 0xCA, 0x2F, 0x02, 0xBA, 0x07, 0x50, 0x01,
+            0x0A, 0x5A, 0x01, 0x5B, 0x14, 0x01, 0x9A, 0x42,
+            0x35, 0x60, 0x5B, 0x44, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0x34, 0x60, 0x60, 0x44,
+            0x34, 0x60, 0x60, 0x42, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0x34, 0x60, 0x60, 0x44,
+            0x34, 0x60, 0x60, 0x42, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0x34, 0x60, 0x61, 0x42,
+            0x35, 0x60, 0x5F, 0x44, 0x34, 0x60, 0x60, 0x42,
+            0x34, 0x60, 0x60, 0x44, 0xFE, 0x00, 0x44, 0x07,
+            0x42, 0xFE, 0x00, 0x4D, 0x0B, 0xFE, 0x00, 0x4E,
+            0x1F, 0x61, 0x42, 0x35, 0x60, 0x5F, 0xFE, 0x00,
+            0x5B, 0x49, 0xFE, 0x00, 0x56, 0x32, 0xFE, 0x00,
+            0x50, 0x1A, 0x33, 0x60, 0x60, 0x44, 0x33, 0x60,
+            0x60, 0x42, 0x33, 0x60, 0x60, 0x44, 0x33, 0x60,
+            0x60, 0x44, 0x33, 0x60, 0x60, 0x42, 0x33, 0x60,
+            0x60, 0x42, 0x33, 0x60, 0x60, 0x44, 0x33, 0x60,
+            0x60, 0x42, 0x33, 0x60, 0x60, 0x44, 0x33, 0x60,
+            0x60, 0x42, 0x31, 0x60, 0x60, 0x44, 0x31, 0x60,
+            0x60, 0x42, 0x32, 0x60, 0x60, 0x44, 0x32, 0x60,
+            0x60, 0x44, 0x33, 0x60, 0x60, 0x42, 0x33, 0xFE,
+            0x00, 0xA2, 0x07, 0x35, 0x60, 0x60, 0x42, 0x35,
+            0x60, 0x60, 0x44, 0x36, 0x60, 0x60, 0x44, 0x36,
+            0x60, 0x60, 0x42, 0x37, 0x60, 0x60, 0x42, 0x37,
+            0x60, 0x60, 0x44, 0x38, 0x60, 0x60, 0x42, 0x38,
+            0x60, 0x60, 0x44, 0x3A, 0x60, 0x60, 0x42, 0x3C,
+            0x60, 0x60, 0x44, 0x3E, 0x60, 0x60, 0x42, 0x40,
+            0x60, 0x60, 0x44, 0x42, 0x60, 0x60, 0x44, 0x44,
+            0x60, 0x60, 0x42, 0x45, 0x60, 0x60, 0x42, 0x47,
+            0x60, 0x60, 0x44, 0x49, 0x60, 0x60, 0x42, 0x4B,
+            0x60, 0x60, 0x44, 0x4D, 0x60, 0x60, 0x44, 0x4F,
+            0x60, 0x60, 0x42, 0x51, 0x60, 0x60, 0x42, 0x52,
+            0x60, 0x60, 0x44, 0x54, 0x60, 0x60, 0x42, 0x56,
+            0x60, 0x60, 0x44, 0x58, 0x60, 0x60, 0xFF, 0x2E,
+            0x00, 0xFF, 0x02, 0x9A, 0x42, 0x3F, 0x60, 0x5E,
+            0x44, 0x3E, 0x60, 0x60, 0x42, 0x3E, 0x60, 0x60,
+            0x44, 0x3D, 0x60, 0x60, 0x44, 0x3C, 0x60, 0x60,
+            0x42, 0x3B, 0x60, 0x60, 0x42, 0x3B, 0x60, 0x60,
+            0x44, 0x3B, 0x60, 0x60, 0x42, 0x3B, 0x60, 0x60,
+            0x44, 0x3A, 0xFE, 0x00, 0x72, 0x07, 0x39, 0x60,
+            0x60, 0x42, 0x39, 0xFE, 0x00, 0x83, 0x07, 0x37,
+            0x60, 0x60, 0x44, 0x37, 0x60, 0x60, 0xFF, 0x2D,
+            0x3F, 0x3F, 0x00, 0x00, 0x00, 0x44, 0x01, 0x9A,
+            0xFE, 0x01, 0x19, 0x0D, 0xFE, 0x01, 0x50, 0x40,
+            0xFE, 0x01, 0x54, 0x40, 0xFE, 0x01, 0x58, 0x40,
+            0xFE, 0x01, 0x5C, 0x32, 0xFE, 0x01, 0x56, 0x1A,
+            0xFE, 0x01, 0x06, 0x3D, 0xFE, 0x01, 0x6F, 0x07,
+            0xFE, 0x00, 0xCD, 0x63, 0xFF, 0x2D, 0xFF, 0xFF,
+            0x00, 0x00, 0x00, 0x72, 0x00, 0xFF, 0x2F
+        };
+        int seq_data_len = sizeof(seq_data);
+
+        // setup
+
+        cseq_file = CseqFile_new();
+        cseq_file->non_empty_num_tracks = 1;
+        cseq_file->track_lengths[10] = seq_data_len;
+        cseq_file->compressed_data_len = seq_data_len;
+        cseq_file->compressed_data = (uint8_t *)malloc_zero(1, cseq_file->compressed_data_len);
+        // initialy the track data offsets are read from the file, which
+        // includes the length of the header. This is subtracted out when
+        // accessing the data.
+        cseq_file->track_offset[10] = CSEQ_FILE_HEADER_SIZE_BYTES;
+        memcpy(cseq_file->compressed_data, seq_data, seq_data_len);
+
+        convert_options = MidiConvertOptions_new();
+        convert_options->sysex_seq_loops = 1;
+
+        // execute
+        midi_file = MidiFile_from_CseqFile(cseq_file, convert_options);
+
+        convert_options->use_pattern_marker_file = 1;
+        convert_options->pattern_marker_filename = "test_cases/midi/patterns0007.csv";
+
+        result_cseq_file = CseqFile_from_MidiFile(midi_file, convert_options);
+
+        if (midi_file == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file is NULL\n", __func__, __LINE__);
+        }
+
+        if (midi_file->tracks[0] == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file->tracks[0] is NULL\n", __func__, __LINE__);
+        }
+
+        if (result_cseq_file == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> result_cseq_file is NULL\n", __func__, __LINE__);
+        }
+
+        midi_track = midi_file->tracks[0];
+
+        // compare
+        pass_single = midi_track->ck_data_size > 0;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail midi_track->ck_data_size is zero\n", __func__, __LINE__);
+        }
+
+        pass_single = result_cseq_file->track_lengths[10] == (size_t)seq_data_len;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail result_cseq_file->track_lengths[10]: expected %d, actual %ld\n", __func__, __LINE__, seq_data_len, result_cseq_file->track_lengths[10]);
+        }
+
+        pass_single = 1;
+        for (i=0; i<seq_data_len && i<(int)result_cseq_file->track_lengths[10]; i++)
+        {
+            pass_single &= seq_data[i] == result_cseq_file->compressed_data[i];
+            pass &= pass_single;
+        }
+
+        if (!pass_single)
+        {
+            printf("%s %d> fail track byte match\n", __func__, __LINE__);
+            print_expected_vs_actual_arr(seq_data, seq_data_len, result_cseq_file->compressed_data, result_cseq_file->track_lengths[10]);
+        }
+
+        // cleanup
+        MidiConvertOptions_free(convert_options);
+        CseqFile_free(cseq_file);
+        CseqFile_free(result_cseq_file);
+        MidiFile_free(midi_file);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d> fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
+
+    {
+        printf("round trip seq -- 8\n");
+        int pass = 1;
+        int pass_single;
+        *run_count = *run_count + 1;
+        
+        struct CseqFile *cseq_file;
+        struct MidiFile *midi_file;
+        struct MidiTrack *midi_track;
+        struct CseqFile *result_cseq_file;
+        struct MidiConvertOptions *convert_options;
+        int i;
+
+        uint8_t seq_data[] = {
+            0x8C, 0x00, 0xCF, 0x1D, 0x83, 0x00, 0xBF, 0x07,
+            0x4B, 0x83, 0x00, 0x5B, 0x3C, 0xC2, 0x00, 0xFF,
+            0x2E, 0x00, 0xFF, 0x02, 0x9F, 0x25, 0x7F, 0x81,
+            0x40, 0x82, 0x7E, 0x25, 0x7F, 0x81, 0x40, 0x81,
+            0x40, 0x25, 0x5A, 0x86, 0x00, 0x57, 0x25, 0x6B,
+            0x1E, 0x4D, 0x25, 0x5F, 0x13, 0x1C, 0x25, 0x7F,
+            0x1A, 0x59, 0x25, 0x65, 0x25, 0x66, 0x25, 0x5F,
+            0x0C, 0x66, 0x25, 0x6B, 0x0F, 0x5B, 0x25, 0x7F,
+            0x0E, 0x81, 0x40, 0x25, 0x7F, 0x83, 0x02, 0x65,
+            0x25, 0x5C, 0x0D, 0x20, 0x25, 0x4D, 0x12, 0x17,
+            0x25, 0x62, 0x1F, 0x26, 0x25, 0x7F, 0x2A, 0x82,
+            0x7E, 0x25, 0x7F, 0x81, 0x40, 0x81, 0x40, 0x25,
+            0x5A, 0x86, 0x00, 0x57, 0x25, 0x6B, 0x1E, 0x4D,
+            0x25, 0x5F, 0x13, 0x1C, 0x25, 0x7F, 0x1A, 0x59,
+            0x25, 0x65, 0x25, 0x66, 0x25, 0x5F, 0x0C, 0x66,
+            0x25, 0x6B, 0x0F, 0x5B, 0x25, 0x7F, 0x0E, 0x81,
+            0x40, 0x25, 0x7F, 0x83, 0x02, 0x65, 0x25, 0x5C,
+            0x0D, 0x20, 0x25, 0x4D, 0x12, 0x17, 0x25, 0x62,
+            0x1F, 0x24, 0xFF, 0x2E, 0x03, 0xFF, 0x02, 0x9F,
+            0x25, 0x7F, 0x2A, 0xFE, 0x00, 0x82, 0x3A, 0x24,
+            0xFF, 0x2D, 0x3B, 0x3B, 0x00, 0x00, 0x00, 0x12,
+            0x02, 0x9F, 0x25, 0x7F, 0x2A, 0xFE, 0x00, 0x94,
+            0x6A, 0x81, 0x6C, 0xFE, 0x00, 0x6C, 0x0C, 0xD4,
+            0x24, 0xFF, 0x2D, 0xFF, 0xFF, 0x00, 0x00, 0x00,
+            0xAE, 0x00, 0xFF, 0x2F
+        };
+        int seq_data_len = sizeof(seq_data);
+
+        // setup
+
+        cseq_file = CseqFile_new();
+        cseq_file->non_empty_num_tracks = 1;
+        cseq_file->track_lengths[15] = seq_data_len;
+        cseq_file->compressed_data_len = seq_data_len;
+        cseq_file->compressed_data = (uint8_t *)malloc_zero(1, cseq_file->compressed_data_len);
+        // initialy the track data offsets are read from the file, which
+        // includes the length of the header. This is subtracted out when
+        // accessing the data.
+        cseq_file->track_offset[15] = CSEQ_FILE_HEADER_SIZE_BYTES;
+        memcpy(cseq_file->compressed_data, seq_data, seq_data_len);
+
+        convert_options = MidiConvertOptions_new();
+        convert_options->sysex_seq_loops = 1;
+
+        // execute
+        midi_file = MidiFile_from_CseqFile(cseq_file, convert_options);
+
+        convert_options->use_pattern_marker_file = 1;
+        convert_options->pattern_marker_filename = "test_cases/midi/patterns0008.csv";
+
+        result_cseq_file = CseqFile_from_MidiFile(midi_file, convert_options);
+
+        if (midi_file == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file is NULL\n", __func__, __LINE__);
+        }
+
+        if (midi_file->tracks[0] == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file->tracks[0] is NULL\n", __func__, __LINE__);
+        }
+
+        if (result_cseq_file == NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> result_cseq_file is NULL\n", __func__, __LINE__);
+        }
+
+        midi_track = midi_file->tracks[0];
+
+        // compare
+        pass_single = midi_track->ck_data_size > 0;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail midi_track->ck_data_size is zero\n", __func__, __LINE__);
+        }
+
+        pass_single = result_cseq_file->track_lengths[15] == (size_t)seq_data_len;
+        pass &= pass_single;
+        if (!pass_single)
+        {
+            printf("%s %d> fail result_cseq_file->track_lengths[15]: expected %d, actual %ld\n", __func__, __LINE__, seq_data_len, result_cseq_file->track_lengths[15]);
+        }
+
+        pass_single = 1;
+        for (i=0; i<seq_data_len && i<(int)result_cseq_file->track_lengths[15]; i++)
+        {
+            pass_single &= seq_data[i] == result_cseq_file->compressed_data[i];
+            pass &= pass_single;
+        }
+
+        if (!pass_single)
+        {
+            printf("%s %d> fail track byte match\n", __func__, __LINE__);
+            print_expected_vs_actual_arr(seq_data, seq_data_len, result_cseq_file->compressed_data, result_cseq_file->track_lengths[15]);
+        }
+
+        // cleanup
+        MidiConvertOptions_free(convert_options);
+        CseqFile_free(cseq_file);
+        CseqFile_free(result_cseq_file);
+        MidiFile_free(midi_file);
+
+        if (pass == 1)
+        {
+            printf("pass\n");
+            *pass_count = *pass_count + 1;
+        }
+        else
+        {
+            printf("%s %d> fail\n", __func__, __LINE__);
+            *fail_count = *fail_count + 1;
+        }
+    }
 }

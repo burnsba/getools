@@ -115,19 +115,24 @@ void print_expected_vs_actual_arr(uint8_t *expected, size_t expected_len, uint8_
     printf("expected\n");
     for (i=0; i<expected_len; i++)
     {
+        if ((i % 16) == 0)
+        {
+            printf("0x%04lx: ", i);
+        }
+
         color_flag = 0;
-        if (i < actual_len && expected[i] != actual[i])
+        if (g_term_colors && i < actual_len && expected[i] != actual[i])
         {
             printf("\033[32m");
             color_flag = 1;
         }
         printf("0x%02x ", expected[i]);
-        if (color_flag)
+        if (g_term_colors && color_flag)
         {
             printf("\033[39m");
             color_flag = 0;
         }
-        if (((i+1)%8)==0)
+        if (((i+1)%16)==0)
         {
             printf("\n");
         }
@@ -136,19 +141,24 @@ void print_expected_vs_actual_arr(uint8_t *expected, size_t expected_len, uint8_
     printf("actual\n");
     for (i=0; i < actual_len; i++)
     {
+        if ((i % 16) == 0)
+        {
+            printf("0x%04lx: ", i);
+        }
+        
         color_flag = 0;
-        if (i < expected_len && expected[i] != actual[i])
+        if (g_term_colors && i < expected_len && expected[i] != actual[i])
         {
             printf("\033[31m");
             color_flag = 1;
         }
         printf("0x%02x ", actual[i]);
-        if (color_flag)
+        if (g_term_colors && color_flag)
         {
             printf("\033[39m");
             color_flag = 0;
         }
-        if (((i+1)%8)==0)
+        if (((i+1)%16)==0)
         {
             printf("\n");
         }

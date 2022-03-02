@@ -622,7 +622,8 @@ struct MidiConvertOptions {
     int sysex_seq_loops;
 
     /**
-     * Which pattern substitution algorithm to use.
+     * Which pattern substitution algorithm to use when converting
+     * from midi to cseq.
     */
     enum GAUDIO_PATTERN_ALGORITHM pattern_algorithm;
 

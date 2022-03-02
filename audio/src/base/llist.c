@@ -46,6 +46,11 @@ void LinkedList_append_node(struct LinkedList *root, struct LinkedListNode *node
             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> tail is NULL\n", __func__, __LINE__);
         }
 
+        if (node->prev != NULL)
+        {
+            stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> node->prev is already assigned (not NULL), appending alters state of node\n", __func__, __LINE__);
+        }
+
         node->prev = root->tail;
         root->tail->next = node;
         root->tail = node;
@@ -457,6 +462,16 @@ void LinkedListNode_insert_before(struct LinkedList *root, struct LinkedListNode
     if (to_insert == NULL)
     {
         stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> to_insert is NULL\n", __func__, __LINE__);
+    }
+
+    if (to_insert->next != NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> to_insert->next is already assigned (not NULL), isnert alters state of node\n", __func__, __LINE__);
+    }
+
+    if (to_insert->prev != NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> to_insert->prev is already assigned (not NULL), isnert alters state of node\n", __func__, __LINE__);
     }
 
     if (to_insert == current)

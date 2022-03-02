@@ -13,6 +13,7 @@
 #include "md5.h"
 #include "naudio.h"
 #include "test_common.h"
+#include "midi.h"
 
 /**
  * This is the top level entry point to run tests.
@@ -31,7 +32,9 @@ int main(int argc, char **argv)
         // be quiet gcc
     }
 
+    g_term_colors = 1;
     //g_verbosity = VERBOSE_DEBUG;
+    //g_midi_debug_loop_delta = 1;
 
     sub_count = 0;
     test_md5_all(&sub_count, &pass_count, &fail_count);

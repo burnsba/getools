@@ -45,3 +45,8 @@ size_t g_filename_prefix_len = 0;
  * {@code AdpcmAifcFile_encode}
 */
 int g_encode_bswap = 0;
+
+/**
+ * Allow terminal colors and escape sequences when printing output.
+*/
+int g_term_colors = 1;
