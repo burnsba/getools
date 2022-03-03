@@ -190,11 +190,11 @@
 #define MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX 0x47
 #define MIDI_COMMAND_BYTE_SYSEX_END 0xf7
 
-// all bytes after 0xf0, individually
+// all bytes after 0xf0, individually, including 0xf7
 #define MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_START 6
 #define MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_START 6
 
-// all bytes after 0xf0, individually
+// all bytes after 0xf0, individually, including 0xf7
 #define MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END 16
 #define MIDI_COMMAND_NUM_PARAM_SYSEX_SEQ_LOOP_END 16
 
@@ -566,6 +566,21 @@ struct GmidTrack {
     uint8_t *cseq_data;
 };
 
+
+/**
+ * Simple container for common format.
+*/
+struct GmidFile {
+    // Available tracks.
+    struct GmidTrack **tracks;
+
+    /**
+     * Number of elements in tracks pointer.
+     * Do not change this value unless memory allocated to tracks changes.
+    */
+    int num_tracks;
+};
+
 /**
  * Callback function with single parameter, pointer to GmidTrack.
  * Returns void.
@@ -654,12 +669,20 @@ struct MidiFile *MidiFile_new(int format);
 struct MidiFile *MidiFile_new_tracks(int format, int num_tracks);
 struct MidiFile *MidiFile_from_CseqFile(struct CseqFile *cseq, struct MidiConvertOptions *options);
 struct MidiFile *MidiFile_new_from_file(struct FileInfo *fi);
+struct MidiFile *MidiFile_new_from_gmid(struct GmidFile *gmid_file);
 void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
 void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi);
 void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi);
 
-// common (GmidTrack, GmidEvent) declarations
+struct MidiFile *MidiFile_transform_set_channel_instrument(struct MidiFile *midi_file, int existing_channel, int new_instrument);
+void GmidFile_transform_set_channel_instrument(struct GmidFile *gmid_file, int existing_channel, int new_instrument);
+
+// common (GmidFile, GmidTrack, GmidEvent) declarations
+
+struct GmidFile *GmidFile_new_from_midi(struct MidiFile *midi);
+struct GmidFile *GmidFile_new(void);
+void GmidFile_free(struct GmidFile *gmid_file);
 
 struct GmidEvent *GmidEvent_new(void);
 struct GmidEvent *GmidEvent_new_from_buffer(
@@ -684,6 +707,7 @@ void GmidTrack_cseq_note_on_from_midi(struct GmidTrack *gtrack);
 void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack);
 void GmidTrack_pair_cseq_loop_events(struct GmidTrack *gtrack, struct LinkedList *patterns);
 void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_create);
+void GmidTrack_midi_sysex_to_cseq(struct GmidTrack *gtrack);
 size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer, size_t max_len);
 struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_tracks);
 void GmidTrack_get_pattern_matches_naive(struct GmidTrack *gtrack, uint8_t *write_buffer, size_t *current_buffer_pos, struct LinkedList *matches);

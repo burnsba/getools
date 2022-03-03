@@ -479,8 +479,11 @@ int main(int argc, char **argv)
 
     ctl_file = FileInfo_fopen(ctl_filename, "rb");
 
-    // need to set the callback before any wavetable objects are instantiated.
-    wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
+    if (opt_names_file)
+    {
+        // need to set the callback before any wavetable objects are instantiated.
+        wavetable_init_callback_ptr = wavetable_init_set_aifc_path;
+    }
 
     bank_file = ALBankFile_new_from_ctl(ctl_file);
 

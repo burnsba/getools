@@ -93,6 +93,9 @@ $(BUILD)/cseq2midi: $(OBJ)/cseq2midi.o $(OBJ)/libgaudiox.a
 $(BUILD)/midi2cseq: $(OBJ)/midi2cseq.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudiohash -lgaudiobase
 
+$(BUILD)/miditool: $(OBJ)/miditool.o $(OBJ)/libgaudiox.a
+	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudiohash -lgaudiobase
+
 $(BUILD)/gic: $(OBJ)/gic.o $(OBJ)/libgaudiox.a
 	$(CC) $^ -o $@ $(LINKERS) -Lobj -lgaudiox -lgaudio -lgaudiohash -lgaudiobase
 
@@ -121,7 +124,7 @@ help:
 	@echo ""
 	@echo "  single app targets:"
 	@echo ""
-	@echo "    aifc2wav cseq2midi gic midi2cseq sbksplit tabledesign tbl2aifc wav2aifc"
+	@echo "    aifc2wav cseq2midi gic midi2cseq miditool sbksplit tabledesign tbl2aifc wav2aifc"
 
 ####################################################################################################
 #
@@ -134,6 +137,7 @@ directories:
 aifc2wav: directories $(BUILD)/aifc2wav
 cseq2midi: directories $(BUILD)/cseq2midi
 midi2cseq: directories $(BUILD)/midi2cseq
+miditool: directories $(BUILD)/miditool
 gic: directories $(BUILD)/gic
 sbksplit: directories $(BUILD)/sbksplit
 tabledesign: directories $(BUILD)/tabledesign
@@ -142,12 +146,12 @@ wav2aifc: directories $(BUILD)/wav2aifc
 
 test: directories $(BUILD)/test
 
-all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/midi2cseq $(BUILD)/gic $(BUILD)/test $(TARGET_TABLEDESIGN)
+all: directories $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/midi2cseq $(BUILD)/miditool $(BUILD)/gic $(BUILD)/test $(TARGET_TABLEDESIGN)
 
 clean:
-	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/midi2cseq $(BUILD)/gic $(BUILD)/tabledesign $(BUILD)/test
+	rm -f $(BUILD)/*.o $(BUILD)/*.a $(OBJ)/*.o $(OBJ)/*.a $(BUILD)/sbksplit $(BUILD)/tbl2aifc $(BUILD)/aifc2wav $(BUILD)/wav2aifc $(BUILD)/cseq2midi $(BUILD)/midi2cseq $(BUILD)/miditool $(BUILD)/gic $(BUILD)/tabledesign $(BUILD)/test
 
 check: directories $(BUILD)/test
 	bin/test
 
-.PHONY: all default clean sbksplit cseq2midi midi2cseq tbl2aifc aifc2wav wav2aifc gic tabledesign test check directories help
+.PHONY: all default clean sbksplit cseq2midi midi2cseq miditool tbl2aifc aifc2wav wav2aifc gic tabledesign test check directories help

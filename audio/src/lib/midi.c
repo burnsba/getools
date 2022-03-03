@@ -647,6 +647,207 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack)
     return p;
 }
 
+struct MidiFile *MidiFile_new_from_gmid(struct GmidFile *gmid_file)
+{
+    TRACE_ENTER(__func__)
+
+    if (gmid_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: gmid_file is NULL\n", __func__, __LINE__);
+    }
+
+    int i;
+    int non_empty_tracks = 0;
+    int allocated_tracks = 0;
+
+    for (i=0; i<gmid_file->num_tracks; i++)
+    {
+        if (gmid_file->tracks[i] != NULL
+            && gmid_file->tracks[i]->events != NULL
+            && gmid_file->tracks[i]->events->count > 0)
+        {
+            non_empty_tracks++;
+        }
+    }
+
+    if (non_empty_tracks == 0)
+    {
+        stderr_exit(EXIT_CODE_GENERAL, "%s %d>: error, no tracks found in gmid_file\n", __func__, __LINE__);
+    }
+
+    struct MidiFile *midi = MidiFile_new_tracks(MIDI_FORMAT_SIMULTANEOUS, non_empty_tracks);
+
+    for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
+    {
+        if (gmid_file->tracks[i] != NULL
+            && gmid_file->tracks[i]->events != NULL
+            && gmid_file->tracks[i]->events->count > 0)
+        {
+            midi->tracks[allocated_tracks] = MidiTrack_new_from_GmidTrack(gmid_file->tracks[i]);
+            allocated_tracks++;
+        }
+    }
+
+    TRACE_LEAVE(__func__)
+    return midi;
+}
+
+struct GmidFile *GmidFile_new_from_midi(struct MidiFile *midi)
+{
+    TRACE_ENTER(__func__)
+
+    if (midi == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: midi is NULL\n", __func__, __LINE__);
+    }
+
+    struct GmidFile *gmid_file;
+    struct LinkedList *track_event_holder;
+    int source_track_index;
+    char *debug_printf_buffer;
+    struct LinkedListNode *node;
+
+    debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
+
+    gmid_file = GmidFile_new();
+
+    // collect events seen while parsing the current track.
+    track_event_holder = LinkedList_new();
+
+    for (source_track_index=0; source_track_index<midi->num_tracks; source_track_index++)
+    {
+        struct MidiTrack *source_track = midi->tracks[source_track_index];
+        struct GmidEvent *event;
+        size_t track_pos;
+        size_t buffer_len;
+        int32_t command;
+        int destination_track = -1;
+
+        /** 
+         * running count of absolute time.
+         * Every delta event read is added to this value.
+         * The first delta event read sets the very first absolute time (not necessarily zero).
+        */
+        long absolute_time = 0;
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("\n");
+            printf("begin parse track %d\n", source_track_index);
+        }
+
+        if (source_track == NULL)
+        {
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                printf("empty track\n");
+            }
+
+            continue;
+        }
+
+        command = 0;
+        track_pos = 0;
+        buffer_len = source_track->ck_data_size;
+
+        /**
+         * Iterate the events in this track and add to track_event_holder.
+         * This addresses two problems.
+         * 1) Some seq tracks are null, and this isn't captured in output MIDI,
+         *    the only way to recognize this is by looking at the command channel
+         *    in the track events.
+         * 2) A track might start with meta events which don't have a command
+         *    channel, so the destination seq track won't be known yet.
+         * 
+         * After all the events from the track are added to the temp list,
+         * the command channel should have been seen at least once.
+         * Use the first read command channel to determine which seq
+         * track these events belong to.
+        */
+        while (track_pos < buffer_len)
+        {
+            int bytes_read = 0;
+            
+            // track position will be updated according to how many bytes read.
+            event = GmidEvent_new_from_buffer(source_track->data, &track_pos, buffer_len, MIDI_IMPLEMENTATION_STANDARD, command, &bytes_read);
+
+            if (event == NULL)
+            {
+                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: event is NULL\n", __func__, __LINE__);
+            }
+
+            if (bytes_read == 0)
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid bytes_read (0) from GmidEvent_new_from_buffer\n", __func__, __LINE__);
+            }
+
+            absolute_time += event->midi_delta_time.standard_value;
+            event->absolute_time = absolute_time;
+
+            if (g_verbosity >= VERBOSE_DEBUG)
+            {
+                memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+                size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
+                debug_printf_buffer[debug_str_len] = '\n';
+                fflush_string(stdout, debug_printf_buffer);
+            }
+
+            // Set destination track to first seen command channel.
+            if (destination_track == -1 && event->command_channel > -1)
+            {
+                destination_track = event->command_channel;
+            }
+
+            command = GmidEvent_get_midi_command(event);
+
+            // only allow running status for the "regular" MIDI commands (commands with channels)
+            if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
+            {
+                command = 0;
+            }
+
+            node = LinkedListNode_new();
+            node->data = event;
+            LinkedList_append_node(track_event_holder, node);
+        }
+
+        if (g_verbosity >= VERBOSE_DEBUG)
+        {
+            printf("finish parse track %d\n", source_track_index);
+        }
+
+        if (destination_track == -1)
+        {
+            fflush_printf(stderr, "destination track not resolved, assuming midi track %d\n", source_track_index);
+            destination_track = source_track_index;
+        }
+
+        if (destination_track > CSEQ_FILE_NUM_TRACKS)
+        {
+            stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid destination_track %d resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
+        }
+
+        gmid_file->tracks[destination_track]->midi_track_index = source_track_index;
+        gmid_file->tracks[destination_track]->cseq_track_index = destination_track;
+
+        // now that destination track is known, move from temp list
+        // to correct track.
+        while (track_event_holder->count > 0)
+        {
+            node = track_event_holder->head;
+            LinkedListNode_move(gmid_file->tracks[destination_track]->events, track_event_holder, node);
+        }
+
+        // estimate total track size in bytes.
+        GmidTrack_set_track_size_bytes(gmid_file->tracks[destination_track]);
+    }
+
+    free(debug_printf_buffer);
+
+    TRACE_LEAVE(__func__)
+    return gmid_file;
+}
+
 /**
  * Processes a N64 seq file loaded into memory and converts to regular MIDI format.
  * This allocates memory for the new MIDI file.
@@ -846,11 +1047,12 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     }
 
     struct CseqFile *result;
-    struct GmidTrack **gmidi_tracks;
-    struct LinkedList *track_event_holder;
-    struct LinkedListNode *node;
+    //struct GmidTrack **gmidi_tracks;
+    struct GmidFile *gmid_file;
+    //struct LinkedList *track_event_holder;
+    //struct LinkedListNode *node;
     int i;
-    int source_track_index;
+    //int source_track_index;
     char *debug_printf_buffer;
     uint8_t *cseq_data_buffer = NULL;
     size_t cseq_buffer_pos = 0;
@@ -871,140 +1073,144 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
     }
 
     debug_printf_buffer = (char *)malloc_zero(1, WRITE_BUFFER_LEN);
-    gmidi_tracks = (struct GmidTrack **)malloc_zero(CSEQ_FILE_NUM_TRACKS, sizeof(struct GmidTrack *));
 
-    for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
-    {
-        gmidi_tracks[i] = GmidTrack_new();
-    }
+    ///gmid_file = GmidFile_new();
+    // gmidi_tracks = (struct GmidTrack **)malloc_zero(CSEQ_FILE_NUM_TRACKS, sizeof(struct GmidTrack *));
 
-    // collect events seen while parsing the current track.
-    track_event_holder = LinkedList_new();
+    // for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
+    // {
+    //     gmidi_tracks[i] = GmidTrack_new();
+    // }
 
-    for (source_track_index=0; source_track_index<midi->num_tracks; source_track_index++)
-    {
-        struct MidiTrack *source_track = midi->tracks[source_track_index];
-        struct GmidEvent *event;
-        size_t track_pos;
-        size_t buffer_len;
-        int32_t command;
-        int destination_track = -1;
+    gmid_file = GmidFile_new_from_midi(midi);
 
-        /** 
-         * running count of absolute time.
-         * Every delta event read is added to this value.
-         * The first delta event read sets the very first absolute time (not necessarily zero).
-        */
-        long absolute_time = 0;
+    // // collect events seen while parsing the current track.
+    // track_event_holder = LinkedList_new();
 
-        if (g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("\n");
-            printf("begin parse track %d\n", source_track_index);
-        }
+    // for (source_track_index=0; source_track_index<midi->num_tracks; source_track_index++)
+    // {
+    //     struct MidiTrack *source_track = midi->tracks[source_track_index];
+    //     struct GmidEvent *event;
+    //     size_t track_pos;
+    //     size_t buffer_len;
+    //     int32_t command;
+    //     int destination_track = -1;
 
-        if (source_track == NULL)
-        {
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                printf("empty track\n");
-            }
+    //     /** 
+    //      * running count of absolute time.
+    //      * Every delta event read is added to this value.
+    //      * The first delta event read sets the very first absolute time (not necessarily zero).
+    //     */
+    //     long absolute_time = 0;
 
-            continue;
-        }
+    //     if (g_verbosity >= VERBOSE_DEBUG)
+    //     {
+    //         printf("\n");
+    //         printf("begin parse track %d\n", source_track_index);
+    //     }
 
-        command = 0;
-        track_pos = 0;
-        buffer_len = source_track->ck_data_size;
+    //     if (source_track == NULL)
+    //     {
+    //         if (g_verbosity >= VERBOSE_DEBUG)
+    //         {
+    //             printf("empty track\n");
+    //         }
 
-        /**
-         * Iterate the events in this track and add to track_event_holder.
-         * This addresses two problems.
-         * 1) Some seq tracks are null, and this isn't captured in output MIDI,
-         *    the only way to recognize this is by looking at the command channel
-         *    in the track events.
-         * 2) A track might start with meta events which don't have a command
-         *    channel, so the destination seq track won't be known yet.
-         * 
-         * After all the events from the track are added to the temp list,
-         * the command channel should have been seen at least once.
-         * Use the first read command channel to determine which seq
-         * track these events belong to.
-        */
-        while (track_pos < buffer_len)
-        {
-            int bytes_read = 0;
+    //         continue;
+    //     }
+
+    //     command = 0;
+    //     track_pos = 0;
+    //     buffer_len = source_track->ck_data_size;
+
+    //     /**
+    //      * Iterate the events in this track and add to track_event_holder.
+    //      * This addresses two problems.
+    //      * 1) Some seq tracks are null, and this isn't captured in output MIDI,
+    //      *    the only way to recognize this is by looking at the command channel
+    //      *    in the track events.
+    //      * 2) A track might start with meta events which don't have a command
+    //      *    channel, so the destination seq track won't be known yet.
+    //      * 
+    //      * After all the events from the track are added to the temp list,
+    //      * the command channel should have been seen at least once.
+    //      * Use the first read command channel to determine which seq
+    //      * track these events belong to.
+    //     */
+    //     while (track_pos < buffer_len)
+    //     {
+    //         int bytes_read = 0;
             
-            // track position will be updated according to how many bytes read.
-            event = GmidEvent_new_from_buffer(source_track->data, &track_pos, buffer_len, MIDI_IMPLEMENTATION_STANDARD, command, &bytes_read);
+    //         // track position will be updated according to how many bytes read.
+    //         event = GmidEvent_new_from_buffer(source_track->data, &track_pos, buffer_len, MIDI_IMPLEMENTATION_STANDARD, command, &bytes_read);
 
-            if (event == NULL)
-            {
-                stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: event is NULL\n", __func__, __LINE__);
-            }
+    //         if (event == NULL)
+    //         {
+    //             stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d>: event is NULL\n", __func__, __LINE__);
+    //         }
 
-            if (bytes_read == 0)
-            {
-                stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid bytes_read (0) from GmidEvent_new_from_buffer\n", __func__, __LINE__);
-            }
+    //         if (bytes_read == 0)
+    //         {
+    //             stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid bytes_read (0) from GmidEvent_new_from_buffer\n", __func__, __LINE__);
+    //         }
 
-            absolute_time += event->midi_delta_time.standard_value;
-            event->absolute_time = absolute_time;
+    //         absolute_time += event->midi_delta_time.standard_value;
+    //         event->absolute_time = absolute_time;
 
-            if (g_verbosity >= VERBOSE_DEBUG)
-            {
-                memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
-                size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
-                debug_printf_buffer[debug_str_len] = '\n';
-                fflush_string(stdout, debug_printf_buffer);
-            }
+    //         if (g_verbosity >= VERBOSE_DEBUG)
+    //         {
+    //             memset(debug_printf_buffer, 0, WRITE_BUFFER_LEN);
+    //             size_t debug_str_len = GmidEvent_to_string(event, debug_printf_buffer, WRITE_BUFFER_LEN - 2, MIDI_IMPLEMENTATION_STANDARD);
+    //             debug_printf_buffer[debug_str_len] = '\n';
+    //             fflush_string(stdout, debug_printf_buffer);
+    //         }
 
-            // Set destination track to first seen command channel.
-            if (destination_track == -1 && event->command_channel > -1)
-            {
-                destination_track = event->command_channel;
-            }
+    //         // Set destination track to first seen command channel.
+    //         if (destination_track == -1 && event->command_channel > -1)
+    //         {
+    //             destination_track = event->command_channel;
+    //         }
 
-            command = GmidEvent_get_midi_command(event);
+    //         command = GmidEvent_get_midi_command(event);
 
-            // only allow running status for the "regular" MIDI commands (commands with channels)
-            if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
-            {
-                command = 0;
-            }
+    //         // only allow running status for the "regular" MIDI commands (commands with channels)
+    //         if ((command & 0xffffff00) != 0 || (command & 0xfffffff0) >= 0xf0)
+    //         {
+    //             command = 0;
+    //         }
 
-            node = LinkedListNode_new();
-            node->data = event;
-            LinkedList_append_node(track_event_holder, node);
-        }
+    //         node = LinkedListNode_new();
+    //         node->data = event;
+    //         LinkedList_append_node(track_event_holder, node);
+    //     }
 
-        if (g_verbosity >= VERBOSE_DEBUG)
-        {
-            printf("finish parse track %d\n", source_track_index);
-        }
+    //     if (g_verbosity >= VERBOSE_DEBUG)
+    //     {
+    //         printf("finish parse track %d\n", source_track_index);
+    //     }
 
-        if (destination_track == -1)
-        {
-            fflush_printf(stderr, "destination track not resolved, assuming midi track %d\n", source_track_index);
-            destination_track = source_track_index;
-        }
+    //     if (destination_track == -1)
+    //     {
+    //         fflush_printf(stderr, "destination track not resolved, assuming midi track %d\n", source_track_index);
+    //         destination_track = source_track_index;
+    //     }
 
-        if (destination_track > CSEQ_FILE_NUM_TRACKS)
-        {
-            stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid destination_track %d resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
-        }
+    //     if (destination_track > CSEQ_FILE_NUM_TRACKS)
+    //     {
+    //         stderr_exit(EXIT_CODE_GENERAL, "%s %d>: invalid destination_track %d resolved from nth midi track %d\n", __func__, __LINE__, destination_track, source_track_index);
+    //     }
 
-        gmidi_tracks[destination_track]->midi_track_index = source_track_index;
-        gmidi_tracks[destination_track]->cseq_track_index = destination_track;
+    //     gmidi_tracks[destination_track]->midi_track_index = source_track_index;
+    //     gmidi_tracks[destination_track]->cseq_track_index = destination_track;
 
-        // now that destination track is known, move from temp list
-        // to correct track.
-        while (track_event_holder->count > 0)
-        {
-            node = track_event_holder->head;
-            LinkedListNode_move(gmidi_tracks[destination_track]->events, track_event_holder, node);
-        }
-    }
+    //     // now that destination track is known, move from temp list
+    //     // to correct track.
+    //     while (track_event_holder->count > 0)
+    //     {
+    //         node = track_event_holder->head;
+    //         LinkedListNode_move(gmidi_tracks[destination_track]->events, track_event_holder, node);
+    //     }
+    // }
 
     // All events from source midi have been added to appropriate tracks.
     // Now process each track and convert from midi to seq format.
@@ -1013,22 +1219,23 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         size_t write_len;
 
         // If no events were added to this track above, then don't processes
-        // this track. In fact, remove from list and mark as null.
-        if (gmidi_tracks[i]->events->count == 0)
+        // this track.
+        if (gmid_file->tracks[i]->events->count == 0)
         {
-            GmidTrack_free(gmidi_tracks[i]);
-            gmidi_tracks[i] = NULL;
             continue;
         }
 
+        // Transform MIDI sysex escaped cseq event into real cseq event.
+        GmidTrack_midi_sysex_to_cseq(gmid_file->tracks[i]);
+
         // Convert note-off and implicit note-off to cseq format.
         // Absolute times must be accurate in order to calculate duration.
-        GmidTrack_cseq_note_on_from_midi(gmidi_tracks[i]);
+        GmidTrack_cseq_note_on_from_midi(gmid_file->tracks[i]);
 
         // Sort events by absolute time
-        LinkedList_merge_sort(gmidi_tracks[i]->events, LinkedListNode_gmidevent_compare_smaller);
+        LinkedList_merge_sort(gmid_file->tracks[i]->events, LinkedListNode_gmidevent_compare_smaller);
 
-        GmidTrack_delta_from_absolute(gmidi_tracks[i]);
+        GmidTrack_delta_from_absolute(gmid_file->tracks[i]);
 
         /**
          * cseq2midi needed loop end to be linked to loop start to resolve
@@ -1038,24 +1245,24 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
          * start node needs to be set, and adding additional nodes will break
          * the count.
         */
-        GmidTrack_midi_to_cseq_loop(gmidi_tracks[i]);
+        GmidTrack_midi_to_cseq_loop(gmid_file->tracks[i]);
 
         // fix delta times for loop events just added.
-        GmidTrack_delta_from_absolute(gmidi_tracks[i]);
+        GmidTrack_delta_from_absolute(gmid_file->tracks[i]);
 
         // Now that delta events are correct, fix seq loop end events.
         // This calculates a byte offset to the start loop event, which
         // requires delta events be correct.
-        GmidTrack_seq_fix_loop_end_delta(gmidi_tracks[i]);
+        GmidTrack_seq_fix_loop_end_delta(gmid_file->tracks[i]);
 
-        GmidTrack_set_track_size_bytes(gmidi_tracks[i]);
+        GmidTrack_set_track_size_bytes(gmid_file->tracks[i]);
 
         // allocate memory for compressed data, add a margin of error
-        gmidi_tracks[i]->cseq_data = (uint8_t *)malloc_zero(1, gmidi_tracks[i]->cseq_track_size_bytes + 50);
+        gmid_file->tracks[i]->cseq_data = (uint8_t *)malloc_zero(1, gmid_file->tracks[i]->cseq_track_size_bytes + 50);
         
         // extract seq events to byte values and write to buffer
-        write_len = GmidTrack_write_to_cseq_buffer(gmidi_tracks[i], gmidi_tracks[i]->cseq_data, gmidi_tracks[i]->cseq_track_size_bytes + 50);
-        gmidi_tracks[i]->cseq_data_len = write_len;
+        write_len = GmidTrack_write_to_cseq_buffer(gmid_file->tracks[i], gmid_file->tracks[i]->cseq_data, gmid_file->tracks[i]->cseq_track_size_bytes + 50);
+        gmid_file->tracks[i]->cseq_data_len = write_len;
 
         /**
          * The pattern substitution algorithm can match byte patterns from previous
@@ -1066,14 +1273,14 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
          * 
          * If there is no pattern matching then
          * 1) there's no need to allocate memory for the entire compressed file.
-         * 2) gmidi_tracks[i]->cseq_data already contains unprocessed data so
+         * 2) gmid_file->tracks[i]->cseq_data already contains unprocessed data so
          *    there's nothing to do.
         */
         if (opt_pattern_substitution)
         {
             if (cseq_data_buffer == NULL)
             {
-                cseq_buffer_size = gmidi_tracks[i]->cseq_data_len;
+                cseq_buffer_size = gmid_file->tracks[i]->cseq_data_len;
                 cseq_data_buffer = (uint8_t *)malloc_zero(1, cseq_buffer_size);
             }
             else
@@ -1084,15 +1291,15 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
             }
 
             /**
-             * This will apply pattern substitution and overwrite gmidi_tracks[i]->cseq_data,
+             * This will apply pattern substitution and overwrite gmid_file->tracks[i]->cseq_data,
              * but also append the same data to cseq_data_buffer.
             */
-            GmidTrack_roll_entry(gmidi_tracks[i], cseq_data_buffer, &cseq_buffer_pos, cseq_buffer_size, options);
+            GmidTrack_roll_entry(gmid_file->tracks[i], cseq_data_buffer, &cseq_buffer_pos, cseq_buffer_size, options);
         }
     }
 
     // This combines all individual track->cseq_data into one file.
-    result = CseqFile_new_from_tracks(gmidi_tracks, CSEQ_FILE_NUM_TRACKS);
+    result = CseqFile_new_from_tracks(gmid_file->tracks, CSEQ_FILE_NUM_TRACKS);
 
     // copy division from source
     result->division = midi->division;
@@ -1109,15 +1316,17 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         }
     }
 
-    for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
-    {
-        if (gmidi_tracks[i] != NULL)
-        {
-            GmidTrack_free(gmidi_tracks[i]);
-        }
-    }
+    GmidFile_free(gmid_file);
 
-    free(gmidi_tracks);
+    // for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
+    // {
+    //     if (gmidi_tracks[i] != NULL)
+    //     {
+    //         GmidTrack_free(gmidi_tracks[i]);
+    //     }
+    // }
+
+    // free(gmidi_tracks);
     free(debug_printf_buffer);
 
     if (cseq_data_buffer != NULL)
@@ -1125,7 +1334,7 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
         free(cseq_data_buffer);
     }
 
-    LinkedList_free(track_event_holder);
+    //LinkedList_free(track_event_holder);
 
     TRACE_LEAVE(__func__)
     return result;   
@@ -2606,7 +2815,6 @@ struct GmidEvent *GmidEvent_new_from_buffer(
     // flag to indicate meta event or not.
     int read_command_values;
     int local_bytes_read;
-    int i;
     int copy_current_command = current_command;
 
     struct GmidEvent *event = NULL;
@@ -2805,8 +3013,11 @@ struct GmidEvent *GmidEvent_new_from_buffer(
 
                 // MIDI format
                 event->midi_command_len = MIDI_COMMAND_LEN_TEMPO;
-                event->midi_command_parameters_raw[0] = 3; // len
                 event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_TEMPO;
+                event->midi_command_parameters_raw[0] = 3; // len
+                event->midi_command_parameters_raw[1] = (uint8_t)((tempo >> 16) & 0xff);
+                event->midi_command_parameters_raw[2] = (uint8_t)((tempo >> 8) & 0xff);
+                event->midi_command_parameters_raw[3] = (uint8_t)((tempo >> 0) & 0xff);
                 event->midi_command_parameters[0] = 3; // len
                 event->midi_command_parameters[1] = tempo;
                 event->midi_command_parameters_len = MIDI_COMMAND_NUM_PARAM_TEMPO;
@@ -3028,6 +3239,13 @@ struct GmidEvent *GmidEvent_new_from_buffer(
             local_bytes_read++;
             escaped_command = b;
 
+            event->midi_command_parameters[0] = sysex_first;
+            event->midi_command_parameters_raw[0] = sysex_first;
+            event->midi_command_parameters[1] = sysex_check;
+            event->midi_command_parameters_raw[1] = sysex_check;
+            event->midi_command_parameters[2] = escaped_command;
+            event->midi_command_parameters_raw[2] = escaped_command;
+
             if (sysex_first != MIDI_COMMAND_BYTE_SYSEX_UNIVERSAL_NON_COMMERICIAL
                 || sysex_check != MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX)
             {
@@ -3040,8 +3258,6 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- unsupport sysex command 0x%0x%0x%0x. pos=%ld.\n", __func__, __LINE__, sysex_first, sysex_check, escaped_command, pos);
             }
 
-            // parse straight into seq loop start event
-            // mark loop event as bad.
             if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_START)
             {
                 // what is 3: two bytes for loop number, one byte for 0xf7
@@ -3050,16 +3266,20 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing system exclusive event\n", __func__, __LINE__, buffer_len);
                 }
 
-                int loop_number = 0;
+                int param_pos = 3;
+                int param_i;
+                int param_remain = 3;
+                
+                // The only thing that matters is the closing 0xf7.
+                for (param_i=0; param_i < param_remain; param_i++)
+                {
+                    b = buffer[pos++];
+                    local_bytes_read++;
+                    event->midi_command_parameters[param_pos] = b;
+                    event->midi_command_parameters_raw[param_pos] = b;
+                    param_pos++;
+                }
 
-                // parse command values (split to escape into sysex).
-                loop_number = buffer[pos++];
-                local_bytes_read++;
-                loop_number <<= 4;
-                loop_number |= buffer[pos++];
-                local_bytes_read++;
-
-                b = buffer[pos++];
                 if (b != MIDI_COMMAND_BYTE_SYSEX_END)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> gaudio sysex escape %s: expected end of sysex command 0x%0x but read '0x%x', pos=%ld.\n", __func__, __LINE__, CSEQ_COMMAND_NAME_LOOP_START, MIDI_COMMAND_BYTE_SYSEX_END, b, pos);
@@ -3070,31 +3290,25 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s: loop number %d", CSEQ_COMMAND_NAME_LOOP_START, loop_number);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s", CSEQ_COMMAND_NAME_LOOP_START);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                event->flags |= MIDI_MALFORMED_EVENT_LOOP;
-
                 // save parsed data
-                event->command = CSEQ_COMMAND_BYTE_LOOP_START_WITH_META;
+                event->command = MIDI_COMMAND_BYTE_SYSEX_START;
                 event->dual = NULL;
-                event->cseq_valid = 1;
-                event->midi_valid = 0;
+                event->cseq_valid = 0;
+                event->midi_valid = 1;
 
-                // cseq format
-                event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_START;
-                event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_START;
-                event->cseq_command_parameters[0] = loop_number;
-                event->cseq_command_parameters_raw[0] = loop_number;
-                event->cseq_command_parameters[1] = 0xff;
-                event->cseq_command_parameters_raw[1] = 0xff;
-                event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_START;
+                // MIDI: store original
 
-                // convert to MIDI format: not supported
+                event->midi_command_len = MIDI_COMMAND_LEN_SYSEX;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_START;
+                event->midi_command_parameters_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_START;
+                // paramaters set above when reading.
+
+                // cseq: not valid. Will be converted if needed.
             }
-            // parse straight into seq loop end event
-            // mark loop event as bad.
             else if (escaped_command == CSEQ_COMMAND_BYTE_LOOP_END)
             {
                 // what is 13: 12 bytes for loop seq end event, one byte for 0xf7
@@ -3103,33 +3317,20 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> exceeded buffer len %ld when parsing system exclusive event\n", __func__, __LINE__, buffer_len);
                 }
 
-                int loop_count = 0;
-                int current_loop_count = 0;
-                int32_t loop_difference = 0;
-
-                // parse command values.
-                loop_count = buffer[pos++];
-                local_bytes_read++;
-                loop_count <<= 4;
-                loop_count |= buffer[pos++];
-                local_bytes_read++;
-
-                current_loop_count = buffer[pos++];
-                local_bytes_read++;
-                current_loop_count <<= 4;
-                current_loop_count |= buffer[pos++];
-                local_bytes_read++;
-
-                for (i=0; i<7; i++)
+                int param_pos = 3;
+                int param_i;
+                int param_remain = 13;
+                
+                // The only thing that matters is the closing 0xf7.
+                for (param_i=0; param_i < param_remain; param_i++)
                 {
-                    loop_difference |= buffer[pos++];
+                    b = buffer[pos++];
                     local_bytes_read++;
-                    loop_difference <<= 4;
+                    event->midi_command_parameters[param_pos] = b;
+                    event->midi_command_parameters_raw[param_pos] = b;
+                    param_pos++;
                 }
-                loop_difference |= buffer[pos++];
-                local_bytes_read++;
-
-                b = buffer[pos++];
+                
                 if (b != MIDI_COMMAND_BYTE_SYSEX_END)
                 {
                     stderr_exit(EXIT_CODE_GENERAL, "%s %d> gaudio sysex escape %s: expected end of sysex command 0x%0x but read '0x%x', pos=%ld.\n", __func__, __LINE__, CSEQ_COMMAND_NAME_LOOP_START, MIDI_COMMAND_BYTE_SYSEX_END, b, pos);
@@ -3140,34 +3341,24 @@ struct GmidEvent *GmidEvent_new_from_buffer(
                 {
                     memset(print_buffer, 0, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN);
 
-                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s: count %d, current count %d, diff 0x%08x", CSEQ_COMMAND_NAME_LOOP_END, loop_count, current_loop_count, loop_difference);
+                    snprintf(print_buffer, MIDI_PARSE_DEBUG_PRINT_BUFFER_LEN, "gaudio sysex escape %s", CSEQ_COMMAND_NAME_LOOP_END);
                     fflush_printf(stdout, "%s\n", print_buffer);
                 }
 
-                event->flags |= MIDI_MALFORMED_EVENT_LOOP;
-
                 // save parsed data
-                event->command = CSEQ_COMMAND_BYTE_LOOP_END_WITH_META;
+                event->command = MIDI_COMMAND_BYTE_SYSEX_START;
                 event->dual = NULL;
-                event->cseq_valid = 1;
-                event->midi_valid = 0;
+                event->cseq_valid = 0;
+                event->midi_valid = 1;
 
-                // cseq format
-                event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_END;
-                event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
-                event->cseq_command_parameters[0] = loop_count;
-                event->cseq_command_parameters[1] = current_loop_count;
-                event->cseq_command_parameters[2] = loop_difference;
-                event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_END;
+                // MIDI: store original
 
-                event->cseq_command_parameters_raw[0] = loop_count;
-                event->cseq_command_parameters_raw[1] = current_loop_count;
-                event->cseq_command_parameters_raw[2] = (loop_difference >> 24) & 0xff;
-                event->cseq_command_parameters_raw[3] = (loop_difference >> 16) & 0xff;
-                event->cseq_command_parameters_raw[4] = (loop_difference >> 8) & 0xff;
-                event->cseq_command_parameters_raw[5] = (loop_difference >> 0) & 0xff;
+                event->midi_command_len = MIDI_COMMAND_LEN_SYSEX;
+                event->midi_command_parameters_raw_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END;
+                event->midi_command_parameters_len = MIDI_COMMAND_PARAM_BYTE_SYSEX_SEQ_LOOP_END;
+                // paramaters set above when reading.
 
-                // convert to MIDI format: not supported
+                // cseq: not valid. Will be converted if needed.
             }
         }
         else if (b == CSEQ_COMMAND_BYTE_PATTERN && buffer_type == MIDI_IMPLEMENTATION_SEQ)
@@ -4555,6 +4746,143 @@ void GmidTrack_invalid_cseq_loop_to_sysex(struct GmidTrack *gtrack, int no_creat
     TRACE_LEAVE(__func__)
 }
 
+// TODO: doc
+void GmidTrack_midi_sysex_to_cseq(struct GmidTrack *gtrack)
+{
+    TRACE_ENTER(__func__)
+
+    if (gtrack == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gtrack is NULL\n", __func__, __LINE__);
+    }
+
+    struct LinkedListNode *node;
+    struct LinkedListNode *new_node;
+    struct GmidEvent *event;
+    struct GmidEvent *new_event;
+    int pos;
+    int i;
+
+    node = gtrack->events->head;
+    while (node != NULL)
+    {
+        event = (struct GmidEvent *)node->data;
+        if (event != NULL
+            // Only evaluate events marked as valid.
+            && event->midi_valid == 1
+            // and sysex event
+            && event->command == MIDI_COMMAND_BYTE_SYSEX_START)
+        {
+            /**
+             * The event was previoulsy parsed, so it is assumed the [0] byte is 0xd7,
+             * the [1] byte is MIDI_COMMAND_BYTE_SYSEX_GAUDIO_PREFIX,
+             * and [2] byte is the start of a cseq event
+            */
+
+            if (event->midi_command_parameters_raw[2] == CSEQ_COMMAND_BYTE_LOOP_START)
+            {
+                int loop_number = 0;
+
+                pos = 3;
+                loop_number = event->midi_command_parameters_raw[pos++];
+                loop_number <<= 4;
+                loop_number |= event->midi_command_parameters_raw[pos++];
+
+                new_event = GmidEvent_new();
+
+                new_event->absolute_time = event->absolute_time;
+                VarLengthInt_copy(&new_event->cseq_delta_time, &event->cseq_delta_time);
+                VarLengthInt_copy(&new_event->midi_delta_time, &event->midi_delta_time);
+
+                new_event->flags |= MIDI_MALFORMED_EVENT_LOOP;
+
+                new_event->command = CSEQ_COMMAND_BYTE_LOOP_START_WITH_META;
+                new_event->dual = NULL;
+                new_event->cseq_valid = 1;
+                new_event->midi_valid = 0;
+
+                // cseq format
+                new_event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_START;
+                new_event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_START;
+                new_event->cseq_command_parameters[0] = loop_number;
+                new_event->cseq_command_parameters_raw[0] = loop_number;
+                new_event->cseq_command_parameters[1] = 0xff;
+                new_event->cseq_command_parameters_raw[1] = 0xff;
+                new_event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_START;
+
+                // insert in event list, before corresponding sysex event.
+                new_node = LinkedListNode_new();
+                new_node->data = new_event;
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
+            }
+            else if (event->midi_command_parameters_raw[2] == CSEQ_COMMAND_BYTE_LOOP_END)
+            {
+                int loop_count = 0;
+                int current_loop_count = 0;
+                int32_t loop_difference = 0;
+
+                pos = 3;
+                loop_count = event->midi_command_parameters_raw[pos++];
+                loop_count <<= 4;
+                loop_count |= event->midi_command_parameters_raw[pos++];
+
+                current_loop_count = event->midi_command_parameters_raw[pos++];
+                current_loop_count <<= 4;
+                current_loop_count |= event->midi_command_parameters_raw[pos++];
+
+                for (i=0; i<7; i++)
+                {
+                    loop_difference |= event->midi_command_parameters_raw[pos++];
+                    loop_difference <<= 4;
+                }
+                loop_difference |= event->midi_command_parameters_raw[pos++];
+
+                new_event = GmidEvent_new();
+
+                new_event->absolute_time = event->absolute_time;
+                VarLengthInt_copy(&new_event->cseq_delta_time, &event->cseq_delta_time);
+                VarLengthInt_copy(&new_event->midi_delta_time, &event->midi_delta_time);
+
+                new_event->flags |= MIDI_MALFORMED_EVENT_LOOP;
+
+                // save parsed data
+                new_event->command = CSEQ_COMMAND_BYTE_LOOP_END_WITH_META;
+                new_event->dual = NULL;
+                new_event->cseq_valid = 1;
+                new_event->midi_valid = 0;
+
+                // cseq format
+                new_event->cseq_command_len = CSEQ_COMMAND_LEN_LOOP_END;
+                new_event->cseq_command_parameters_raw_len = CSEQ_COMMAND_PARAM_BYTE_LOOP_END;
+                new_event->cseq_command_parameters[0] = loop_count;
+                new_event->cseq_command_parameters[1] = current_loop_count;
+                new_event->cseq_command_parameters[2] = loop_difference;
+                new_event->cseq_command_parameters_len = CSEQ_COMMAND_NUM_PARAM_LOOP_END;
+
+                new_event->cseq_command_parameters_raw[0] = loop_count;
+                new_event->cseq_command_parameters_raw[1] = current_loop_count;
+                new_event->cseq_command_parameters_raw[2] = (loop_difference >> 24) & 0xff;
+                new_event->cseq_command_parameters_raw[3] = (loop_difference >> 16) & 0xff;
+                new_event->cseq_command_parameters_raw[4] = (loop_difference >> 8) & 0xff;
+                new_event->cseq_command_parameters_raw[5] = (loop_difference >> 0) & 0xff;
+
+                // insert in event list, before corresponding sysex event.
+                new_node = LinkedListNode_new();
+                new_node->data = new_event;
+                LinkedListNode_insert_before(gtrack->events, node, new_node);
+            }
+            else
+            {
+                stderr_exit(EXIT_CODE_GENERAL, "%s %d> parse error -- unsupport sysex command 0x%0x%0x%0x.\n", __func__, __LINE__, event->midi_command_parameters_raw[0], event->midi_command_parameters_raw[1], event->midi_command_parameters_raw[2]);
+            }
+        }
+
+        node = node->next;
+    }
+
+    TRACE_LEAVE(__func__)
+}
+
 /**
  * This iterates the event list and each seq loop start/end event
  * is used to create a new standard MIDI, controller non-standard
@@ -5834,6 +6162,137 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * 
+*/
+struct MidiFile *MidiFile_transform_set_channel_instrument(struct MidiFile *midi_file, int existing_channel, int new_instrument)
+{
+    TRACE_ENTER(__func__)
+
+    if (midi_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> midi_file is NULL\n", __func__, __LINE__);
+    }
+
+    struct GmidFile *gmid_file = GmidFile_new_from_midi(midi_file);
+
+    GmidFile_transform_set_channel_instrument(gmid_file, existing_channel, new_instrument);
+
+    struct MidiFile *result = MidiFile_new_from_gmid(gmid_file);
+
+    result->division = midi_file->division;
+
+    TRACE_LEAVE(__func__)
+    return result;
+}
+
+void GmidFile_transform_set_channel_instrument(struct GmidFile *gmid_file, int existing_channel, int new_instrument)
+{
+    TRACE_ENTER(__func__)
+
+    if (gmid_file == NULL)
+    {
+        stderr_exit(EXIT_CODE_NULL_REFERENCE_EXCEPTION, "%s %d> gmid_file is NULL\n", __func__, __LINE__);
+    }
+
+    int i;
+
+    for (i=0; i<gmid_file->num_tracks; i++)
+    {
+        if (gmid_file->tracks[i] != NULL
+            && gmid_file->tracks[i]->events != NULL
+            && gmid_file->tracks[i]->events->count > 0)
+        {
+            struct GmidEvent *event;
+            struct LinkedListNode *node;
+
+            node = gmid_file->tracks[i]->events->head;
+            while (node != NULL)
+            {
+                event = (struct GmidEvent *)node->data;
+                if (event != NULL
+                    && event->midi_valid)
+                {
+                    if (event->command == MIDI_COMMAND_BYTE_PROGRAM_CHANGE
+                        && event->command_channel == existing_channel)
+                    {
+                        if (g_verbosity >= 1)
+                        {
+                            printf("Changing MIDI \"%s\" event in track index %d, from %d to %d\n", MIDI_COMMAND_NAME_PROGRAM_CHANGE, gmid_file->tracks[i]->midi_track_index, event->midi_command_parameters[0], new_instrument);
+                        }
+
+                        event->midi_command_parameters[0] = new_instrument;
+                    }
+                }
+                node = node->next;
+            }
+        }
+    }
+    
+
+    TRACE_LEAVE(__func__)
+}
+
+/**
+ * Allocates memory for GmidFile, and instantiates 16 child tracks.
+ * @returns: pointer to new object.
+*/
+struct GmidFile *GmidFile_new()
+{
+    TRACE_ENTER(__func__)
+    int i;
+
+    struct GmidFile *gmid_file = (struct GmidFile *)malloc_zero(1, sizeof(struct GmidFile));
+
+    gmid_file->tracks = (struct GmidTrack **)malloc_zero(CSEQ_FILE_NUM_TRACKS, sizeof(struct GmidTrack *));
+
+    for (i=0; i<CSEQ_FILE_NUM_TRACKS; i++)
+    {
+        gmid_file->tracks[i] = GmidTrack_new();
+    }
+
+    gmid_file->num_tracks = CSEQ_FILE_NUM_TRACKS;
+
+    TRACE_LEAVE(__func__)
+    return gmid_file;
+}
+
+/**
+ * Free memory associated to GmidFile and all child objects.
+ * @param gmid_file: object to free.
+*/
+void GmidFile_free(struct GmidFile *gmid_file)
+{
+    TRACE_ENTER(__func__)
+    int i;
+
+    if (gmid_file == NULL)
+    {
+        return;
+        TRACE_LEAVE(__func__)
+    }
+
+    if (gmid_file->tracks != NULL)
+    {
+        for (i=0; i<gmid_file->num_tracks; i++)
+        {
+            if (gmid_file->tracks[i] != NULL)
+            {
+                GmidTrack_free(gmid_file->tracks[i]);
+                gmid_file->tracks[i] = NULL;
+            }
+        }
+
+        gmid_file->num_tracks = 0;
+
+        free(gmid_file->tracks);
+        gmid_file->tracks = NULL;
+    }
+
+    free(gmid_file);
+    
+    TRACE_LEAVE(__func__)
+}
 
 /**
  * Calculates the number of bytes adjusted between start and end track position

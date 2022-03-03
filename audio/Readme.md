@@ -12,6 +12,7 @@ These tools were written for a Linux based operating system.
 - **cseq2midi**: Convert from N64 MIDI format to standard MIDI
 - **gic**: Gaudio instrument compiler. Build .ctl and .tbl from .inst file and source .aifc files.
 - **midi2cseq**: Convert from standard MIDI to N64 MIDI format
+- **miditools**: Adjust events within MIDI file
 - **sbksplit**: Parse single .sbk file and split into separate .seq.rz files (no gzip decompression performed)
 - **sbc**: Compile existing gzip music tracks (.seq.rz) into single .sbk
 - **tabledesign**: Evaulate audio file and build .aifc codebook
