@@ -337,6 +337,7 @@ struct MidiTrack *MidiTrack_new(int32_t track_index)
 
 /**
  * Allocates memory for a {@code struct MidiFile}.
+ * Tracks pointer remains unallocated.
  * @param format: MIDI file format.
  * @returns: pointer to new object.
 */
@@ -381,7 +382,7 @@ struct MidiFile *MidiFile_new_tracks(int format, int num_tracks)
 /**
  * Allocates memory for a {@code struct MidiFile}.
  * Reads entire file and loads the contents into the new {@code struct MidiFile}.
- * Tracks are allocated and added to file container.
+ * Tracks are allocated and bytes are copied to file container.
  * Tracks remain unprocesed.
  * @returns: pointer to new object.
 */
@@ -648,6 +649,12 @@ struct MidiTrack *MidiTrack_new_from_GmidTrack(struct GmidTrack *gtrack)
     return p;
 }
 
+/**
+ * Creates new {@code struct MidiFile} from {@code struct GmidFile}.
+ * Each track with data is added to the MIDI file through {@code MidiTrack_new_from_GmidTrack}.
+ * @param gmid_file: source container.
+ * @returns: pointer to new MIDI container.
+*/
 struct MidiFile *MidiFile_new_from_gmid(struct GmidFile *gmid_file)
 {
     TRACE_ENTER(__func__)
@@ -693,6 +700,14 @@ struct MidiFile *MidiFile_new_from_gmid(struct GmidFile *gmid_file)
     return midi;
 }
 
+/**
+ * Create a new gaudio MIDI container by parsing the contents of a MIDI file.
+ * @param midi: MIDI source file.
+ * @param force_track: When true, assumes that the source track number should
+ * be the same as the track index. When false, will attempt to determine
+ * the track number by looking for channel in events parsed from the track.
+ * @returns: Pointer to new container.
+*/
 struct GmidFile *GmidFile_new_from_midi(struct MidiFile *midi, int force_track)
 {
     TRACE_ENTER(__func__)
@@ -4173,6 +4188,8 @@ void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack)
 
 /**
  * This iterates the event list and tallies the expected file size in bytes.
+ * {@code struct GmidTrack.cseq_track_size_bytes} and {@code struct GmidTrack.midi_track_size_bytes}
+ * are updated accordingly.
  * @param gtrack: track to update.
 */
 void GmidTrack_set_track_size_bytes(struct GmidTrack *gtrack)
@@ -5328,7 +5345,7 @@ void midi_controller_to_name(int controller, char *result, size_t max_length)
 }
 
 /**
- * Converts note id to text name.
+ * Converts MIDI note id to text name.
  * @param note: id of note.
  * @param result: out parameter, will contain text result. Must be previously allocated.
  * @param max_length: max string length of {@code result}.
@@ -5681,7 +5698,8 @@ size_t GmidTrack_write_to_midi_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
  * in seq format. This is writing the track data without the track header.
  * This updates {@code file_offset} to position written within the track.
  * Events list must have been previously populated.
- * No pattern substition (compression) occurs.
+ * No pattern substition (compression) occurs, that should be handled after
+ * calling this method.
  * @param gtrack: track to convert.
  * @param buffer: buffer to write to. Must be previously allocated.
  * @param max_len: size in bytes of the buffer.
@@ -5766,7 +5784,8 @@ size_t GmidTrack_write_to_cseq_buffer(struct GmidTrack *gtrack, uint8_t *buffer,
 }
 
 /**
- * Writes the MIDI track to disk.
+ * Writes the MIDI track to disk. The {@code track->data} must
+ * have been previously processed.
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
@@ -5794,6 +5813,7 @@ void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi)
 
 /**
  * Writes the full {@code struct MidiFile} to disk, and all child elements.
+ * All tracks must have been previously processed before calling this method.
  * @param midi_file: MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
@@ -5829,6 +5849,7 @@ void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi)
 
 /**
  * Writes the full {@code struct CseqFile} to disk, and all child elements.
+ * All tracks must have been previously processed before calling this method.
  * @param cseq: Compressed N64 MIDI to write.
  * @param fi: File handle to write to, using current offset.
 */
@@ -5863,7 +5884,7 @@ void CseqFile_fwrite(struct CseqFile *cseq, struct FileInfo *fi)
  * @param event: event to write.
  * @param buffer: buffer to write into.
  * @param buffer_len: size of buffer in bytes.
- * @param type: which values of event to retrieve.
+ * @param type: Which values of event to retrieve, either MIDI or seq.
  * @returns: size of string, without '\0' terminator.
 */
 size_t GmidEvent_to_string(struct GmidEvent *event, char *buffer, size_t bufer_len, enum MIDI_IMPLEMENTATION type)
@@ -6027,7 +6048,14 @@ void MidiConvertOptions_free(struct MidiConvertOptions *options)
     TRACE_LEAVE(__func__)
 }
 
-
+/**
+ * Top level entry point.
+ * Will force events that specify a channel number to be the same as the track index.
+ * This parses the file into a new container, alters the contents, and returns the
+ * new container.
+ * @param midi_file: source file to transform.
+ * @returns: Pointer to new file.
+*/
 struct MidiFile *MidiFile_transform_make_channel_track(struct MidiFile *midi_file)
 {
     TRACE_ENTER(__func__)
@@ -6049,6 +6077,17 @@ struct MidiFile *MidiFile_transform_make_channel_track(struct MidiFile *midi_fil
     return result;
 }
 
+/**
+ * Top level entry point.
+ * This searches for a MIDI Program Change event for a specific channel. When
+ * found will adjust the instrument value to the one specified.
+ * This parses the file into a new container, alters the contents, and returns the
+ * new container.
+ * @param midi_file: source file to transform.
+ * @param existing_channel: Channel of event to search for.
+ * @param new_instrument: Instrument value to use in Program Change event.
+ * @returns: Pointer to new file.
+*/
 struct MidiFile *MidiFile_transform_set_channel_instrument(struct MidiFile *midi_file, int existing_channel, int new_instrument)
 {
     TRACE_ENTER(__func__)
@@ -6070,6 +6109,17 @@ struct MidiFile *MidiFile_transform_set_channel_instrument(struct MidiFile *midi
     return result;
 }
 
+/**
+ * Top level entry point.
+ * This looks for any of the non-standard MIDI loop event markers with the specified
+ * loop number and removes them from the track.
+ * This parses the file into a new container, alters the contents, and returns the
+ * new container.
+ * @param midi_file: source file to transform.
+ * @param loop_number: Loop number to search for.
+ * @param track: Track number of event to search for.
+ * @returns: Pointer to new file.
+*/
 struct MidiFile *MidiFile_transform_remove_loop(struct MidiFile *midi_file, int loop_number, int track)
 {
     TRACE_ENTER(__func__)
@@ -6091,6 +6141,18 @@ struct MidiFile *MidiFile_transform_remove_loop(struct MidiFile *midi_file, int 
     return result;
 }
 
+/**
+ * Top level entry point.
+ * This is the "easy" add loop method. It will create a non-standard MIDI loop start
+ * and count event before the first Note On, and a loop end event after the last
+ * Note Off (or implicit Note Off) event.
+ * This parses the file into a new container, alters the contents, and returns the
+ * new container.
+ * @param midi_file: source file to transform.
+ * @param loop_number: Loop number to create.
+ * @param track: Track number to add loop to.
+ * @returns: Pointer to new file.
+*/
 struct MidiFile *MidiFile_transform_add_note_loop(struct MidiFile *midi_file, int loop_number, int track)
 {
     TRACE_ENTER(__func__)
@@ -6112,6 +6174,13 @@ struct MidiFile *MidiFile_transform_add_note_loop(struct MidiFile *midi_file, in
     return result;
 }
 
+/**
+ * Convenience method to parse MIDI file and print events to stdout.
+ * @param midi_file: source file to parse.
+ * @param parse_track_arg: Controls which tracks are parsed. If this is equal to -1,
+ * all tracks are parsed. Otherwise, this will search for a matching track index and
+ * only parse that single track.
+*/
 void MidiFile_parse(struct MidiFile *midi_file, int parse_track_arg)
 {
     TRACE_ENTER(__func__)
@@ -6161,6 +6230,11 @@ void MidiFile_parse(struct MidiFile *midi_file, int parse_track_arg)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Common format entry point.
+ * Will force events that specify a channel number to be the same as the track index.
+ * @param gmid_file: source file to transform.
+*/
 void GmidFile_transform_make_channel_track(struct GmidFile *gmid_file)
 {
     TRACE_ENTER(__func__)
@@ -6198,6 +6272,14 @@ void GmidFile_transform_make_channel_track(struct GmidFile *gmid_file)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Common format entry point.
+ * This searches for a MIDI Program Change event for a specific channel. When
+ * found will adjust the instrument value to the one specified.
+ * @param gmid_file: source file to transform.
+ * @param existing_channel: Channel of event to search for.
+ * @param new_instrument: Instrument value to use in Program Change event.
+*/
 void GmidFile_transform_set_channel_instrument(struct GmidFile *gmid_file, int existing_channel, int new_instrument)
 {
     TRACE_ENTER(__func__)
@@ -6245,6 +6327,15 @@ void GmidFile_transform_set_channel_instrument(struct GmidFile *gmid_file, int e
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Common format entry point.
+ * This is the "easy" add loop method. It will create a non-standard MIDI loop start
+ * and count event before the first Note On, and a loop end event after the last
+ * Note Off (or implicit Note Off) event.
+ * @param gmid_file: source file to transform.
+ * @param loop_number: Loop number to create.
+ * @param track: Track number to add loop to.
+*/
 void GmidFile_transform_add_note_loop(struct GmidFile *gmid_file, int loop_number, int track)
 {
     TRACE_ENTER(__func__)
@@ -6336,7 +6427,7 @@ void GmidFile_transform_add_note_loop(struct GmidFile *gmid_file, int loop_numbe
                     midi_start_event->absolute_time = event->absolute_time;
                     midi_count_event->absolute_time = event->absolute_time; // same as start
 
-                    if (g_verbosity >= VERBOSE_DEBUG)
+                    if (g_verbosity >= 1)
                     {
                         printf("creating loop %d start event at abs time %ld\n", loop_number, event->absolute_time);
                     }
@@ -6393,7 +6484,7 @@ void GmidFile_transform_add_note_loop(struct GmidFile *gmid_file, int loop_numbe
                     // set absolute times
                     midi_end_event->absolute_time = event->absolute_time;
 
-                    if (g_verbosity >= VERBOSE_DEBUG)
+                    if (g_verbosity >= 1)
                     {
                         printf("creating loop %d end event at abs time %ld\n", loop_number, event->absolute_time);
                     }
@@ -6430,6 +6521,14 @@ void GmidFile_transform_add_note_loop(struct GmidFile *gmid_file, int loop_numbe
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Common format entry point.
+ * This looks for any of the non-standard MIDI loop event markers with the specified
+ * loop number and removes them from the track.
+ * @param gmid_file: source file to transform.
+ * @param loop_number: Loop number to search for.
+ * @param track: Track number of event to search for.
+*/
 void GmidFile_transform_remove_loop(struct GmidFile *gmid_file, int loop_number, int track)
 {
     TRACE_ENTER(__func__)
@@ -6450,7 +6549,6 @@ void GmidFile_transform_remove_loop(struct GmidFile *gmid_file, int loop_number,
         node = gmid_file->tracks[track]->events->head;
         while (node != NULL)
         {
-            
             struct LinkedListNode *next_node = node->next;
 
             event = (struct GmidEvent *)node->data;
@@ -6461,21 +6559,46 @@ void GmidFile_transform_remove_loop(struct GmidFile *gmid_file, int loop_number,
                     && (
                         event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_START
                         || event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_END
-                        || event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_COUNT_0
-                        || event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_COUNT_128
                     )
+                    && event->midi_command_parameters[1] == loop_number
                 )
                 {
+                    int is_start = (event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_START);
+
                     delete_count++;
                     GmidTrack_delete_event(gmid_file->tracks[track], node);
                     LinkedListNode_free(gmid_file->tracks[track]->events, node);
+
+                    // If this is a start node, check if the following node is a count node.
+                    // If so, assume this is for the same loop.
+                    node = next_node;
+                    if (is_start && node != NULL)
+                    {
+                        event = (struct GmidEvent *)node->data;
+                        if (event != NULL
+                            && event->midi_valid)
+                        {
+                            if (event->command == MIDI_COMMAND_BYTE_CONTROL_CHANGE
+                                && (event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_COUNT_0
+                                    || event->midi_command_parameters[0] == MIDI_CONTROLLER_LOOP_COUNT_128
+                                )
+                            )
+                            {
+                                next_node = node->next;
+
+                                delete_count++;
+                                GmidTrack_delete_event(gmid_file->tracks[track], node);
+                                LinkedListNode_free(gmid_file->tracks[track]->events, node);
+                            }
+                        }
+                    }
                 }
             }
             node = next_node;
         }
     }
 
-    if (g_verbosity >= VERBOSE_DEBUG)
+    if (g_verbosity >= 1)
     {
         printf("Found %d events to remove from track %d\n", delete_count, track);
     }
@@ -6483,6 +6606,15 @@ void GmidFile_transform_remove_loop(struct GmidFile *gmid_file, int loop_number,
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Helper method to delete an event from a track.
+ * This will carry forward the delta time of the event to the next node for both
+ * MIDI and seq.
+ * This frees memory allocated to event.
+ * This will adjust {@code gtrack->midi_track_size_bytes} and {@code gtrack->cseq_track_size_bytes}.
+ * @param gtrack: Track to remove event from.
+ * @param node: Node containing event to remove.
+*/
 void GmidTrack_delete_event(struct GmidTrack *gtrack, struct LinkedListNode *node)
 {
     TRACE_ENTER(__func__)
@@ -6674,6 +6806,10 @@ static int measure_unroll_adjust(struct LinkedList *patterns, int start_pos, int
     return result;
 }
 
+/**
+ * Allocates memory for a new {@code struct SeqPatternMatch}.
+ * @returns: pointer to new object.
+*/
 static struct SeqPatternMatch *SeqPatternMatch_new(void)
 {
     TRACE_ENTER(__func__)
@@ -6684,6 +6820,14 @@ static struct SeqPatternMatch *SeqPatternMatch_new(void)
     return result;
 }
 
+/**
+ * Allocates memory for a new {@code struct SeqPatternMatch} and
+ * sets standard values.
+ * @param start_pattern_pos: Start position.
+ * @param diff: Difference from pattern to bytes referenced.
+ * @param pattern_length: Length in bytes of pattern.
+ * @returns: pointer to new object.
+*/
 static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos, int diff, int pattern_length)
 {
     TRACE_ENTER(__func__)
@@ -6697,6 +6841,10 @@ static struct SeqPatternMatch *SeqPatternMatch_new_values(int start_pattern_pos,
     return result;
 }
 
+/**
+ * Frees memory allocated to object.
+ * @param obj: Object to free.
+*/
 static void SeqPatternMatch_free(struct SeqPatternMatch *obj)
 {
     TRACE_ENTER(__func__)
@@ -6709,6 +6857,11 @@ static void SeqPatternMatch_free(struct SeqPatternMatch *obj)
     TRACE_LEAVE(__func__)
 }
 
+/**
+ * Debug filtered method to print all events in a track.
+ * @param track: Track to print events for.
+ * @param type: Type of events to print (MIDI or seq).
+*/
 static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTATION type)
 {
     TRACE_ENTER(__func__)
@@ -6749,7 +6902,13 @@ static void GmidTrack_debug_print(struct GmidTrack *track, enum MIDI_IMPLEMENTAT
     TRACE_LEAVE(__func__)
 }
 
-// non-debug version
+/**
+ * Method to print all events in a track, ignores {@code g_verbosity} and
+ * prints to stdout.
+ * This is the end-user friendly version called by miditool.
+ * @param track: Track to print events for.
+ * @param type: Type of events to print (MIDI or seq).
+*/
 static void GmidTrack_print(struct GmidTrack *track, enum MIDI_IMPLEMENTATION type)
 {
     TRACE_ENTER(__func__)

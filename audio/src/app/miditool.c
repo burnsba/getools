@@ -136,6 +136,7 @@ void print_help(const char * invoke)
     printf("                                  --track\n");
     printf("    make-channel-track            Set any event channel to the same as the track number.\n");
     printf("    remove-loop                   Remove loop with specified loop number. Parameters used:\n");
+    printf("                                  --track\n");
     printf("                                  --loop-number\n");
     printf("    add-note-loop                 Creates a new loop, starting before the first Note On, and\n");
     printf("                                  ending after the last Note Off of the track. Parameters used:\n");
