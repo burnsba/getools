@@ -308,6 +308,9 @@ void LinkedListNode_detach(struct LinkedList *root, struct LinkedListNode *node)
         }
     }
 
+    node->next = NULL;
+    node->prev = NULL;
+
     TRACE_LEAVE(__func__)
 }
 

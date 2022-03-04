@@ -674,13 +674,20 @@ void MidiTrack_free(struct MidiTrack *track);
 void MidiFile_free(struct MidiFile *midi);
 void MidiTrack_fwrite(struct MidiTrack *track, struct FileInfo *fi);
 void MidiFile_fwrite(struct MidiFile *midi_file, struct FileInfo *fi);
+void MidiFile_parse(struct MidiFile *midi_file, int parse_track_arg);
 
 struct MidiFile *MidiFile_transform_set_channel_instrument(struct MidiFile *midi_file, int existing_channel, int new_instrument);
 void GmidFile_transform_set_channel_instrument(struct GmidFile *gmid_file, int existing_channel, int new_instrument);
+struct MidiFile *MidiFile_transform_make_channel_track(struct MidiFile *midi_file);
+void GmidFile_transform_make_channel_track(struct GmidFile *gmid_file);
+struct MidiFile *MidiFile_transform_remove_loop(struct MidiFile *midi_file, int loop_number, int track);
+void GmidFile_transform_remove_loop(struct GmidFile *gmid_file, int loop_number, int track);
+struct MidiFile *MidiFile_transform_add_note_loop(struct MidiFile *midi_file, int loop_number, int track);
+void GmidFile_transform_add_note_loop(struct GmidFile *gmid_file, int loop_number, int track);
 
 // common (GmidFile, GmidTrack, GmidEvent) declarations
 
-struct GmidFile *GmidFile_new_from_midi(struct MidiFile *midi);
+struct GmidFile *GmidFile_new_from_midi(struct MidiFile *midi, int force_track);
 struct GmidFile *GmidFile_new(void);
 void GmidFile_free(struct GmidFile *gmid_file);
 
@@ -717,6 +724,7 @@ void GmidTrack_roll_apply_patterns(struct GmidTrack *gtrack, uint8_t *write_buff
 void GmidTrack_get_pattern_matches_file(struct MidiConvertOptions *options, struct LinkedList *matches);
 int where_SeqPatternMatch_is_track(struct LinkedListNode *node, int arg1);
 void GmidTrack_seq_fix_loop_end_delta(struct GmidTrack *gtrack);
+void GmidTrack_delete_event(struct GmidTrack *gtrack, struct LinkedListNode *node);
 
 // options
 
