@@ -617,7 +617,21 @@ void ALKeyMap_add_parent(struct ALKeyMap *keymap, struct ALSound *parent)
         keymap->parents = LinkedList_new();
     }
 
-    struct LinkedListNode *node = LinkedListNode_new();
+    struct LinkedListNode *node;
+
+    node = keymap->parents->head;
+    while (node != NULL)
+    {
+        if (node->data == parent)
+        {
+            TRACE_LEAVE(__func__)
+            return;
+        }
+
+        node = node->next;
+    }
+
+    node = LinkedListNode_new();
     node->data = parent;
 
     LinkedList_append_node(keymap->parents, node);
@@ -649,7 +663,21 @@ void ALEnvelope_add_parent(struct ALEnvelope *envelope, struct ALSound *parent)
         envelope->parents = LinkedList_new();
     }
 
-    struct LinkedListNode *node = LinkedListNode_new();
+    struct LinkedListNode *node;
+
+    node = envelope->parents->head;
+    while (node != NULL)
+    {
+        if (node->data == parent)
+        {
+            TRACE_LEAVE(__func__)
+            return;
+        }
+
+        node = node->next;
+    }
+
+    node = LinkedListNode_new();
     node->data = parent;
 
     LinkedList_append_node(envelope->parents, node);
@@ -681,7 +709,21 @@ void ALWaveTable_add_parent(struct ALWaveTable *wavetable, struct ALSound *paren
         wavetable->parents = LinkedList_new();
     }
 
-    struct LinkedListNode *node = LinkedListNode_new();
+    struct LinkedListNode *node;
+
+    node = wavetable->parents->head;
+    while (node != NULL)
+    {
+        if (node->data == parent)
+        {
+            TRACE_LEAVE(__func__)
+            return;
+        }
+
+        node = node->next;
+    }
+
+    node = LinkedListNode_new();
     node->data = parent;
 
     LinkedList_append_node(wavetable->parents, node);
@@ -713,7 +755,21 @@ void ALSound_add_parent(struct ALSound *sound, struct ALInstrument *parent)
         sound->parents = LinkedList_new();
     }
 
-    struct LinkedListNode *node = LinkedListNode_new();
+    struct LinkedListNode *node;
+
+    node = sound->parents->head;
+    while (node != NULL)
+    {
+        if (node->data == parent)
+        {
+            TRACE_LEAVE(__func__)
+            return;
+        }
+
+        node = node->next;
+    }
+
+    node = LinkedListNode_new();
     node->data = parent;
 
     LinkedList_append_node(sound->parents, node);
@@ -745,7 +801,21 @@ void ALInstrument_add_parent(struct ALInstrument *instrument, struct ALBank *par
         instrument->parents = LinkedList_new();
     }
 
-    struct LinkedListNode *node = LinkedListNode_new();
+    struct LinkedListNode *node;
+
+    node = instrument->parents->head;
+    while (node != NULL)
+    {
+        if (node->data == parent)
+        {
+            TRACE_LEAVE(__func__)
+            return;
+        }
+
+        node = node->next;
+    }
+
+    node = LinkedListNode_new();
     node->data = parent;
 
     LinkedList_append_node(instrument->parents, node);

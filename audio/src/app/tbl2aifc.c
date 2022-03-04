@@ -75,7 +75,6 @@ static struct option long_options[] =
     {"dir",    required_argument,               NULL,  'd' },
     {"prefix", required_argument,               NULL,  'p' },
     {"inst",   required_argument,               NULL,   LONG_OPT_INST  },
-    {"mode",   required_argument,               NULL,   'm'  },
     {"no-aifc",      no_argument,     &generate_aifc,   LONG_OPT_NO_AIFC  },
     {"no-inst",      no_argument,     &generate_inst,   LONG_OPT_NO_INST  },
     {"quiet",        no_argument,               NULL,  'q' },
@@ -111,8 +110,6 @@ void print_help(const char * invoke)
     printf("    -p,--prefix=STRING            string to prepend to output aifc files.\n");
     printf("                                  Default=%s\n", DEFAULT_FILENAME_PREFIX);
     printf("    --inst=FILE                   output .inst filename. Default=%s\n", DEFAULT_INST_FILENAME);
-    printf("    -m,--mode=X                   .inst file output mode. Supported options: %s\n", SUPPORTTED_OUTPUT_MODE);
-    printf("                                  Default=s\n");
     printf("    --no-aifc                     don't generate .aifc files\n");
     printf("    --no-inst                     don't generate .inst file\n");
     printf("    -n,--names=FILE               sound names. One name per line. Lines starting with # ignored.\n");
@@ -134,7 +131,7 @@ void read_opts(int argc, char **argv)
     int ch;
     int str_len;
 
-    while ((ch = getopt_long(argc, argv, "c:t:d:p:m:n:qv", long_options, &option_index)) != -1)
+    while ((ch = getopt_long(argc, argv, "c:t:d:p:n:qv", long_options, &option_index)) != -1)
     {
         switch (ch)
         {
@@ -252,33 +249,6 @@ void read_opts(int argc, char **argv)
             case 'v':
                 g_verbosity = 2;
                 break;
-
-            case 'm':
-            {
-                opt_output_mode = 1;
-
-                g_output_mode = -1;
-
-                if (optarg != NULL)
-                {
-                    if (optarg[0] == 's' || optarg[0] == 'S')
-                    {
-                        g_output_mode = OUTPUT_MODE_SFX;
-                    }
-                    else if (optarg[0] == 'm' || optarg[0] == 'M')
-                    {
-                        g_output_mode = OUTPUT_MODE_MUSIC;
-                    }
-                }
-
-                if (g_output_mode == -1)
-                {
-                    fflush_printf(stderr, "invalid output mode %s\n", optarg);
-                    print_help(argv[0]);
-                    exit(0);
-                }
-            }
-            break;
 
             case LONG_OPT_INST:
             {
@@ -459,7 +429,6 @@ int main(int argc, char **argv)
         printf("opt_user_filename_prefix: %d\n", opt_user_filename_prefix);
         printf("opt_inst_file: %d\n", opt_inst_file);
         printf("opt_output_mode: %d\n", opt_output_mode);
-        printf("g_output_mode: %d\n", g_output_mode);
         printf("generate_aifc: %d\n", generate_aifc);
         printf("generate_inst: %d\n", generate_inst);
         printf("opt_names_file: %d\n", opt_names_file);

@@ -1088,7 +1088,9 @@ struct CseqFile *CseqFile_from_MidiFile(struct MidiFile *midi, struct MidiConver
 
         // If no events were added to this track above, then don't processes
         // this track.
-        if (gmid_file->tracks[i]->events->count == 0)
+        if (gmid_file->tracks[i] == NULL
+            || gmid_file->tracks[i]->events == NULL
+            || gmid_file->tracks[i]->events->count == 0)
         {
             continue;
         }
@@ -2581,7 +2583,9 @@ struct CseqFile *CseqFile_new_from_tracks(struct GmidTrack **track, size_t num_t
     cseq_pointer_pos = 0;
     for (i=0; i<num_tracks_int; i++)
     {
-        if (track[i] != NULL)
+        if (track[i] != NULL
+            && track[i]->events != NULL
+            && track[i]->events->count > 0)
         {
             cseq->track_offset[i] = cseq_pointer_pos;
 

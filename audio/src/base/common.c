@@ -15,11 +15,6 @@
 int g_verbosity = 1;
 
 /**
- * Output mode when extracting audio from .tbl
-*/
-int g_output_mode = OUTPUT_MODE_SFX;
-
-/**
  * Temp write buffer. Can be used in any single function,
  * but state is not guaranteed to persist across
  * function calls.
