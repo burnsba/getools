@@ -51,7 +51,7 @@
  * Following are `RareALSeqData` descriptions of the sequences in the file.
  * 
  * Following the header section are the individual .seq files in 1172
-7 * compressed format.
+ * compressed format.
 */
 
 static int opt_help_flag = 0;
@@ -87,7 +87,7 @@ void print_help(const char * invoke)
 {
     printf("%s %s help\n", APPNAME, VERSION);
     printf("\n");
-    printf("splits a Rare .sbk file into individual .seq files\n");
+    printf("splits a Rare .sbk file into individual .seq.rz files. No decompression occurs.\n");
     printf("usage:\n");
     printf("\n");
     printf("    %s -i file\n", invoke);

@@ -28,6 +28,8 @@
  * This file contains structs and defines for supporting .aifc audio files.
  * 
  * .aifc files are assumed to be in BIG endian format.
+ * 
+ * The .aifc file is AIFF format with custom compression.
 */
 
 /**
