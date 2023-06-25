@@ -5,6 +5,8 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gebug64.Unfloader", "Gebug64.Unfloader\Gebug64.Unfloader.csproj", "{A822F862-82FD-4474-8E12-CE00277B5C9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gebug64.ConsoleApp", "Gebug64.ConsoleApp\Gebug64.ConsoleApp.csproj", "{18F427E3-00F6-443F-8E66-42CA2F2614B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A822F862-82FD-4474-8E12-CE00277B5C9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A822F862-82FD-4474-8E12-CE00277B5C9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A822F862-82FD-4474-8E12-CE00277B5C9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18F427E3-00F6-443F-8E66-42CA2F2614B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18F427E3-00F6-443F-8E66-42CA2F2614B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18F427E3-00F6-443F-8E66-42CA2F2614B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18F427E3-00F6-443F-8E66-42CA2F2614B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

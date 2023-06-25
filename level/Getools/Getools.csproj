@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <FileVersion>21.9.18.1</FileVersion>
     <Version>21.9.18.1</Version>
     <Authors>Ben Burns</Authors>
