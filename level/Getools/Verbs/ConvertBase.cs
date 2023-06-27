@@ -15,34 +15,6 @@ namespace Getools.Verbs
     public abstract class ConvertBase : VerbBase
     {
         /// <summary>
-        /// Validates the input filename, and ensures file exists.
-        /// </summary>
-        /// <typeparam name="T">Parser type.</typeparam>
-        /// <param name="result">Parser result.</param>
-        /// <param name="opts">Options verb.</param>
-        public void ValidateSetInputFilename<T>(ParserResult<T> result, ConvertOptionsBase opts)
-        {
-            if (string.IsNullOrEmpty(opts.InputFilename))
-            {
-                ConsoleColor.ConsoleWriteLineRed($"No input file specified.");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
-
-            // permute input to reflect run environment
-            opts.InputFilename = Path.Combine(System.IO.Directory.GetCurrentDirectory(), opts.InputFilename);
-
-            if (!File.Exists(opts.InputFilename))
-            {
-                ConsoleColor.ConsoleWriteLineRed($"File not found: {opts.InputFilename}");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
-        }
-
-        /// <summary>
         /// Validates/sets input file type. If not set, attempts to resolve
         /// based on file extension.
         /// </summary>
@@ -90,26 +62,6 @@ namespace Getools.Verbs
         public void ValidateSetInputDataFormat<T>(ParserResult<T> result, ConvertOptionsBase opts)
         {
             opts.InputDataFormat = Getools.Lib.Converters.FormatConverter.GetDataFormat(opts.InputTypeFormat, opts.InputFileType);
-        }
-
-        /// <summary>
-        /// Validates the output filename.
-        /// </summary>
-        /// <typeparam name="T">Parser type.</typeparam>
-        /// <param name="result">Parser result.</param>
-        /// <param name="opts">Options verb.</param>
-        public void ValidateSetOutputFilename<T>(ParserResult<T> result, ConvertOptionsBase opts)
-        {
-            if (string.IsNullOrEmpty(opts.OutputFilename))
-            {
-                ConsoleColor.ConsoleWriteLineRed($"No output file specified.");
-
-                DisplayHelp(result, null);
-                Environment.Exit(1);
-            }
-
-            // permute output to reflect run environment
-            opts.OutputFilename = Path.Combine(System.IO.Directory.GetCurrentDirectory(), opts.OutputFilename);
         }
 
         /// <summary>

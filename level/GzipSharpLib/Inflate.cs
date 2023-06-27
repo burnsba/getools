@@ -1238,7 +1238,10 @@ namespace GzipSharpLib
             UInt32 k;  /* number of bits in bit buffer */
             HuftBuildResult buildResult;
 
-            _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"ENTER {nameof(InflateDynamic)}");
+            if (_context.Trace)
+            {
+                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"ENTER {nameof(InflateDynamic)}"); 
+            }
 
             /* make local bit buffer */
             b = _bitBuffer;
@@ -1296,14 +1299,20 @@ namespace GzipSharpLib
             i = 0;
             l = 0;
 
-            _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : n = {n}");
-            _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : m = {m}");
+            if (_context.Trace)
+            {
+                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : n = {n}");
+                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : m = {m}"); 
+            }
 
             while ((UInt32)i < n)
             {
                 Huft td_while = null;
 
-                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : while loop. i = {i}, n = {n}");
+                if (_context.Trace)
+                {
+                    _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : while loop. i = {i}, n = {n}"); 
+                }
 
                 _context.NeedBits(ref b, ref k, (int)bl);
                 //NEEDBITS(bl);
@@ -1311,14 +1320,20 @@ namespace GzipSharpLib
                 td_while = tl.HuftList[(int)((UInt32)b & m)];
                 j = td_while.CodeBits;
 
-                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : td.id = {td_while.Id}");
-                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : j (1) = {j}");
+                if (_context.Trace)
+                {
+                    _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : td.id = {td_while.Id}");
+                    _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : j (1) = {j}"); 
+                }
 
                 _context.DumpBits(ref b, ref k, (int)j);
                 //DUMPBITS((int)j);
                 j = td_while.LengthBase;
 
-                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : j (2) = {j}");
+                if (_context.Trace)
+                {
+                    _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"{nameof(InflateDynamic)} : j (2) = {j}"); 
+                }
 
                 if (j < 16)                 /* length of code in bits (0..15) */
                 {
@@ -1419,7 +1434,10 @@ namespace GzipSharpLib
             /* free the decoding tables, return */
             // success
 
-            _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"EXIT {nameof(InflateDynamic)}");
+            if (_context.Trace)
+            {
+                _context.Log(Microsoft.Extensions.Logging.LogLevel.Trace, $"EXIT {nameof(InflateDynamic)}"); 
+            }
         }
 
         private void InflateBlock(ref int e)

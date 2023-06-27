@@ -9,7 +9,7 @@ namespace Getools.Options
     /// <summary>
     /// Common base class for converting one data set to another.
     /// </summary>
-    public abstract class ConvertOptionsBase
+    public abstract class ConvertOptionsBase : IOptionsBase, IOptionsInputFile, IOptionsOutputFile
     {
         /// <summary>
         /// Gets or sets input file name.
@@ -41,9 +41,7 @@ namespace Getools.Options
         [Option('d', "dname", Required = false, HelpText = "Container object declaration name, used when converting to code/source. Defaults to input filename without extension if not set.")]
         public string DeclarationName { get; set; }
 
-        /// <summary>
-        /// Capture any remaining command line arguments here.
-        /// </summary>
+        /// <inheritdoc />
         [Value(0, Hidden = true)]
         public IEnumerable<string> TypoCatch { get; set; }
 

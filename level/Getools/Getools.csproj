@@ -5,7 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <FileVersion>21.9.18.1</FileVersion>
-    <Version>21.9.18.1</Version>
+    <Version>23.6.26.1</Version>
     <Authors>Ben Burns</Authors>
     <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
     <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
+    <ProjectReference Include="..\GzipSharpLib\GzipSharpLib.csproj" />
   </ItemGroup>
 
 </Project>

@@ -67,6 +67,11 @@ namespace Getools
                     ((ConvertSetup)verb).CheckRun(result, csetup);
                     break;
 
+                case UnzipOptions unzip:
+                    verb = new Verbs.Unzip();
+                    ((Unzip)verb).CheckRun(result, unzip);
+                    break;
+
                 case MakeMapOptions mmap:
                     ////PreOptionCheck_MakeMap(result, mmap);
                     break;
@@ -100,6 +105,12 @@ namespace Getools
             else if (result.TypeInfo.Current == typeof(ConvertSetupOptions))
             {
                 var verb = new Verbs.ConvertSetup();
+                verb.DisplayHelp(result, errs);
+                return;
+            }
+            else if (result.TypeInfo.Current == typeof(UnzipOptions))
+            {
+                var verb = new Verbs.Unzip();
                 verb.DisplayHelp(result, errs);
                 return;
             }

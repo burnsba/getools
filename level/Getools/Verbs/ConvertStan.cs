@@ -28,7 +28,7 @@ namespace Getools.Verbs
 
             /* begin input description */
 
-            ValidateSetInputFilename(result, opts);
+            this.ValidateSetInputFilename(result, opts);
             ValidateSetInputFileType(result, opts);
             ValidateSetInputDataFormatIsBeta(result, opts);
             ValidateSetInputTypeFormat(result, opts);
@@ -46,7 +46,7 @@ namespace Getools.Verbs
 
             /* begin output description */
 
-            ValidateSetOutputFilename(result, opts);
+            this.ValidateSetOutputFilename(result, opts);
             ValidateSetOutputFileType(result, opts);
             ValidateSetOutputDataFormatIsBeta(result, opts);
             ValidateSetOutputTypeFormat(result, opts);
@@ -76,14 +76,14 @@ namespace Getools.Verbs
         /// <typeparam name="T">Parser type.</typeparam>
         /// <param name="result">Parser result.</param>
         /// <param name="errs">Parser errors.</param>
-        public override void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
+        public override void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error>? errs)
         {
             var errorLines = new List<string>();
 
             if (result is NotParsed<T>)
             {
                 var np = result as NotParsed<T>;
-                if (np.Errors.Any())
+                if (np!.Errors.Any())
                 {
                     var missingRequired = np.Errors.Where(x => x is MissingRequiredOptionError).Cast<MissingRequiredOptionError>();
 
@@ -94,10 +94,13 @@ namespace Getools.Verbs
                 }
             }
 
-            var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
-            foreach (var uoe in unknownOptionErrors)
+            if (!object.ReferenceEquals(null, errs))
             {
-                errorLines.Add($"Error: unknown option: {uoe.Token}");
+                var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
+                foreach (var uoe in unknownOptionErrors)
+                {
+                    errorLines.Add($"Error: unknown option: {uoe.Token}");
+                }
             }
 
             foreach (var error in errorLines)
