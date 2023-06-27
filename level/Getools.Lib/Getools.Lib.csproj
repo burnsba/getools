@@ -40,4 +40,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GzipSharpLib\GzipSharpLib.csproj" />
+  </ItemGroup>
+
 </Project>
