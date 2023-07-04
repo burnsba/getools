@@ -76,7 +76,7 @@ namespace Getools.Lib.Formatters
         {
             var bytes = System.Text.Encoding.ASCII.GetBytes(s);
             var fixedArr = new byte[arrLen];
-            Array.Copy(bytes, fixedArr, Math.Min(arrLen, bytes.Length));
+            Array.Copy(bytes, fixedArr, System.Math.Min(arrLen, bytes.Length));
             var charTexts = fixedArr.Select(x => ByteAsCharStringOrHex(x));
 
             return "{" + string.Join(", ", charTexts) + "}";

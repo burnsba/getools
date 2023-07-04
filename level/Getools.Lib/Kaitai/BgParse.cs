@@ -17,7 +17,7 @@ namespace Getools.Lib.Kaitai
     /// </summary>
     public static class BgParse
     {
-        private const int _bgFilePointerAdjust = 0x0f000000;
+        private const int _bgFilePointerAdjust = 0xffffff;
 
         /// <summary>
         /// Reads a .bin file from disk and parses it using the Kaitai definition.
@@ -50,8 +50,9 @@ namespace Getools.Lib.Kaitai
 
             result.Header = Convert(kaitaiObject.HeaderBlock);
 
-            var emptyRoom = Convert(kaitaiObject.HeaderBlock.RoomDataTableIgnore);
-            result.RoomDataTable = Convert(kaitaiObject.HeaderBlock.RoomDataTable);
+            var emptyRoom = Convert(kaitaiObject.HeaderBlock.RoomDataTableIgnore, 0);
+            var roomOrderIndexOffset = emptyRoom.Entries.Count;
+            result.RoomDataTable = Convert(kaitaiObject.HeaderBlock.RoomDataTable, roomOrderIndexOffset);
             foreach (var x in emptyRoom.Entries)
             {
                 // kaitai struct repeats until the first pointer is null, so there should only be one entry.
@@ -78,25 +79,25 @@ namespace Getools.Lib.Kaitai
             result.Unknown1 = (int)kaitaiObject.Unknown1;
 
             result.RoomDataTablePointer = new BinPack.PointerVariable();
-            result.RoomDataTablePointer.PointedToOffset = (int)(kaitaiObject.RoomDataTablePointer - _bgFilePointerAdjust);
+            result.RoomDataTablePointer.PointedToOffset = (int)(kaitaiObject.RoomDataTablePointer & _bgFilePointerAdjust);
 
             result.PortalDataTablePointer = new BinPack.PointerVariable();
-            result.PortalDataTablePointer.PointedToOffset = (int)(kaitaiObject.PortalDataTablePointer - _bgFilePointerAdjust);
+            result.PortalDataTablePointer.PointedToOffset = (int)(kaitaiObject.PortalDataTablePointer & _bgFilePointerAdjust);
 
             result.GlobalVisibilityCommandsPointer = new BinPack.PointerVariable();
-            result.GlobalVisibilityCommandsPointer.PointedToOffset = (int)(kaitaiObject.GlobalVisibilityCommandsPointer - _bgFilePointerAdjust);
+            result.GlobalVisibilityCommandsPointer.PointedToOffset = (int)(kaitaiObject.GlobalVisibilityCommandsPointer & _bgFilePointerAdjust);
 
             result.Unknown2 = (int)kaitaiObject.Unknown2;
 
             return result;
         }
 
-        private static BgFileRoomDataTable Convert(List<Gen.Bg.BgFileRoomDataEntry> kaitaiObjects)
+        private static BgFileRoomDataTable Convert(List<Gen.Bg.BgFileRoomDataEntry> kaitaiObjects, int roomOrderIndexOffset)
         {
             var result = new BgFileRoomDataTable();
             result.Entries = new List<BgFileRoomDataEntry>();
 
-            int index = 0;
+            int index = roomOrderIndexOffset;
             foreach (var roomEntry in kaitaiObjects)
             {
                 var libRoomData = Convert(roomEntry);
@@ -116,15 +117,15 @@ namespace Getools.Lib.Kaitai
             var result = new BgFileRoomDataEntry();
 
             result.PointTablePointer = new BinPack.PointerVariable();
-            result.PointTablePointer.PointedToOffset = (int)(kaitaiObject.PointTablePointer - _bgFilePointerAdjust);
+            result.PointTablePointer.PointedToOffset = (int)(kaitaiObject.PointTablePointer & _bgFilePointerAdjust);
 
             result.PrimaryDisplayList = new BinPack.PointerVariable();
-            result.PrimaryDisplayList.PointedToOffset = (int)(kaitaiObject.PrimaryDisplayListPointer - _bgFilePointerAdjust);
+            result.PrimaryDisplayList.PointedToOffset = (int)(kaitaiObject.PrimaryDisplayListPointer & _bgFilePointerAdjust);
 
             //// TODO: display list support
 
             result.SecondaryDisplayList = new BinPack.PointerVariable();
-            result.SecondaryDisplayList.PointedToOffset = (int)(kaitaiObject.SecondaryDisplayListPointer - _bgFilePointerAdjust);
+            result.SecondaryDisplayList.PointedToOffset = (int)(kaitaiObject.SecondaryDisplayListPointer & _bgFilePointerAdjust);
 
             result.Coord = new Game.Coord3df()
             {
@@ -193,7 +194,7 @@ namespace Getools.Lib.Kaitai
             result.Portal = Convert(kaitaiObject.Portal);
 
             result.PortalPointer = new BinPack.PointerVariable();
-            result.PortalPointer.PointedToOffset = (int)(kaitaiObject.PortalPointer - _bgFilePointerAdjust);
+            result.PortalPointer.PointedToOffset = (int)(kaitaiObject.PortalPointer & _bgFilePointerAdjust);
             result.PortalPointer.AssignPointer(result.Portal);
 
             result.ConnectedRoom1 = kaitaiObject.ConnectedRoom1;
@@ -245,6 +246,23 @@ namespace Getools.Lib.Kaitai
 
             foreach (var roomData in result.RoomDataTable.Entries)
             {
+                // The first and last entries are empty structs.
+                if (roomData.PointTablePointer.PointedToOffset == 0
+                    || roomData.PointTablePointer.PointedToOffset == offsets.Last())
+                {
+                    continue;
+                }
+
+                // The second to last entry contains pointers that dereference to a zerod int.
+                if (roomData.PointTablePointer.PointedToOffset > 0)
+                {
+                    var pointedToFirstInt = BitConverter.ToInt32(bytes, roomData.PointTablePointer.PointedToOffset);
+                    if (pointedToFirstInt == 0)
+                    {
+                        continue;
+                    }
+                }
+
                 var binDataInfo = startLengthData.First(x => x.Item1 == roomData.PointTablePointer.PointedToOffset);
                 var binData = new byte[binDataInfo.Item2];
                 Array.Copy(bytes, binDataInfo.Item1, binData, 0, binDataInfo.Item2);

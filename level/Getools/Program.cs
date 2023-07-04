@@ -73,7 +73,8 @@ namespace Getools
                     break;
 
                 case MakeMapOptions mmap:
-                    ////PreOptionCheck_MakeMap(result, mmap);
+                    verb = new Verbs.MakeMap();
+                    ((MakeMap)verb).CheckRun(result, mmap);
                     break;
 
                 default:
@@ -116,8 +117,9 @@ namespace Getools
             }
             else if (result.TypeInfo.Current == typeof(MakeMapOptions))
             {
-                throw new NotImplementedException();
-                ////return;
+                var verb = new Verbs.MakeMap();
+                verb.DisplayHelp(result, errs);
+                return;
             }
 
             var helpText = new HelpText(HeadingInfo.Default, CopyrightInfo.Default);

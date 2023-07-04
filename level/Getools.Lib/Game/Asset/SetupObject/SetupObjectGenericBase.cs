@@ -10,7 +10,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// <summary>
     /// Base class for object list / propdef.
     /// </summary>
-    public abstract class SetupObjectGenericBase : SetupObjectBase
+    public abstract class SetupObjectGenericBase : SetupObjectBase, IHasPreset
     {
         /// <summary>
         /// The overall allocated size of this object in bytes, including child elements.
@@ -35,7 +35,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
         }
 
         /// <summary>
-        /// Gets or sets object id.
+        /// Gets or sets object id (enum PROP id).
         /// </summary>
         public UInt16 ObjectId { get; set; }
 

@@ -9,20 +9,32 @@ namespace Getools.Options
     /// <summary>
     /// Verb to build a map from provided inputs.
     /// </summary>
-    [Verb("make_map", HelpText = "Generate a map from a stan and optional setup data.")]
-    public class MakeMapOptions
+    [Verb("make_map", HelpText = "Generate a map from stage data.")]
+    public class MakeMapOptions : IOptionsBase, IOptionsOutputFile
     {
         /// <summary>
         /// Gets or sets stan input file name.
         /// </summary>
-        [Option('s', "stan", Required = false, HelpText = "stan filename.")]
+        [Option("stan", Required = false, HelpText = "stan filename.")]
         public string StanFilename { get; set; }
 
-        /// <summary>
-        /// Gets or sets stan input file type. Will be resolved to <see cref="StanFileType"/>.
-        /// </summary>
-        [Option("stan-file-type", Required = false, HelpText = "Describes file type, such as whether this is a binary file or json. Attempts to guess the format based on file extension if not set.", MetaValue = "FTYPE")]
-        public string StanFileTypeString { get; set; }
+        [Option("setup", Required = false, HelpText = "setup filename.")]
+        public string SetupFilename { get; set; }
+
+        [Option("bg", Required = false, HelpText = "bg filename.")]
+        public string BgFilename { get; set; }
+
+        [Option("scale", Required = false, Default = 1.0, HelpText = "Level scale.")]
+        public double LevelScale { get; set; }
+
+        [Option("slice-z", Required = false, HelpText = "Slice stage at singular value (plane), perpendicular offset from ground (internal y value).")]
+        public double? SlizeZ { get; set; }
+
+        [Option("min-z", Required = false, HelpText = "Lower boundary of bounding box to determine points of interest (internal y value).")]
+        public double? ZMin { get; set; }
+
+        [Option("max-z", Required = false, HelpText = "Upper boundary of bounding box to determine points of interest (internal y value).")]
+        public double? ZMax { get; set; }
 
         /// <summary>
         /// Gets or sets output file name.
@@ -31,31 +43,54 @@ namespace Getools.Options
         public string OutputFilename { get; set; }
 
         /// <summary>
-        /// Gets or sets output file type. Will be resolved to <see cref="OutputFileType"/>.
-        /// </summary>
-        [Option("output-file-type", Required = false, HelpText = "Describes file type, such as whether this is a binary file or json. Attempts to guess the format based on file extension if not set.", MetaValue = "FTYPE")]
-        public string OutputFileTypeString { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to show guards on the output map.
-        /// </summary>
-        [Option('g', "guards", Required = false, HelpText = "Show guards.", Default = (bool)false)]
-        public bool? GuardsVisible { get; set; }
-
-        /// <summary>
         /// Capture any remaining command line arguments here.
         /// </summary>
         [Value(0, Hidden = true)]
         public IEnumerable<string> TypoCatch { get; set; }
 
         /// <summary>
-        /// Gets or sets strongly typed stan input file type.
+        /// Gets or sets strongly typed input file type.
+        /// </summary>
+        public Getools.Lib.Game.FileType SetupFileType { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed input struct format.
+        /// </summary>
+        public Getools.Lib.Game.TypeFormat SetupTypeFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed combined input data format (file+struct).
+        /// </summary>
+        public Getools.Lib.Game.DataFormats SetupDataFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed input file type.
         /// </summary>
         public Getools.Lib.Game.FileType StanFileType { get; set; }
 
         /// <summary>
-        /// Gets or sets strongly typed output file type.
+        /// Gets or sets strongly typed input struct format.
         /// </summary>
-        public Getools.Lib.Game.FileType OutputFileType { get; set; }
+        public Getools.Lib.Game.TypeFormat StanTypeFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed combined input data format (file+struct).
+        /// </summary>
+        public Getools.Lib.Game.DataFormats StanDataFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed input file type.
+        /// </summary>
+        public Getools.Lib.Game.FileType BgFileType { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed input struct format.
+        /// </summary>
+        public Getools.Lib.Game.TypeFormat BgTypeFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets strongly typed combined input data format (file+struct).
+        /// </summary>
+        public Getools.Lib.Game.DataFormats BgDataFormat { get; set; }
     }
 }

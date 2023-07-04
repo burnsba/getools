@@ -80,7 +80,7 @@ namespace Getools.Lib
             var t = Enumerable.Repeat<byte>(0, targetStringLength).ToArray();
 
             // copy string into zero'd array
-            var strCopyLen = Math.Min(value.Length, targetStringLength);
+            var strCopyLen = System.Math.Min(value.Length, targetStringLength);
             Array.Copy(strBytes, t, strCopyLen);
 
             // copy result into destination
@@ -569,7 +569,7 @@ namespace Getools.Lib
                 throw new ArgumentException($"{nameof(index)} exceeds array length");
             }
 
-            int endPos = Math.Min(index + maxStringLength, arr.Length - 1);
+            int endPos = System.Math.Min(index + maxStringLength, arr.Length - 1);
 
             var sb = new StringBuilder();
 

@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "convert_setup --input-file=\"../../../../asset/setup/e/UsetupcradZ.bin\" --output-file=\"../../../../asset/setup/e/UsetupcradZ.c\""
+      "commandLineArgs": "make_map --min-z=-1000 --max-z=3000 --bg=\"../../../../asset/bg/bg_cryp_all_p.bin\" --stan=\"../../../../asset/stan/Tbg_cryp_all_p_stanZ.bin\" --setup=\"../../../../asset/setup/UsetupcrypZ.bin\" --output-file=\"../../../../asset/bg/Egypt.svg\" --scale=1.0"
     }
   }
 }

@@ -10,7 +10,7 @@ namespace Getools.Lib.Game.Asset.SetupObject
     /// <summary>
     /// Setup object list guard definition.
     /// </summary>
-    public class SetupObjectGuard : SetupObjectBase, ISetupObject
+    public class SetupObjectGuard : SetupObjectBase, ISetupObject, IHasPreset
     {
         private const int _thisSize = 6 * Config.TargetWordSize;
 

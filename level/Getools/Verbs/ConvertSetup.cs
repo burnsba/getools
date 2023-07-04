@@ -77,35 +77,7 @@ namespace Getools.Verbs
         /// <param name="errs">Parser errors.</param>
         public override void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error>? errs)
         {
-            var errorLines = new List<string>();
-
-            if (result is NotParsed<T>)
-            {
-                var np = result as NotParsed<T>;
-                if (np!.Errors.Any())
-                {
-                    var missingRequired = np.Errors.Where(x => x is MissingRequiredOptionError).Cast<MissingRequiredOptionError>();
-
-                    foreach (var missing in missingRequired)
-                    {
-                        errorLines.Add($"Error: missing required option: {missing.NameInfo.LongName}");
-                    }
-                }
-            }
-
-            if (!object.ReferenceEquals(null, errs))
-            {
-                var unknownOptionErrors = errs.Where(x => x is UnknownOptionError).Cast<UnknownOptionError>();
-                foreach (var uoe in unknownOptionErrors)
-                {
-                    errorLines.Add($"Error: unknown option: {uoe.Token}");
-                }
-            }
-
-            foreach (var error in errorLines)
-            {
-                ConsoleColor.ConsoleWriteLineRed(error);
-            }
+            HelpBaseError(result, errs);
 
             var helpText = new HelpText(HeadingInfo.Default, CopyrightInfo.Default);
             helpText.AddDashesToOption = true;

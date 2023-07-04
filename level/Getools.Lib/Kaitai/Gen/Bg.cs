@@ -53,7 +53,7 @@ namespace Getools.Lib.Kaitai.Gen
                         return _portal;
                     KaitaiStream io = M_Root.M_Io;
                     long _pos = io.Pos;
-                    io.Seek((PortalPointer - 251658240));
+                    io.Seek((PortalPointer & 16777215));
                     _portal = new BgFilePortal(io, this, m_root);
                     io.Seek(_pos);
                     f_portal = true;
@@ -108,12 +108,13 @@ namespace Getools.Lib.Kaitai.Gen
                         return _roomDataTableIgnore;
                     KaitaiStream io = M_Root.M_Io;
                     long _pos = io.Pos;
-                    io.Seek((RoomDataTablePointer - 251658240));
+                    io.Seek((RoomDataTablePointer & 16777215));
                     _roomDataTableIgnore = new List<BgFileRoomDataEntry>();
                     {
                         var i = 0;
                         BgFileRoomDataEntry M_;
-                        do {
+                        do
+                        {
                             M_ = new BgFileRoomDataEntry(io, this, m_root);
                             _roomDataTableIgnore.Add(M_);
                             i++;
@@ -134,16 +135,17 @@ namespace Getools.Lib.Kaitai.Gen
                         return _roomDataTable;
                     KaitaiStream io = M_Root.M_Io;
                     long _pos = io.Pos;
-                    io.Seek(((RoomDataTablePointer - 251658240) + 24));
+                    io.Seek(((RoomDataTablePointer & 16777215) + 24));
                     _roomDataTable = new List<BgFileRoomDataEntry>();
                     {
                         var i = 0;
                         BgFileRoomDataEntry M_;
-                        do {
+                        do
+                        {
                             M_ = new BgFileRoomDataEntry(io, this, m_root);
                             _roomDataTable.Add(M_);
                             i++;
-                        } while (!(M_.PointTablePointer == 0));
+                        } while (!(((M_.PointTablePointer == 0) && (M_.PrimaryDisplayListPointer == 0))));
                     }
                     io.Seek(_pos);
                     f_roomDataTable = true;
@@ -160,16 +162,17 @@ namespace Getools.Lib.Kaitai.Gen
                         return _globalVisibilityCommands;
                     KaitaiStream io = M_Root.M_Io;
                     long _pos = io.Pos;
-                    io.Seek((GlobalVisibilityCommandsPointer - 251658240));
+                    io.Seek((GlobalVisibilityCommandsPointer & 16777215));
                     _globalVisibilityCommands = new List<VisibilityCommand>();
                     {
                         var i = 0;
                         VisibilityCommand M_;
-                        do {
+                        do
+                        {
                             M_ = new VisibilityCommand(io, this, m_root);
                             _globalVisibilityCommands.Add(M_);
                             i++;
-                        } while (!(M_Root.M_Io.Pos == (PortalDataTablePointer - 251658240)));
+                        } while (!(M_Root.M_Io.Pos == (PortalDataTablePointer & 16777215)));
                     }
                     io.Seek(_pos);
                     f_globalVisibilityCommands = true;
@@ -186,12 +189,13 @@ namespace Getools.Lib.Kaitai.Gen
                         return _portalDataTable;
                     KaitaiStream io = M_Root.M_Io;
                     long _pos = io.Pos;
-                    io.Seek((PortalDataTablePointer - 251658240));
+                    io.Seek((PortalDataTablePointer & 16777215));
                     _portalDataTable = new List<BgFilePortalDataEntry>();
                     {
                         var i = 0;
                         BgFilePortalDataEntry M_;
-                        do {
+                        do
+                        {
                             M_ = new BgFilePortalDataEntry(io, this, m_root);
                             _portalDataTable.Add(M_);
                             i++;
@@ -266,12 +270,12 @@ namespace Getools.Lib.Kaitai.Gen
             private void _read()
             {
                 _numberPoints = m_io.ReadU1();
-                _padding = new List<byte>((int) (3));
+                _padding = new List<byte>((int)(3));
                 for (var i = 0; i < 3; i++)
                 {
                     _padding.Add(m_io.ReadU1());
                 }
-                _points = new List<Coord3d>((int) (NumberPoints));
+                _points = new List<Coord3d>((int)(NumberPoints));
                 for (var i = 0; i < NumberPoints; i++)
                 {
                     _points.Add(new Coord3d(m_io, this, m_root));

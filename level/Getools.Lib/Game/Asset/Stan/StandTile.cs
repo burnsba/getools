@@ -76,6 +76,10 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public int InternalName { get; set; }
 
+        public int GroupId => InternalName & 0xff;
+
+        public int TileId => (InternalName & 0xffff00) >> 8;
+
         /// <summary>
         /// Tile room.  Only used in release struct.
         /// Assumed to correspond to <see cref="UnknownBeta"/> when converting

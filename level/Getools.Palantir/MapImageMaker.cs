@@ -1,0 +1,1486 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Text;
+using System.Threading.Tasks;
+using Getools.Lib.Game;
+using Getools.Lib.Extensions;
+using SvgLib;
+using Microsoft.Win32.SafeHandles;
+using static Getools.Lib.Kaitai.Gen.Avtx;
+using Getools.Lib.Game.Asset.SetupObject;
+using System.Text.RegularExpressions;
+using Getools.Lib.Game.Asset.Stan;
+using System.Drawing;
+using Getools.Lib.Game.Enums;
+using System.ComponentModel;
+using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
+using Getools.Lib.Game.Asset.Intro;
+
+namespace Getools.Palantir
+{
+    public class MapImageMaker
+    {
+        private const double MaxPixelSizeError = 10000000;
+
+        private const string SvgBgLayerId = "svg-bg-room-layer";
+        private const string SvgStanLayerId = "svg-stan-tile-layer";
+        private const string SvgPadLayerId = "svg-pad-layer";
+
+        private const string SvgSetupAlarmLayerId = "svg-setup-alarm-layer";
+        private const string SvgSetupAmmoLayerId = "svg-setup-ammo-layer";
+        private const string SvgSetupAircraftLayerId = "svg-setup-aircraft-layer";
+        private const string SvgSetupBodyArmorLayerId = "svg-setup-bodyarmor-layer";
+        private const string SvgSetupChrLayerId = "svg-setup-chr-layer";
+        private const string SvgSetupCctvLayerId = "svg-setup-cctv-layer";
+        private const string SvgSetupCollectableLayerId = "svg-setup-collectable-layer";
+        private const string SvgSetupDoorLayerId = "svg-setup-door-layer";
+        private const string SvgSetupDroneLayerId = "svg-setup-drone-layer";
+        private const string SvgSetupKeyLayerId = "svg-setup-key-layer";
+        private const string SvgSetupSafeLayerId = "svg-setup-safe-layer";
+        private const string SvgSetupSingleMonitorLayerId = "svg-setup-singlemonitor-layer";
+        private const string SvgSetupStandardPropLayerId = "svg-setup-prop-layer";
+        private const string SvgSetupTankLayerId = "svg-setup-tank-layer";
+
+        private const string SvgSetupIntroLayerId = "svg-setup-intro-layer";
+
+        private const string SvgItemIdRoomFormat = "svg-room-{0}";
+        private const string SvgItemIdTileFormat = "svg-room-{0}-tile-{1}";
+        private const string SvgItemIdPadFormat = "svg-room-{0}-pad-{1}";
+        private const string SvgItemIdSetupAlarmFormat = "svg-room-{0}-setup-alarm-{1}";
+        private const string SvgItemIdSetupAmmoFormat = "svg-room-{0}-setup-ammo-{1}";
+        private const string SvgItemIdSetupAircraftFormat = "svg-room-{0}-setup-aircraft-{1}";
+        private const string SvgItemIdSetupBodyArmorFormat = "svg-room-{0}-setup-bodyarmor-{1}";
+        private const string SvgItemIdSetupChrFormat = "svg-room-{0}-setup-chr-{1}";
+        private const string SvgItemIdSetupCctvFormat = "svg-room-{0}-setup-cctv-{1}";
+        private const string SvgItemIdSetupCollectableFormat = "svg-room-{0}-setup-collectable-{1}";
+        private const string SvgItemIdSetupDoorFormat = "svg-room-{0}-setup-door-{1}";
+        private const string SvgItemIdSetupDroneFormat = "svg-room-{0}-setup-drone-{1}";
+        private const string SvgItemIdSetupKeyFormat = "svg-room-{0}-setup-key-{1}";
+        private const string SvgItemIdSetupSafeFormat = "svg-room-{0}-setup-safe-{1}";
+        private const string SvgItemIdSetupSingleMonitorFormat = "svg-room-{0}-setup-singlemonitor-{1}";
+        private const string SvgItemIdSetupStandardPropFormat = "svg-room-{0}-setup-prop-{1}";
+        private const string SvgItemIdSetupTankFormat = "svg-room-{0}-setup-tank-{1}";
+
+        private const string SvgItemIdSetupIntroFormat = "svg-room-{0}-setup-intro-{1}";
+
+        private static Regex _matchDigitsRegex = new Regex("([0-9]+)([a-zA-Z])([0-9]?)");
+
+        public Stage Stage { get; set; }
+
+        public double OffsetXAfterScale { get; set; } = 0.0;
+
+        public double OffsetYAfterScale { get; set; } = 0.0;
+
+        public MapImageMaker()
+        {
+        }
+
+        public SvgDocument BoundingZToImage(double zmin, double zmax)
+        {
+            return SliceCommon(SliceMode.BoundingBox, null, zmin, zmax);
+        }
+
+        public SvgDocument SliceZToImage(double z)
+        {
+            return SliceCommon(SliceMode.Slice, z, null, null);
+        }
+
+        public SvgDocument FullImage()
+        {
+            return SliceCommon(SliceMode.Unbound, null, double.MinValue, double.MaxValue);
+        }
+
+        private enum SliceMode
+        {
+            Slice,
+            BoundingBox,
+            Unbound,
+        }
+
+        private SvgDocument SliceCommon(SliceMode mode, double? z, double? zmin, double? zmax)
+        {
+            var roomPolygons = new List<CollectionHullSvgPoints>();
+            var tilePolygons = new List<CollectionHullSvgPoints>();
+            var presetPolygons = new List<SingularSvgPoints>();
+            var introPolygons = new List<SingularSvgPoints>();
+
+            var setupPolygonsCollection = new Dictionary<PropDef, List<SingularSvgPoints>>();
+
+            double minScaledX = double.MaxValue;
+            double minScaledY = double.MaxValue; // output y axis
+            double maxScaledX = double.MinValue;
+            double maxScaledY = double.MinValue; // output y axis
+
+            // unscaled preset vertical value
+            double? nativeMinY = null;
+            double? nativeMaxY = null;
+
+            if (!object.ReferenceEquals(null, Stage.Bg))
+            {
+                Console.WriteLine("MapImageMaker: Found bg");
+
+                foreach (var roomData in Stage.Bg.RoomDataTable.Entries)
+                {
+                    if (object.ReferenceEquals(null, roomData.Points) || !roomData.Points.Any())
+                    {
+                        // Console.WriteLine($"skipping empty room # {roomData.OrderIndex}");
+                        continue;
+                    }
+
+                    // Console.WriteLine($"process room # {roomData.OrderIndex}");
+
+                    double roomMinScaledX = double.MaxValue;
+                    double roomMinScaledY = double.MaxValue; // svg out coordinate y
+                    double roomMaxScaledX = double.MinValue;
+                    double roomMaxScaledY = double.MinValue; // svg out coordinate y
+
+                    // unscaled preset vertical value
+                    double? nativeRoomMinY = null;
+                    double? nativeRoomMaxY = null;
+
+                    var center = roomData.Coord;
+                    var roomPoints = new List<Coord3dd>();
+
+                    foreach (var vtx in roomData.Points)
+                    {
+                        var roomPoint = new Coord3dd()
+                        {
+                            X = (double)center.X + (double)vtx.Ob.X,
+                            Y = (double)center.Y + (double)vtx.Ob.Y,
+                            Z = (double)center.Z + (double)vtx.Ob.Z,
+                        };
+
+                        roomPoints.Add(roomPoint);
+
+                        if (mode == SliceMode.BoundingBox)
+                        {
+                            if ((nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY) && roomPoint.Y >= zmin!.Value)
+                            {
+                                nativeRoomMinY = roomPoint.Y;
+                            }
+
+                            if ((nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY) && roomPoint.Y <= zmax!.Value)
+                            {
+                                nativeRoomMaxY = roomPoint.Y;
+                            }
+
+                            if ((nativeMinY == null || roomPoint.Y < nativeMinY) && roomPoint.Y >= zmin!.Value)
+                            {
+                                nativeMinY = roomPoint.Y;
+                            }
+
+                            if ((nativeMaxY == null || roomPoint.Y > nativeMaxY) && roomPoint.Y <= zmax!.Value)
+                            {
+                                nativeMaxY = roomPoint.Y;
+                            }
+                        }
+                        else if (mode == SliceMode.Unbound)
+                        {
+                            if (nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY)
+                            {
+                                nativeRoomMinY = roomPoint.Y;
+                            }
+
+                            if (nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY)
+                            {
+                                nativeRoomMaxY = roomPoint.Y;
+                            }
+
+                            if (nativeMinY == null || roomPoint.Y < nativeMinY)
+                            {
+                                nativeMinY = roomPoint.Y;
+                            }
+
+                            if (nativeMaxY == null || roomPoint.Y > nativeMaxY)
+                            {
+                                nativeMaxY = roomPoint.Y;
+                            }
+                        }
+                    }
+
+                    // Console.WriteLine($"found {roomPoints.Count} points");
+
+                    List<Coord2dd> convexHull = null;
+
+                    if (mode == SliceMode.Slice)
+                    {
+                        convexHull = MeshToConvexHullAtY(roomPoints, z!.Value);
+                    }
+                    else if (mode == SliceMode.BoundingBox)
+                    {
+                        convexHull = MeshToConvexHullYBounds(roomPoints, zmin!.Value, zmax!.Value);
+                    }
+                    else
+                    {
+                        convexHull = MeshToConvexHullYBounds(roomPoints, double.MinValue, double.MaxValue);
+                    }
+
+                    // Console.WriteLine($"convexHull result: {convexHull.Count} points");
+
+                    if (!convexHull.Any())
+                    {
+                        continue;
+                    }
+
+                    var svgScaledPoints = new List<Coord2dd>();
+
+                    foreach (var p in convexHull)
+                    {
+                        var scaled = new Coord2dd(
+                            (p.X * Stage.LevelScale) + OffsetXAfterScale,
+                            (p.Y * Stage.LevelScale) + OffsetYAfterScale);
+
+                        if (scaled.X < minScaledX)
+                        {
+                            minScaledX = scaled.X;
+                        }
+
+                        if (scaled.X > maxScaledX)
+                        {
+                            maxScaledX = scaled.X;
+                        }
+
+                        if (scaled.Y  < minScaledY)
+                        {
+                            minScaledY = scaled.Y;
+                        }
+
+                        if (scaled.Y > maxScaledY)
+                        {
+                            maxScaledY = scaled.Y;
+                        }
+
+                        if (scaled.X < roomMinScaledX)
+                        {
+                            roomMinScaledX = scaled.X;
+                        }
+
+                        if (scaled.X > roomMaxScaledX)
+                        {
+                            roomMaxScaledX = scaled.X;
+                        }
+
+                        if (scaled.Y  < roomMinScaledY)
+                        {
+                            roomMinScaledY = scaled.Y;
+                        }
+
+                        if (scaled.Y > roomMaxScaledY)
+                        {
+                            roomMaxScaledY = scaled.Y;
+                        }
+
+                        svgScaledPoints.Add(scaled);
+                    }
+
+                    // Add first point at end of list to create closed svg path.
+                    // Points are adjusted later, be careful not to link this
+                    // to an existing point.
+                    svgScaledPoints.Add(svgScaledPoints[0].Clone());
+
+                    var collection = new CollectionHullSvgPoints()
+                    {
+                        OrderIndex = roomData.OrderIndex,
+                        Room = roomData.OrderIndex,
+                        Points = svgScaledPoints,
+                    };
+
+                    if (nativeRoomMinY.HasValue)
+                    {
+                        collection.NaturalMin.Y = nativeRoomMinY.Value;
+                    }
+
+                    if (nativeRoomMaxY.HasValue)
+                    {
+                        collection.NaturalMax.Y = nativeRoomMaxY.Value;
+                    }
+
+                    roomPolygons.Add(collection);
+
+                    // Console.WriteLine($"room min/max: {roomMinScaledX},{roomMinScaledY} and {roomMaxScaledX},{roomMaxScaledY}");
+                }
+            }
+
+            if (!object.ReferenceEquals(null, Stage.Stan))
+            {
+                Console.WriteLine("MapImageMaker: Found stan");
+
+                foreach (var tile in Stage.Stan.Tiles)
+                {
+                    if (object.ReferenceEquals(null, tile.Points) || !tile.Points.Any())
+                    {
+                        // Console.WriteLine($"skipping empty tile # {tile.OrderIndex}");
+                        continue;
+                    }
+
+                    //Console.WriteLine($"process tile # {tile.OrderIndex}");
+
+                    double tileMinScaledX = double.MaxValue;
+                    double tileMinScaledY = double.MaxValue; // svg out coordinate y
+                    double tileMaxScaledX = double.MinValue;
+                    double tileMaxScaledY = double.MinValue; // svg out coordinate y
+
+                    // unscaled preset vertical value
+                    double? nativeRoomMinY = null;
+                    double? nativeRoomMaxY = null;
+
+                    var levelTilePoints = new List<Coord3dd>();
+
+                    foreach (var point in tile.Points)
+                    {
+                        var roomPoint = new Coord3dd()
+                        {
+                            X = (double)point.X,
+                            Y = (double)point.Y,
+                            Z = (double)point.Z,
+                        };
+
+                        levelTilePoints.Add(roomPoint);
+
+                        if (mode == SliceMode.BoundingBox)
+                        {
+                            if ((nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY) && roomPoint.Y >= zmin!.Value)
+                            {
+                                nativeRoomMinY = roomPoint.Y;
+                            }
+
+                            if ((nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY) && roomPoint.Y <= zmax!.Value)
+                            {
+                                nativeRoomMaxY = roomPoint.Y;
+                            }
+
+                            if ((nativeMinY == null || roomPoint.Y < nativeMinY) && roomPoint.Y >= zmin!.Value)
+                            {
+                                nativeMinY = roomPoint.Y;
+                            }
+
+                            if ((nativeMaxY == null || roomPoint.Y > nativeMaxY) && roomPoint.Y <= zmax!.Value)
+                            {
+                                nativeMaxY = roomPoint.Y;
+                            }
+                        }
+                        else if (mode == SliceMode.Unbound)
+                        {
+                            if (nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY)
+                            {
+                                nativeRoomMinY = roomPoint.Y;
+                            }
+
+                            if (nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY)
+                            {
+                                nativeRoomMaxY = roomPoint.Y;
+                            }
+
+                            if (nativeMinY == null || roomPoint.Y < nativeMinY)
+                            {
+                                nativeMinY = roomPoint.Y;
+                            }
+
+                            if (nativeMaxY == null || roomPoint.Y > nativeMaxY)
+                            {
+                                nativeMaxY = roomPoint.Y;
+                            }
+                        }
+                    }
+
+                    //Console.WriteLine($"found {levelTilePoints.Count} points");
+
+                    List<Coord2dd> convexHull = null;
+
+                    if (mode == SliceMode.Slice)
+                    {
+                        convexHull = MeshToConvexHullAtY(levelTilePoints, z!.Value);
+                    }
+                    else if (mode == SliceMode.BoundingBox)
+                    {
+                        convexHull = MeshToConvexHullYBounds(levelTilePoints, zmin!.Value, zmax!.Value);
+                    }
+                    else
+                    {
+                        convexHull = MeshToConvexHullYBounds(levelTilePoints, double.MinValue, double.MaxValue);
+                    }
+
+                    //Console.WriteLine($"convexHull result: {convexHull.Count} points");
+
+                    if (!convexHull.Any())
+                    {
+                        continue;
+                    }
+
+                    var svgScaledPoints = new List<Coord2dd>();
+
+                    foreach (var p in convexHull)
+                    {
+                        var scaled = new Coord2dd(
+                            (p.X * Stage.LevelScale) + OffsetXAfterScale,
+                            (p.Y * Stage.LevelScale) + OffsetYAfterScale);
+
+                        if (scaled.X < minScaledX)
+                        {
+                            minScaledX = scaled.X;
+                        }
+
+                        if (scaled.X > maxScaledX)
+                        {
+                            maxScaledX = scaled.X;
+                        }
+
+                        if (scaled.Y < minScaledY)
+                        {
+                            minScaledY = scaled.Y;
+                        }
+
+                        if (scaled.Y > maxScaledY)
+                        {
+                            maxScaledY = scaled.Y;
+                        }
+
+                        if (scaled.X < tileMinScaledX)
+                        {
+                            tileMinScaledX = scaled.X;
+                        }
+
+                        if (scaled.X > tileMaxScaledX)
+                        {
+                            tileMaxScaledX = scaled.X;
+                        }
+
+                        if (scaled.Y < tileMinScaledY)
+                        {
+                            tileMinScaledY = scaled.Y;
+                        }
+
+                        if (scaled.Y > tileMaxScaledY)
+                        {
+                            tileMaxScaledY = scaled.Y;
+                        }
+
+                        svgScaledPoints.Add(scaled);
+                    }
+
+                    // Add first point at end of list to create closed svg path.
+                    // Points are adjusted later, be careful not to link this
+                    // to an existing point.
+                    svgScaledPoints.Add(svgScaledPoints[0].Clone());
+
+                    var collection = new CollectionHullSvgPoints()
+                    {
+                        OrderIndex = tile.OrderIndex,
+                        Room = tile.Room,
+                        Points = svgScaledPoints,
+                    };
+
+                    if (nativeRoomMinY.HasValue)
+                    {
+                        collection.NaturalMin.Y = nativeRoomMinY.Value;
+                    }
+
+                    if (nativeRoomMaxY.HasValue)
+                    {
+                        collection.NaturalMax.Y = nativeRoomMaxY.Value;
+                    }
+
+                    tilePolygons.Add(collection);
+
+                    //Console.WriteLine($"tile min/max: {tileMinScaledX},{tileMinScaledY} and {tileMaxScaledX},{tileMaxScaledY}");
+                }
+            }
+
+            if (!object.ReferenceEquals(null, Stage.Setup) && (mode == SliceMode.BoundingBox || mode == SliceMode.Unbound))
+            {
+                Console.WriteLine("MapImageMaker: Found setup");
+
+                var presets = Stage.Setup.SectionPadList.PadList;
+                var presets3d = Stage.Setup.SectionPad3dList.Pad3dList;
+
+                int setupObjectIndex = -1;
+                byte roomId = 0;
+
+                foreach (var setupObject in Stage.Setup.SectionObjects.Objects)
+                {
+                    setupObjectIndex++;
+
+                    Coord3dd? workingPoint = null;
+                    Coord3dd? up = null;
+                    Coord3dd? orientation = null;
+                    string presetName = string.Empty;
+
+                    var baseObject = setupObject as SetupObjectBase;
+
+                    // guard does not implement SetupObjectGenericBase
+                    SetupObjectGenericBase baseGenericObject = setupObject as SetupObjectGenericBase;
+
+                    if (object.ReferenceEquals(null, baseObject))
+                    {
+                        continue;
+                    }
+
+                    if (baseObject is not IHasPreset)
+                    {
+                        continue;
+                    }
+
+                    var presetId = ((IHasPreset)setupObject).Preset;
+
+                    if (setupObject.Type == PropDef.Key || setupObject.Type == PropDef.Collectable)
+                    {
+                        if ((((SetupObjectGenericBase)setupObject).Flags1 & 0x00004000) > 0)
+                        {
+                            // is attached to guard
+                            continue;
+                        }
+                    }
+
+                    switch (setupObject.Type)
+                    {
+                        case Lib.Game.Enums.PropDef.Alarm:   // fallthrough
+                        case Lib.Game.Enums.PropDef.Aircraft:   // fallthrough
+                        case Lib.Game.Enums.PropDef.AmmoBox: // fallthrough
+                        case Lib.Game.Enums.PropDef.Armour: // fallthrough
+                        case Lib.Game.Enums.PropDef.Cctv: // fallthrough
+                        case Lib.Game.Enums.PropDef.Collectable: // fallthrough
+                        case Lib.Game.Enums.PropDef.Drone: // fallthrough
+                        case Lib.Game.Enums.PropDef.Guard:   // fallthrough
+                        case Lib.Game.Enums.PropDef.Key:   // fallthrough
+                        case Lib.Game.Enums.PropDef.Safe:
+                        case Lib.Game.Enums.PropDef.SingleMonitor:
+                        case Lib.Game.Enums.PropDef.StandardProp:
+                        case Lib.Game.Enums.PropDef.Tank:
+                        {
+                            if (presetId > 60000)
+                            {
+                                // "embedded preset"
+                                // Not sure what the cutoff is, this might just be negative short.
+                                // Values are 65535, 65534, 65533...
+                                continue;
+                            }
+                            else if (presetId < presets.Count)
+                            {
+                                var preset = presets[presetId];
+                                presetName = preset.Name.GetString();
+                                workingPoint = preset.Position.ToCoord3dd();
+                                up = preset.Up.ToCoord3dd();
+                                orientation = preset.Look.ToCoord3dd();
+                            }
+                            else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
+                            {
+                                var preset = presets3d[presetId - 10000];
+                                presetName = preset.Name.GetString();
+                                workingPoint = preset.Position.ToCoord3dd();
+                                up = preset.Up.ToCoord3dd();
+                                orientation = preset.Look.ToCoord3dd();
+                            }
+                            else
+                            {
+                                throw new Exception("Could not resolve setup object point to preset (padlist) index");
+                            }
+                            break;
+                        }
+
+                        case Lib.Game.Enums.PropDef.Door:
+                        {
+                            // important! door always uses bounding box preset
+
+                            if (presetId < presets3d.Count)
+                            {
+                                var preset = presets3d[presetId];
+                                presetName = preset.Name.GetString();
+                                workingPoint = preset.Position.ToCoord3dd();
+                                up = preset.Up.ToCoord3dd();
+                                orientation = preset.Look.ToCoord3dd();
+                            }
+                            else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
+                            {
+                                var preset = presets3d[presetId - 10000];
+                                presetName = preset.Name.GetString();
+                                workingPoint = preset.Position.ToCoord3dd();
+                                up = preset.Up.ToCoord3dd();
+                                orientation = preset.Look.ToCoord3dd();
+                            }
+                            else
+                            {
+                                throw new Exception("Could not resolve setup object point to preset (padlist) index");
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (object.ReferenceEquals(null, workingPoint))
+                    {
+                        continue;
+                    }
+
+                    // Console.WriteLine($"Setup object point: {workingPoint}");
+
+                    if (!object.ReferenceEquals(null, Stage.Stan))
+                    {
+                        TryGetRoomId(presetName, out roomId);
+                    }
+
+                    Coord2dd svgScaledPoint = null;
+
+                    if (workingPoint.Y >= zmin!.Value && workingPoint.Y <= zmax!.Value)
+                    {
+                        var cc = workingPoint.To2DXZ();
+
+                        svgScaledPoint = new Coord2dd(
+                            (cc.X * Stage.LevelScale) + OffsetXAfterScale,
+                            (cc.Y * Stage.LevelScale) + OffsetYAfterScale);
+
+                        if ((nativeMinY == null || workingPoint.Y < nativeMinY) && workingPoint.Y >= zmin!.Value)
+                        {
+                            nativeMinY = workingPoint.Y;
+                        }
+
+                        if ((nativeMaxY == null || workingPoint.Y > nativeMaxY) && workingPoint.Y <= zmax!.Value)
+                        {
+                            nativeMaxY = workingPoint.Y;
+                        }
+                    }
+
+                    if (object.ReferenceEquals(null, svgScaledPoint))
+                    {
+                        continue;
+                    }
+
+                    var hullpoints = new SingularSvgPoints()
+                    {
+                        OrderIndex = setupObjectIndex,
+                        Room = roomId,
+                        Point = svgScaledPoint,
+                        Up = up!.Clone(),
+                        Orientation = orientation!.Clone(),
+                        SetupObject = setupObject,
+                        NaturalOrigin = workingPoint.Clone(),
+                    };
+
+                    hullpoints.SvgDataAttributes.Add("propdef-name", setupObject.Type.ToString());
+                    hullpoints.SvgDataAttributes.Add("propdef-id", ((int)setupObject.Type).ToString());
+
+                    if (baseGenericObject != null)
+                    {
+                        var propid = (PropId)baseGenericObject.ObjectId;
+                        hullpoints.SvgDataAttributes.Add("prop-name", propid.ToString());
+                        hullpoints.SvgDataAttributes.Add("prop-id", ((int)propid).ToString());
+                    }
+
+                    if (setupPolygonsCollection.ContainsKey(setupObject.Type))
+                    {
+                        setupPolygonsCollection[setupObject.Type].Add(hullpoints);
+                    }
+                    else
+                    {
+                        var polygonCollection = new List<SingularSvgPoints>();
+                        polygonCollection.Add(hullpoints);
+                        setupPolygonsCollection.Add(setupObject.Type, polygonCollection);
+                    }
+                }
+
+                // add presets to the output.
+                ushort index = 0;
+                foreach (var pad in Stage.Setup.SectionPadList.PadList)
+                {
+                    roomId = 0;
+                    if (!TryGetRoomId(pad.Name.GetString(), out roomId))
+                    {
+                        index++;
+                        continue;
+                    }
+
+                    var point = pad.Position.To2DXZ().ToCoord2dd();
+                    point.X *= Stage.LevelScale;
+                    point.Y *= Stage.LevelScale;
+
+                    presetPolygons.Add(new SingularSvgPoints()
+                    {
+                        OrderIndex = index,
+                        Room = roomId,
+                        Point = point,
+                        NaturalOrigin = pad.Position.ToCoord3dd(),
+                    });
+
+                    index++;
+                }
+
+                index = 0;
+                foreach (var pad in Stage.Setup.SectionPad3dList.Pad3dList)
+                {
+                    roomId = 0;
+                    if (!TryGetRoomId(pad.Name.GetString(), out roomId))
+                    {
+                        //index++;
+                        //continue;
+                    }
+
+                    var point = pad.Position.To2DXZ().ToCoord2dd();
+                    point.X *= Stage.LevelScale;
+                    point.Y *= Stage.LevelScale;
+
+                    presetPolygons.Add(new SingularSvgPoints()
+                    {
+                        OrderIndex = index + 10000, // back to bound3d id convention
+                        Room = roomId,
+                        Point = point,
+                        NaturalOrigin = pad.Position.ToCoord3dd(),
+                    });
+
+                    index++;
+                }
+
+                // look for spawn location
+                foreach (var intro in Stage.Setup.SectionIntros.Intros)
+                {
+                    if (intro is not IntroSpawn)
+                    {
+                        continue;
+                    }
+
+                    var introSpawn = intro as IntroSpawn;
+
+                    var presetId = (ushort)introSpawn.Unknown_00;
+
+                    var preset = presets[presetId];
+                    var presetName = preset.Name.GetString();
+                    var workingPoint = preset.Position.ToCoord3dd();
+
+                    if (!object.ReferenceEquals(null, Stage.Stan))
+                    {
+                        TryGetRoomId(presetName, out roomId);
+                    }
+
+                    Coord2dd svgScaledPoint = null;
+
+                    if (workingPoint.Y >= zmin!.Value && workingPoint.Y <= zmax!.Value)
+                    {
+                        var cc = workingPoint.To2DXZ();
+
+                        svgScaledPoint = new Coord2dd(
+                            (cc.X * Stage.LevelScale) + OffsetXAfterScale,
+                            (cc.Y * Stage.LevelScale) + OffsetYAfterScale);
+                    }
+
+                    if (object.ReferenceEquals(null, svgScaledPoint))
+                    {
+                        continue;
+                    }
+
+                    var hullpoints = new SingularSvgPoints()
+                    {
+                        OrderIndex = setupObjectIndex,
+                        Room = roomId,
+                        Point = svgScaledPoint,
+                        Up = Coord3dd.Zero.Clone(),
+                        Orientation = Coord3dd.Zero.Clone(),
+                        SetupObject = null,
+                        NaturalOrigin = workingPoint.Clone(),
+                    };
+
+                    introPolygons.Add(hullpoints);
+
+                    // only the first spawn is used in single player
+                    break;
+                }
+            }
+
+            var svg = SvgDocument.Create();
+
+            var svgWidth = Math.Abs(maxScaledX - minScaledX);
+            var svgHeight = Math.Abs(maxScaledY - minScaledY);
+
+            if (!double.IsFinite(svgWidth) || svgWidth > MaxPixelSizeError)
+            {
+                throw new Exception("Invalid image width");
+            }
+
+            if (!double.IsFinite(svgHeight) || svgHeight > MaxPixelSizeError || svgHeight == 0)
+            {
+                throw new Exception("Invalid image height");
+            }
+
+            // normalize to positive values
+            var adjustx = 0 - minScaledX;
+            var adjusty = 0 - minScaledY;
+
+            foreach (var poly in roomPolygons)
+            {
+                foreach (var p in poly.Points)
+                {
+                    p.X += adjustx;
+                    p.Y += adjusty;
+                }
+            }
+
+            foreach (var poly in tilePolygons)
+            {
+                foreach (var p in poly.Points)
+                {
+                    p.X += adjustx;
+                    p.Y += adjusty;
+                }
+            }
+
+            foreach (var poly in presetPolygons)
+            {
+                poly.Point.X += adjustx;
+                poly.Point.Y += adjusty;
+            }
+
+            foreach (var poly in introPolygons)
+            {
+                poly.Point.X += adjustx;
+                poly.Point.Y += adjusty;
+            }
+
+            foreach (var kvp in setupPolygonsCollection)
+            {
+                var polyCollection = kvp.Value;
+                foreach (var poly in polyCollection)
+                {
+                    poly.Point.X += adjustx;
+                    poly.Point.Y += adjusty;
+                }
+            }
+
+            double naturalRatioWh = svgWidth / svgHeight;
+            double naturalRatioHw = svgHeight / svgWidth;
+
+            svg.Width = 2048;
+            svg.Height = svg.Width * naturalRatioHw;
+
+            svg.ViewBox = new SvgViewBox()
+            {
+                Width = svgWidth,
+                Height = svgHeight,
+                Left = 0,
+                Top = 0,
+            };
+
+            svg.SetDataAttribute("adjustx", adjustx.ToString());
+            svg.SetDataAttribute("adjusty", adjusty.ToString());
+            // overall stage min/max y, in native unscaled preset coord value
+            svg.SetDataAttribute("natural-min-y", (nativeMinY ?? 0).ToString());
+            svg.SetDataAttribute("natural-max-y", (nativeMaxY ?? 0).ToString());
+
+            var cssText = new StringBuilder();
+            cssText.AppendLine(".gelib-stan { stroke: #9e87a3; stroke-width: 2; fill: #fdf5ff; }");
+            cssText.AppendLine(".gelib-room { stroke: blue; stroke-width: 4; fill: #ffffff; fill-opacity: 0; }");
+            cssText.AppendLine(".gelib-pad { stroke: #9c009e; stroke-width: 4; fill: #ff00ff; }");
+
+            svg.SetStylesheet(cssText.ToString());
+
+            var group1 = svg.AddGroup();
+            group1.Id = SvgStanLayerId;
+            foreach (var poly in tilePolygons)
+            {
+                var polyline = group1.AddPolyLine();
+
+                polyline.AddClass("svg-logical-item");
+                polyline.AddClass("gelib-stan");
+
+                polyline.Id = string.Format(SvgItemIdTileFormat, poly.Room, poly.OrderIndex);
+                polyline.Points = poly.Points.To1dArray();
+
+
+                foreach (var kvp in poly.SvgDataAttributes)
+                {
+                    polyline.SetDataAttribute(kvp.Key, kvp.Value);
+                }
+
+                polyline.SetDataAttribute("natural-min-y", poly.NaturalMin.Y.ToString());
+                polyline.SetDataAttribute("natural-max-y", poly.NaturalMax.Y.ToString());
+                polyline.SetDataAttribute("room-id", poly.Room.ToString());
+            }
+
+            // room boundaries need to be above the tiles.
+            var group2 = svg.AddGroup();
+            group2.Id = SvgBgLayerId;
+            foreach (var poly in roomPolygons)
+            {
+                var polyline = group2.AddPolyLine();
+
+                polyline.AddClass("svg-logical-item");
+                polyline.AddClass("gelib-room");
+
+                polyline.Id = string.Format(SvgItemIdRoomFormat, poly.OrderIndex);
+                polyline.Points = poly.Points.To1dArray();
+
+                foreach (var kvp in poly.SvgDataAttributes)
+                {
+                    polyline.SetDataAttribute(kvp.Key, kvp.Value);
+                }
+
+                polyline.SetDataAttribute("natural-min-y", poly.NaturalMin.Y.ToString());
+                polyline.SetDataAttribute("natural-max-y", poly.NaturalMax.Y.ToString());
+                polyline.SetDataAttribute("room-id", poly.Room.ToString());
+            }
+
+            if (presetPolygons.Any())
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgPadLayerId;
+                foreach (var poly in presetPolygons)
+                {
+                    var point = poly.Point;
+
+                    var rect = group.AddRect();
+
+                    rect.AddClass("svg-logical-item");
+                    rect.AddClass("gelib-pad");
+
+                    rect.Id = string.Format(SvgItemIdPadFormat, poly.Room, poly.OrderIndex);
+
+                    rect.X = point.X - 8;
+                    rect.Y = point.Y - 8;
+                    rect.Width = 16;
+                    rect.Height = 16;
+
+                    foreach (var kvp in poly.SvgDataAttributes)
+                    {
+                        rect.SetDataAttribute(kvp.Key, kvp.Value);
+                    }
+
+                    rect.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                    rect.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                    rect.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                    rect.SetDataAttribute("room-id", poly.Room.ToString());
+                } 
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.AmmoBox))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupAmmoLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.AmmoBox])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupAmmoFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                } 
+            }
+
+            // safe should be under door z layer.
+            if (setupPolygonsCollection.ContainsKey(PropDef.Safe))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupSafeLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Safe])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupSafeFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                } 
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Door))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupDoorLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Door])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupDoorFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                } 
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Alarm))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupAlarmLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Alarm])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupAlarmFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Cctv))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupCctvLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Cctv])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupCctvFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Drone))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupDroneLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Drone])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupDroneFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Aircraft))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupAircraftLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Aircraft])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupAircraftFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Tank))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupTankLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Tank])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupTankFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.StandardProp))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupStandardPropLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.StandardProp])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupStandardPropFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.SingleMonitor))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupSingleMonitorLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.SingleMonitor])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupSingleMonitorFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Collectable))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupCollectableLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Collectable])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupCollectableFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (setupPolygonsCollection.ContainsKey(PropDef.Armour))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupBodyArmorLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Armour])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupBodyArmorFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            // keys should be on top of tables (StandardProp)
+            if (setupPolygonsCollection.ContainsKey(PropDef.Key))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupKeyLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Key])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupKeyFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            // guards should be one of the highest z layers
+            if (setupPolygonsCollection.ContainsKey(PropDef.Guard))
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupChrLayerId;
+                foreach (var poly in setupPolygonsCollection[PropDef.Guard])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupChrFormat, poly.Room, poly.OrderIndex);
+
+                        foreach (var kvp in poly.SvgDataAttributes)
+                        {
+                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
+                        }
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
+
+            if (introPolygons.Any())
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgSetupIntroLayerId;
+                foreach (var poly in introPolygons)
+                {
+                    var point = poly.Point;
+
+                    var container = group.AddGroup();
+
+                    container.AddClass("svg-logical-item");
+
+                    container.Id = string.Format(SvgItemIdSetupIntroFormat, poly.Room, poly.OrderIndex);
+
+                    var path = container.AddPath();
+
+                    path.Stroke = "#00ffff";
+                    path.StrokeWidth = 3;
+                    path.Fill = "#ffff00";
+
+                    // spawn star
+                    path.D = "M 56.419353,49.677419 31.397828,59.992939 36.287734,86.612021 18.745014,66.002808 -5.060173,78.879133 9.119355,55.826418 -10.482966,37.165343 l 26.30615,6.361852 11.690287,-24.409504 2.078567,26.984556 z";
+
+                    double halfw = 36;
+                    double halfh = 39;
+                    double rotAngle = 45;
+
+                    path.Transform = $"translate({point.X - halfw}, {point.Y - halfh}) rotate({rotAngle} {halfw} {halfh})";
+
+                    foreach (var kvp in poly.SvgDataAttributes)
+                    {
+                        container.SetDataAttribute(kvp.Key, kvp.Value);
+                    }
+
+                    container.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
+                    container.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
+                    container.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                    container.SetDataAttribute("room-id", poly.Room.ToString());
+                }
+            }
+
+            return svg;
+        }
+
+        /// <summary>
+        /// Cross apply all room points, and for each finite line segment that cross the plane
+        /// at the given z point, project to 2d and add it to the list.
+        /// Create a convex hull from these points.
+        /// </summary>
+        /// <remarks>
+        /// "walking" coordinates are (x,z), vertical axis is y.
+        /// </remarks>
+        /// <param name="mesh"></param>
+        /// <param name="z"></param>
+        /// <returns></returns>
+        private List<Coord2dd> MeshToConvexHullAtZ(List<Coord3dd> mesh, double z)
+        {
+            var points = Getools.Lib.Math.Geometry.PlaneIntersectZ(mesh, z);
+            var points2d = points.Select(x => x.To2DXY()).ToList();
+            var convexHull = Getools.Lib.Math.Geometry.GetConvexHull(points2d);
+
+            return convexHull;
+        }
+
+        /// <summary>
+        /// Cross apply all room points, and for each finite line segment that cross the plane
+        /// at the given y point, project to 2d and add it to the list.
+        /// Create a convex hull from these points.
+        /// </summary>
+        /// <remarks>
+        /// "walking" coordinates are (x,z), vertical axis is y.
+        /// </remarks>
+        /// <param name="mesh"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        private List<Coord2dd> MeshToConvexHullAtY(List<Coord3dd> mesh, double y)
+        {
+            var points = Getools.Lib.Math.Geometry.PlaneIntersectY(mesh, y);
+            var points2d = points.Select(x => x.To2DXZ()).ToList();
+            var convexHull = Getools.Lib.Math.Geometry.GetConvexHull(points2d);
+
+            return convexHull;
+        }
+
+        /// <summary>
+        /// For each point, if it is between the upper and lower bounds,
+        /// project to 2d and create a convex hull of these points.
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="ymin"></param>
+        /// <param name="ymax"></param>
+        /// <returns></returns>
+        private List<Coord2dd> MeshToConvexHullYBounds(List<Coord3dd> mesh, double ymin, double ymax)
+        {
+            var points2d = new List<Coord2dd>();
+
+            foreach (var p in mesh)
+            {
+                if (p.Y >= ymin && p.Y <= ymax)
+                {
+                    points2d.Add(p.To2DXZ());
+                }
+            }
+
+            var convexHull = Getools.Lib.Math.Geometry.GetConvexHull(points2d);
+
+            return convexHull;
+        }
+
+        private bool TryGetRoomId(string presetName, out byte roomId)
+        {
+            roomId = 0;
+
+            if (string.IsNullOrEmpty(presetName))
+            {
+                return false;
+            }
+
+            var rematch = _matchDigitsRegex.Match(presetName);
+            if (rematch.Success)
+            {
+                var tilenameDecimalString = rematch.Groups[1].Value;
+                var tilenameDecimal = int.Parse(tilenameDecimalString);
+                bool useTileGroup = rematch.Groups.Count > 3 && !string.IsNullOrEmpty(rematch.Groups[2].Value);
+
+                int tileGroupId = 0;
+
+                StandTile? tile = null;
+                if (useTileGroup)
+                {
+                    tileGroupId = 8 * Base26ToInt(rematch.Groups[2].Value[0]);
+                    if (!string.IsNullOrEmpty(rematch.Groups[3].Value))
+                    {
+                        tileGroupId += int.Parse(rematch.Groups[3].Value);
+                    }
+                    tile = Stage.Stan.Tiles.FirstOrDefault(x => x.TileId == tilenameDecimal && x.GroupId == tileGroupId);
+                }
+                else
+                {
+                    tile = Stage.Stan.Tiles.FirstOrDefault(x => x.TileId == tilenameDecimal);
+                }
+
+                if (!object.ReferenceEquals(null, tile))
+                {
+                    roomId = tile.Room;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private int Base26ToInt(char c)
+        {
+            return (int)(c - 'a');
+        }
+
+        private class CollectionHullSvgPoints
+        {
+            public int OrderIndex { get; set; }
+
+            public int Room { get; set; }
+
+            // scaled, first point has been duplicated at the end to formed a closed svg path
+            public List<Coord2dd> Points { get; set; }
+
+            // native preset coordinate value
+            public Coord3dd NaturalMin { get; set; } = Coord3dd.Zero.Clone();
+
+            // native preset coordinate value
+            public Coord3dd NaturalMax { get; set; } = Coord3dd.Zero.Clone();
+
+            public Dictionary<string, string> SvgDataAttributes { get; set; } = new Dictionary<string, string>();
+        }
+
+        private class SingularSvgPoints
+        {
+            public int OrderIndex { get; set; }
+
+            public int Room { get; set; }
+
+            // native preset coordinate value
+            public Coord3dd NaturalOrigin { get; set; } = Coord3dd.Zero.Clone();
+
+            public Coord2dd Point { get; set; }
+
+            public ISetupObject? SetupObject { get; set; }
+
+            public Coord3dd Up { get; set; }
+
+            public Coord3dd Orientation { get; set; }
+
+            public Dictionary<string, string> SvgDataAttributes { get; set; } = new Dictionary<string, string>();
+        }
+    }
+}

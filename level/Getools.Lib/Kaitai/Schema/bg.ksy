@@ -22,25 +22,25 @@ types:
     instances:
       room_data_table_ignore:
         io: _root._io
-        pos: room_data_table_pointer - 0x0f000000
+        pos: room_data_table_pointer & 0xffffff
         type: bg_file_room_data_entry
         repeat: until
         repeat-until: _.point_table_pointer == 0
       room_data_table:
         io: _root._io
-        pos: room_data_table_pointer - 0x0f000000 + 24
+        pos: (room_data_table_pointer & 0xffffff) + 24
         type: bg_file_room_data_entry
         repeat: until
-        repeat-until: _.point_table_pointer == 0
+        repeat-until: _.point_table_pointer == 0 and _.primary_display_list_pointer == 0
       global_visibility_commands:
         io: _root._io
-        pos: global_visibility_commands_pointer - 0x0f000000
+        pos: global_visibility_commands_pointer & 0xffffff
         type: visibility_command
         repeat: until
-        repeat-until: _root._io.pos == (portal_data_table_pointer - 0x0f000000)
+        repeat-until: _root._io.pos == (portal_data_table_pointer & 0xffffff)
       portal_data_table:
         io: _root._io
-        pos: portal_data_table_pointer - 0x0f000000
+        pos: portal_data_table_pointer & 0xffffff
         type: bg_file_portal_data_entry
         repeat: until
         repeat-until: _.portal_pointer == 0
@@ -67,7 +67,7 @@ types:
     instances:
       portal:
         io: _root._io
-        pos: portal_pointer - 0x0f000000
+        pos: portal_pointer & 0xffffff
         type: bg_file_portal
   bg_file_portal:
     seq:
