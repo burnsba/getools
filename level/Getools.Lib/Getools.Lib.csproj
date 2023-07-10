@@ -23,7 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Game\Asset\Model\ModelBboxDefinition.json" />
+    <None Remove="Game\Asset\Model\ModelScaleDefinition.json" />
     <None Remove="test.c" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Game\Asset\Model\ModelBboxDefinition.json" />
+    <EmbeddedResource Include="Game\Asset\Model\ModelScaleDefinition.json" />
   </ItemGroup>
 
   <ItemGroup>

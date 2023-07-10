@@ -18,6 +18,8 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using Getools.Lib.Game.Asset.Intro;
+using Getools.Palantir.Render;
+using Getools.Lib.Game.Asset.Setup;
 
 namespace Getools.Palantir
 {
@@ -104,10 +106,10 @@ namespace Getools.Palantir
         {
             var roomPolygons = new List<CollectionHullSvgPoints>();
             var tilePolygons = new List<CollectionHullSvgPoints>();
-            var presetPolygons = new List<SingularSvgPoints>();
-            var introPolygons = new List<SingularSvgPoints>();
+            var presetPolygons = new List<RenderPosition>();
+            var introPolygons = new List<RenderPosition>();
 
-            var setupPolygonsCollection = new Dictionary<PropDef, List<SingularSvgPoints>>();
+            var setupPolygonsCollection = new Dictionary<PropDef, List<PropPosition>>();
 
             double minScaledX = double.MaxValue;
             double minScaledY = double.MaxValue; // output y axis
@@ -229,9 +231,7 @@ namespace Getools.Palantir
 
                     foreach (var p in convexHull)
                     {
-                        var scaled = new Coord2dd(
-                            (p.X * Stage.LevelScale) + OffsetXAfterScale,
-                            (p.Y * Stage.LevelScale) + OffsetYAfterScale);
+                        var scaled = new Coord2dd(p.X, p.Y);
 
                         if (scaled.X < minScaledX)
                         {
@@ -414,9 +414,7 @@ namespace Getools.Palantir
 
                     foreach (var p in convexHull)
                     {
-                        var scaled = new Coord2dd(
-                            (p.X * Stage.LevelScale) + OffsetXAfterScale,
-                            (p.Y * Stage.LevelScale) + OffsetYAfterScale);
+                        var scaled = new Coord2dd(p.X, p.Y);
 
                         if (scaled.X < minScaledX)
                         {
@@ -503,10 +501,11 @@ namespace Getools.Palantir
                 {
                     setupObjectIndex++;
 
-                    Coord3dd? workingPoint = null;
-                    Coord3dd? up = null;
-                    Coord3dd? orientation = null;
+                    //Coord3dd? workingPoint = null;
+                    //Coord3dd? up = null;
+                    //Coord3dd? orientation = null;
                     string presetName = string.Empty;
+                    Pad pad = null;
 
                     var baseObject = setupObject as SetupObjectBase;
 
@@ -559,19 +558,11 @@ namespace Getools.Palantir
                             }
                             else if (presetId < presets.Count)
                             {
-                                var preset = presets[presetId];
-                                presetName = preset.Name.GetString();
-                                workingPoint = preset.Position.ToCoord3dd();
-                                up = preset.Up.ToCoord3dd();
-                                orientation = preset.Look.ToCoord3dd();
+                                pad = presets[presetId];
                             }
                             else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
                             {
-                                var preset = presets3d[presetId - 10000];
-                                presetName = preset.Name.GetString();
-                                workingPoint = preset.Position.ToCoord3dd();
-                                up = preset.Up.ToCoord3dd();
-                                orientation = preset.Look.ToCoord3dd();
+                                pad = presets3d[presetId - 10000];
                             }
                             else
                             {
@@ -586,19 +577,11 @@ namespace Getools.Palantir
 
                             if (presetId < presets3d.Count)
                             {
-                                var preset = presets3d[presetId];
-                                presetName = preset.Name.GetString();
-                                workingPoint = preset.Position.ToCoord3dd();
-                                up = preset.Up.ToCoord3dd();
-                                orientation = preset.Look.ToCoord3dd();
+                                pad = presets3d[presetId];
                             }
                             else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
                             {
-                                var preset = presets3d[presetId - 10000];
-                                presetName = preset.Name.GetString();
-                                workingPoint = preset.Position.ToCoord3dd();
-                                up = preset.Up.ToCoord3dd();
-                                orientation = preset.Look.ToCoord3dd();
+                                pad = presets3d[presetId - 10000];
                             }
                             else
                             {
@@ -607,74 +590,74 @@ namespace Getools.Palantir
                             break;
                         }
                     }
-                    
-                    if (object.ReferenceEquals(null, workingPoint))
+
+                    if (object.ReferenceEquals(null, pad))
                     {
                         continue;
                     }
+
+                    var propPosition = new PropPosition()
+                    {
+                        OrderIndex = setupObjectIndex,
+                        SetupObject = setupObject,
+                        Origin = pad.Position.ToCoord3dd(),
+                        Up = pad.Up.ToCoord3dd(),
+                        Look = pad.Look.ToCoord3dd(),
+                        Type = setupObject.Type,
+                        Prop = PropId.PROP_MAX,
+                    };
+
+                    if (!object.ReferenceEquals(null, baseGenericObject))
+                    {
+                        propPosition.Prop = (PropId)baseGenericObject.ObjectId;
+                    }
+
+                    if (pad is Pad3d)
+                    {
+                        var pad3d = (Pad3d) pad;
+                        propPosition.Bbox = pad3d.BoundingBox.ToBoundingBoxd();
+                    }
+
+                    presetName = pad.Name.GetString();
 
                     // Console.WriteLine($"Setup object point: {workingPoint}");
 
                     if (!object.ReferenceEquals(null, Stage.Stan))
                     {
                         TryGetRoomId(presetName, out roomId);
+                        propPosition.Room = roomId;
                     }
 
-                    Coord2dd svgScaledPoint = null;
+                    bool withinBounds = false;
 
-                    if (workingPoint.Y >= zmin!.Value && workingPoint.Y <= zmax!.Value)
+                    if (propPosition.Origin.Y >= zmin!.Value && propPosition.Origin.Y <= zmax!.Value)
                     {
-                        var cc = workingPoint.To2DXZ();
+                        withinBounds = true;
 
-                        svgScaledPoint = new Coord2dd(
-                            (cc.X * Stage.LevelScale) + OffsetXAfterScale,
-                            (cc.Y * Stage.LevelScale) + OffsetYAfterScale);
-
-                        if ((nativeMinY == null || workingPoint.Y < nativeMinY) && workingPoint.Y >= zmin!.Value)
+                        if ((nativeMinY == null || propPosition.Origin.Y < nativeMinY) && propPosition.Origin.Y >= zmin!.Value)
                         {
-                            nativeMinY = workingPoint.Y;
+                            nativeMinY = propPosition.Origin.Y;
                         }
 
-                        if ((nativeMaxY == null || workingPoint.Y > nativeMaxY) && workingPoint.Y <= zmax!.Value)
+                        if ((nativeMaxY == null || propPosition.Origin.Y > nativeMaxY) && propPosition.Origin.Y <= zmax!.Value)
                         {
-                            nativeMaxY = workingPoint.Y;
+                            nativeMaxY = propPosition.Origin.Y;
                         }
                     }
 
-                    if (object.ReferenceEquals(null, svgScaledPoint))
+                    if (!withinBounds)
                     {
                         continue;
                     }
 
-                    var hullpoints = new SingularSvgPoints()
-                    {
-                        OrderIndex = setupObjectIndex,
-                        Room = roomId,
-                        Point = svgScaledPoint,
-                        Up = up!.Clone(),
-                        Orientation = orientation!.Clone(),
-                        SetupObject = setupObject,
-                        NaturalOrigin = workingPoint.Clone(),
-                    };
-
-                    hullpoints.SvgDataAttributes.Add("propdef-name", setupObject.Type.ToString());
-                    hullpoints.SvgDataAttributes.Add("propdef-id", ((int)setupObject.Type).ToString());
-
-                    if (baseGenericObject != null)
-                    {
-                        var propid = (PropId)baseGenericObject.ObjectId;
-                        hullpoints.SvgDataAttributes.Add("prop-name", propid.ToString());
-                        hullpoints.SvgDataAttributes.Add("prop-id", ((int)propid).ToString());
-                    }
-
                     if (setupPolygonsCollection.ContainsKey(setupObject.Type))
                     {
-                        setupPolygonsCollection[setupObject.Type].Add(hullpoints);
+                        setupPolygonsCollection[setupObject.Type].Add(propPosition);
                     }
                     else
                     {
-                        var polygonCollection = new List<SingularSvgPoints>();
-                        polygonCollection.Add(hullpoints);
+                        var polygonCollection = new List<PropPosition>();
+                        polygonCollection.Add(propPosition);
                         setupPolygonsCollection.Add(setupObject.Type, polygonCollection);
                     }
                 }
@@ -690,16 +673,23 @@ namespace Getools.Palantir
                         continue;
                     }
 
-                    var point = pad.Position.To2DXZ().ToCoord2dd();
-                    point.X *= Stage.LevelScale;
-                    point.Y *= Stage.LevelScale;
+                    bool withinBounds = false;
 
-                    presetPolygons.Add(new SingularSvgPoints()
+                    if (pad.Position.Y >= zmin!.Value && pad.Position.Y <= zmax!.Value)
+                    {
+                        withinBounds = true;
+                    }
+
+                    if (!withinBounds)
+                    {
+                        continue;
+                    }
+
+                    presetPolygons.Add(new RenderPosition()
                     {
                         OrderIndex = index,
                         Room = roomId,
-                        Point = point,
-                        NaturalOrigin = pad.Position.ToCoord3dd(),
+                        Origin = pad.Position.ToCoord3dd(),
                     });
 
                     index++;
@@ -715,16 +705,23 @@ namespace Getools.Palantir
                         //continue;
                     }
 
-                    var point = pad.Position.To2DXZ().ToCoord2dd();
-                    point.X *= Stage.LevelScale;
-                    point.Y *= Stage.LevelScale;
+                    bool withinBounds = false;
 
-                    presetPolygons.Add(new SingularSvgPoints()
+                    if (pad.Position.Y >= zmin!.Value && pad.Position.Y <= zmax!.Value)
+                    {
+                        withinBounds = true;
+                    }
+
+                    if (!withinBounds)
+                    {
+                        continue;
+                    }
+
+                    presetPolygons.Add(new RenderPosition()
                     {
                         OrderIndex = index + 10000, // back to bound3d id convention
                         Room = roomId,
-                        Point = point,
-                        NaturalOrigin = pad.Position.ToCoord3dd(),
+                        Origin = pad.Position.ToCoord3dd(),
                     });
 
                     index++;
@@ -751,31 +748,24 @@ namespace Getools.Palantir
                         TryGetRoomId(presetName, out roomId);
                     }
 
-                    Coord2dd svgScaledPoint = null;
+                    bool withinBounds = false;
 
                     if (workingPoint.Y >= zmin!.Value && workingPoint.Y <= zmax!.Value)
                     {
-                        var cc = workingPoint.To2DXZ();
-
-                        svgScaledPoint = new Coord2dd(
-                            (cc.X * Stage.LevelScale) + OffsetXAfterScale,
-                            (cc.Y * Stage.LevelScale) + OffsetYAfterScale);
+                        withinBounds = true;
                     }
 
-                    if (object.ReferenceEquals(null, svgScaledPoint))
+                    if (!withinBounds)
                     {
                         continue;
                     }
 
-                    var hullpoints = new SingularSvgPoints()
+                    var hullpoints = new RenderPosition()
                     {
                         OrderIndex = setupObjectIndex,
                         Room = roomId,
-                        Point = svgScaledPoint,
                         Up = Coord3dd.Zero.Clone(),
-                        Orientation = Coord3dd.Zero.Clone(),
-                        SetupObject = null,
-                        NaturalOrigin = workingPoint.Clone(),
+                        Origin = preset.Position.ToCoord3dd(),
                     };
 
                     introPolygons.Add(hullpoints);
@@ -804,45 +794,45 @@ namespace Getools.Palantir
             var adjustx = 0 - minScaledX;
             var adjusty = 0 - minScaledY;
 
-            foreach (var poly in roomPolygons)
-            {
-                foreach (var p in poly.Points)
-                {
-                    p.X += adjustx;
-                    p.Y += adjusty;
-                }
-            }
+            //foreach (var poly in roomPolygons)
+            //{
+            //    foreach (var p in poly.Points)
+            //    {
+            //        p.X += adjustx;
+            //        p.Y += adjusty;
+            //    }
+            //}
 
-            foreach (var poly in tilePolygons)
-            {
-                foreach (var p in poly.Points)
-                {
-                    p.X += adjustx;
-                    p.Y += adjusty;
-                }
-            }
+            //foreach (var poly in tilePolygons)
+            //{
+            //    foreach (var p in poly.Points)
+            //    {
+            //        p.X += adjustx;
+            //        p.Y += adjusty;
+            //    }
+            //}
 
-            foreach (var poly in presetPolygons)
-            {
-                poly.Point.X += adjustx;
-                poly.Point.Y += adjusty;
-            }
+            //foreach (var poly in presetPolygons)
+            //{
+            //    poly.Origin.X += adjustx;
+            //    poly.Origin.Y += adjusty;
+            //}
 
-            foreach (var poly in introPolygons)
-            {
-                poly.Point.X += adjustx;
-                poly.Point.Y += adjusty;
-            }
+            //foreach (var poly in introPolygons)
+            //{
+            //    poly.Origin.X += adjustx;
+            //    poly.Origin.Y += adjusty;
+            //}
 
-            foreach (var kvp in setupPolygonsCollection)
-            {
-                var polyCollection = kvp.Value;
-                foreach (var poly in polyCollection)
-                {
-                    poly.Point.X += adjustx;
-                    poly.Point.Y += adjusty;
-                }
-            }
+            //foreach (var kvp in setupPolygonsCollection)
+            //{
+            //    var polyCollection = kvp.Value;
+            //    foreach (var poly in polyCollection)
+            //    {
+            //        poly.Origin.X += adjustx;
+            //        poly.Origin.Y += adjusty;
+            //    }
+            //}
 
             double naturalRatioWh = svgWidth / svgHeight;
             double naturalRatioHw = svgHeight / svgWidth;
@@ -854,8 +844,8 @@ namespace Getools.Palantir
             {
                 Width = svgWidth,
                 Height = svgHeight,
-                Left = 0,
-                Top = 0,
+                Left = minScaledX,
+                Top = minScaledY,
             };
 
             svg.SetDataAttribute("adjustx", adjustx.ToString());
@@ -923,7 +913,7 @@ namespace Getools.Palantir
                 group.Id = SvgPadLayerId;
                 foreach (var poly in presetPolygons)
                 {
-                    var point = poly.Point;
+                    var point = poly.Origin.To2DXZ();
 
                     var rect = group.AddRect();
 
@@ -937,14 +927,9 @@ namespace Getools.Palantir
                     rect.Width = 16;
                     rect.Height = 16;
 
-                    foreach (var kvp in poly.SvgDataAttributes)
-                    {
-                        rect.SetDataAttribute(kvp.Key, kvp.Value);
-                    }
-
-                    rect.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                    rect.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                    rect.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                    rect.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                    rect.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                    rect.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                     rect.SetDataAttribute("room-id", poly.Room.ToString());
                 } 
             }
@@ -955,22 +940,19 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAmmoLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.AmmoBox])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAmmoFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
-                } 
+                }
             }
 
             // safe should be under door z layer.
@@ -980,19 +962,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupSafeLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Safe])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupSafeFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 } 
@@ -1004,19 +983,17 @@ namespace Getools.Palantir
                 group.Id = SvgSetupDoorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Door])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupDoorFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 } 
@@ -1028,19 +1005,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAlarmLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Alarm])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAlarmFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1052,19 +1026,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupCctvLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Cctv])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupCctvFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1076,19 +1047,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupDroneLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Drone])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupDroneFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1100,19 +1068,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAircraftLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Aircraft])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAircraftFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1124,19 +1089,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupTankLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Tank])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupTankFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1148,19 +1110,17 @@ namespace Getools.Palantir
                 group.Id = SvgSetupStandardPropLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.StandardProp])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupStandardPropFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1172,19 +1132,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupSingleMonitorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.SingleMonitor])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupSingleMonitorFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1196,19 +1153,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupCollectableLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Collectable])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupCollectableFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1220,19 +1174,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupBodyArmorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Armour])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupBodyArmorFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1245,19 +1196,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupKeyLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Key])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupKeyFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1270,19 +1218,16 @@ namespace Getools.Palantir
                 group.Id = SvgSetupChrLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Guard])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Point, poly.Up, poly.Orientation);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupChrFormat, poly.Room, poly.OrderIndex);
 
-                        foreach (var kvp in poly.SvgDataAttributes)
-                        {
-                            svgprop.SetDataAttribute(kvp.Key, kvp.Value);
-                        }
+                        AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1294,7 +1239,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupIntroLayerId;
                 foreach (var poly in introPolygons)
                 {
-                    var point = poly.Point;
+                    var point = poly.Origin.To2DXZ();
 
                     var container = group.AddGroup();
 
@@ -1317,14 +1262,9 @@ namespace Getools.Palantir
 
                     path.Transform = $"translate({point.X - halfw}, {point.Y - halfh}) rotate({rotAngle} {halfw} {halfh})";
 
-                    foreach (var kvp in poly.SvgDataAttributes)
-                    {
-                        container.SetDataAttribute(kvp.Key, kvp.Value);
-                    }
-
-                    container.SetDataAttribute("natural-coord-x", poly.NaturalOrigin.X.ToString());
-                    container.SetDataAttribute("natural-coord-y", poly.NaturalOrigin.Y.ToString());
-                    container.SetDataAttribute("natural-coord-z", poly.NaturalOrigin.Z.ToString());
+                    container.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                    container.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                    container.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
                     container.SetDataAttribute("room-id", poly.Room.ToString());
                 }
             }
@@ -1443,6 +1383,24 @@ namespace Getools.Palantir
         private int Base26ToInt(char c)
         {
             return (int)(c - 'a');
+        }
+
+        private void AddPropAttributes(SvgContainer container, PropPosition prop)
+        {
+            var baseObject = prop.SetupObject as SetupObjectBase;
+
+            // guard does not implement SetupObjectGenericBase
+            SetupObjectGenericBase baseGenericObject = prop.SetupObject as SetupObjectGenericBase;
+
+            container.SetDataAttribute("propdef-name", prop.SetupObject.Type.ToString());
+            container.SetDataAttribute("propdef-id", ((int)prop.SetupObject.Type).ToString());
+
+            if (baseGenericObject != null)
+            {
+                var propid = (PropId)baseGenericObject.ObjectId;
+                container.SetDataAttribute("prop-name", propid.ToString());
+                container.SetDataAttribute("prop-id", ((int)propid).ToString());
+            }
         }
 
         private class CollectionHullSvgPoints

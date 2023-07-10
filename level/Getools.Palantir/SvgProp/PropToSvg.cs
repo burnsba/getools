@@ -6,14 +6,42 @@ using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using Getools.Lib.Game;
+using Getools.Lib.Game.Asset.Model;
 using Getools.Lib.Game.Asset.SetupObject;
 using Getools.Lib.Game.Enums;
+using Getools.Lib.Math;
+using Getools.Palantir.Render;
 using SvgLib;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Getools.Palantir.SvgProp
 {
     internal static class PropToSvg
     {
+        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp)
+        {
+            if (rp is PropPosition)
+            {
+                var pp = (PropPosition)rp;
+
+                switch (pp.SetupObject.Type)
+                {
+                    case PropDef.Door:
+                        return SvgAppendPropDefaultModelBbox_door(appendTo, pp, "#8d968e", 4, "#e1ffdb");
+                    
+                    case PropDef.StandardProp:
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, "#8d968e", 4, "#e1ffdb");
+                }
+
+                throw new NotImplementedException();
+            }
+            else
+            {
+                //
+                throw new NotImplementedException();
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -23,11 +51,13 @@ namespace Getools.Palantir.SvgProp
         /// <param name="up">Original preset "up" vector.</param>
         /// <param name="orientation">Original preset "look" vector.</param>
         /// <returns></returns>
-        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, ISetupObject setupObject, Coord2dd point, Coord3dd up, Coord3dd orientation)
+        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, ISetupObject setupObject, Coord3dd point3d, Coord3dd up, Coord3dd orientation)
         {
             var scaleUpper = (setupObject.Scale & 0xff00) >> 8;
             var scaleLower = setupObject.Scale & 0xff;
             double scale = scaleUpper + ((double)scaleLower / (double)256);
+
+            var point = point3d.To2DXZ();
 
             // Objects that don't depend on which PROP.
             switch (setupObject.Type)
@@ -408,6 +438,263 @@ namespace Getools.Palantir.SvgProp
 
             //return null;
             throw new NotSupportedException($"{nameof(SetupObjectToSvgAppend)}: could not resolve PROPDEF {setupObject.Type}, PROP {(PropId)baseObject.ObjectId} to svg.");
+        }
+
+        //private static SvgGroup SvgAppendPropDefaultModelBbox(SvgGroup group, PropId prop, Coord2dd point, Coord3dd up, Coord3dd orientation, double width, double height, string stroke, double strokeWidth, string fill)
+        //{
+        //}
+
+        private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPosition pp, string stroke, double strokeWidth, string fill)
+        {
+            var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
+            var scaleLower = pp.SetupObject.Scale & 0xff;
+            double setupScale = scaleUpper + ((double)scaleLower / (double)256);
+
+            if (object.ReferenceEquals(null, pp.Bbox))
+            {
+                throw new NullReferenceException($"{nameof(pp.Bbox)} is null, doors require 3d bounding box");
+            }
+
+            // The game does some weird translation.
+            var bb2 = new BoundingBoxd();
+            bb2.MaxZ = pp.Bbox.MinX;
+            bb2.MinZ = pp.Bbox.MaxX;
+            bb2.MaxY = pp.Bbox.MinY;
+            bb2.MinY = pp.Bbox.MaxY;
+            bb2.MaxX = pp.Bbox.MinZ;
+            bb2.MinX = pp.Bbox.MaxZ;
+
+            var modelData = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelDataFromPropId(pp.Prop);
+
+            // The axes don't match, but this is what the game does.
+            double xscale = (bb2.MinY - bb2.MaxY) / (modelData.BboxMaxX - modelData.BboxMinX);
+            double yscale = (bb2.MinX - bb2.MaxX) / (modelData.BboxMaxY - modelData.BboxMinY);
+            double zscale = (bb2.MinZ - bb2.MaxZ) / (modelData.BboxMaxZ - modelData.BboxMinZ);
+
+            if ((xscale <= 0.000001f) || (yscale <= 0.000001f) || (zscale <= 0.000001f))
+            {
+                xscale =
+                    yscale =
+                    zscale = 1.0f;
+            }
+
+            double modelScale = xscale;
+
+            if (modelScale < yscale)
+            {
+                modelScale = yscale;
+            }
+
+            if (modelScale < zscale)
+            {
+                modelScale = zscale;
+            }
+
+            var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox);
+
+            // if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
+            //
+
+            double modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
+            double modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
+            double modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
+
+            modelSizeX *= setupScale * xscale;
+            modelSizeY *= setupScale * yscale;
+            modelSizeZ *= setupScale * zscale;
+
+            double halfw = modelSizeX / 2;
+            double halfh = modelSizeZ / 2;
+
+            double rotAngleRad = System.Math.Atan2(pp.Up.Z, pp.Up.X);
+            rotAngleRad *= -1;
+
+            if (pp.Look.Y > 0.9)
+            {
+                rotAngleRad = System.Math.Atan2(pp.Up.X, pp.Up.Z);
+                rotAngleRad *= -1;
+                rotAngleRad += System.Math.PI / 2;
+            }
+
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var container = group.AddGroup();
+
+            container.AddClass("svg-logical-item");
+
+            container.Transform = $"translate({pos.X - halfw}, {pos.Z - halfh})";
+
+            if (rotAngle != 0)
+            {
+                container.Transform += $" rotate({rotAngle} {halfw} {halfh})";
+            }
+
+            var rect = container.AddRect();
+
+            rect.X = 0;
+            rect.Y = 0;
+            rect.Width = modelSizeX;
+            rect.Height = modelSizeZ;
+            rect.Stroke = stroke;
+            rect.StrokeWidth = strokeWidth;
+            rect.Fill = fill;
+
+            return container;
+        }
+
+        private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPosition pp, string stroke, double strokeWidth, string fill)
+        {
+            if (pp.Prop == PropId.PROP_SHUTTLE)
+            {
+                int a = 9;
+            }
+
+            if (object.ReferenceEquals(null, pp.SetupObject))
+            {
+                throw new NullReferenceException($"{nameof(pp.SetupObject)} is null");
+            }
+
+            var standardObject = (SetupObjectStandard)pp.SetupObject;
+
+            var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
+            var scaleLower = pp.SetupObject.Scale & 0xff;
+            double setupScale = scaleUpper + ((double)scaleLower / (double)256);
+
+            bool boundToPad3dDimensions = false;
+            bool has3dBoundBox = !object.ReferenceEquals(null, pp.Bbox);
+
+            double modelSizeX = 0;
+            double modelSizeY = 0;
+            double modelSizeZ = 0;
+
+            var modelData = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelDataFromPropId(pp.Prop);
+            double modelScale = 1.0;
+
+            Coord3dd pos = pp.Origin.Clone();
+
+            //if ((standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_AbsolutePosition) > 0)
+            if (has3dBoundBox)
+            {
+                pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox!);
+            }
+
+            if (boundToPad3dDimensions)
+            {
+                modelSizeX = pp.Bbox!.MaxX - pp.Bbox.MinX;
+                modelSizeY = pp.Bbox!.MaxY - pp.Bbox.MinY;
+                modelSizeZ = pp.Bbox!.MaxZ - pp.Bbox.MinZ;
+
+                // The game does some weird translation.
+                var bb2 = new BoundingBoxd();
+                bb2.MaxZ = pp.Bbox!.MinX;
+                bb2.MinZ = pp.Bbox.MaxX;
+                bb2.MaxY = pp.Bbox.MinY;
+                bb2.MinY = pp.Bbox.MaxY;
+                bb2.MaxX = pp.Bbox.MinZ;
+                bb2.MinX = pp.Bbox.MaxZ;
+
+                // The axes don't match, but this is what the game does.
+                double xscale = (bb2.MinY - bb2.MaxY) / (modelData.BboxMaxX - modelData.BboxMinX);
+                double yscale = (bb2.MinX - bb2.MaxX) / (modelData.BboxMaxY - modelData.BboxMinY);
+                double zscale = (bb2.MinZ - bb2.MaxZ) / (modelData.BboxMaxZ - modelData.BboxMinZ);
+
+                if ((xscale <= 0.000001f) || (yscale <= 0.000001f) || (zscale <= 0.000001f))
+                {
+                    xscale =
+                        yscale =
+                        zscale = 1.0f;
+                }
+
+                modelScale = xscale;
+
+                if (modelScale < yscale)
+                {
+                    modelScale = yscale;
+                }
+
+                if (modelScale < zscale)
+                {
+                    modelScale = zscale;
+                }
+
+                pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox);
+
+                // if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
+                //
+
+                modelSizeX *= setupScale * xscale;
+                modelSizeY *= setupScale * yscale;
+                modelSizeZ *= setupScale * zscale;
+            }
+            else
+            {
+                modelScale = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelScaleFromPropId(pp.Prop);
+
+                if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_XToPresetBounds) > 0)
+                {
+                    modelSizeX = pp.Bbox!.MaxX - pp.Bbox.MinX;
+                    modelSizeX *= setupScale;
+                }
+                else
+                {
+                    modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
+                    modelSizeX *= setupScale * modelScale * 0.3530056775;
+                }
+
+                if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_YToPresetBounds) > 0)
+                {
+                    modelSizeY = pp.Bbox!.MaxY - pp.Bbox.MinY;
+                    modelSizeY *= setupScale;
+                }
+                else
+                {
+                    modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
+                    modelSizeY *= setupScale * modelScale * 0.3530056775;
+                }
+
+                if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_ZToPresetBounds) > 0)
+                {
+                    modelSizeZ = pp.Bbox!.MaxZ - pp.Bbox.MinZ;
+                    modelSizeZ *= setupScale;
+                }
+                else
+                {
+                    modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
+                    modelSizeZ *= setupScale * modelScale * 0.3530056775;
+                }
+            }
+
+            double halfw = modelSizeX / 2;
+            double halfh = modelSizeZ / 2;
+
+            
+
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var container = group.AddGroup();
+
+            container.AddClass("svg-logical-item");
+
+            container.Transform = $"translate({pos.X - halfw}, {pos.Z - halfh})";
+
+            if (rotAngle != 0)
+            {
+                container.Transform += $" rotate({rotAngle} {halfw} {halfh})";
+            }
+
+            var rect = container.AddRect();
+
+            rect.X = 0;
+            rect.Y = 0;
+            rect.Width = modelSizeX;
+            rect.Height = modelSizeZ;
+            rect.Stroke = stroke;
+            rect.StrokeWidth = strokeWidth;
+            rect.Fill = fill;
+
+            return container;
         }
 
         private static SvgGroup SvgGroupAppendAlarm(SvgGroup group, Coord2dd point)

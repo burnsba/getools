@@ -1,0 +1,1364 @@
+{
+  "items": [
+    {
+      "name": "alarm1",
+      "scale": 0.1
+    },
+    {
+      "name": "alarm2",
+      "scale": 0.1
+    },
+    {
+      "name": "explosionbit",
+      "scale": 0.1
+    },
+    {
+      "name": "ammo_crate1",
+      "scale": 0.1
+    },
+    {
+      "name": "ammo_crate2",
+      "scale": 0.1
+    },
+    {
+      "name": "ammo_crate3",
+      "scale": 0.1
+    },
+    {
+      "name": "ammo_crate4",
+      "scale": 0.1
+    },
+    {
+      "name": "ammo_crate5",
+      "scale": 0.1
+    },
+    {
+      "name": "bin1",
+      "scale": 0.1
+    },
+    {
+      "name": "blotter1",
+      "scale": 0.1
+    },
+    {
+      "name": "book1",
+      "scale": 0.1
+    },
+    {
+      "name": "bookshelf1",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console1a",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console1b",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console2a",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console2b",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console3a",
+      "scale": 0.1
+    },
+    {
+      "name": "bridge_console3b",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box1",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box2",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box3",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box4_lg",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box5_lg",
+      "scale": 0.1
+    },
+    {
+      "name": "card_box6_lg",
+      "scale": 0.1
+    },
+    {
+      "name": "cctv",
+      "scale": 0.1
+    },
+    {
+      "name": "console1",
+      "scale": 0.1
+    },
+    {
+      "name": "console2",
+      "scale": 0.1
+    },
+    {
+      "name": "console3",
+      "scale": 0.1
+    },
+    {
+      "name": "console_seva",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sevb",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sevc",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sevd",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev2a",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev2b",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev2c",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev2d",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev_GEa",
+      "scale": 0.1
+    },
+    {
+      "name": "console_sev_GEb",
+      "scale": 0.1
+    },
+    {
+      "name": "desk1",
+      "scale": 0.1
+    },
+    {
+      "name": "desk2",
+      "scale": 0.1
+    },
+    {
+      "name": "desk_lamp2",
+      "scale": 0.1
+    },
+    {
+      "name": "disc_reader",
+      "scale": 0.1
+    },
+    {
+      "name": "disk_drive1",
+      "scale": 0.1
+    },
+    {
+      "name": "filing_cabinet1",
+      "scale": 0.1
+    },
+    {
+      "name": "jerry_can1",
+      "scale": 0.1
+    },
+    {
+      "name": "keyboard1",
+      "scale": 0.1
+    },
+    {
+      "name": "kit_units1",
+      "scale": 0.1
+    },
+    {
+      "name": "letter_tray1",
+      "scale": 0.1
+    },
+    {
+      "name": "mainframe1",
+      "scale": 0.1
+    },
+    {
+      "name": "mainframe2",
+      "scale": 0.1
+    },
+    {
+      "name": "metal_chair1",
+      "scale": 0.1
+    },
+    {
+      "name": "metal_crate1",
+      "scale": 0.1
+    },
+    {
+      "name": "metal_crate2",
+      "scale": 0.1
+    },
+    {
+      "name": "metal_crate3",
+      "scale": 0.1
+    },
+    {
+      "name": "metal_crate4",
+      "scale": 0.1
+    },
+    {
+      "name": "missile_rack",
+      "scale": 0.1
+    },
+    {
+      "name": "missile_rack2",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum1",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum2",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum3",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum5",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum6",
+      "scale": 0.1
+    },
+    {
+      "name": "oil_drum7",
+      "scale": 0.1
+    },
+    {
+      "name": "padlock",
+      "scale": 0.1
+    },
+    {
+      "name": "phone1",
+      "scale": 0.1
+    },
+    {
+      "name": "radio_unit1",
+      "scale": 0.1
+    },
+    {
+      "name": "radio_unit2",
+      "scale": 0.1
+    },
+    {
+      "name": "radio_unit3",
+      "scale": 0.1
+    },
+    {
+      "name": "radio_unit4",
+      "scale": 0.1
+    },
+    {
+      "name": "sat1_reflect",
+      "scale": 0.1
+    },
+    {
+      "name": "satdish",
+      "scale": 0.1
+    },
+    {
+      "name": "satbox",
+      "scale": 0.1
+    },
+    {
+      "name": "stool1",
+      "scale": 0.1
+    },
+    {
+      "name": "swivel_chair1",
+      "scale": 0.1
+    },
+    {
+      "name": "torpedo_rack",
+      "scale": 0.1
+    },
+    {
+      "name": "tv1",
+      "scale": 0.1
+    },
+    {
+      "name": "tv_holder",
+      "scale": 0.1
+    },
+    {
+      "name": "tvscreen",
+      "scale": 0.1
+    },
+    {
+      "name": "tv4screen",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_lg_crate1",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_lg_crate2",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_md_crate3",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_sm_crate4",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_sm_crate5",
+      "scale": 0.1
+    },
+    {
+      "name": "wood_sm_crate6",
+      "scale": 0.1
+    },
+    {
+      "name": "wooden_table1",
+      "scale": 0.1
+    },
+    {
+      "name": "swipe_card2",
+      "scale": 0.1
+    },
+    {
+      "name": "borg_crate",
+      "scale": 0.1
+    },
+    {
+      "name": "boxes4x4",
+      "scale": 0.1
+    },
+    {
+      "name": "boxes3x4",
+      "scale": 0.1
+    },
+    {
+      "name": "boxes2x4",
+      "scale": 0.1
+    },
+    {
+      "name": "sec_panel",
+      "scale": 0.1
+    },
+    {
+      "name": "ICBM_nose",
+      "scale": 0.1
+    },
+    {
+      "name": "ICBM",
+      "scale": 0.1
+    },
+    {
+      "name": "tuning_console1",
+      "scale": 0.1
+    },
+    {
+      "name": "desk_arecibo1",
+      "scale": 0.1
+    },
+    {
+      "name": "locker3",
+      "scale": 0.1
+    },
+    {
+      "name": "locker4",
+      "scale": 0.1
+    },
+    {
+      "name": "roofgun",
+      "scale": 0.1
+    },
+    {
+      "name": "dest_engine",
+      "scale": 0.1
+    },
+    {
+      "name": "dest_exocet",
+      "scale": 0.1
+    },
+    {
+      "name": "dest_gun",
+      "scale": 0.1
+    },
+    {
+      "name": "dest_harpoon",
+      "scale": 0.1
+    },
+    {
+      "name": "dest_seawolf",
+      "scale": 0.1
+    },
+    {
+      "name": "window",
+      "scale": 0.1
+    },
+    {
+      "name": "window_lib_lg1",
+      "scale": 0.1
+    },
+    {
+      "name": "window_lib_sm1",
+      "scale": 0.1
+    },
+    {
+      "name": "window_cor11",
+      "scale": 0.1
+    },
+    {
+      "name": "jungle3_tree",
+      "scale": 0.1
+    },
+    {
+      "name": "palm",
+      "scale": 0.1
+    },
+    {
+      "name": "palmtree",
+      "scale": 0.1
+    },
+    {
+      "name": "plant2b",
+      "scale": 0.1
+    },
+    {
+      "name": "labbench",
+      "scale": 0.1
+    },
+    {
+      "name": "gasbarrel",
+      "scale": 0.1
+    },
+    {
+      "name": "gasbarrels",
+      "scale": 0.1
+    },
+    {
+      "name": "bodyarmour",
+      "scale": 0.1
+    },
+    {
+      "name": "bodyarmourvest",
+      "scale": 0.1
+    },
+    {
+      "name": "gastank",
+      "scale": 0.1
+    },
+    {
+      "name": "glassware1",
+      "scale": 0.1
+    },
+    {
+      "name": "hatchbolt",
+      "scale": 0.1
+    },
+    {
+      "name": "brakeunit",
+      "scale": 0.1
+    },
+    {
+      "name": "ak47mag",
+      "scale": 0.1
+    },
+    {
+      "name": "m16mag",
+      "scale": 0.1
+    },
+    {
+      "name": "mp5kmag",
+      "scale": 0.1
+    },
+    {
+      "name": "skorpionmag",
+      "scale": 0.1
+    },
+    {
+      "name": "spectremag",
+      "scale": 0.1
+    },
+    {
+      "name": "uzimag",
+      "scale": 0.1
+    },
+    {
+      "name": "silencer",
+      "scale": 0.1
+    },
+    {
+      "name": "chrextinguisher",
+      "scale": 0.1
+    },
+    {
+      "name": "boxcartridges",
+      "scale": 0.1
+    },
+    {
+      "name": "fnp90mag",
+      "scale": 0.1
+    },
+    {
+      "name": "goldenshells",
+      "scale": 0.1
+    },
+    {
+      "name": "magnumshells",
+      "scale": 0.1
+    },
+    {
+      "name": "wppkmag",
+      "scale": 0.1
+    },
+    {
+      "name": "tt33mag",
+      "scale": 0.1
+    },
+    {
+      "name": "sev_door",
+      "scale": 1.0
+    },
+    {
+      "name": "sev_door3",
+      "scale": 1.0
+    },
+    {
+      "name": "sev_door3_wind",
+      "scale": 1.0
+    },
+    {
+      "name": "sev_door4_wind",
+      "scale": 1.0
+    },
+    {
+      "name": "sev_trislide",
+      "scale": 1.0
+    },
+    {
+      "name": "sev_door_v1",
+      "scale": 1.0
+    },
+    {
+      "name": "steel_door1",
+      "scale": 1.0
+    },
+    {
+      "name": "steel_door2",
+      "scale": 1.0
+    },
+    {
+      "name": "steel_door3",
+      "scale": 1.0
+    },
+    {
+      "name": "silo_lift_door",
+      "scale": 1.0
+    },
+    {
+      "name": "steel_door2b",
+      "scale": 1.0
+    },
+    {
+      "name": "door_roller1",
+      "scale": 1.0
+    },
+    {
+      "name": "door_roller2",
+      "scale": 1.0
+    },
+    {
+      "name": "door_roller3",
+      "scale": 1.0
+    },
+    {
+      "name": "door_roller4",
+      "scale": 1.0
+    },
+    {
+      "name": "door_st_arec1",
+      "scale": 1.0
+    },
+    {
+      "name": "door_st_arec2",
+      "scale": 1.0
+    },
+    {
+      "name": "door_dest1",
+      "scale": 1.0
+    },
+    {
+      "name": "door_dest2",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_sw_do1",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_sw2_do1",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_sw3_do1",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_sw4_do1",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_met1_do1",
+      "scale": 1.0
+    },
+    {
+      "name": "gas_plant_wc_cub1",
+      "scale": 1.0
+    },
+    {
+      "name": "gasplant_clear_door",
+      "scale": 1.0
+    },
+    {
+      "name": "train_door",
+      "scale": 1.0
+    },
+    {
+      "name": "train_door2",
+      "scale": 1.0
+    },
+    {
+      "name": "train_door3",
+      "scale": 1.0
+    },
+    {
+      "name": "door_eyelid",
+      "scale": 1.0
+    },
+    {
+      "name": "door_iris",
+      "scale": 1.0
+    },
+    {
+      "name": "sevdoorwood",
+      "scale": 1.0
+    },
+    {
+      "name": "sevdoorwind",
+      "scale": 1.0
+    },
+    {
+      "name": "sevdoornowind",
+      "scale": 1.0
+    },
+    {
+      "name": "sevdoormetslide",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor1a",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor1b",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor2a",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor2b",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor3",
+      "scale": 1.0
+    },
+    {
+      "name": "cryptdoor4",
+      "scale": 1.0
+    },
+    {
+      "name": "vertdoor",
+      "scale": 1.0
+    },
+    {
+      "name": "hatchdoor",
+      "scale": 1.0
+    },
+    {
+      "name": "damgatedoor",
+      "scale": 1.0
+    },
+    {
+      "name": "damtundoor",
+      "scale": 1.0
+    },
+    {
+      "name": "damchaindoor",
+      "scale": 1.0
+    },
+    {
+      "name": "silotopdoor",
+      "scale": 1.0
+    },
+    {
+      "name": "doorprison1",
+      "scale": 1.0
+    },
+    {
+      "name": "doorstatgate",
+      "scale": 1.0
+    },
+    {
+      "name": "chrkalash",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgrenadelaunch",
+      "scale": 0.1
+    },
+    {
+      "name": "chrknife",
+      "scale": 0.1
+    },
+    {
+      "name": "chrlaser",
+      "scale": 0.1
+    },
+    {
+      "name": "chrm16",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmp5k",
+      "scale": 0.1
+    },
+    {
+      "name": "chrruger",
+      "scale": 0.1
+    },
+    {
+      "name": "chrwppk",
+      "scale": 0.1
+    },
+    {
+      "name": "chrshotgun",
+      "scale": 0.1
+    },
+    {
+      "name": "chrskorpion",
+      "scale": 0.1
+    },
+    {
+      "name": "chrspectre",
+      "scale": 0.1
+    },
+    {
+      "name": "chruzi",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgrenade",
+      "scale": 0.1
+    },
+    {
+      "name": "chrfnp90",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbriefcase",
+      "scale": 0.1
+    },
+    {
+      "name": "chrremotemine",
+      "scale": 0.1
+    },
+    {
+      "name": "chrproximitymine",
+      "scale": 0.1
+    },
+    {
+      "name": "chrtimedmine",
+      "scale": 0.1
+    },
+    {
+      "name": "chrrocket",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgrenaderound",
+      "scale": 0.1
+    },
+    {
+      "name": "chrwppksil",
+      "scale": 0.1
+    },
+    {
+      "name": "chrtt33",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmp5ksil",
+      "scale": 0.1
+    },
+    {
+      "name": "chrautoshot",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgolden",
+      "scale": 0.1
+    },
+    {
+      "name": "chrthrowknife",
+      "scale": 0.1
+    },
+    {
+      "name": "chrsniperrifle",
+      "scale": 0.1
+    },
+    {
+      "name": "chrrocketlaunch",
+      "scale": 0.1
+    },
+    {
+      "name": "hatfurry",
+      "scale": 0.1
+    },
+    {
+      "name": "hatfurrybrown",
+      "scale": 0.1
+    },
+    {
+      "name": "hatfurryblack",
+      "scale": 0.1
+    },
+    {
+      "name": "hattbird",
+      "scale": 0.1
+    },
+    {
+      "name": "hattbirdbrown",
+      "scale": 0.1
+    },
+    {
+      "name": "hathelmet",
+      "scale": 0.1
+    },
+    {
+      "name": "hathelmetgrey",
+      "scale": 0.1
+    },
+    {
+      "name": "hatmoon",
+      "scale": 0.1
+    },
+    {
+      "name": "hatberet",
+      "scale": 0.1
+    },
+    {
+      "name": "hatberetblue",
+      "scale": 0.1
+    },
+    {
+      "name": "hatberetred",
+      "scale": 0.1
+    },
+    {
+      "name": "hatpeaked",
+      "scale": 0.1
+    },
+    {
+      "name": "chrwristdart",
+      "scale": 0.1
+    },
+    {
+      "name": "chrexplosivepen",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbombcase",
+      "scale": 0.1
+    },
+    {
+      "name": "chrflarepistol",
+      "scale": 0.1
+    },
+    {
+      "name": "chrpitongun",
+      "scale": 0.1
+    },
+    {
+      "name": "chrfingergun",
+      "scale": 0.1
+    },
+    {
+      "name": "chrsilverwppk",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgoldwppk",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdynamite",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbungee",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdoordecoder",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbombdefuser",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbugdetector",
+      "scale": 0.1
+    },
+    {
+      "name": "chrsafecrackercase",
+      "scale": 0.1
+    },
+    {
+      "name": "chrcamera",
+      "scale": 0.1
+    },
+    {
+      "name": "chrlockexploder",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdoorexploder",
+      "scale": 0.1
+    },
+    {
+      "name": "chrkeyanalysercase",
+      "scale": 0.1
+    },
+    {
+      "name": "chrweaponcase",
+      "scale": 0.1
+    },
+    {
+      "name": "chrkeyyale",
+      "scale": 0.1
+    },
+    {
+      "name": "chrkeybolt",
+      "scale": 0.1
+    },
+    {
+      "name": "chrbug",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmicrocamera",
+      "scale": 0.1
+    },
+    {
+      "name": "floppy",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgoldeneyekey",
+      "scale": 0.1
+    },
+    {
+      "name": "chrpolarizedglasses",
+      "scale": 0.1
+    },
+    {
+      "name": "chrcreditcard",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdarkglasses",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgaskeyring",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdatathief",
+      "scale": 0.1
+    },
+    {
+      "name": "safe",
+      "scale": 0.1
+    },
+    {
+      "name": "bomb",
+      "scale": 0.1
+    },
+    {
+      "name": "chrplans",
+      "scale": 0.1
+    },
+    {
+      "name": "chrspyfile",
+      "scale": 0.1
+    },
+    {
+      "name": "chrblueprints",
+      "scale": 0.1
+    },
+    {
+      "name": "chrcircuitboard",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmap",
+      "scale": 0.1
+    },
+    {
+      "name": "chrspooltape",
+      "scale": 0.1
+    },
+    {
+      "name": "chraudiotape",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmicrofilm",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmicrocode",
+      "scale": 0.1
+    },
+    {
+      "name": "chrlectre",
+      "scale": 0.1
+    },
+    {
+      "name": "chrmoney",
+      "scale": 0.1
+    },
+    {
+      "name": "chrgoldbar",
+      "scale": 0.1
+    },
+    {
+      "name": "chrheroin",
+      "scale": 0.1
+    },
+    {
+      "name": "chrclipboard",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdossierred",
+      "scale": 0.1
+    },
+    {
+      "name": "chrstafflist",
+      "scale": 0.1
+    },
+    {
+      "name": "chrdattape",
+      "scale": 0.1
+    },
+    {
+      "name": "chrplastique",
+      "scale": 0.1
+    },
+    {
+      "name": "chrblackbox",
+      "scale": 0.1
+    },
+    {
+      "name": "chrvideotape",
+      "scale": 0.1
+    },
+    {
+      "name": "nintendologo",
+      "scale": 0.1
+    },
+    {
+      "name": "goldeneyelogo",
+      "scale": 0.1
+    },
+    {
+      "name": "walletbond",
+      "scale": 0.1
+    },
+    {
+      "name": "miltruck",
+      "scale": 0.1
+    },
+    {
+      "name": "jeep",
+      "scale": 0.1
+    },
+    {
+      "name": "artic",
+      "scale": 0.1
+    },
+    {
+      "name": "helicopter",
+      "scale": 0.1
+    },
+    {
+      "name": "tiger",
+      "scale": 0.1
+    },
+    {
+      "name": "milcopter",
+      "scale": 0.1
+    },
+    {
+      "name": "hind",
+      "scale": 0.1
+    },
+    {
+      "name": "artictrailer",
+      "scale": 0.1
+    },
+    {
+      "name": "motorbike",
+      "scale": 0.1
+    },
+    {
+      "name": "tank",
+      "scale": 0.1
+    },
+    {
+      "name": "apc",
+      "scale": 0.1
+    },
+    {
+      "name": "speedboat",
+      "scale": 0.1
+    },
+    {
+      "name": "plane",
+      "scale": 0.1
+    },
+    {
+      "name": "gun_runway1",
+      "scale": 0.1
+    },
+    {
+      "name": "safedoor",
+      "scale": 1.0
+    },
+    {
+      "name": "key_holder",
+      "scale": 1.0
+    },
+    {
+      "name": "hatchsevx",
+      "scale": 1.0
+    },
+    {
+      "name": "sevdish",
+      "scale": 1.0
+    },
+    {
+      "name": "archsecdoor1",
+      "scale": 1.0
+    },
+    {
+      "name": "archsecdoor2",
+      "scale": 1.0
+    },
+    {
+      "name": "groundgun",
+      "scale": 0.1
+    },
+    {
+      "name": "trainextdoor",
+      "scale": 1.0
+    },
+    {
+      "name": "carbmw",
+      "scale": 0.1
+    },
+    {
+      "name": "carescort",
+      "scale": 0.1
+    },
+    {
+      "name": "cargolf",
+      "scale": 0.1
+    },
+    {
+      "name": "carweird",
+      "scale": 0.1
+    },
+    {
+      "name": "carzil",
+      "scale": 0.1
+    },
+    {
+      "name": "shuttle_door_l",
+      "scale": 1.0
+    },
+    {
+      "name": "shuttle_door_r",
+      "scale": 1.0
+    },
+    {
+      "name": "depot_gate_entry",
+      "scale": 0.1
+    },
+    {
+      "name": "depot_door_steel",
+      "scale": 0.1
+    },
+    {
+      "name": "glassware2",
+      "scale": 0.1
+    },
+    {
+      "name": "glassware3",
+      "scale": 0.1
+    },
+    {
+      "name": "glassware4",
+      "scale": 0.1
+    },
+    {
+      "name": "landmine",
+      "scale": 0.1
+    },
+    {
+      "name": "plant1",
+      "scale": 0.1
+    },
+    {
+      "name": "plant11",
+      "scale": 0.1
+    },
+    {
+      "name": "plant2",
+      "scale": 0.1
+    },
+    {
+      "name": "plant3",
+      "scale": 0.1
+    },
+    {
+      "name": "jungle5_tree",
+      "scale": 0.1
+    },
+    {
+      "name": "legalpage",
+      "scale": 0.1
+    },
+    {
+      "name": "st_pete_room_1i",
+      "scale": 0.1
+    },
+    {
+      "name": "st_pete_room_2i",
+      "scale": 0.1
+    },
+    {
+      "name": "st_pete_room_3t",
+      "scale": 0.1
+    },
+    {
+      "name": "st_pete_room_5c",
+      "scale": 0.1
+    },
+    {
+      "name": "st_pete_room_6c",
+      "scale": 0.1
+    },
+    {
+      "name": "door_rollertrain",
+      "scale": 1.0
+    },
+    {
+      "name": "door_win",
+      "scale": 1.0
+    },
+    {
+      "name": "door_aztec",
+      "scale": 1.0
+    },
+    {
+      "name": "shuttle",
+      "scale": 0.1
+    },
+    {
+      "name": "door_azt_desk",
+      "scale": 1.0
+    },
+    {
+      "name": "door_azt_desk_top",
+      "scale": 1.0
+    },
+    {
+      "name": "door_azt_chair",
+      "scale": 1.0
+    },
+    {
+      "name": "door_mf",
+      "scale": 1.0
+    },
+    {
+      "name": "flag",
+      "scale": 0.1
+    },
+    {
+      "name": "barricade",
+      "scale": 0.1
+    },
+    {
+      "name": "modembox",
+      "scale": 0.1
+    },
+    {
+      "name": "doorpanel",
+      "scale": 0.1
+    },
+    {
+      "name": "doorconsole",
+      "scale": 0.1
+    },
+    {
+      "name": "chrtesttube",
+      "scale": 0.1
+    },
+    {
+      "name": "bollard",
+      "scale": 0.1
+    }
+  ]
+}
