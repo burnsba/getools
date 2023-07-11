@@ -914,34 +914,28 @@ namespace Getools.Palantir
                 group.Id = SvgPadLayerId;
                 foreach (var poly in presetPolygons)
                 {
-                    var point = poly.Origin.To2DXZ();
+                    var svgcontainer = SvgProp.PropToSvg.PadToSvgAppend(group, poly, Stage.LevelScale);
+                    if (!object.ReferenceEquals(null, svgcontainer))
+                    {
+                        svgcontainer.Id = string.Format(SvgItemIdPadFormat, poly.Room, poly.OrderIndex);
+                        svgcontainer.AddClass("gelib-pad");
 
-                    var rect = group.AddRect();
-
-                    rect.AddClass("svg-logical-item");
-                    rect.AddClass("gelib-pad");
-
-                    rect.Id = string.Format(SvgItemIdPadFormat, poly.Room, poly.OrderIndex);
-
-                    rect.X = point.X - 8;
-                    rect.Y = point.Y - 8;
-                    rect.Width = 16;
-                    rect.Height = 16;
-
-                    rect.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                    rect.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                    rect.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                    rect.SetDataAttribute("room-id", poly.Room.ToString());
+                        svgcontainer.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgcontainer.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgcontainer.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
+                        svgcontainer.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
                 } 
             }
 
+            /*
             if (setupPolygonsCollection.ContainsKey(PropDef.AmmoBox))
             {
                 var group = svg.AddGroup();
                 group.Id = SvgSetupAmmoLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.AmmoBox])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAmmoFormat, poly.Room, poly.OrderIndex);
@@ -963,7 +957,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupSafeLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Safe])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupSafeFormat, poly.Room, poly.OrderIndex);
@@ -1005,7 +999,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAlarmLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Alarm])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAlarmFormat, poly.Room, poly.OrderIndex);
@@ -1026,7 +1020,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupCctvLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Cctv])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupCctvFormat, poly.Room, poly.OrderIndex);
@@ -1047,7 +1041,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupDroneLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Drone])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupDroneFormat, poly.Room, poly.OrderIndex);
@@ -1068,7 +1062,6 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAircraftLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Aircraft])
                 {
-                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
                     var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
@@ -1090,7 +1083,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupTankLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Tank])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupTankFormat, poly.Room, poly.OrderIndex);
@@ -1132,7 +1125,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupSingleMonitorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.SingleMonitor])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupSingleMonitorFormat, poly.Room, poly.OrderIndex);
@@ -1153,7 +1146,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupCollectableLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Collectable])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupCollectableFormat, poly.Room, poly.OrderIndex);
@@ -1174,7 +1167,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupBodyArmorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Armour])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupBodyArmorFormat, poly.Room, poly.OrderIndex);
@@ -1196,7 +1189,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupKeyLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Key])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupKeyFormat, poly.Room, poly.OrderIndex);
@@ -1210,28 +1203,28 @@ namespace Getools.Palantir
                     }
                 }
             }
+            */
+
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.AmmoBox, svg, SvgSetupAmmoLayerId);
+
+            // safe should be under door z layer.
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Safe, svg, SvgSetupSafeLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Door, svg, SvgSetupDoorLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Alarm, svg, SvgSetupAlarmLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Cctv, svg, SvgSetupCctvLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Drone, svg, SvgSetupDroneLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Aircraft, svg, SvgSetupAircraftLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Tank, svg, SvgSetupTankLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.StandardProp, svg, SvgSetupStandardPropLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.SingleMonitor, svg, SvgSetupSingleMonitorLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Collectable, svg, SvgSetupCollectableLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Armour, svg, SvgSetupBodyArmorLayerId);
+
+            // keys should be on top of tables (StandardProp)
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Key, svg, SvgSetupKeyLayerId);
 
             // guards should be one of the highest z layers
-            if (setupPolygonsCollection.ContainsKey(PropDef.Guard))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupChrLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Guard])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupChrFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Guard, svg, SvgSetupChrLayerId);
 
             if (introPolygons.Any())
             {
@@ -1270,6 +1263,30 @@ namespace Getools.Palantir
             }
 
             return svg;
+        }
+
+        private void AddSetupGroupToSvgDoc(Dictionary<PropDef, List<PropPosition>> collection, PropDef key, SvgDocument svg, string groupId)
+        {
+            if (collection.ContainsKey(key))
+            {
+                var group = svg.AddGroup();
+                group.Id = groupId;
+                foreach (var poly in collection[key])
+                {
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
+                    if (!object.ReferenceEquals(null, svgprop))
+                    {
+                        svgprop.Id = string.Format(SvgItemIdSetupChrFormat, poly.Room, poly.OrderIndex);
+
+                        AddPropAttributes(svgprop, poly);
+
+                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
+                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
+                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
+                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+                    }
+                }
+            }
         }
 
         /// <summary>
