@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Extensions;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Model;
 using Getools.Lib.Game.Asset.SetupObject;
@@ -18,19 +19,30 @@ namespace Getools.Palantir.SvgProp
 {
     internal static class PropToSvg
     {
-        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp)
+        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
         {
+            if (object.ReferenceEquals(null, rp))
+            {
+                throw new NullReferenceException($"{nameof(rp)}");
+            }
+
             if (rp is PropPosition)
             {
                 var pp = (PropPosition)rp;
 
+                if (object.ReferenceEquals(null, pp.SetupObject))
+                {
+                    throw new NullReferenceException($"{nameof(pp.SetupObject)}");
+                }
+
                 switch (pp.SetupObject.Type)
                 {
                     case PropDef.Door:
-                        return SvgAppendPropDefaultModelBbox_door(appendTo, pp, "#8d968e", 4, "#e1ffdb");
+                        return SvgAppendPropDefaultModelBbox_door(appendTo, pp, levelScale, "#8d968e", 4, "#e1ffdb");
                     
+                    case PropDef.Aircraft:
                     case PropDef.StandardProp:
-                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, "#8d968e", 4, "#e1ffdb");
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#8d968e", 4, "#e1ffdb");
                 }
 
                 throw new NotImplementedException();
@@ -440,11 +452,7 @@ namespace Getools.Palantir.SvgProp
             throw new NotSupportedException($"{nameof(SetupObjectToSvgAppend)}: could not resolve PROPDEF {setupObject.Type}, PROP {(PropId)baseObject.ObjectId} to svg.");
         }
 
-        //private static SvgGroup SvgAppendPropDefaultModelBbox(SvgGroup group, PropId prop, Coord2dd point, Coord3dd up, Coord3dd orientation, double width, double height, string stroke, double strokeWidth, string fill)
-        //{
-        //}
-
-        private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPosition pp, string stroke, double strokeWidth, string fill)
+        private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
             var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
             var scaleLower = pp.SetupObject.Scale & 0xff;
@@ -490,7 +498,7 @@ namespace Getools.Palantir.SvgProp
                 modelScale = zscale;
             }
 
-            var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox);
+            var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox).Scale(1.0 / levelScale);
 
             // if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
             //
@@ -499,9 +507,9 @@ namespace Getools.Palantir.SvgProp
             double modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
             double modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
 
-            modelSizeX *= setupScale * xscale;
-            modelSizeY *= setupScale * yscale;
-            modelSizeZ *= setupScale * zscale;
+            modelSizeX *= setupScale * xscale / levelScale;
+            modelSizeY *= setupScale * yscale / levelScale;
+            modelSizeZ *= setupScale * zscale / levelScale;
 
             double halfw = modelSizeX / 2;
             double halfh = modelSizeZ / 2;
@@ -542,19 +550,15 @@ namespace Getools.Palantir.SvgProp
             return container;
         }
 
-        private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPosition pp, string stroke, double strokeWidth, string fill)
+        private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
-            if (pp.Prop == PropId.PROP_SHUTTLE)
-            {
-                int a = 9;
-            }
-
             if (object.ReferenceEquals(null, pp.SetupObject))
             {
                 throw new NullReferenceException($"{nameof(pp.SetupObject)} is null");
             }
 
-            var standardObject = (SetupObjectStandard)pp.SetupObject;
+            // guard does not implement SetupObjectGenericBase
+            var standardObject = (SetupObjectGenericBase)pp.SetupObject;
 
             var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
             var scaleLower = pp.SetupObject.Scale & 0xff;
@@ -570,12 +574,12 @@ namespace Getools.Palantir.SvgProp
             var modelData = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelDataFromPropId(pp.Prop);
             double modelScale = 1.0;
 
-            Coord3dd pos = pp.Origin.Clone();
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
             //if ((standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_AbsolutePosition) > 0)
             if (has3dBoundBox)
             {
-                pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox!);
+                pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox!).Scale(1.0 / levelScale);
             }
 
             if (boundToPad3dDimensions)
@@ -633,41 +637,39 @@ namespace Getools.Palantir.SvgProp
                 if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_XToPresetBounds) > 0)
                 {
                     modelSizeX = pp.Bbox!.MaxX - pp.Bbox.MinX;
-                    modelSizeX *= setupScale;
+                    modelSizeX *= setupScale / levelScale;
                 }
                 else
                 {
                     modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
-                    modelSizeX *= setupScale * modelScale * 0.3530056775;
+                    modelSizeX *= setupScale * modelScale;
                 }
 
                 if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_YToPresetBounds) > 0)
                 {
                     modelSizeY = pp.Bbox!.MaxY - pp.Bbox.MinY;
-                    modelSizeY *= setupScale;
+                    modelSizeY *= setupScale / levelScale;
                 }
                 else
                 {
                     modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
-                    modelSizeY *= setupScale * modelScale * 0.3530056775;
+                    modelSizeY *= setupScale * modelScale;
                 }
 
                 if (has3dBoundBox && (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_ZToPresetBounds) > 0)
                 {
                     modelSizeZ = pp.Bbox!.MaxZ - pp.Bbox.MinZ;
-                    modelSizeZ *= setupScale;
+                    modelSizeZ *= setupScale / levelScale;
                 }
                 else
                 {
                     modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
-                    modelSizeZ *= setupScale * modelScale * 0.3530056775;
+                    modelSizeZ *= setupScale * modelScale;
                 }
             }
 
             double halfw = modelSizeX / 2;
             double halfh = modelSizeZ / 2;
-
-            
 
             double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
             rotAngleRad *= -1;

@@ -231,7 +231,7 @@ namespace Getools.Palantir
 
                     foreach (var p in convexHull)
                     {
-                        var scaled = new Coord2dd(p.X, p.Y);
+                        var scaled = new Coord2dd(p.X, p.Y).Scale(1.0 / Stage.LevelScale);
 
                         if (scaled.X < minScaledX)
                         {
@@ -279,7 +279,7 @@ namespace Getools.Palantir
                     // Add first point at end of list to create closed svg path.
                     // Points are adjusted later, be careful not to link this
                     // to an existing point.
-                    svgScaledPoints.Add(svgScaledPoints[0].Clone());
+                    svgScaledPoints.Add(svgScaledPoints[0].Clone()); // created from scaled points
 
                     var collection = new CollectionHullSvgPoints()
                     {
@@ -414,7 +414,7 @@ namespace Getools.Palantir
 
                     foreach (var p in convexHull)
                     {
-                        var scaled = new Coord2dd(p.X, p.Y);
+                        var scaled = new Coord2dd(p.X, p.Y).Scale(1.0 / Stage.LevelScale);
 
                         if (scaled.X < minScaledX)
                         {
@@ -462,7 +462,7 @@ namespace Getools.Palantir
                     // Add first point at end of list to create closed svg path.
                     // Points are adjusted later, be careful not to link this
                     // to an existing point.
-                    svgScaledPoints.Add(svgScaledPoints[0].Clone());
+                    svgScaledPoints.Add(svgScaledPoints[0].Clone()); // created from scaled points
 
                     var collection = new CollectionHullSvgPoints()
                     {
@@ -596,6 +596,7 @@ namespace Getools.Palantir
                         continue;
                     }
 
+                    // Points are scaled later, depending on type
                     var propPosition = new PropPosition()
                     {
                         OrderIndex = setupObjectIndex,
@@ -689,7 +690,7 @@ namespace Getools.Palantir
                     {
                         OrderIndex = index,
                         Room = roomId,
-                        Origin = pad.Position.ToCoord3dd(),
+                        Origin = pad.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
                     });
 
                     index++;
@@ -721,7 +722,7 @@ namespace Getools.Palantir
                     {
                         OrderIndex = index + 10000, // back to bound3d id convention
                         Room = roomId,
-                        Origin = pad.Position.ToCoord3dd(),
+                        Origin = pad.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
                     });
 
                     index++;
@@ -765,7 +766,7 @@ namespace Getools.Palantir
                         OrderIndex = setupObjectIndex,
                         Room = roomId,
                         Up = Coord3dd.Zero.Clone(),
-                        Origin = preset.Position.ToCoord3dd(),
+                        Origin = preset.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
                     };
 
                     introPolygons.Add(hullpoints);
@@ -983,8 +984,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupDoorLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Door])
                 {
-                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupDoorFormat, poly.Room, poly.OrderIndex);
@@ -1068,7 +1068,8 @@ namespace Getools.Palantir
                 group.Id = SvgSetupAircraftLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.Aircraft])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupAircraftFormat, poly.Room, poly.OrderIndex);
@@ -1110,8 +1111,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupStandardPropLayerId;
                 foreach (var poly in setupPolygonsCollection[PropDef.StandardProp])
                 {
-                    //var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly.SetupObject!, poly.Origin, poly.Up, poly.Look);
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly);
+                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
                         svgprop.Id = string.Format(SvgItemIdSetupStandardPropFormat, poly.Room, poly.OrderIndex);

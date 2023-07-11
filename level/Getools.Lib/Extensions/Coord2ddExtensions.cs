@@ -70,5 +70,10 @@ namespace Getools.Lib.Extensions
 
             return rect;
         }
+
+        public static Coord2dd Scale(this Coord2dd p, double scaleFactor)
+        {
+            return new Coord2dd(p.X * scaleFactor, p.Y * scaleFactor);
+        }
     }
 }
