@@ -21,13 +21,12 @@ namespace Getools.Palantir.SvgProp
     {
         internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
         {
-            // position is already scaled
-            Coord3dd pos = rp.Origin.Clone();
-
             double scaleFactor = 1 / levelScale;
 
-            double modelSizeX = 8 * scaleFactor;
-            double modelSizeZ = 8 * scaleFactor;
+            Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
+
+            double modelSizeX = 32;
+            double modelSizeZ = 32;
             double halfw = modelSizeX / 2;
             double halfh = modelSizeZ / 2;
 
@@ -774,7 +773,8 @@ namespace Getools.Palantir.SvgProp
 
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-            double scaleFactor = 1 / levelScale;
+            // const fot all stages
+            double scaleFactor = 7;
 
             double modelSizeX = 12 * scaleFactor;
             double modelSizeZ = 5 * scaleFactor;

@@ -690,7 +690,7 @@ namespace Getools.Palantir
                     {
                         OrderIndex = index,
                         Room = roomId,
-                        Origin = pad.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
+                        Origin = pad.Position.ToCoord3dd(),
                     });
 
                     index++;
@@ -722,7 +722,7 @@ namespace Getools.Palantir
                     {
                         OrderIndex = index + 10000, // back to bound3d id convention
                         Room = roomId,
-                        Origin = pad.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
+                        Origin = pad.Position.ToCoord3dd(),
                     });
 
                     index++;
@@ -766,7 +766,7 @@ namespace Getools.Palantir
                         OrderIndex = setupObjectIndex,
                         Room = roomId,
                         Up = Coord3dd.Zero.Clone(),
-                        Origin = preset.Position.ToCoord3dd().Scale(1.0 / Stage.LevelScale),
+                        Origin = preset.Position.ToCoord3dd(),
                     };
 
                     introPolygons.Add(hullpoints);
@@ -1232,7 +1232,7 @@ namespace Getools.Palantir
                 group.Id = SvgSetupIntroLayerId;
                 foreach (var poly in introPolygons)
                 {
-                    var point = poly.Origin.To2DXZ();
+                    var point = poly.Origin.To2DXZ().Scale(1.0 / Stage.LevelScale);
 
                     var container = group.AddGroup();
 
