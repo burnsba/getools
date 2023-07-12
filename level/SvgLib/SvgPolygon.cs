@@ -41,5 +41,11 @@ namespace SvgLib
             get => Element.GetAttribute<SvgFillRule>("fill-rule", SvgDefaults.Attributes.FillAndStroke.FillRule);
             set => Element.SetAttribute("fill-rule", value);
         }
+
+        public void SetPoints(double[] value, string format)
+        {
+            var points = string.Join(", ", value.Select(x => x.ToString(format, CultureInfo.InvariantCulture)));
+            Element.SetAttribute("points", points);
+        }
     }
 }

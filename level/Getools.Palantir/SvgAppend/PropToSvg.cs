@@ -15,39 +15,12 @@ using Getools.Palantir.Render;
 using SvgLib;
 using static System.Formats.Asn1.AsnWriter;
 
-namespace Getools.Palantir.SvgProp
+namespace Getools.Palantir.SvgAppend
 {
     internal static class PropToSvg
     {
-        internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
-        {
-            double scaleFactor = 1 / levelScale;
-
-            Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
-
-            double modelSizeX = 32;
-            double modelSizeZ = 32;
-            double halfw = modelSizeX / 2;
-            double halfh = modelSizeZ / 2;
-
-            double translateX = pos.X - halfw;
-            double translateY = pos.Z - halfh;
-
-            var container = appendTo.AddGroup();
-
-            container.AddClass("svg-logical-item");
-
-            container.Transform = $"translate({translateX}, {translateY})";
-
-            var rect = container.AddRect();
-
-            rect.X = 0;
-            rect.Y = 0;
-            rect.Width = modelSizeX;
-            rect.Height = modelSizeZ;
-
-            return container;
-        }
+        // three decimal places
+        private const string StandardDoubleToStringFormat = "0.###";
 
         internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
         {
@@ -65,6 +38,9 @@ namespace Getools.Palantir.SvgProp
                     throw new NullReferenceException($"{nameof(pp.SetupObject)}");
                 }
 
+                // guard does not implement SetupObjectGenericBase
+                SetupObjectGenericBase? baseObject = pp.SetupObject as SetupObjectGenericBase;
+
                 switch (pp.SetupObject.Type)
                 {
                     case PropDef.Door:
@@ -73,19 +49,97 @@ namespace Getools.Palantir.SvgProp
                     case PropDef.Guard:
                         return SvgAppendPropDefaultModelBbox_chr(appendTo, pp, levelScale);
 
-                    case PropDef.Alarm:
-                    case PropDef.Aircraft:
                     case PropDef.AmmoBox:
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#274d23", 4, "#66ed58");
+
+                    case PropDef.Alarm:
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale / 3, "#cccccc", 4, "#ff0000");
+
                     case PropDef.Armour:
-                    case PropDef.Collectable:
-                    case PropDef.Cctv:
-                    case PropDef.Drone:
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#0c1c63", 4, "#0000ff");
+
                     case PropDef.Key:
+                        return SvgGroupAppendKey(appendTo, pp, levelScale);
+
+                    case PropDef.Cctv:
+                        return SvgGroupAppendCctv(appendTo, pp, levelScale);
+
+                    case PropDef.Aircraft:
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#808018", 4, "#dbdb60");
+
+                    case PropDef.Collectable:
+                    case PropDef.Drone:
                     case PropDef.Safe:
                     case PropDef.SingleMonitor:
                     case PropDef.StandardProp:
+                        if (object.ReferenceEquals(null, baseObject))
+                        {
+                            throw new NullReferenceException();
+                        }
+
+                        switch ((PropId)baseObject.ObjectId)
+                        {
+                            // ignore these
+                            // hat
+                            case PropId.PROP_HATFURRY:
+                            case PropId.PROP_HATFURRYBROWN:
+                            case PropId.PROP_HATFURRYBLACK:
+                            case PropId.PROP_HATTBIRD:
+                            case PropId.PROP_HATTBIRDBROWN:
+                            case PropId.PROP_HATHELMET:
+                            case PropId.PROP_HATHELMETGREY:
+                            case PropId.PROP_HATMOON:
+                            case PropId.PROP_HATBERET:
+                            case PropId.PROP_HATBERETBLUE:
+                            case PropId.PROP_HATBERETRED:
+                            case PropId.PROP_HATPEAKED:
+                                return null;
+
+                            case PropId.PROP_PADLOCK:
+                                return SvgAppendPadlock(appendTo, pp, levelScale);
+
+                            case PropId.PROP_GUN_RUNWAY1:
+                            case PropId.PROP_ROOFGUN:
+                            case PropId.PROP_GROUNDGUN:
+                                return SvgAppendHeavyGun(appendTo, pp, levelScale);
+
+                            case PropId.PROP_CHRGOLDENEYEKEY:
+                                return SvgGroupAppendKey(appendTo, pp, levelScale);
+
+                            case PropId.PROP_MAINFRAME1:
+                            case PropId.PROP_MAINFRAME2:
+                            case PropId.PROP_DOOR_MF:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#666666", 4, "#94dff2");
+
+                            case PropId.PROP_AMMO_CRATE1:
+                            case PropId.PROP_AMMO_CRATE2:
+                            case PropId.PROP_AMMO_CRATE3:
+                            case PropId.PROP_AMMO_CRATE4:
+                            case PropId.PROP_AMMO_CRATE5:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#274d23", 4, "#66ed58");
+
+                            case PropId.PROP_CHRCIRCUITBOARD:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#009900", 4, "#00ff00");
+
+                            case PropId.PROP_CHRVIDEOTAPE:
+                            case PropId.PROP_CHRDOSSIERRED:
+                            case PropId.PROP_CHRSTAFFLIST:
+                            case PropId.PROP_CHRCLIPBOARD:
+                            case PropId.PROP_DISK_DRIVE1:
+                            case PropId.PROP_CHRDATTAPE:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#ff0000", 4, "#ff0000");
+                            
+                            case PropId.PROP_TIGER:
+                            case PropId.PROP_MILCOPTER:
+                            case PropId.PROP_HELICOPTER:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#808018", 4, "#dbdb60");
+
+                            default:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#916b2a", 4, "#ffdfa8");
+                        }
+                    
                     case PropDef.Tank:
-                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#8d968e", 4, "#e1ffdb");
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#255c25", 4, "#00ff00");
                 }
 
                 throw new NotImplementedException();
@@ -573,19 +627,19 @@ namespace Getools.Palantir.SvgProp
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({pos.X - halfw}, {pos.Z - halfh})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - halfw,StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - halfh,StandardDoubleToStringFormat)})";
 
             if (rotAngle != 0)
             {
-                container.Transform += $" rotate({rotAngle} {halfw} {halfh})";
+                container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
             }
 
             var rect = container.AddRect();
 
             rect.X = 0;
             rect.Y = 0;
-            rect.Width = modelSizeX;
-            rect.Height = modelSizeZ;
+            rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
+            rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
             rect.Stroke = stroke;
             rect.StrokeWidth = strokeWidth;
             rect.Fill = fill;
@@ -735,19 +789,19 @@ namespace Getools.Palantir.SvgProp
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({pos.X - halfw}, {pos.Z - halfh})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - halfw, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - halfh, StandardDoubleToStringFormat)})";
 
             if (rotAngle != 0)
             {
-                container.Transform += $" rotate({rotAngle} {halfw} {halfh})";
+                container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
             }
 
             var rect = container.AddRect();
 
             rect.X = 0;
             rect.Y = 0;
-            rect.Width = modelSizeX;
-            rect.Height = modelSizeZ;
+            rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
+            rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
             rect.Stroke = stroke;
             rect.StrokeWidth = strokeWidth;
             rect.Fill = fill;
@@ -793,11 +847,11 @@ namespace Getools.Palantir.SvgProp
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({translateX}, {translateY})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(translateX, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(translateY, StandardDoubleToStringFormat)})";
 
             if (rotAngle != 0)
             {
-                container.Transform += $" rotate({rotAngle} {halfw} {halfh})";
+                container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
             }
             
             //container.Transform += $" scale({scaleFactor})";
@@ -808,8 +862,8 @@ namespace Getools.Palantir.SvgProp
 
             rect.X = 0;
             rect.Y = 0;
-            rect.Width = modelSizeX;
-            rect.Height = modelSizeZ;
+            rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
+            rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
             rect.Fill = "#c8ab37";
             rect.Stroke = "#aa4400";
             rect.StrokeWidth = 0.569023;
@@ -844,7 +898,7 @@ namespace Getools.Palantir.SvgProp
             Coord2dd p2 = new Coord2dd(4.5, 0).Scale(scaleFactor);
             Coord2dd p3 = new Coord2dd(6.3, 0.3).Scale(scaleFactor);
 
-            path.D = $"M {p1.X},{p1.Y} H {p2.X} L {p3.X},{p3.Y} Z";
+            path.D = $"M {Format.DoubleToStringFormat(p1.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p1.Y, StandardDoubleToStringFormat)} H {Format.DoubleToStringFormat(p2.X, StandardDoubleToStringFormat)} L {Format.DoubleToStringFormat(p3.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p3.Y, StandardDoubleToStringFormat)} Z";
 
             //
 
@@ -877,124 +931,134 @@ namespace Getools.Palantir.SvgProp
         //    return alarmContainer;
         //}
 
-        //private static SvgGroup Deprecated_SvgGroupAppendKey(SvgGroup group, Coord2dd point)
-        //{
-        //    var container = group.AddGroup();
+        private static SvgGroup SvgGroupAppendKey(SvgGroup group, PropPosition pp, double levelScale)
+        {
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-        //    container.AddClass("svg-logical-item");
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
 
-        //    var path = container.AddPath();
+            var container = group.AddGroup();
 
-        //    path.Fill = "#cca800";
-        //    path.Stroke = "#906a00";
-        //    path.StrokeWidth = 2;
+            container.AddClass("svg-logical-item");
 
-        //    path.D = "m 0.43595022,7.014382 c -0.30029153,5.40526 4.65446948,6.606259 4.65446948,6.606259 l 1.0508961,33.933061 4.5044672,-0.300226 -0.450449,-3.002907 4.80469,0.450449 1.351343,-3.303129 h -6.156033 v -4.354245 l 5.255139,0.750671 1.201115,-5.705583 -6.156028,0.300225 -0.300226,-18.618095 c 0,0 4.129114,-0.488029 4.542022,-6.9818504 C 14.428092,-2.0699217 0.57338466,-1.3909436 0.43595022,7.014382 Z M 7.7861017,2.5626133 c 2.5377613,-3.68e-5 4.5950313,2.057233 4.5949933,4.5949926 3.8e-5,2.5377596 -2.057232,4.5950291 -4.5949933,4.5949921 C 5.2484276,11.752514 3.1912911,9.6952796 3.1913279,7.1576059 3.1912911,4.6199322 5.2484276,2.5626979 7.7861017,2.5626133 Z";
+            var path = container.AddPath();
 
-        //    path.Transform = $"translate({point.X}, {point.Y})";
+            path.Fill = "#cca800";
+            path.Stroke = "#906a00";
+            path.StrokeWidth = 2;
 
-        //    return container;
-        //}
+            path.D = "m 0.43595022,7.014382 c -0.30029153,5.40526 4.65446948,6.606259 4.65446948,6.606259 l 1.0508961,33.933061 4.5044672,-0.300226 -0.450449,-3.002907 4.80469,0.450449 1.351343,-3.303129 h -6.156033 v -4.354245 l 5.255139,0.750671 1.201115,-5.705583 -6.156028,0.300225 -0.300226,-18.618095 c 0,0 4.129114,-0.488029 4.542022,-6.9818504 C 14.428092,-2.0699217 0.57338466,-1.3909436 0.43595022,7.014382 Z M 7.7861017,2.5626133 c 2.5377613,-3.68e-5 4.5950313,2.057233 4.5949933,4.5949926 3.8e-5,2.5377596 -2.057232,4.5950291 -4.5949933,4.5949921 C 5.2484276,11.752514 3.1912911,9.6952796 3.1913279,7.1576059 3.1912911,4.6199322 5.2484276,2.5626979 7.7861017,2.5626133 Z";
 
-        //private static SvgGroup Deprecated_SvgGroupAppendCctv(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
-        //{
-        //    var container = group.AddGroup();
+            path.Transform = $"translate({Format.DoubleToStringFormat(pos.X, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z, StandardDoubleToStringFormat)}) scale(3)";
 
-        //    container.AddClass("svg-logical-item");
+            return container;
+        }
 
-        //    var rotAngle = System.Math.Atan2(orientation.X, orientation.Z) * 180 / System.Math.PI;
+        private static SvgGroup SvgGroupAppendCctv(SvgGroup group, PropPosition pp, double levelScale)
+        {
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-        //    // move svg to map coordinate point.
-        //    // Rotate it by the preset definition, around the center of the cctv svg.
-        //    container.Transform = $"translate({point.X - 10}, {point.Y}) rotate({rotAngle} 45 30)";
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
 
-        //    SvgPath path = null;
+            var container = group.AddGroup();
 
-        //    //
+            container.AddClass("svg-logical-item");
 
-        //    path = container.AddPath();
+            // move svg to map coordinate point.
+            // Rotate it by the preset definition, around the center of the cctv svg.
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 10, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 45 30)";
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            SvgPath path = null;
 
-        //    path.D = "m 66.842669,47.084191 v 6.569513 H 45.49174 v -6.569513 z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    path = container.AddPath();
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            path.D = "m 66.842669,47.084191 v 6.569513 H 45.49174 v -6.569513 z";
 
-        //    path.D = "M 34.862376,18.053258 11.514484,15.189837 11.001787,27.375645 1.1475142,15.878994 V 9.3094783 L 33.100271,14.969574 Z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    path = container.AddPath();
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            path.D = "M 34.862376,18.053258 11.514484,15.189837 11.001787,27.375645 1.1475142,15.878994 V 9.3094783 L 33.100271,14.969574 Z";
 
-        //    path.D = "m 11.001787,10.951858 22.993304,4.927136 v 26.27806 L 11.001787,37.229918 Z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    path = container.AddPath();
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            path.D = "m 11.001787,10.951858 22.993304,4.927136 v 26.27806 L 11.001787,37.229918 Z";
 
-        //    path.D = "M 33.995091,42.157054 75.054559,24.090887 V 15.878994 L 33.995091,27.375645 Z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    path = container.AddPath();
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            path.D = "M 33.995091,42.157054 75.054559,24.090887 V 15.878994 L 33.995091,27.375645 Z";
 
-        //    path.D = "m 45.49174,37.229918 v 9.854273 h 6.56952 V 34.165424 Z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    path = container.AddPath();
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#ffffff";
-        //    path.Stroke = "#838383";
-        //    path.StrokeWidth = 0.94691;
+            path.D = "m 45.49174,37.229918 v 9.854273 h 6.56952 V 34.165424 Z";
 
-        //    path.D = "m 13.857191,14.310917 17.230768,3.824947 V 38.535596 L 13.857191,34.710651 Z";
+            //
 
-        //    //
+            path = container.AddPath();
 
-        //    var ellipse = container.AddEllipse();
+            path.Fill = "#ffffff";
+            path.Stroke = "#838383";
+            path.StrokeWidth = 0.94691;
 
-        //    ellipse.Fill = "#fefdff";
-        //    ellipse.Stroke = "#000000";
-        //    ellipse.StrokeWidth = 1.24148;
+            path.D = "m 13.857191,14.310917 17.230768,3.824947 V 38.535596 L 13.857191,34.710651 Z";
 
-        //    ellipse.CX = 22.527639;
-        //    ellipse.CY = 26.423256;
-        //    ellipse.RX = 5.396447;
-        //    ellipse.RY = 6.3876319;
+            //
 
-        //    //
+            var ellipse = container.AddEllipse();
 
-        //    path = container.AddPath();
+            ellipse.Fill = "#fefdff";
+            ellipse.Stroke = "#000000";
+            ellipse.StrokeWidth = 1.24148;
 
-        //    path.Fill = "#000000";
-        //    path.Stroke = "#ffffff";
-        //    path.StrokeWidth = 1.24148;
+            ellipse.CX = 22.527639;
+            ellipse.CY = 26.423256;
+            ellipse.RX = 5.396447;
+            ellipse.RY = 6.3876319;
 
-        //    path.D = "M 33.995091,27.375645 27.373429,13.647994 1.1475142,9.3094783 60.273151,1.0975849 h 14.781408 l 3.284759,1.6423788 V 14.236615 l -3.284759,1.642379 z";
+            //
 
-        //    return container;
-        //}
+            path = container.AddPath();
+
+            path.Fill = "#000000";
+            path.Stroke = "#ffffff";
+            path.StrokeWidth = 1.24148;
+
+            path.D = "M 33.995091,27.375645 27.373429,13.647994 1.1475142,9.3094783 60.273151,1.0975849 h 14.781408 l 3.284759,1.6423788 V 14.236615 l -3.284759,1.642379 z";
+
+            return container;
+        }
 
         //private static SvgGroup Deprecated_SvgGroupAppendPc(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
         //{
@@ -1259,47 +1323,51 @@ namespace Getools.Palantir.SvgProp
         //    return container;
         //}
 
-        //private static SvgGroup Deprecated_SvgAppendPadlock(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
-        //{
-        //    var container = group.AddGroup();
+        private static SvgGroup SvgAppendPadlock(SvgGroup group, PropPosition pp, double levelScale)
+        {
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-        //    container.AddClass("svg-logical-item");
+            var container = group.AddGroup();
 
-        //    var rotAngle = System.Math.Atan2(orientation.X, orientation.Z) * 180 / System.Math.PI;
+            container.AddClass("svg-logical-item");
 
-        //    // move svg to map coordinate point.
-        //    // Rotate it by the preset definition, around the center of the svg.
-        //    container.Transform = $"translate({point.X - 8}, {point.Y - 18}) rotate({rotAngle} 8 18)";
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
 
-        //    SvgRect rect = null;
+            // move svg to map coordinate point.
+            // Rotate it by the preset definition, around the center of the svg.
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 8, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - 18, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 8 18)";
 
-        //    //
+            SvgRect rect = null;
 
-        //    rect = container.AddRect();
+            //
 
-        //    rect.Fill = "#b3b3b3";
-        //    rect.Stroke = "#4d4d4d";
-        //    rect.StrokeWidth = 0.349545;
+            rect = container.AddRect();
 
-        //    rect.Width = 13.661667;
-        //    rect.Height = 16.166445;
-        //    rect.X = 0.44301221;
-        //    rect.Y = 10.843964;
+            rect.Fill = "#b3b3b3";
+            rect.Stroke = "#4d4d4d";
+            rect.StrokeWidth = 0.349545;
 
-        //    //
+            rect.Width = 13.661667;
+            rect.Height = 16.166445;
+            rect.X = 0.44301221;
+            rect.Y = 10.843964;
 
-        //    var path = container.AddPath(); 
+            //
 
-        //    path.Fill = "#b3b3b3";
-        //    path.Stroke = "#4d4d4d";
-        //    path.StrokeWidth = 1.25657;
+            var path = container.AddPath();
 
-        //    path.D = "M 7.2412021,0.69852204 C 1.0085037,0.68070391 0.68529965,5.2915851 0.68481911,10.909995 L 13.865147,10.801897 C 13.826836,5.1838055 13.473901,0.71634014 7.2412021,0.69852204 Z M 7.4564339,3.2948227 c 3.7810651,0.013199 3.9947521,3.3229823 4.0179921,7.4858393 l -7.9954469,0.08011 C 3.4792705,6.6976769 3.6753692,3.28162 7.4564339,3.2948227 Z";
+            path.Fill = "#b3b3b3";
+            path.Stroke = "#4d4d4d";
+            path.StrokeWidth = 1.25657;
 
-        //    //
+            path.D = "M 7.2412021,0.69852204 C 1.0085037,0.68070391 0.68529965,5.2915851 0.68481911,10.909995 L 13.865147,10.801897 C 13.826836,5.1838055 13.473901,0.71634014 7.2412021,0.69852204 Z M 7.4564339,3.2948227 c 3.7810651,0.013199 3.9947521,3.3229823 4.0179921,7.4858393 l -7.9954469,0.08011 C 3.4792705,6.6976769 3.6753692,3.28162 7.4564339,3.2948227 Z";
 
-        //    return container;
-        //}
+            //
+
+            return container;
+        }
 
         //private static SvgGroup Deprecated_SvgAppendGrenadeLauncher(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
         //{
@@ -1452,47 +1520,51 @@ namespace Getools.Palantir.SvgProp
         //    return container;
         //}
 
-        //private static SvgGroup Deprecated_SvgAppendHeavyGun(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
-        //{
-        //    var container = group.AddGroup();
+        private static SvgGroup SvgAppendHeavyGun(SvgGroup group, PropPosition pp, double levelScale)
+        {
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-        //    container.AddClass("svg-logical-item");
+            var container = group.AddGroup();
 
-        //    var rotAngle = System.Math.Atan2(orientation.X, orientation.Z) * 180 / System.Math.PI;
+            container.AddClass("svg-logical-item");
 
-        //    // move svg to map coordinate point.
-        //    // Rotate it by the preset definition, around the center of the svg.
-        //    container.Transform = $"translate({point.X - 30}, {point.Y - 32}) rotate({rotAngle} 30 32)";
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
 
-        //    SvgRect rect = null;
+            // move svg to map coordinate point.
+            // Rotate it by the preset definition, around the center of the svg.
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 30, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - 32, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 30 32) scale(2)";
 
-        //    //
+            SvgRect rect = null;
 
-        //    var circle = container.AddCircle();
+            //
 
-        //    circle.Fill = "#94dff2";
-        //    circle.Stroke = "#000000";
-        //    circle.StrokeWidth = 0.534929;
+            var circle = container.AddCircle();
 
-        //    circle.CY = 30.219355;
-        //    circle.CX = 30.219355;
-        //    circle.R = 29.951891;
+            circle.Fill = "#94dff2";
+            circle.Stroke = "#000000";
+            circle.StrokeWidth = 0.534929;
 
-        //    //
+            circle.CY = 30.219355;
+            circle.CX = 30.219355;
+            circle.R = 29.951891;
 
-        //    rect = container.AddRect();
+            //
 
-        //    rect.Fill = "#158fae";
-        //    rect.Stroke = "#000000";
-        //    rect.StrokeWidth = 0.699793;
+            rect = container.AddRect();
 
-        //    rect.Width = 8.3660135;
-        //    rect.Height = 44.629238;
-        //    rect.X = 26.036348;
-        //    rect.Y = 30.569252;
+            rect.Fill = "#158fae";
+            rect.Stroke = "#000000";
+            rect.StrokeWidth = 0.699793;
 
-        //    return container;
-        //}
+            rect.Width = 8.3660135;
+            rect.Height = 44.629238;
+            rect.X = 26.036348;
+            rect.Y = 30.569252;
+
+            return container;
+        }
 
         //private static SvgGroup Deprecated_SvgAppendPlane(SvgGroup group, Coord2dd point, Coord3dd up, Coord3dd orientation)
         //{

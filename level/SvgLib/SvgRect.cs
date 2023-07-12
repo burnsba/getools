@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Globalization;
+using System.Xml;
 
 namespace SvgLib
 {
@@ -38,6 +39,26 @@ namespace SvgLib
         {
             get => Element.GetAttribute("height", SvgDefaults.Attributes.Size.Height);
             set => Element.SetAttribute("height", value);
+        }
+
+        public void SetX(double d, string format)
+        {
+            Element.SetAttribute("x", d.ToString(format, CultureInfo.InvariantCulture));
+        }
+
+        public void SetY(double d, string format)
+        {
+            Element.SetAttribute("y", d.ToString(format, CultureInfo.InvariantCulture));
+        }
+
+        public void SetWidth(double d, string format)
+        {
+            Element.SetAttribute("width", d.ToString(format, CultureInfo.InvariantCulture));
+        }
+
+        public void SetHeight(double d, string format)
+        {
+            Element.SetAttribute("height", d.ToString(format, CultureInfo.InvariantCulture));
         }
     }
 }

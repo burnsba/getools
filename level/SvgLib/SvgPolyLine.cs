@@ -35,5 +35,11 @@ namespace SvgLib
                 Element.SetAttribute("points", points);
             }
         }
+
+        public void SetPoints(double[] value, string format)
+        {
+            var points = string.Join(", ", value.Select(x => x.ToString(format, CultureInfo.InvariantCulture)));
+            Element.SetAttribute("points", points);
+        }
     }
 }

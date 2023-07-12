@@ -25,6 +25,9 @@ namespace Getools.Palantir
 {
     public class MapImageMaker
     {
+        // three decimal places
+        private const string StandardDoubleToStringFormat = "0.###";
+
         private const double MaxPixelSizeError = 10000000;
 
         private const string SvgBgLayerId = "svg-bg-room-layer";
@@ -111,14 +114,10 @@ namespace Getools.Palantir
 
             var setupPolygonsCollection = new Dictionary<PropDef, List<PropPosition>>();
 
-            double minScaledX = double.MaxValue;
-            double minScaledY = double.MaxValue; // output y axis
-            double maxScaledX = double.MinValue;
-            double maxScaledY = double.MinValue; // output y axis
-
-            // unscaled preset vertical value
-            double? nativeMinY = null;
-            double? nativeMaxY = null;
+            Coord3dd scaledMin = Coord3dd.MaxValue.Clone();
+            Coord3dd scaledMax = Coord3dd.MinValue.Clone();
+            Coord3dd nativeMin = Coord3dd.MaxValue.Clone();
+            Coord3dd nativeMax = Coord3dd.MinValue.Clone();
 
             if (!object.ReferenceEquals(null, Stage.Bg))
             {
@@ -134,14 +133,10 @@ namespace Getools.Palantir
 
                     // Console.WriteLine($"process room # {roomData.OrderIndex}");
 
-                    double roomMinScaledX = double.MaxValue;
-                    double roomMinScaledY = double.MaxValue; // svg out coordinate y
-                    double roomMaxScaledX = double.MinValue;
-                    double roomMaxScaledY = double.MinValue; // svg out coordinate y
-
-                    // unscaled preset vertical value
-                    double? nativeRoomMinY = null;
-                    double? nativeRoomMaxY = null;
+                    var roomScaledMin = Coord3dd.MaxValue.Clone();
+                    var roomScaledMax = Coord3dd.MinValue.Clone();
+                    var roomNativeMin = Coord3dd.MaxValue.Clone();
+                    var roomNativeMax = Coord3dd.MinValue.Clone();
 
                     var center = roomData.Coord;
                     var roomPoints = new List<Coord3dd>();
@@ -155,52 +150,43 @@ namespace Getools.Palantir
                             Z = (double)center.Z + (double)vtx.Ob.Z,
                         };
 
-                        roomPoints.Add(roomPoint);
-
                         if (mode == SliceMode.BoundingBox)
                         {
-                            if ((nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY) && roomPoint.Y >= zmin!.Value)
+                            if (!(roomPoint.Y >= zmin!.Value))
                             {
-                                nativeRoomMinY = roomPoint.Y;
+                                continue;
                             }
 
-                            if ((nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY) && roomPoint.Y <= zmax!.Value)
+                            if (!(roomPoint.Y <= zmax!.Value))
                             {
-                                nativeRoomMaxY = roomPoint.Y;
+                                continue;
                             }
 
-                            if ((nativeMinY == null || roomPoint.Y < nativeMinY) && roomPoint.Y >= zmin!.Value)
-                            {
-                                nativeMinY = roomPoint.Y;
-                            }
-
-                            if ((nativeMaxY == null || roomPoint.Y > nativeMaxY) && roomPoint.Y <= zmax!.Value)
-                            {
-                                nativeMaxY = roomPoint.Y;
-                            }
+                            Getools.Lib.Math.Compare.SetMinMaxCompareY(roomNativeMin, roomNativeMax, roomPoint.Y, zmin!.Value, zmax!.Value);
+                            Getools.Lib.Math.Compare.SetMinMaxCompareY(nativeMin, nativeMax, roomPoint.Y, zmin!.Value, zmax!.Value);
                         }
                         else if (mode == SliceMode.Unbound)
                         {
-                            if (nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY)
-                            {
-                                nativeRoomMinY = roomPoint.Y;
-                            }
-
-                            if (nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY)
-                            {
-                                nativeRoomMaxY = roomPoint.Y;
-                            }
-
-                            if (nativeMinY == null || roomPoint.Y < nativeMinY)
-                            {
-                                nativeMinY = roomPoint.Y;
-                            }
-
-                            if (nativeMaxY == null || roomPoint.Y > nativeMaxY)
-                            {
-                                nativeMaxY = roomPoint.Y;
-                            }
+                            Getools.Lib.Math.Compare.SetUnboundCompareY(roomNativeMin, roomNativeMax, roomPoint.Y);
+                            Getools.Lib.Math.Compare.SetUnboundCompareY(nativeMin, nativeMax, roomPoint.Y);
                         }
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(roomNativeMin, roomNativeMax, roomPoint.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(nativeMin, nativeMax, roomPoint.X);
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(roomNativeMin, roomNativeMax, roomPoint.Z);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(nativeMin, nativeMax, roomPoint.Z);
+
+                        var scaled = roomPoint.Scale(1.0 / Stage.LevelScale);
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(roomScaledMin, roomScaledMax, scaled.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(scaledMin, scaledMax, scaled.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareY(roomScaledMin, roomScaledMax, scaled.Y);
+                        Getools.Lib.Math.Compare.SetUnboundCompareY(scaledMin, scaledMax, scaled.Y);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(roomScaledMin, roomScaledMax, scaled.Z);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(scaledMin, scaledMax, scaled.Z);
+
+                        roomPoints.Add(roomPoint);
                     }
 
                     // Console.WriteLine($"found {roomPoints.Count} points");
@@ -233,46 +219,6 @@ namespace Getools.Palantir
                     {
                         var scaled = new Coord2dd(p.X, p.Y).Scale(1.0 / Stage.LevelScale);
 
-                        if (scaled.X < minScaledX)
-                        {
-                            minScaledX = scaled.X;
-                        }
-
-                        if (scaled.X > maxScaledX)
-                        {
-                            maxScaledX = scaled.X;
-                        }
-
-                        if (scaled.Y  < minScaledY)
-                        {
-                            minScaledY = scaled.Y;
-                        }
-
-                        if (scaled.Y > maxScaledY)
-                        {
-                            maxScaledY = scaled.Y;
-                        }
-
-                        if (scaled.X < roomMinScaledX)
-                        {
-                            roomMinScaledX = scaled.X;
-                        }
-
-                        if (scaled.X > roomMaxScaledX)
-                        {
-                            roomMaxScaledX = scaled.X;
-                        }
-
-                        if (scaled.Y  < roomMinScaledY)
-                        {
-                            roomMinScaledY = scaled.Y;
-                        }
-
-                        if (scaled.Y > roomMaxScaledY)
-                        {
-                            roomMaxScaledY = scaled.Y;
-                        }
-
                         svgScaledPoints.Add(scaled);
                     }
 
@@ -288,14 +234,40 @@ namespace Getools.Palantir
                         Points = svgScaledPoints,
                     };
 
-                    if (nativeRoomMinY.HasValue)
+                    if (roomNativeMin.X < double.MaxValue)
                     {
-                        collection.NaturalMin.Y = nativeRoomMinY.Value;
+                        collection.NaturalMin.X = roomNativeMin.X;
+                        collection.ScaledMin.X = roomScaledMin.X;
                     }
 
-                    if (nativeRoomMaxY.HasValue)
+                    if (roomNativeMax.X > double.MinValue)
                     {
-                        collection.NaturalMax.Y = nativeRoomMaxY.Value;
+                        collection.NaturalMax.X = roomNativeMax.X;
+                        collection.ScaledMax.X = roomScaledMax.X;
+                    }
+
+                    if (roomNativeMin.Y < double.MaxValue)
+                    {
+                        collection.NaturalMin.Y = roomNativeMin.Y;
+                        collection.ScaledMin.Y = roomNativeMin.Y * (1 / Stage.LevelScale);
+                    }
+
+                    if (roomNativeMax.Y > double.MinValue)
+                    {
+                        collection.NaturalMax.Y = roomNativeMax.Y;
+                        collection.ScaledMax.Y = roomNativeMax.Y * (1 / Stage.LevelScale);
+                    }
+
+                    if (roomNativeMin.Z < double.MaxValue)
+                    {
+                        collection.NaturalMin.Z = roomNativeMin.Z;
+                        collection.ScaledMin.Z = roomScaledMin.Z;
+                    }
+
+                    if (roomNativeMax.Z > double.MinValue)
+                    {
+                        collection.NaturalMax.Z = roomNativeMax.Z;
+                        collection.ScaledMax.Z = roomScaledMax.Z;
                     }
 
                     roomPolygons.Add(collection);
@@ -318,14 +290,10 @@ namespace Getools.Palantir
 
                     //Console.WriteLine($"process tile # {tile.OrderIndex}");
 
-                    double tileMinScaledX = double.MaxValue;
-                    double tileMinScaledY = double.MaxValue; // svg out coordinate y
-                    double tileMaxScaledX = double.MinValue;
-                    double tileMaxScaledY = double.MinValue; // svg out coordinate y
-
-                    // unscaled preset vertical value
-                    double? nativeRoomMinY = null;
-                    double? nativeRoomMaxY = null;
+                    var tileScaledMin = Coord3dd.MaxValue.Clone();
+                    var tileScaledMax = Coord3dd.MinValue.Clone();
+                    var tileNativeMin = Coord3dd.MaxValue.Clone();
+                    var tileNativeMax = Coord3dd.MinValue.Clone();
 
                     var levelTilePoints = new List<Coord3dd>();
 
@@ -338,52 +306,43 @@ namespace Getools.Palantir
                             Z = (double)point.Z,
                         };
 
-                        levelTilePoints.Add(roomPoint);
-
                         if (mode == SliceMode.BoundingBox)
                         {
-                            if ((nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY) && roomPoint.Y >= zmin!.Value)
+                            if (!(roomPoint.Y >= zmin!.Value))
                             {
-                                nativeRoomMinY = roomPoint.Y;
+                                continue;
                             }
 
-                            if ((nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY) && roomPoint.Y <= zmax!.Value)
+                            if (!(roomPoint.Y <= zmax!.Value))
                             {
-                                nativeRoomMaxY = roomPoint.Y;
+                                continue;
                             }
 
-                            if ((nativeMinY == null || roomPoint.Y < nativeMinY) && roomPoint.Y >= zmin!.Value)
-                            {
-                                nativeMinY = roomPoint.Y;
-                            }
-
-                            if ((nativeMaxY == null || roomPoint.Y > nativeMaxY) && roomPoint.Y <= zmax!.Value)
-                            {
-                                nativeMaxY = roomPoint.Y;
-                            }
+                            Getools.Lib.Math.Compare.SetMinMaxCompareY(tileNativeMin, tileNativeMax, roomPoint.Y, zmin!.Value, zmax!.Value);
+                            Getools.Lib.Math.Compare.SetMinMaxCompareY(nativeMin, nativeMax, roomPoint.Y, zmin!.Value, zmax!.Value);
                         }
                         else if (mode == SliceMode.Unbound)
                         {
-                            if (nativeRoomMinY == null || roomPoint.Y < nativeRoomMinY)
-                            {
-                                nativeRoomMinY = roomPoint.Y;
-                            }
-
-                            if (nativeRoomMaxY == null || roomPoint.Y > nativeRoomMaxY)
-                            {
-                                nativeRoomMaxY = roomPoint.Y;
-                            }
-
-                            if (nativeMinY == null || roomPoint.Y < nativeMinY)
-                            {
-                                nativeMinY = roomPoint.Y;
-                            }
-
-                            if (nativeMaxY == null || roomPoint.Y > nativeMaxY)
-                            {
-                                nativeMaxY = roomPoint.Y;
-                            }
+                            Getools.Lib.Math.Compare.SetUnboundCompareY(tileNativeMin, tileNativeMax, roomPoint.Y);
+                            Getools.Lib.Math.Compare.SetUnboundCompareY(nativeMin, nativeMax, roomPoint.Y);
                         }
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(tileNativeMin, tileNativeMax, roomPoint.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(nativeMin, nativeMax, roomPoint.X);
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(tileNativeMin, tileNativeMax, roomPoint.Z);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(nativeMin, nativeMax, roomPoint.Z);
+
+                        var scaled = roomPoint.Scale(1.0 / Stage.LevelScale);
+
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(tileScaledMin, tileScaledMax, scaled.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareX(scaledMin, scaledMax, scaled.X);
+                        Getools.Lib.Math.Compare.SetUnboundCompareY(tileScaledMin, tileScaledMax, scaled.Y);
+                        Getools.Lib.Math.Compare.SetUnboundCompareY(scaledMin, scaledMax, scaled.Y);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(tileScaledMin, tileScaledMax, scaled.Z);
+                        Getools.Lib.Math.Compare.SetUnboundCompareZ(scaledMin, scaledMax, scaled.Z);
+
+                        levelTilePoints.Add(roomPoint);
                     }
 
                     //Console.WriteLine($"found {levelTilePoints.Count} points");
@@ -416,46 +375,6 @@ namespace Getools.Palantir
                     {
                         var scaled = new Coord2dd(p.X, p.Y).Scale(1.0 / Stage.LevelScale);
 
-                        if (scaled.X < minScaledX)
-                        {
-                            minScaledX = scaled.X;
-                        }
-
-                        if (scaled.X > maxScaledX)
-                        {
-                            maxScaledX = scaled.X;
-                        }
-
-                        if (scaled.Y < minScaledY)
-                        {
-                            minScaledY = scaled.Y;
-                        }
-
-                        if (scaled.Y > maxScaledY)
-                        {
-                            maxScaledY = scaled.Y;
-                        }
-
-                        if (scaled.X < tileMinScaledX)
-                        {
-                            tileMinScaledX = scaled.X;
-                        }
-
-                        if (scaled.X > tileMaxScaledX)
-                        {
-                            tileMaxScaledX = scaled.X;
-                        }
-
-                        if (scaled.Y < tileMinScaledY)
-                        {
-                            tileMinScaledY = scaled.Y;
-                        }
-
-                        if (scaled.Y > tileMaxScaledY)
-                        {
-                            tileMaxScaledY = scaled.Y;
-                        }
-
                         svgScaledPoints.Add(scaled);
                     }
 
@@ -471,14 +390,40 @@ namespace Getools.Palantir
                         Points = svgScaledPoints,
                     };
 
-                    if (nativeRoomMinY.HasValue)
+                    if (tileNativeMin.X < double.MaxValue)
                     {
-                        collection.NaturalMin.Y = nativeRoomMinY.Value;
+                        collection.NaturalMin.X = tileNativeMin.X;
+                        collection.ScaledMin.X = tileScaledMin.X;
                     }
 
-                    if (nativeRoomMaxY.HasValue)
+                    if (tileNativeMax.X > double.MinValue)
                     {
-                        collection.NaturalMax.Y = nativeRoomMaxY.Value;
+                        collection.NaturalMax.X = tileNativeMax.X;
+                        collection.ScaledMax.X = tileScaledMax.X;
+                    }
+
+                    if (tileNativeMin.Y < double.MaxValue)
+                    {
+                        collection.NaturalMin.Y = tileNativeMin.Y;
+                        collection.ScaledMin.Y = tileNativeMin.Y * (1 / Stage.LevelScale);
+                    }
+
+                    if (tileNativeMax.Y > double.MinValue)
+                    {
+                        collection.NaturalMax.Y = tileNativeMax.Y;
+                        collection.ScaledMax.Y = tileNativeMax.Y * (1 / Stage.LevelScale);
+                    }
+
+                    if (tileNativeMin.Z < double.MaxValue)
+                    {
+                        collection.NaturalMin.Z = tileNativeMin.Z;
+                        collection.ScaledMin.Z = tileScaledMin.Z;
+                    }
+
+                    if (tileNativeMax.Z > double.MinValue)
+                    {
+                        collection.NaturalMax.Z = tileNativeMax.Z;
+                        collection.ScaledMax.Z = tileScaledMax.Z;
                     }
 
                     tilePolygons.Add(collection);
@@ -634,16 +579,6 @@ namespace Getools.Palantir
                     if (propPosition.Origin.Y >= zmin!.Value && propPosition.Origin.Y <= zmax!.Value)
                     {
                         withinBounds = true;
-
-                        if ((nativeMinY == null || propPosition.Origin.Y < nativeMinY) && propPosition.Origin.Y >= zmin!.Value)
-                        {
-                            nativeMinY = propPosition.Origin.Y;
-                        }
-
-                        if ((nativeMaxY == null || propPosition.Origin.Y > nativeMaxY) && propPosition.Origin.Y <= zmax!.Value)
-                        {
-                            nativeMaxY = propPosition.Origin.Y;
-                        }
                     }
 
                     if (!withinBounds)
@@ -686,6 +621,16 @@ namespace Getools.Palantir
                         continue;
                     }
 
+                    Getools.Lib.Math.Compare.SetUnboundCompareX(nativeMin, nativeMax, pad.Position.X);
+                    Getools.Lib.Math.Compare.SetUnboundCompareY(nativeMin, nativeMax, pad.Position.Y);
+                    Getools.Lib.Math.Compare.SetUnboundCompareZ(nativeMin, nativeMax, pad.Position.Z);
+
+                    var scaled = pad.Position.ToCoord3dd().Scale(1 / Stage.LevelScale);
+
+                    Getools.Lib.Math.Compare.SetUnboundCompareX(scaledMin, scaledMax, scaled.X);
+                    Getools.Lib.Math.Compare.SetUnboundCompareY(scaledMin, scaledMax, scaled.Y);
+                    Getools.Lib.Math.Compare.SetUnboundCompareZ(scaledMin, scaledMax, scaled.Z);
+
                     presetPolygons.Add(new RenderPosition()
                     {
                         OrderIndex = index,
@@ -717,6 +662,16 @@ namespace Getools.Palantir
                     {
                         continue;
                     }
+
+                    Getools.Lib.Math.Compare.SetUnboundCompareX(nativeMin, nativeMax, pad.Position.X);
+                    Getools.Lib.Math.Compare.SetUnboundCompareY(nativeMin, nativeMax, pad.Position.Y);
+                    Getools.Lib.Math.Compare.SetUnboundCompareZ(nativeMin, nativeMax, pad.Position.Z);
+
+                    var scaled = pad.Position.ToCoord3dd().Scale(1 / Stage.LevelScale);
+
+                    Getools.Lib.Math.Compare.SetUnboundCompareX(scaledMin, scaledMax, scaled.X);
+                    Getools.Lib.Math.Compare.SetUnboundCompareY(scaledMin, scaledMax, scaled.Y);
+                    Getools.Lib.Math.Compare.SetUnboundCompareZ(scaledMin, scaledMax, scaled.Z);
 
                     presetPolygons.Add(new RenderPosition()
                     {
@@ -778,8 +733,24 @@ namespace Getools.Palantir
 
             var svg = SvgDocument.Create();
 
-            var svgWidth = Math.Abs(maxScaledX - minScaledX);
-            var svgHeight = Math.Abs(maxScaledY - minScaledY);
+            scaledMax.X = (scaledMax.X == double.MinValue) ? 0 : scaledMax.X;
+            scaledMax.Y = (scaledMax.Y == double.MinValue) ? 0 : scaledMax.Y;
+            scaledMax.Z = (scaledMax.Z == double.MinValue) ? 0 : scaledMax.Z;
+
+            scaledMin.X = (scaledMin.X == double.MaxValue) ? 0 : scaledMin.X;
+            scaledMin.Y = (scaledMin.Y == double.MaxValue) ? 0 : scaledMin.Y;
+            scaledMin.Z = (scaledMin.Z == double.MaxValue) ? 0 : scaledMin.Z;
+
+            nativeMax.X = (nativeMax.X == double.MinValue) ? 0 : nativeMax.X;
+            nativeMax.Y = (nativeMax.Y == double.MinValue) ? 0 : nativeMax.Y;
+            nativeMax.Z = (nativeMax.Z == double.MinValue) ? 0 : nativeMax.Z;
+
+            nativeMin.X = (nativeMin.X == double.MaxValue) ? 0 : nativeMin.X;
+            nativeMin.Y = (nativeMin.Y == double.MaxValue) ? 0 : nativeMin.Y;
+            nativeMin.Z = (nativeMin.Z == double.MaxValue) ? 0 : nativeMin.Z;
+
+            var svgWidth = Math.Abs(scaledMax.X - scaledMin.X);
+            var svgHeight = Math.Abs(scaledMax.Z - scaledMin.Z);
 
             if (!double.IsFinite(svgWidth) || svgWidth > MaxPixelSizeError)
             {
@@ -792,48 +763,8 @@ namespace Getools.Palantir
             }
 
             // normalize to positive values
-            var adjustx = 0 - minScaledX;
-            var adjusty = 0 - minScaledY;
-
-            //foreach (var poly in roomPolygons)
-            //{
-            //    foreach (var p in poly.Points)
-            //    {
-            //        p.X += adjustx;
-            //        p.Y += adjusty;
-            //    }
-            //}
-
-            //foreach (var poly in tilePolygons)
-            //{
-            //    foreach (var p in poly.Points)
-            //    {
-            //        p.X += adjustx;
-            //        p.Y += adjusty;
-            //    }
-            //}
-
-            //foreach (var poly in presetPolygons)
-            //{
-            //    poly.Origin.X += adjustx;
-            //    poly.Origin.Y += adjusty;
-            //}
-
-            //foreach (var poly in introPolygons)
-            //{
-            //    poly.Origin.X += adjustx;
-            //    poly.Origin.Y += adjusty;
-            //}
-
-            //foreach (var kvp in setupPolygonsCollection)
-            //{
-            //    var polyCollection = kvp.Value;
-            //    foreach (var poly in polyCollection)
-            //    {
-            //        poly.Origin.X += adjustx;
-            //        poly.Origin.Y += adjusty;
-            //    }
-            //}
+            var adjustx = 0 - scaledMin.X;
+            var adjusty = 0 - scaledMin.Z;
 
             double naturalRatioWh = svgWidth / svgHeight;
             double naturalRatioHw = svgHeight / svgWidth;
@@ -845,15 +776,27 @@ namespace Getools.Palantir
             {
                 Width = svgWidth,
                 Height = svgHeight,
-                Left = minScaledX,
-                Top = minScaledY,
+                Left = scaledMin.X,
+                Top = scaledMin.Z,
             };
 
-            svg.SetDataAttribute("adjustx", adjustx.ToString());
-            svg.SetDataAttribute("adjusty", adjusty.ToString());
-            // overall stage min/max y, in native unscaled preset coord value
-            svg.SetDataAttribute("natural-min-y", (nativeMinY ?? 0).ToString());
-            svg.SetDataAttribute("natural-max-y", (nativeMaxY ?? 0).ToString());
+            svg.SetDataAttribute("adjustx", adjustx.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("adjusty", adjusty.ToString(StandardDoubleToStringFormat));
+
+            svg.SetDataAttribute("level-scale", Stage.LevelScale.ToString(StandardDoubleToStringFormat));
+
+            svg.SetDataAttribute("n-min-x", nativeMin.X.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("n-max-x", nativeMax.X.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("n-min-y", nativeMin.Y.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("n-max-y", nativeMax.Y.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("n-min-z", nativeMin.Z.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("n-max-z", nativeMax.Z.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-min-x", scaledMin.X.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-max-x", scaledMax.X.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-min-y", scaledMin.Y.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-max-y", scaledMax.Y.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-min-z", scaledMin.Z.ToString(StandardDoubleToStringFormat));
+            svg.SetDataAttribute("s-max-z", scaledMax.Z.ToString(StandardDoubleToStringFormat));
 
             var cssText = new StringBuilder();
             cssText.AppendLine(".gelib-stan { stroke: #9e87a3; stroke-width: 2; fill: #fdf5ff; }");
@@ -872,16 +815,25 @@ namespace Getools.Palantir
                 polyline.AddClass("gelib-stan");
 
                 polyline.Id = string.Format(SvgItemIdTileFormat, poly.Room, poly.OrderIndex);
-                polyline.Points = poly.Points.To1dArray();
-
+                polyline.SetPoints(poly.Points.To1dArray(), StandardDoubleToStringFormat);
 
                 foreach (var kvp in poly.SvgDataAttributes)
                 {
                     polyline.SetDataAttribute(kvp.Key, kvp.Value);
                 }
 
-                polyline.SetDataAttribute("natural-min-y", poly.NaturalMin.Y.ToString());
-                polyline.SetDataAttribute("natural-max-y", poly.NaturalMax.Y.ToString());
+                polyline.SetDataAttribute("n-min-x", poly.NaturalMin.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-x", poly.NaturalMax.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-min-y", poly.NaturalMin.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-y", poly.NaturalMax.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-min-z", poly.NaturalMin.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-z", poly.NaturalMax.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-x", poly.ScaledMin.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-x", poly.ScaledMax.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-y", poly.ScaledMin.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-y", poly.ScaledMax.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-z", poly.ScaledMin.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-z", poly.ScaledMax.Z.ToString(StandardDoubleToStringFormat));
                 polyline.SetDataAttribute("room-id", poly.Room.ToString());
             }
 
@@ -896,15 +848,25 @@ namespace Getools.Palantir
                 polyline.AddClass("gelib-room");
 
                 polyline.Id = string.Format(SvgItemIdRoomFormat, poly.OrderIndex);
-                polyline.Points = poly.Points.To1dArray();
+                polyline.SetPoints(poly.Points.To1dArray(), StandardDoubleToStringFormat);
 
                 foreach (var kvp in poly.SvgDataAttributes)
                 {
                     polyline.SetDataAttribute(kvp.Key, kvp.Value);
                 }
 
-                polyline.SetDataAttribute("natural-min-y", poly.NaturalMin.Y.ToString());
-                polyline.SetDataAttribute("natural-max-y", poly.NaturalMax.Y.ToString());
+                polyline.SetDataAttribute("n-min-x", poly.NaturalMin.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-x", poly.NaturalMax.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-min-y", poly.NaturalMin.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-y", poly.NaturalMax.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-min-z", poly.NaturalMin.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("n-max-z", poly.NaturalMax.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-x", poly.ScaledMin.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-x", poly.ScaledMax.X.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-y", poly.ScaledMin.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-y", poly.ScaledMax.Y.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-min-z", poly.ScaledMin.Z.ToString(StandardDoubleToStringFormat));
+                polyline.SetDataAttribute("s-max-z", poly.ScaledMax.Z.ToString(StandardDoubleToStringFormat));
                 polyline.SetDataAttribute("room-id", poly.Room.ToString());
             }
 
@@ -914,317 +876,46 @@ namespace Getools.Palantir
                 group.Id = SvgPadLayerId;
                 foreach (var poly in presetPolygons)
                 {
-                    var svgcontainer = SvgProp.PropToSvg.PadToSvgAppend(group, poly, Stage.LevelScale);
+                    var svgcontainer = SvgAppend.PadToSvg.PadToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgcontainer))
                     {
                         svgcontainer.Id = string.Format(SvgItemIdPadFormat, poly.Room, poly.OrderIndex);
                         svgcontainer.AddClass("gelib-pad");
 
-                        svgcontainer.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgcontainer.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgcontainer.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
+                        var scaledPos = poly.Origin.Clone().Scale(1 / Stage.LevelScale);
+
+                        svgcontainer.SetDataAttribute("nc-x", poly.Origin.X.ToString(StandardDoubleToStringFormat));
+                        svgcontainer.SetDataAttribute("nc-y", poly.Origin.Y.ToString(StandardDoubleToStringFormat));
+                        svgcontainer.SetDataAttribute("nc-z", poly.Origin.Z.ToString(StandardDoubleToStringFormat));
+
+                        svgcontainer.SetDataAttribute("sc-x", scaledPos.X.ToString(StandardDoubleToStringFormat));
+                        svgcontainer.SetDataAttribute("sc-y", scaledPos.Y.ToString(StandardDoubleToStringFormat));
+                        svgcontainer.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
                         svgcontainer.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 } 
             }
 
-            /*
-            if (setupPolygonsCollection.ContainsKey(PropDef.AmmoBox))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupAmmoLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.AmmoBox])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupAmmoFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.AmmoBox, svg, SvgSetupAmmoLayerId, SvgItemIdSetupAmmoFormat);
 
             // safe should be under door z layer.
-            if (setupPolygonsCollection.ContainsKey(PropDef.Safe))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupSafeLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Safe])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupSafeFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                } 
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Door))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupDoorLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Door])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupDoorFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                } 
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Alarm))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupAlarmLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Alarm])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupAlarmFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Cctv))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupCctvLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Cctv])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupCctvFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Drone))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupDroneLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Drone])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupDroneFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Aircraft))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupAircraftLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Aircraft])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupAircraftFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Tank))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupTankLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Tank])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupTankFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.StandardProp))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupStandardPropLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.StandardProp])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupStandardPropFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.SingleMonitor))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupSingleMonitorLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.SingleMonitor])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupSingleMonitorFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Collectable))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupCollectableLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Collectable])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupCollectableFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-
-            if (setupPolygonsCollection.ContainsKey(PropDef.Armour))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupBodyArmorLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Armour])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupBodyArmorFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Safe, svg, SvgSetupSafeLayerId, SvgItemIdSetupSafeFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Door, svg, SvgSetupDoorLayerId, SvgItemIdSetupDoorFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Alarm, svg, SvgSetupAlarmLayerId, SvgItemIdSetupAlarmFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Cctv, svg, SvgSetupCctvLayerId, SvgItemIdSetupCctvFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Drone, svg, SvgSetupDroneLayerId, SvgItemIdSetupDroneFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Aircraft, svg, SvgSetupAircraftLayerId, SvgItemIdSetupAircraftFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Tank, svg, SvgSetupTankLayerId, SvgItemIdSetupTankFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.StandardProp, svg, SvgSetupStandardPropLayerId, SvgItemIdSetupStandardPropFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.SingleMonitor, svg, SvgSetupSingleMonitorLayerId, SvgItemIdSetupSingleMonitorFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Collectable, svg, SvgSetupCollectableLayerId, SvgItemIdSetupCollectableFormat);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Armour, svg, SvgSetupBodyArmorLayerId, SvgItemIdSetupBodyArmorFormat);
 
             // keys should be on top of tables (StandardProp)
-            if (setupPolygonsCollection.ContainsKey(PropDef.Key))
-            {
-                var group = svg.AddGroup();
-                group.Id = SvgSetupKeyLayerId;
-                foreach (var poly in setupPolygonsCollection[PropDef.Key])
-                {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
-                    if (!object.ReferenceEquals(null, svgprop))
-                    {
-                        svgprop.Id = string.Format(SvgItemIdSetupKeyFormat, poly.Room, poly.OrderIndex);
-
-                        AddPropAttributes(svgprop, poly);
-
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
-                        svgprop.SetDataAttribute("room-id", poly.Room.ToString());
-                    }
-                }
-            }
-            */
-
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.AmmoBox, svg, SvgSetupAmmoLayerId);
-
-            // safe should be under door z layer.
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Safe, svg, SvgSetupSafeLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Door, svg, SvgSetupDoorLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Alarm, svg, SvgSetupAlarmLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Cctv, svg, SvgSetupCctvLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Drone, svg, SvgSetupDroneLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Aircraft, svg, SvgSetupAircraftLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Tank, svg, SvgSetupTankLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.StandardProp, svg, SvgSetupStandardPropLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.SingleMonitor, svg, SvgSetupSingleMonitorLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Collectable, svg, SvgSetupCollectableLayerId);
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Armour, svg, SvgSetupBodyArmorLayerId);
-
-            // keys should be on top of tables (StandardProp)
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Key, svg, SvgSetupKeyLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Key, svg, SvgSetupKeyLayerId, SvgItemIdSetupKeyFormat);
 
             // guards should be one of the highest z layers
-            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Guard, svg, SvgSetupChrLayerId);
+            AddSetupGroupToSvgDoc(setupPolygonsCollection, PropDef.Guard, svg, SvgSetupChrLayerId, SvgItemIdSetupChrFormat);
 
             if (introPolygons.Any())
             {
@@ -1253,11 +944,18 @@ namespace Getools.Palantir
                     double halfh = 39;
                     double rotAngle = 45;
 
-                    path.Transform = $"translate({point.X - halfw}, {point.Y - halfh}) rotate({rotAngle} {halfw} {halfh})";
+                    path.Transform = $"translate({point.X - halfw}, {point.Y - halfh}) rotate({rotAngle} {halfw} {halfh}) scale(2)";
 
-                    container.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                    container.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                    container.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
+                    container.SetDataAttribute("nc-x", poly.Origin.X.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("nc-y", poly.Origin.Y.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("nc-z", poly.Origin.Z.ToString(StandardDoubleToStringFormat));
+
+                    var scaledPos = poly.Origin.Clone().Scale(1 / Stage.LevelScale);
+
+                    container.SetDataAttribute("sc-x", scaledPos.X.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("sc-y", scaledPos.Y.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
+
                     container.SetDataAttribute("room-id", poly.Room.ToString());
                 }
             }
@@ -1265,7 +963,7 @@ namespace Getools.Palantir
             return svg;
         }
 
-        private void AddSetupGroupToSvgDoc(Dictionary<PropDef, List<PropPosition>> collection, PropDef key, SvgDocument svg, string groupId)
+        private void AddSetupGroupToSvgDoc(Dictionary<PropDef, List<PropPosition>> collection, PropDef key, SvgDocument svg, string groupId, string itemFormatString)
         {
             if (collection.ContainsKey(key))
             {
@@ -1273,16 +971,23 @@ namespace Getools.Palantir
                 group.Id = groupId;
                 foreach (var poly in collection[key])
                 {
-                    var svgprop = SvgProp.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
+                    var svgprop = SvgAppend.PropToSvg.SetupObjectToSvgAppend(group, poly, Stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
-                        svgprop.Id = string.Format(SvgItemIdSetupChrFormat, poly.Room, poly.OrderIndex);
+                        svgprop.Id = string.Format(itemFormatString, poly.Room, poly.OrderIndex);
 
                         AddPropAttributes(svgprop, poly);
 
-                        svgprop.SetDataAttribute("natural-coord-x", poly.Origin.X.ToString());
-                        svgprop.SetDataAttribute("natural-coord-y", poly.Origin.Y.ToString());
-                        svgprop.SetDataAttribute("natural-coord-z", poly.Origin.Z.ToString());
+                        svgprop.SetDataAttribute("nc-x", poly.Origin.X.ToString(StandardDoubleToStringFormat));
+                        svgprop.SetDataAttribute("nc-y", poly.Origin.Y.ToString(StandardDoubleToStringFormat));
+                        svgprop.SetDataAttribute("nc-z", poly.Origin.Z.ToString(StandardDoubleToStringFormat));
+
+                        var scaledPos = poly.Origin.Clone().Scale(1 / Stage.LevelScale);
+
+                        svgprop.SetDataAttribute("sc-x", scaledPos.X.ToString(StandardDoubleToStringFormat));
+                        svgprop.SetDataAttribute("sc-y", scaledPos.Y.ToString(StandardDoubleToStringFormat));
+                        svgprop.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
+
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
                     }
                 }
@@ -1434,6 +1139,12 @@ namespace Getools.Palantir
 
             // native preset coordinate value
             public Coord3dd NaturalMax { get; set; } = Coord3dd.Zero.Clone();
+
+            //  stage scaled coordinate value
+            public Coord3dd ScaledMin { get; set; } = Coord3dd.Zero.Clone();
+
+            // stage scaled coordinate value
+            public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
 
             public Dictionary<string, string> SvgDataAttributes { get; set; } = new Dictionary<string, string>();
         }
