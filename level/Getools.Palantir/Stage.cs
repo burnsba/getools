@@ -5,14 +5,29 @@ using Getools.Lib.Kaitai.Gen;
 
 namespace Getools.Palantir
 {
+    /// <summary>
+    /// Container class for csharp object game data.
+    /// </summary>
     public class Stage
     {
+        /// <summary>
+        /// Gets or sets the stage level scale.
+        /// </summary>
         public double LevelScale { get; set; }
 
-        public BgFile Bg { get; set; }
+        /// <summary>
+        /// Gets or sets the bg data.
+        /// </summary>
+        public BgFile? Bg { get; set; }
         
-        public StageSetupFile Setup { get; set; }
+        /// <summary>
+        /// Gets or sets the setup data.
+        /// </summary>
+        public StageSetupFile? Setup { get; set; }
 
-        public StandFile Stan { get; set; }
+        /// <summary>
+        /// Gets or sets the stan data.
+        /// </summary>
+        public StandFile? Stan { get; set; }
     }
 }

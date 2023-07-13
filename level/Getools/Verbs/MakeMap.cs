@@ -258,24 +258,21 @@ namespace Getools.Verbs
                 LevelScale = opts.LevelScale,
             };
 
-            var mim = new Palantir.MapImageMaker()
-            {
-                Stage = stage,
-            };
+            var mim = new Palantir.MapImageMaker(stage);
 
             SvgDocument svg;
 
             if (opts.SlizeZ.HasValue)
             {
-                svg = mim.SliceZToImage(opts.SlizeZ.Value);
+                svg = mim.SliceZToImageSvg(opts.SlizeZ.Value);
             }
             else if (opts.ZMin.HasValue)
             {
-                svg = mim.BoundingZToImage(opts.ZMin.Value, opts.ZMax!.Value);
+                svg = mim.BoundingZToImageSvg(opts.ZMin.Value, opts.ZMax!.Value);
             }
             else
             {
-                svg = mim.FullImage();
+                svg = mim.FullImageSvg();
             }
 
             using (var fs = new FileStream(opts.OutputFilename, FileMode.Create))
