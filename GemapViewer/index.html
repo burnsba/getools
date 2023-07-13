@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/svg-pan-zoom.js"></script>
+
+    <link href="css/nouislider.css?v=1570" rel="stylesheet">
+    <script src="js/nouislider.js"></script>
+
+    <style>
+        @font-face {
+            font-family: "ibmvga9x16";
+            src: url("font/Web437_IBM_VGA_9x16.woff") format('woff');
+        }
+
+        .s-row {
+            margin-bottom: 6px;
+        }
+
+        @media screen and (max-width: 800px) {
+            .s-row {
+                margin-bottom: 12px;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: ibmvga9x16;
+            font-size: 16px;
+            overscroll-behavior: none;
+        }
+
+        .big, .big > * {
+            font-size: 32px;
+        }
+
+        #status-bar {
+            background-color: #eeeeee;
+            overflow: hidden;
+            min-height: 32px;
+            height: 32px;
+            max-height: 32px;
+            padding-left: 24px;
+        }
+
+        #pan-controls {
+            position: absolute;
+            right: 40px;
+            bottom: 30px;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+
+        }
+
+        .pan-control-row {
+            margin: 8px;
+        }
+
+        .pan-control-row input {
+            font-size: 32px;
+            padding: 6px;
+        }
+
+        .col-left-sep {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 4px solid #8790d8;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .vert-space-10 {
+            margin-top: 10px;
+            display: block;
+        }
+
+        .vert-space-12 {
+            margin-top: 12px;
+            display: block;
+        }
+
+        .vert-space-24 {
+            margin-top: 24px;
+            display: block;
+        }
+
+        .vert-space-120 {
+            margin-top: 120px;
+            display: block;
+        }
+
+        #slider-container {
+            margin-left: 24px;
+            margin-right: 48px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        #map-container {
+            flex-grow: 1;
+            height: calc(100vh - 38px);
+            position: relative;
+        }
+
+        #mmap {
+            height: calc(100vh - 38px);
+            position: fixed;
+        }
+
+        #level-select {
+            width: 100%;
+        }
+
+        #column-left-head {
+            z-index: 10;
+        }
+
+        #column-left-body {
+            z-index: 9;
+        }
+
+        #column-left-head, #column-left-body {
+            position: fixed;
+            width: 300px;
+            max-width: 300px;
+            min-width: 300px;
+            padding: 4px;
+            background-color: #eaf9ff;
+        }
+
+        #column-left-head {
+            height: 152px;
+            overflow: hidden;
+        }
+
+        #column-left-body {
+            top: 152px;
+            /* viewheight, head, status bar, padding */
+            height: calc(100vh - 152px - 32px - 8px);
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+
+        //var g_StageNaturalMinY = 0.0;
+        //var g_StageNaturalMaxY = 0.0;
+
+        var g_StageLevelScale = 1.0;
+        var g_InvStageLevelScale = 1.0;
+
+        var g_StageBounds = {
+            "natural": {
+                "min": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "max": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }
+            },
+            "scaled": {
+                "min": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "max": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }
+            }
+        };
+
+        var g_ZoomerLoaded = false;
+
+        var g_SvgStyleSheet = null;
+        var g_SvgStyleRuleIndexLookup = {};
+        var g_SvgStyleCurrentValues = {
+            /* default/starting values */
+            '.gelib-stan': {
+                'stroke': '#9e87a3',
+                'stroke-width': 1,
+                'fill': '#fdf5ff'
+            },
+            '.gelib-stan:hover': {
+                'stroke': '#9e87a3',
+                'stroke-width': 4,
+                'fill': '#fdf5ff'
+            },
+            '.gelib-room': {
+                'stroke': 'blue',
+                'stroke-width': 1,
+                'fill': '#ffffff',
+                'fill-opacity': 0
+            },
+            '.gelib-room:hover': {
+                'stroke': 'blue',
+                'stroke-width': 4,
+                'fill': '#ffffff'
+            },
+            '.gelib-pad': {
+                'stroke': '#9c009e',
+                'stroke-width': 2,
+                'fill': '#ff00ff'
+            },
+            '.gelib-pad:hover': {
+                'stroke': '#ec60ee',
+                'stroke-width': 4,
+                'fill': '#ff99ff'
+            }
+        };
+
+        function ApplyStyleChange(node) {
+            if (!g_ZoomerLoaded || !node) {
+                return;
+            }
+
+            let selector = node.dataset.selector;
+            let property = node.dataset.prop;
+            let css_type = node.dataset.cssType;
+
+            if (!selector || !property || !css_type) {
+                return;
+            }
+
+            if (!g_SvgStyleSheet || !g_SvgStyleCurrentValues[selector]) {
+                return;
+            }
+
+            let svg_style_index = g_SvgStyleRuleIndexLookup[selector];
+
+            if (!isFinite(svg_style_index)) {
+                return;
+            }
+
+            let prop_value = null;
+
+            if (css_type === 'number') {
+                prop_value = parseFloat(node.value);
+            } else if (css_type === 'color') {
+                // match 6 or 3 digit html hex, with optional '#' prefix
+                let rem = ('' + node.value).match(/^#?[0-9a-fA-F]{6}$|^#?[0-9a-fA-F]{3}$/);
+                if (!rem) {
+                    return;
+                }
+                prop_value = rem[0];
+            } else {
+                return;
+            }
+
+            let rules = g_SvgStyleSheet.cssRules || g_SvgStyleSheet.rules;
+            rules[svg_style_index].style[property] = prop_value;
+
+            g_SvgStyleCurrentValues[selector][property] = prop_value;
+        }
+
+        function SetInitialControlValues() {
+            let style_node = document.getElementById('style-panel');
+            let inputs = style_node.getElementsByTagName('input');
+            for (const node of inputs) {
+                let selector = node.dataset.selector;
+                if (!selector) {
+                    continue;
+                }
+                let style_values = g_SvgStyleCurrentValues[selector];
+                if (!style_values) {
+                    continue;
+                }
+                let property = node.dataset.prop;
+                node.value = style_values[property];
+            }
+        }
+
+        function ChangeLevel() {
+            const node = document.getElementById('level-select');
+            if (!node) {
+                return;
+            }
+            const options = node.options;
+            if (!options) {
+                return;
+            }
+            const selectedOption = options[options.selectedIndex];
+            if (!selectedOption) {
+                return;
+            }
+            let filename = selectedOption.dataset['filename'];
+
+            if (!filename) {
+                return;
+            }
+
+            document.getElementById('mmap').setAttribute("data", filename);
+        }
+
+        function ToggleLayer(node) {
+            let svg_layer_id = "";
+
+            switch (node.name) {
+                case "check-bg-layer": svg_layer_id = "svg-bg-room-layer"; break;
+                case "check-stan-layer": svg_layer_id = "svg-stan-tile-layer"; break;
+                case "check-setup-pad-layer": svg_layer_id = "svg-pad-layer"; break;
+                case "check-setup-alarm-layer": svg_layer_id = "svg-setup-alarm-layer"; break;
+                case "check-setup-ammo-layer": svg_layer_id = "svg-setup-ammo-layer"; break;
+                case "check-setup-aircraft-layer": svg_layer_id = "svg-setup-aircraft-layer"; break;
+                case "check-setup-bodyarmor-layer": svg_layer_id = "svg-setup-bodyarmor-layer"; break;
+                case "check-setup-chr-layer": svg_layer_id = "svg-setup-chr-layer"; break;
+                case "check-setup-cctv-layer": svg_layer_id = "svg-setup-cctv-layer"; break;
+                case "check-setup-collectable-layer": svg_layer_id = "svg-setup-collectable-layer"; break;
+                case "check-setup-door-layer": svg_layer_id = "svg-setup-door-layer"; break;
+                case "check-setup-drone-layer": svg_layer_id = "svg-setup-drone-layer"; break;
+                case "check-setup-key-layer": svg_layer_id = "svg-setup-key-layer"; break;
+                case "check-setup-safe-layer": svg_layer_id = "svg-setup-safe-layer"; break;
+                case "check-setup-singlemonitor-layer": svg_layer_id = "svg-setup-singlemonitor-layer"; break;
+                case "check-setup-prop-layer": svg_layer_id = "svg-setup-prop-layer"; break;
+                case "check-setup-tank-layer": svg_layer_id = "svg-setup-tank-layer"; break;
+                case "check-setup-intro-layer": svg_layer_id = "svg-setup-intro-layer"; break;
+
+                    break;
+            }
+
+            if (!svg_layer_id) {
+                return;
+            }
+
+            var svg_doc = document.getElementById('mmap').contentDocument;
+            if (!svg_doc) {
+                return;
+            }
+
+            var svg_node = svg_doc.getElementById(svg_layer_id);
+            if (!svg_node) {
+                return;
+            }
+
+            if (!node.checked) {
+                svg_node.style.display = 'none';
+            } else {
+                svg_node.style.display = '';
+            }
+        }
+
+        function UpdateControlPanel() {
+            svgPanZoom(document.getElementById('mmap'), {
+                maxZoom: 100
+            });
+
+            g_ZoomerLoaded = true;
+
+            UpdateStageBounds();
+            RebuildSlider();
+            InjectDocumentStyle();
+            BuildPropList();
+            InjectEventHandlers();
+            ApplyLayerFilter();
+
+            // loading the svg object un-applies the css width, manually reapply that here.
+            FixMapDisplayStuff();
+
+            SetSvgPoint();
+        }
+
+        var g_SvgPoint = null;
+
+        function SetSvgPoint() {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            g_SvgPoint = svg.createSVGPoint();
+        }
+
+        function HideUiControls() {
+            document.getElementById('column-left-body').style.display = 'none';
+            document.getElementById('btn-hide-ui').style.display = 'none';
+            document.getElementById('btn-show-ui').style.display = '';
+            FixMapDisplayStuff(true);
+        }
+
+        function ShowUiControls() {
+            document.getElementById('column-left-body').style.display = '';
+            document.getElementById('btn-hide-ui').style.display = '';
+            document.getElementById('btn-show-ui').style.display = 'none';
+            FixMapDisplayStuff();
+        }
+
+        function FixMapDisplayStuff(v) {
+            document.getElementById('mmap').style.width = 'calc(100vw - 4px)';
+            if (v) {
+                document.getElementById('mmap').style.left = 0;
+            } else {
+                document.getElementById('mmap').style.left = '300px';
+            }
+        }
+
+        function ApplyLayerFilter() {
+            let unchecked = document.getElementById('control-layers-panel').querySelectorAll('input:not(:checked)');
+            for (const node of unchecked) {
+                ToggleLayer(node);
+            }
+        }
+
+        function InjectDocumentStyle() {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            var style = xml.createElementNS("http://www.w3.org/2000/svg", 'style');
+            svg.appendChild(style);
+            style.type = 'text/css';
+
+            g_SvgStyleSheet = style.sheet;
+
+            style.sheet.insertRule('.vertical-bound-filter { display: none; }', style.sheet.cssRules.length);
+
+            let index = 0;
+            let rule = '';
+            // replace the svg css styles with the values from the javascript css container.
+            for (const selector of Object.entries(g_SvgStyleCurrentValues).map(key => key[0])) {
+                rule = Array.prototype.join.call(Object.entries(g_SvgStyleCurrentValues[selector]).map(kvp => `${kvp[0]}: ${kvp[1]};`), ' ');
+                let rule_text = selector + ' { ' + rule + ' }';
+                index = style.sheet.insertRule(rule_text, style.sheet.cssRules.length);
+                // save reference to allow user updating
+                g_SvgStyleRuleIndexLookup[selector] = index;
+            }
+        }
+
+        function InjectEventHandlers() {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            svg.addEventListener('mousemove', MapMouseEvent);
+        }
+
+        function UpdateStageBounds() {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            //g_StageNaturalMinY = parseFloat(svg.dataset.naturalMinY);
+            //g_StageNaturalMaxY = parseFloat(svg.dataset.naturalMaxY);
+
+            g_StageBounds.natural.min.x = parseFloat(svg.dataset.nMinX);
+            g_StageBounds.natural.max.x = parseFloat(svg.dataset.nMaxX);
+            g_StageBounds.natural.min.y = parseFloat(svg.dataset.nMinY);
+            g_StageBounds.natural.max.y = parseFloat(svg.dataset.nMaxY);
+            g_StageBounds.natural.min.z = parseFloat(svg.dataset.nMinZ);
+            g_StageBounds.natural.max.z = parseFloat(svg.dataset.nMaxZ);
+
+            g_StageBounds.scaled.min.x = parseFloat(svg.dataset.sMinX);
+            g_StageBounds.scaled.max.x = parseFloat(svg.dataset.sMaxX);
+            g_StageBounds.scaled.min.y = parseFloat(svg.dataset.sMinY);
+            g_StageBounds.scaled.max.y = parseFloat(svg.dataset.sMaxY);
+            g_StageBounds.scaled.min.z = parseFloat(svg.dataset.sMinZ);
+            g_StageBounds.scaled.max.z = parseFloat(svg.dataset.sMaxZ);
+
+            g_StageLevelScale = parseFloat(svg.dataset.levelScale);
+            g_InvStageLevelScale = 1.0 / g_StageLevelScale;
+
+            document.getElementById('map-min-y').innerHTML = g_StageBounds.scaled.min.y;
+            document.getElementById('map-max-y').innerHTML = g_StageBounds.scaled.max.y;
+
+            console.log('new bounds: g_StageScaledMinY=' + g_StageBounds.scaled.min.y + ', g_StageScaledMaxY=' + g_StageBounds.scaled.max.y);
+        }
+
+        // iterate svg, extract unique prop ids, create UI checkbox input to allow disabling.
+        function BuildPropList() {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            let prop_names = [... new Set(Array.from(svg.querySelectorAll('[data-prop-name]')).map(x => x.dataset.propName))];
+            let container = document.getElementById('show-hide-prop-inputs');
+
+            container.innerHTML = '';
+
+            for (const name of prop_names) {
+                let div = document.createElement('div');
+                div.classList.add("s-row");
+
+                let label = document.createElement('label');
+                let input = document.createElement('input');
+
+                label.innerText = name;
+
+                input.setAttribute('type', 'checkbox');
+                input.dataset.propName = name;
+                input.addEventListener('change', ToggleDisableProp);
+
+                label.appendChild(input);
+                div.appendChild(label);
+
+                container.appendChild(div);
+            }
+        }
+
+        function ToggleDisableProp(e) {
+            if (!e) {
+                return;
+            }
+            let node = e.target;
+            if (!node) {
+                return;
+            }
+
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let prop_name = node.dataset.propName;
+            let display_value = '';
+            if (node.checked) {
+                display_value = 'none';
+            }
+
+            Array.from(xml.querySelectorAll('[data-prop-name="' + prop_name + '"]')).forEach(x => x.style.display = display_value);
+        }
+
+        var g_SliderInit = false;
+
+        function RebuildSlider() {
+
+            let slider = document.getElementById('slider');
+            if (!g_SliderInit) {
+                g_SliderInit = true;
+                noUiSlider.create(slider, {
+                    start: [g_StageBounds.scaled.min.y, g_StageBounds.scaled.max.y],
+                    connect: true,
+                    range: {
+                        'min': g_StageBounds.scaled.min.y,
+                        'max': g_StageBounds.scaled.max.y
+                    }
+                });
+
+                slider.noUiSlider.on('change.one', FilterVertivalSliderHandler);
+            } else {
+                newOptions = {
+                    start: [g_StageBounds.scaled.min.y, g_StageBounds.scaled.max.y],
+                    range: {
+                        'min': g_StageBounds.scaled.min.y,
+                        'max': g_StageBounds.scaled.max.y
+                    }
+                };
+                slider.noUiSlider.updateOptions(
+                    newOptions, // Object
+                    true // Boolean 'fireSetEvent'
+                );
+            }
+
+            document.getElementById('slider-left-y').value = g_StageBounds.scaled.min.y;
+            document.getElementById('slider-right-y').value = g_StageBounds.scaled.max.y;
+        }
+
+        function ApplyManualBounds() {
+            let slider_min = parseFloat(document.getElementById('slider-left-y').value);
+            let slider_max = parseFloat(document.getElementById('slider-right-y').value);
+
+            if (!isFinite(slider_min) || !isFinite(slider_max)) {
+                return;
+            }
+
+            console.log('filter: min=' + slider_min + ', max=' + slider_max);
+
+            FilterYCommon(slider_min, slider_max);
+
+            document.getElementById('slider-left-y').value = slider_min;
+            document.getElementById('slider-right-y').value = slider_max;
+        }
+
+        function FilterVertivalSliderHandler(values, handle, unencoded, tap, positions, noUiSlider) {
+
+            let slider_min = parseFloat(values[0]);
+            let slider_max = parseFloat(values[1]);
+
+            console.log('filter: min=' + slider_min + ', max=' + slider_max);
+
+            FilterYCommon(slider_min, slider_max);
+
+            document.getElementById('slider-left-y').value = slider_min;
+            document.getElementById('slider-right-y').value = slider_max;
+        }
+
+        function FilterYCommon(lower, upper) {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            // undo previous vertical filtering
+            Array.from(xml.querySelectorAll('[data-sc-y]')).forEach(x => x.classList.remove('vertical-bound-filter'));
+            Array.from(xml.querySelectorAll('[data-s-min-y]')).forEach(x => x.classList.remove('vertical-bound-filter'));
+
+            Array.from(xml.querySelectorAll('[data-sc-y]:not(svg)')).filter(x => Number(x.dataset.scY) < lower || Number(x.dataset.scY) > upper).forEach(x => x.classList.add('vertical-bound-filter'));
+            Array.from(xml.querySelectorAll('[data-s-min-y]:not(svg)')).filter(x => Number(x.dataset.sMinY) < lower || Number(x.dataset.sMaxY) > upper).forEach(x => x.classList.add('vertical-bound-filter'));
+        }
+
+        function MapMouseEvent(e) {
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            LogMouseCoord(e);
+
+            const x = e.clientX;
+            const y = e.clientY;
+
+            let items = xml.elementsFromPoint(x, y);
+            if (!items || items.length < 1) {
+                return;
+            }
+
+            let logStatusBar = false;
+
+            //console.log('MapMouseEvent');
+
+            for (let item of items) {
+                let node = item;
+                if (!item.classList.contains('svg-logical-item')) {
+                    node = item.closest('.svg-logical-item');
+                    if (!node || node.tagName == "svg") {
+                        continue;
+                    }
+                }
+
+                if (!logStatusBar) {
+                    logStatusBar = true;
+                    LogMouseOver(node);
+                    break;
+                }
+                //console.log('mousemove: ' + node.id);
+            }
+        }
+
+        function LogMouseCoord(e) {
+
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return;
+            }
+
+            svg = svg[0];
+
+            if (!g_SvgPoint) {
+                return;
+            }
+
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            let pan = spz.getPan();
+
+            let x = 1.0;
+            let y = 1.0;
+
+            g_SvgPoint.x = e.clientX;
+            g_SvgPoint.y = e.clientY;
+            var svgpoint = g_SvgPoint.matrixTransform(svg.getScreenCTM().inverse());
+
+            x = (svgpoint.x + 0) * 7.55319 + g_StageBounds.scaled.min.x;
+            y = (svgpoint.y + 0) * 7.55319 + g_StageBounds.scaled.min.z;
+
+            let mouseover_log = `mouse: ${e.clientX},${e.clientY}; math: ${x}, ${y}`;
+
+            document.getElementById('status-mouse-coord').innerHTML = mouseover_log;
+        }
+
+        function LogMouseOver(node) {
+
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (!node.dataset.typedef) {
+                let nodetype = NodeIdStringToType(node.id);
+                if (!nodetype) {
+                    return;
+                }
+                node.dataset.typedef = nodetype['typemap']['type'];
+                node.dataset.display = nodetype['typemap']['display'];
+            }
+
+            let mouseover_log = `${node.dataset.display}: roomid=${node.dataset.roomId}`;
+
+            // scaled coord
+            if (node.dataset.scX) {
+                mouseover_log += ` (${node.dataset.scX}, ${node.dataset.scY}, ${node.dataset.scZ})`;
+            }
+
+            if (node.dataset.propName) {
+                mouseover_log += ` ${node.dataset.propName}`;
+            }
+
+            document.getElementById('status-mouse-item').innerHTML = mouseover_log;
+        }
+
+        var ClassTypeMap = [
+            /* need longer matches first */
+            { "re": new RegExp("svg-room-([0-9]+)-setup-alarm-([0-9]+)"), 'id': 15, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAlarm', 'display': 'Alarm' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-ammo-([0-9]+)"), 'id': 14, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAmmoBox', 'display': 'Ammo' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-aircraft-([0-9]+)"), 'id': 13, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAircraft', 'display': 'Aircraft' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-bodyarmor-([0-9]+)"), 'id': 12, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectBodyArmor', 'display': 'Body Armor' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-chr-([0-9]+)"), 'id': 11, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectGuard', 'display': 'Guard' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-cctv-([0-9]+)"), 'id': 10, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCctv', 'display': 'CCTV' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-collectable-([0-9]+)"), 'id': 9, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCollectObject', 'display': 'Collect' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-door-([0-9]+)"), 'id': 8, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDoor', 'display': 'Door' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-drone-([0-9]+)"), 'id': 7, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDrone', 'display': 'Drone' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-key-([0-9]+)"), 'id': 6, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectKey', 'display': 'Key' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-safe-([0-9]+)"), 'id': 5, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSafe', 'display': 'Safe' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-singlemonitor-([0-9]+)"), 'id': 4, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSingleMonitor', 'display': 'SingleMonitor' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-prop-([0-9]+)"), 'id': 3, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectStandard', 'display': 'Prop' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-tank-([0-9]+)"), 'id': 2, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectTank', 'display': 'Tank' },
+            { "re": new RegExp("svg-room-([0-9]+)-setup-intro-([0-9]+)"), 'id': 1, 'type': 'Getools.Lib.Game.Asset.Intro.IntroSpawn', 'display': 'Spawn' },
+            { "re": new RegExp("svg-room-([0-9]+)-tile-([0-9]+)"), 'id': 17, 'type': 'Getools.Lib.Game.Asset.Stan.StandTile', 'display': 'Tile' },
+            { "re": new RegExp("svg-room-([0-9]+)-pad-([0-9]+)"), 'id': 16, 'type': 'Getools.Lib.Game.Asset.Setup.Pad', 'display': 'Pad' },
+            { "re": new RegExp("svg-room-([0-9]+)"), 'id': 18, 'type': 'Getools.Lib.Game.Asset.Bg.Room', 'display': 'Room' },
+        ];
+
+        function NodeIdStringToType(id) {
+            for (let ctm of ClassTypeMap) {
+                let match = id.match(ctm.re);
+                if (match) {
+                    return {
+                        "typemap": ctm,
+                        "match": match
+                    };
+                }
+            }
+            return null;
+        }
+
+        function PanZoomIn() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            spz.zoomIn();
+        }
+        function PanZoomReset() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            spz.resetZoom();
+            spz.center();
+        }
+        function PanZoomOut() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            spz.zoomOut();
+        }
+    </script>
+
+    <div id="sidebar">
+        <div id="column-left-head">
+            <div class="big"><a href="/">Home</a></div>
+            <div class="vert-space-24"></div>
+            <div>Goldeneye map viewer (*beta)</div>
+            <div class="vert-space-12"></div>
+            <div><a href="https://github.com/burnsba/getools/tree/main/level">source</a></div>
+            <div class="vert-space-12"></div>
+            <div><input id="btn-hide-ui" type="button" value="hide <<" onclick="HideUiControls();" /></div>
+            <div><input id="btn-show-ui" type="button" value="show >>" onclick="ShowUiControls();" style="display: none;" /></div>
+        </div>
+
+        <div id="column-left-body">
+            <div class="col-left-sep"></div>
+
+            <div id="control-panel">
+
+                <div>
+                    <div class="big">Stage</div>
+                    <select id="level-select" onchange="ChangeLevel();">
+                        <option value="" data-filename=""></option>
+                        <option value="dam-u" data-filename="svgmap/u/Dam.svg">Dam</option>
+                        <option value="facility-u" data-filename="svgmap/u/Facility.svg">Facility</option>
+                        <option value="runway-u" data-filename="svgmap/u/Runway.svg">Runway</option>
+                        <option value="surface1-u" data-filename="svgmap/u/Surface 1.svg">Surface 1</option>
+                        <option value="bunker1-u" data-filename="svgmap/u/Bunker 1.svg">Bunker 1</option>
+                        <option value="silo-u" data-filename="svgmap/u/Silo.svg">Silo (NTSC)</option>
+                        <option value="silo-e" data-filename="svgmap/e/Silo.svg">Silo (PAL)</option>
+                        <option value="silo-j" data-filename="svgmap/j/Silo.svg">Silo (NTSC-J)</option>
+                        <option value="frigate-u" data-filename="svgmap/u/Frigate.svg">Frigate (NTSC)</option>
+                        <option value="frigate-e" data-filename="svgmap/e/Frigate.svg">Frigate (PAL)</option>
+                        <option value="frigate-j" data-filename="svgmap/j/Frigate.svg">Frigate (NTSC-J)</option>
+                        <option value="surface2-u" data-filename="svgmap/u/Surface 2.svg">Surface 2</option>
+                        <option value="bunker2-u" data-filename="svgmap/u/Bunker 2.svg">Bunker 2</option>
+                        <option value="statue-u" data-filename="svgmap/u/Statue.svg">Statue (NTSC)</option>
+                        <option value="statue-e" data-filename="svgmap/e/Statue.svg">Statue (PAL)</option>
+                        <option value="statue-j" data-filename="svgmap/j/Statue.svg">Statue (NTSC-J)</option>
+                        <option value="archives-u" data-filename="svgmap/u/Archives.svg">Archives</option>
+                        <option value="streets-u" data-filename="svgmap/u/Streets.svg">Streets (NTSC)</option>
+                        <option value="streets-e" data-filename="svgmap/e/Streets.svg">Streets (PAL)</option>
+                        <option value="depot-u" data-filename="svgmap/u/Depot.svg">Depot</option>
+                        <option value="train-u" data-filename="svgmap/u/Train.svg">Train (NTSC)</option>
+                        <option value="train-e" data-filename="svgmap/e/Train.svg">Train (PAL)</option>
+                        <option value="train-j" data-filename="svgmap/j/Train.svg">Train (NTSC-J)</option>
+                        <option value="jungle-u" data-filename="svgmap/u/Jungle.svg">Jungle (NTSC)</option>
+                        <option value="jungle-e" data-filename="svgmap/e/Jungle.svg">Jungle (PAL)</option>
+                        <option value="jungle-j" data-filename="svgmap/j/Jungle.svg">Jungle (NTSC-J)</option>
+                        <option value="control-u" data-filename="svgmap/u/Control.svg">Control</option>
+                        <option value="caverns-u" data-filename="svgmap/u/Caverns.svg">Caverns</option>
+                        <option value="cradle-u" data-filename="svgmap/u/Cradle.svg">Cradle (NTSC)</option>
+                        <option value="cradle-e" data-filename="svgmap/e/Cradle.svg">Cradle (PAL)</option>
+                        <option value="cradle-j" data-filename="svgmap/j/Cradle.svg">Cradle (NTSC-J)</option>
+                        <option value="aztec-u" data-filename="svgmap/u/Aztec.svg">Aztec</option>
+                        <option value="egypt-u" data-filename="svgmap/u/Egypt.svg">Egypt</option>
+                    </select>
+                </div>
+
+                <div class="vert-space-24"></div>
+
+                <div id="control-layers-panel">
+                    <div class="big">Layers</div>
+                    <div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-bg-layer" checked />bg</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-stan-layer" checked />stan</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-pad-layer" checked />setup: pad</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-alarm-layer" checked />setup: alarm</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-ammo-layer" checked />setup: ammo</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-aircraft-layer" checked />setup: aircraft</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-bodyarmor-layer" checked />setup: body armor</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-chr-layer" checked />setup: guard</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-cctv-layer" checked />setup: cctv</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-collectable-layer" checked />setup: collectable</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-door-layer" checked />setup: door</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-drone-layer" checked />setup: drone</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-key-layer" checked />setup: key</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-safe-layer" checked />setup: safe</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-singlemonitor-layer" checked />setup: single montior</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-prop-layer" checked />setup: standard prop</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-tank-layer" checked />setup: tank</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-intro-layer" checked />setup: intro (spawn)</label></div>
+                    </div>
+
+                </div>
+
+                <div class="vert-space-24"></div>
+
+                <div>
+                    <div class="big">Vertical bounds</div>
+                    <div>(scaled)</div>
+
+                    <div>left: <input type="text" id="slider-left-y" /></div>
+                    <div>right: <input type="text" id="slider-right-y" /></div>
+                    <div><input type="button" value="apply" onclick="ApplyManualBounds();" /></div>
+                    <div id="slider-container">
+                        <div id="slider"></div>
+                    </div>
+
+                    <div>Stage min: <span id="map-min-y"></span></div>
+                    <div>Stage max: <span id="map-max-y"></span></div>
+
+                </div>
+
+            </div>
+
+            <div class="col-left-sep"></div>
+
+            <div id="style-panel">
+                <div class="big">Style</div>
+                <div class="s-row"><label>stan outline color<input type="text" value="" data-selector=".gelib-stan" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>stan outline width<input type="text" value="" data-selector=".gelib-stan" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>stan fill color<input type="text" value="" data-selector=".gelib-stan" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>stan:hover outline color<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>stan:hover outline width<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>stan:hover fill color<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                
+                <div class="s-row"><label>room outline color<input type="text" value="" data-selector=".gelib-room" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room outline width<input type="text" value="" data-selector=".gelib-room" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room fill color<input type="text" value="" data-selector=".gelib-room" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room fill opacity<input type="text" value="" data-selector=".gelib-room" data-prop="fill-opacity" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room:hover outline color<input type="text" value="" data-selector=".gelib-room:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room:hover outline width<input type="text" value="" data-selector=".gelib-room:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>room:hover fill color<input type="text" value="" data-selector=".gelib-room:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                
+                <div class="s-row"><label>pad outline color<input type="text" value="" data-selector=".gelib-pad" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>pad outline width<input type="text" value="" data-selector=".gelib-pad" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>pad fill color<input type="text" value="" data-selector=".gelib-pad" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>pad:hover outline color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>pad:hover outline width<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>pad:hover fill color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+            </div>
+
+            <div class="col-left-sep"></div>
+
+            <div id="show-hide">
+                <div class="big">Hide props</div>
+                <div id="show-hide-prop-inputs"></div>
+            </div>
+
+            <div class="col-left-sep"></div>
+
+            <div id="direct-download">
+                <div class="big">Direct download svg:</div>
+                <div class="s-row"><a href="svgmap/u/Dam.svg">Dam</a></div>
+                <div class="s-row"><a href="svgmap/u/Facility.svg">Facility</a></div>
+                <div class="s-row"><a href="svgmap/u/Runway.svg">Runway</a></div>
+                <div class="s-row"><a href="svgmap/u/Surface 1.svg">Surface 1</a></div>
+                <div class="s-row"><a href="svgmap/u/Bunker 1.svg">Bunker 1</a></div>
+                <div class="s-row"><a href="svgmap/u/Silo.svg">Silo (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Silo.svg">Silo (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Silo.svg">Silo (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Frigate.svg">Frigate (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Frigate.svg">Frigate (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Frigate.svg">Frigate (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Surface 2.svg">Surface 2</a></div>
+                <div class="s-row"><a href="svgmap/u/Bunker 2.svg">Bunker 2</a></div>
+                <div class="s-row"><a href="svgmap/u/Statue.svg">Statue (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Statue.svg">Statue (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Statue.svg">Statue (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Archives.svg">Archives</a></div>
+                <div class="s-row"><a href="svgmap/u/Streets.svg">Streets (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Streets.svg">Streets (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/u/Depot.svg">Depot</a></div>
+                <div class="s-row"><a href="svgmap/u/Train.svg">Train (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Train.svg">Train (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Train.svg">Train (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Jungle.svg">Jungle (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Jungle.svg">Jungle (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Jungle.svg">Jungle (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Control.svg">Control</a></div>
+                <div class="s-row"><a href="svgmap/u/Caverns.svg">Caverns</a></div>
+                <div class="s-row"><a href="svgmap/u/Cradle.svg">Cradle (NTSC)</a></div>
+                <div class="s-row"><a href="svgmap/e/Cradle.svg">Cradle (PAL)</a></div>
+                <div class="s-row"><a href="svgmap/j/Cradle.svg">Cradle (NTSC-J)</a></div>
+                <div class="s-row"><a href="svgmap/u/Aztec.svg">Aztec</a></div>
+                <div class="s-row"><a href="svgmap/u/Egypt.svg">Egypt</a></div>
+            </div>
+
+            <div class="vert-space-120"></div>
+        </div>
+    </div>
+
+    <div id="map-area">
+        <div style="display: flex; flex-direction: column;">
+            <div id="map-container">
+
+                <object id="mmap" data="" type="image/svg+xml">
+                    <!-- <img src="yourfallback.jpg" /> -->
+                </object>
+
+                <div id="pan-controls">
+                    <div class="pan-control-row"><input type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
+                    <div class="pan-control-row"><input type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
+                    <div class="pan-control-row"><input type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
+                </div>
+
+            </div>
+
+            <div id="status-bar">
+                <div id="status-mouse-coord" style="display:none"></div>
+                <div id="status-mouse-item"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.getElementById('mmap').addEventListener('load', function () {
+            UpdateControlPanel();
+        });
+
+        SetInitialControlValues();
+    </script>
+</body>
+</html>
