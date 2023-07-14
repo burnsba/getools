@@ -33,7 +33,7 @@ namespace Getools.Lib.Game.Asset.Setup
         }
 
         /// <summary>
-        /// Gets or sets the path tables data.
+        /// Gets or sets the Waypoints (path tables data).
         /// Each entry should contain any necessary "prequel" data that
         /// would be listed before this main entry.
         /// </summary>

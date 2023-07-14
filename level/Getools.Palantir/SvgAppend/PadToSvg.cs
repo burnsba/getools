@@ -21,8 +21,8 @@ namespace Getools.Palantir.SvgAppend
 
             Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
 
-            double modelSizeX = 32;
-            double modelSizeZ = 32;
+            double modelSizeX = 36;
+            double modelSizeZ = 36;
             double halfw = modelSizeX / 2;
             double halfh = modelSizeZ / 2;
 

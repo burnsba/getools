@@ -18,6 +18,7 @@ namespace Getools.Palantir
         public List<CollectionHullSvgPoints> TilePolygons { get; set; } = new List<CollectionHullSvgPoints>();
         public List<RenderPosition> PresetPolygons { get; set; } = new List<RenderPosition>();
         public List<RenderPosition> IntroPolygons { get; set; } = new List<RenderPosition>();
+        public List<RenderLine> PathWaypointLines { get; set; } = new List<RenderLine>();
         public Dictionary<PropDef, List<PropPosition>> SetupPolygonsCollection { get; set; } = new Dictionary<PropDef, List<PropPosition>>();
         public Coord3dd ScaledMin { get; set; } = Coord3dd.MaxValue.Clone();
         public Coord3dd ScaledMax { get; set; } = Coord3dd.MinValue.Clone();

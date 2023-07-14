@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// PathTable, points to a list of ids.
+    /// PathTable is a member of Waypoint. The pathtable is the list of neighbor ids.
     /// </summary>
     public class PathTable : IBinData, IGetoolsLibObject
     {

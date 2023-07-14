@@ -79,7 +79,6 @@ namespace Getools.Palantir.SvgAppend
 
                         switch ((PropId)baseObject.ObjectId)
                         {
-                            // ignore these
                             // hat
                             case PropId.PROP_HATFURRY:
                             case PropId.PROP_HATFURRYBROWN:

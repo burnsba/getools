@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "convert_setup --dname=\"UsetupaztZ\" --input-file=\"../../../../asset/setup/UsetupaztZ.bin\" --output-file=\"../../../../asset/test/Aztec.c\""
+      "commandLineArgs": "make_map --bg=\"../../../../asset/bg/bg_azt_all_p.bin\" --stan=\"../../../../asset/stan/Tbg_azt_all_p_stanZ.bin\" --setup=\"../../../../asset/setup/UsetupaztZ.bin\" --output-file=\"../../../../asset/test/Aztec.svg\" --scale=0.35300568"
     }
   }
 }

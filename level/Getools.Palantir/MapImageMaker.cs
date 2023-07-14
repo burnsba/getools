@@ -664,6 +664,8 @@ namespace Getools.Palantir
             SliceProcessSetupPad(context);
             SliceProcessSetupPad3d(context);
             SliceProcessSetupIntro(context);
+
+            SliceProcessPathWaypoints(context);
         }
 
         /// <summary>
@@ -681,6 +683,7 @@ namespace Getools.Palantir
                 roomId = 0;
                 if (!TryGetRoomId(pad.Name.GetString(), out roomId))
                 {
+                    // continue outer foreach, increment index
                     index++;
                     continue;
                 }
@@ -694,6 +697,8 @@ namespace Getools.Palantir
 
                 if (!withinBounds)
                 {
+                    // continue outer foreach, increment index
+                    index++;
                     continue;
                 }
 
@@ -714,6 +719,7 @@ namespace Getools.Palantir
                     Origin = pad.Position.ToCoord3dd(),
                 });
 
+                // continue outer foreach, increment index
                 index++;
             }
         }
@@ -744,6 +750,8 @@ namespace Getools.Palantir
 
                 if (!withinBounds)
                 {
+                    // continue outer foreach, increment index
+                    index++;
                     continue;
                 }
 
@@ -814,6 +822,8 @@ namespace Getools.Palantir
 
                 if (!withinBounds)
                 {
+                    // continue outer foreach, increment index
+                    index++;
                     continue;
                 }
 
@@ -829,6 +839,114 @@ namespace Getools.Palantir
 
                 // only the first spawn is used in single player
                 break;
+            }
+        }
+
+        /// <summary>
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// </summary>
+        /// <param name="context">Current processing context.</param>
+        private void SliceProcessPathWaypoints(ProcessedStageDataContext context)
+        {
+            int room1Id;
+            int room2Id;
+
+            var pathTables = _stage.Setup.SectionPathTables.PathTables;
+            var pads = _stage.Setup.SectionPadList.PadList;
+
+            // add presets to the output.
+            ushort index = 0;
+            foreach (var waypoint in _stage.Setup.SectionPathTables.PathTables)
+            {
+                byte b = 0;
+                room1Id = 0;
+                room2Id = 0;
+
+                // list terminates with -1
+                if ((int)waypoint.PadId < 0)
+                {
+                    break;
+                }
+
+                var pad = pads[(int)waypoint.PadId];
+                
+                if (!TryGetRoomId(pad.Name.GetString(), out b))
+                {
+                    // continue outer foreach, increment index
+                    index++;
+                    continue;
+                }
+
+                room1Id = b;
+
+                bool withinBounds = false;
+
+                if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
+                {
+                    withinBounds = true;
+                }
+
+                if (!withinBounds)
+                {
+                    // continue outer foreach, increment index
+                    index++;
+                    continue;
+                }
+
+                var pathTable = waypoint.Entry;
+                int tableIndex = 0;
+                foreach (var id in pathTable.Ids)
+                {
+                    // list terminates with -1
+                    if (id < 0)
+                    {
+                        break;
+                    }
+
+                    var secondWaypoint = pathTables[id];
+                    var pad2 = pads[(int)secondWaypoint.PadId];
+                    if (!TryGetRoomId(pad2.Name.GetString(), out b))
+                    {
+                        // continue inner foreach
+                        tableIndex++;
+                        continue;
+                    }
+
+                    room2Id = b;
+
+                    withinBounds = false;
+
+                    if (pad2.Position.Y >= context.Zmin!.Value && pad2.Position.Y <= context.Zmax!.Value)
+                    {
+                        withinBounds = true;
+                    }
+
+                    if (!withinBounds)
+                    {
+                        // continue inner foreach
+                        tableIndex++;
+                        continue;
+                    }
+
+                    // pad global min/max comparison already happened in the pad section.
+
+                    var rl = new RenderLine(pad.Position.ToCoord3dd(), pad2.Position.ToCoord3dd())
+                    {
+                        WaypointIndex = index,
+                        TableIndex = tableIndex,
+                        Pad1RoomId = room1Id,
+                        Pad2RoomId = room2Id,
+                        Pad1Id = (int)waypoint.PadId,
+                        Pad2Id = (int)secondWaypoint.PadId,
+                    };
+
+                    context.PathWaypointLines.Add(rl);
+
+                    tableIndex++;
+                }
+
+                // continue outer foreach, increment index
+                index++;
             }
         }
 

@@ -233,6 +233,21 @@ namespace Getools.Lib.Math
             return H.Take(k - 1).ToList();
         }
 
+        public static BoundingBoxd GetBounds(Coord3dd p1, Coord3dd p2)
+        {
+            var bb = new BoundingBoxd();
+
+            bb.MinX = p1.X < p2.X ? p1.X : p2.X;
+            bb.MinY = p1.Y < p2.Y ? p1.Y : p2.Y;
+            bb.MinZ = p1.Z < p2.Z ? p1.Z : p2.Z;
+
+            bb.MaxX = p1.X > p2.X ? p1.X : p2.X;
+            bb.MaxY = p1.Y > p2.Y ? p1.Y : p2.Y;
+            bb.MaxZ = p1.Z > p2.Z ? p1.Z : p2.Z;
+
+            return bb;
+        }
+
         private static double HullCross(Coord2dd O, Coord2dd A, Coord2dd B)
         {
             return ((A.X - O.X) * (B.Y - O.Y)) - ((A.Y - O.Y) * (B.X - O.X));

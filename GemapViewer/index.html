@@ -247,6 +247,14 @@
                 'stroke': '#ec60ee',
                 'stroke-width': 4,
                 'fill': '#ff99ff'
+            },
+            '.gelib-wpline': {
+                'stroke': '#ff80ff',
+                'stroke-width': 12
+            },
+            '.gelib-wpline:hover': {
+                'stroke': '#a831a8',
+                'stroke-width': 20
             }
         };
 
@@ -340,6 +348,7 @@
                 case "check-bg-layer": svg_layer_id = "svg-bg-room-layer"; break;
                 case "check-stan-layer": svg_layer_id = "svg-stan-tile-layer"; break;
                 case "check-setup-pad-layer": svg_layer_id = "svg-pad-layer"; break;
+                case "check-setup-waypoint-layer": svg_layer_id = "svg-waypoint-layer"; break;
                 case "check-setup-alarm-layer": svg_layer_id = "svg-setup-alarm-layer"; break;
                 case "check-setup-ammo-layer": svg_layer_id = "svg-setup-ammo-layer"; break;
                 case "check-setup-aircraft-layer": svg_layer_id = "svg-setup-aircraft-layer"; break;
@@ -487,6 +496,7 @@
             svg.addEventListener('mousemove', MapMouseEvent);
             svg.addEventListener('mousemove', HandleSurfaceMove);
             svg.addEventListener('click', HandleRulerClick);
+            svg.addEventListener('touchstart', HandleRulerClick);
         }
 
         function UpdateStageBounds() {
@@ -1319,6 +1329,7 @@
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-bg-layer" checked />bg</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-stan-layer" checked />stan</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-pad-layer" checked />setup: pad</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-waypoint-layer" checked />setup: path waypoint</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-alarm-layer" checked />setup: alarm</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-ammo-layer" checked />setup: ammo</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-aircraft-layer" checked />setup: aircraft</label></div>
@@ -1383,6 +1394,9 @@
                 <div class="s-row"><label>pad:hover outline color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad:hover outline width<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad:hover fill color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                
+                <div class="s-row"><label>path waypoint color<input type="text" value="" data-selector=".gelib-wpline" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>path waypoint:hover color<input type="text" value="" data-selector=".gelib-wpline:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
             </div>
 
             <div class="col-left-sep"></div>

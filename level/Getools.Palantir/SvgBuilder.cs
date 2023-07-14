@@ -36,6 +36,7 @@ namespace Getools.Palantir
         private const string SvgBgLayerId = "svg-bg-room-layer";
         private const string SvgStanLayerId = "svg-stan-tile-layer";
         private const string SvgPadLayerId = "svg-pad-layer";
+        private const string SvgWaypointLayerId = "svg-waypoint-layer";
 
         private const string SvgSetupAlarmLayerId = "svg-setup-alarm-layer";
         private const string SvgSetupAmmoLayerId = "svg-setup-ammo-layer";
@@ -53,10 +54,14 @@ namespace Getools.Palantir
         private const string SvgSetupTankLayerId = "svg-setup-tank-layer";
 
         private const string SvgSetupIntroLayerId = "svg-setup-intro-layer";
+        
+        // waypoint, path table index
+        private const string SvgItemIdPathWaypointFormat = "svg-waypoint-{0}-t-{1}";
 
         private const string SvgItemIdRoomFormat = "svg-room-{0}";
         private const string SvgItemIdTileFormat = "svg-room-{0}-tile-{1}";
         private const string SvgItemIdPadFormat = "svg-room-{0}-pad-{1}";
+
         private const string SvgItemIdSetupAlarmFormat = "svg-room-{0}-setup-alarm-{1}";
         private const string SvgItemIdSetupAmmoFormat = "svg-room-{0}-setup-ammo-{1}";
         private const string SvgItemIdSetupAircraftFormat = "svg-room-{0}-setup-aircraft-{1}";
@@ -157,6 +162,7 @@ namespace Getools.Palantir
             cssText.AppendLine(".gelib-stan { stroke: #9e87a3; stroke-width: 2; fill: #fdf5ff; }");
             cssText.AppendLine(".gelib-room { stroke: blue; stroke-width: 4; fill: #ffffff; fill-opacity: 0; }");
             cssText.AppendLine(".gelib-pad { stroke: #9c009e; stroke-width: 4; fill: #ff00ff; }");
+            cssText.AppendLine(".gelib-wpline { stroke: #ff80ff; stroke-width: 12; }");
 
             svg.SetStylesheet(cssText.ToString());
 
@@ -166,6 +172,9 @@ namespace Getools.Palantir
             AddBgGroupToSvgDoc(svg, _context.RoomPolygons);
 
             AddPadGroupToSvgDoc(svg, _context.PresetPolygons);
+
+            // draw path waypoints on top of pads
+            AddPathWaypointGroupToSvgDoc(svg, _context.PathWaypointLines);
 
             AddSetupGroupToSvgDoc(_context.SetupPolygonsCollection, PropDef.AmmoBox, svg, SvgSetupAmmoLayerId, SvgItemIdSetupAmmoFormat);
 
@@ -360,6 +369,57 @@ namespace Getools.Palantir
             }
         }
 
+        private void AddPathWaypointGroupToSvgDoc(SvgDocument svg, List<RenderLine> pathWaypointLines)
+        {
+            if (pathWaypointLines.Any())
+            {
+                var group = svg.AddGroup();
+                group.Id = SvgWaypointLayerId;
+
+                foreach (var renderLine in pathWaypointLines)
+                {
+                    var p1 = renderLine.P1.Scale(1.0 / _stage.LevelScale);
+                    var p2 = renderLine.P2.Scale(1.0 / _stage.LevelScale);
+
+                    var container = group.AddGroup();
+
+                    container.AddClass("svg-logical-item");
+
+                    container.Id = string.Format(SvgItemIdPathWaypointFormat, renderLine.WaypointIndex, renderLine.TableIndex);
+
+                    var line = container.AddLine();
+
+                    line.SetX1(p1.X, StandardDoubleToStringFormat);
+                    line.SetY1(p1.Z, StandardDoubleToStringFormat);
+                    line.SetX2(p2.X, StandardDoubleToStringFormat);
+                    line.SetY2(p2.Z, StandardDoubleToStringFormat);
+
+                    // managed via css
+                    //line.Stroke = "#ff80ff";
+                    //line.StrokeWidth = 12;
+                    line.AddClass("gelib-wpline");
+
+                    container.SetDataAttribute("n-min-x", renderLine.Bbox.MinX.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("n-max-x", renderLine.Bbox.MaxX.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("n-min-y", renderLine.Bbox.MinY.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("n-max-y", renderLine.Bbox.MaxY.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("n-min-z", renderLine.Bbox.MinZ.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("n-max-z", renderLine.Bbox.MaxZ.ToString(StandardDoubleToStringFormat));
+
+                    var scaledPos = renderLine.Bbox.Scale(1 / _stage.LevelScale);
+
+                    container.SetDataAttribute("s-min-x", scaledPos.MinX.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("s-max-x", scaledPos.MaxX.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("s-min-y", scaledPos.MinY.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("s-max-y", scaledPos.MaxY.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("s-min-z", scaledPos.MinZ.ToString(StandardDoubleToStringFormat));
+                    container.SetDataAttribute("s-max-z", scaledPos.MaxZ.ToString(StandardDoubleToStringFormat));
+
+                    container.SetDataAttribute("room-id-p1", renderLine.Pad1RoomId.ToString());
+                    container.SetDataAttribute("room-id-p2", renderLine.Pad2RoomId.ToString());
+                }
+            }
+        }
 
         /// <summary>
         /// Adds prop information as attributes to SVG node.
