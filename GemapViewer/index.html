@@ -40,27 +40,34 @@
         #status-bar {
             background-color: #eeeeee;
             overflow: hidden;
-            min-height: 32px;
-            height: 32px;
-            max-height: 32px;
+            min-height: 48px;
+            height: 48px;
+            max-height: 48px;
             padding-left: 24px;
         }
 
-        #pan-controls {
+        #mode-controls {
             position: absolute;
             right: 40px;
             bottom: 30px;
             display: flex;
             align-items: center;
             flex-direction: column;
-
         }
 
-        .pan-control-row {
+        .mode-control-panel {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+
+
+        .float-control-row {
             margin: 8px;
         }
 
-        .pan-control-row input {
+        .float-control-row input {
             font-size: 32px;
             padding: 6px;
         }
@@ -104,12 +111,12 @@
 
         #map-container {
             flex-grow: 1;
-            height: calc(100vh - 38px);
+            height: calc(100vh - 54px);
             position: relative;
         }
 
         #mmap {
-            height: calc(100vh - 38px);
+            height: calc(100vh - 54px);
             position: fixed;
         }
 
@@ -142,7 +149,7 @@
         #column-left-body {
             top: 152px;
             /* viewheight, head, status bar, padding */
-            height: calc(100vh - 152px - 32px - 8px);
+            height: calc(100vh - 152px - 48px - 8px);
             overflow-y: scroll;
         }
     </style>
@@ -151,8 +158,28 @@
 
     <script>
 
-        //var g_StageNaturalMinY = 0.0;
-        //var g_StageNaturalMaxY = 0.0;
+        const svgns = "http://www.w3.org/2000/svg";
+
+        /**
+        * 0: not started
+        * 1: started, no previous point
+        * 2: started, at least one point
+        */
+        let g_RulerDropMode = 0;
+        let g_LastRulerDropMode = 0;
+        // ruler point
+        let g_PreviousPoint = { "x": 0, "y": 0 };
+        // ruler
+        let g_TotalDistance = 0;
+        let g_PxToMeterFactor = 3;
+
+        // ruler dot
+        // half width + entire border width
+        const g_DotRadius = 22;
+        const g_DotDiameter = g_DotRadius * 2;
+
+        const g_RulerLineDash = "40,20";
+        const g_RulerLineThickness = "18px"; // including unit suffix
 
         var g_StageLevelScale = 1.0;
         var g_InvStageLevelScale = 1.0;
@@ -376,16 +403,10 @@
         var g_SvgPoint = null;
 
         function SetSvgPoint() {
-            let xml = document.getElementById('mmap').contentDocument;
-            if (!xml) {
+            let svg = GetSvg();
+            if (!svg) {
                 return;
             }
-            let svg = xml.getElementsByTagName('svg');
-            if (!svg || svg.length != 1) {
-                return;
-            }
-
-            svg = svg[0];
 
             g_SvgPoint = svg.createSVGPoint();
         }
@@ -423,12 +444,12 @@
         function InjectDocumentStyle() {
             let xml = document.getElementById('mmap').contentDocument;
             if (!xml) {
-                return;
+                return null;
             }
 
             let svg = xml.getElementsByTagName('svg');
             if (!svg || svg.length != 1) {
-                return;
+                return null;
             }
 
             svg = svg[0];
@@ -440,6 +461,10 @@
             g_SvgStyleSheet = style.sheet;
 
             style.sheet.insertRule('.vertical-bound-filter { display: none; }', style.sheet.cssRules.length);
+            style.sheet.insertRule('#fake-marker { position: absolute; opacity: 0.5; pointer-events: none; }', style.sheet.cssRules.length);
+            style.sheet.insertRule('#fake-line { min-width: 120px; position: absolute; opacity: 0.5; pointer-events: none; }', style.sheet.cssRules.length);
+            style.sheet.insertRule('.line { min-height: 0px; border-bottom: 6px dashed #000000; transform-origin: 0px 3px; }', style.sheet.cssRules.length);
+            style.sheet.insertRule('.dot { background-color: #00ffc3; border: 2px solid #4580ff; border-radius: 50 %; }', style.sheet.cssRules.length);
 
             let index = 0;
             let rule = '';
@@ -454,35 +479,21 @@
         }
 
         function InjectEventHandlers() {
-            let xml = document.getElementById('mmap').contentDocument;
-            if (!xml) {
+            let svg = GetSvg();
+            if (!svg) {
                 return;
             }
-
-            let svg = xml.getElementsByTagName('svg');
-            if (!svg || svg.length != 1) {
-                return;
-            }
-
-            svg = svg[0];
 
             svg.addEventListener('mousemove', MapMouseEvent);
+            svg.addEventListener('mousemove', HandleSurfaceMove);
+            svg.addEventListener('click', HandleRulerClick);
         }
 
         function UpdateStageBounds() {
-            let xml = document.getElementById('mmap').contentDocument;
-            if (!xml) {
+            let svg = GetSvg();
+            if (!svg) {
                 return;
             }
-            let svg = xml.getElementsByTagName('svg');
-            if (!svg || svg.length != 1) {
-                return;
-            }
-
-            svg = svg[0];
-
-            //g_StageNaturalMinY = parseFloat(svg.dataset.naturalMinY);
-            //g_StageNaturalMaxY = parseFloat(svg.dataset.naturalMaxY);
 
             g_StageBounds.natural.min.x = parseFloat(svg.dataset.nMinX);
             g_StageBounds.natural.max.x = parseFloat(svg.dataset.nMaxX);
@@ -509,17 +520,10 @@
 
         // iterate svg, extract unique prop ids, create UI checkbox input to allow disabling.
         function BuildPropList() {
-            let xml = document.getElementById('mmap').contentDocument;
-            if (!xml) {
+            let svg = GetSvg();
+            if (!svg) {
                 return;
             }
-
-            let svg = xml.getElementsByTagName('svg');
-            if (!svg || svg.length != 1) {
-                return;
-            }
-
-            svg = svg[0];
 
             let prop_names = [... new Set(Array.from(svg.querySelectorAll('[data-prop-name]')).map(x => x.dataset.propName))];
             let container = document.getElementById('show-hide-prop-inputs');
@@ -691,17 +695,10 @@
                 return;
             }
 
-            let xml = document.getElementById('mmap').contentDocument;
-            if (!xml) {
+            let svg = GetSvg();
+            if (!svg) {
                 return;
             }
-
-            let svg = xml.getElementsByTagName('svg');
-            if (!svg || svg.length != 1) {
-                return;
-            }
-
-            svg = svg[0];
 
             if (!g_SvgPoint) {
                 return;
@@ -717,10 +714,13 @@
             g_SvgPoint.y = e.clientY;
             var svgpoint = g_SvgPoint.matrixTransform(svg.getScreenCTM().inverse());
 
-            x = (svgpoint.x + 0) * 7.55319 + g_StageBounds.scaled.min.x;
-            y = (svgpoint.y + 0) * 7.55319 + g_StageBounds.scaled.min.z;
+            x = (svgpoint.x - pan.x) / spz.getSizes().realZoom;
+            y = (svgpoint.y - pan.y) / spz.getSizes().realZoom;
 
-            let mouseover_log = `mouse: ${e.clientX},${e.clientY}; math: ${x}, ${y}`;
+            x = FloatToString(x, 3);
+            y = FloatToString(y, 3);
+
+            let mouseover_log = `pos: ${x}, ${y}`;
 
             document.getElementById('status-mouse-coord').innerHTML = mouseover_log;
         }
@@ -810,6 +810,447 @@
             }
             let spz = svgPanZoom(document.getElementById('mmap'));
             spz.zoomOut();
+        }
+
+        function GetSvg() {
+            if (!g_ZoomerLoaded) {
+                return null;
+            }
+
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return null;
+            }
+
+            let svg = xml.getElementsByTagName('svg');
+            if (!svg || svg.length != 1) {
+                return null;
+            }
+
+            return svg[0];
+        }
+
+        function ToggleControlMode(mode) {
+
+            if (mode === 'ruler') {
+                document.getElementById('control-buttons-ruler').style.display = '';
+                document.getElementById('control-buttons-move').style.display = 'none';
+
+                document.getElementById('status-ruler-dist').style.display = '';
+                document.getElementById('status-mouse-item').style.display = 'none';
+
+                document.getElementById('mode-control-ruler').getElementsByTagName('button')[0].disabled = true;
+                document.getElementById('mode-control-move').getElementsByTagName('button')[0].disabled = false;
+            } else if (mode === 'move') {
+                document.getElementById('control-buttons-ruler').style.display = 'none';
+                document.getElementById('control-buttons-move').style.display = '';
+
+                document.getElementById('status-ruler-dist').style.display = 'none';
+                document.getElementById('status-mouse-item').style.display = '';
+
+                document.getElementById('mode-control-ruler').getElementsByTagName('button')[0].disabled = false;
+                document.getElementById('mode-control-move').getElementsByTagName('button')[0].disabled = true;
+
+            }
+        }
+
+        /*** ruler code ****/
+
+        function HandleSurfaceMove(e) {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (g_RulerDropMode == 0) {
+                return;
+            }
+
+            UiSetFakeMarkerToMouseEvent(e);
+
+            if (g_RulerDropMode == 2) {
+                let minfo = UiDrawFakeLineToMouseEvent(e);
+
+                RulerUpdateStatusBar(g_TotalDistance, g_TotalDistance + minfo.r);
+            }
+        }
+        function HandleRulerClick(e) {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (g_RulerDropMode == 0) {
+                return;
+            }
+
+            //console.log(`click at: ${e.x}, ${e.y}`);
+
+            let coords = UiAppendDotAtMouseEvent(e);
+
+            if (g_RulerDropMode == 2) {
+
+                let minfo = UiAppendLineToMouseEvent(e);
+
+                g_TotalDistance += minfo.r;
+
+                RulerUpdateStatusBar(g_TotalDistance, null);
+            }
+
+            g_PreviousPoint.x = coords.translated.x;
+            g_PreviousPoint.y = coords.translated.y;
+
+            if (g_RulerDropMode == 1) {
+                g_RulerDropMode = 2;
+
+                //document.getElementById('fake-line').style.display = '';
+            }
+        }
+        function HandleButtonStart() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (g_RulerDropMode == 0) {
+
+                let spz = svgPanZoom(document.getElementById('mmap'));
+                spz.disablePan();
+                spz.disableZoom();
+
+                RemoveAllUserLineNodes();
+
+                g_TotalDistance = 0;
+                g_RulerDropMode = 1;
+
+                UiResetSurface();
+
+                RulerUpdateStatusBar(0, null);
+            }
+        }
+        function HandleButtonStop() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            spz.enablePan();
+            spz.enableZoom();
+
+            g_LastRulerDropMode = g_RulerDropMode;
+            if (g_RulerDropMode > 0) {
+                g_RulerDropMode = 0;
+                UiHideFakeMarkers();
+            }
+
+            RulerUpdateStatusBar(g_TotalDistance, null);
+        }
+        function HandleButtonContinue() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            spz.disablePan();
+            spz.disableZoom();
+
+            if (g_LastRulerDropMode == 2) {
+                g_RulerDropMode = 2;
+            } else if (g_LastRulerDropMode == 1) {
+                g_RulerDropMode = 1;
+            }
+        }
+        function HandleButtonClear() {
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            g_TotalDistance = 0;
+            g_RulerDropMode = 0;
+            RemoveAllUserLineNodes();
+            UiHideFakeMarkers();
+            RulerUpdateStatusBar(0, null);
+        }
+        function UiResetSurface() {
+            // previously set cursor to crosshair here
+        }
+        function UiHideFakeMarkers() {
+            RemoveFakeDot();
+            RemoveFakeLine();
+        }
+        function EnsureUserRulerContainer() {
+            let svg = GetSvg();
+            if (!svg) {
+                return null;
+            }
+
+            let svgSpz = svg.getElementsByClassName('svg-pan-zoom_viewport');
+            if (!svgSpz || svgSpz.length < 1) {
+                return null;
+            }
+
+            svgSpz = svgSpz[0];
+
+            let userRulerContainer = svgSpz.getElementsByClassName('user-ruler-container');
+
+            if (!userRulerContainer || userRulerContainer.length < 1) {
+                userRulerContainer = document.createElementNS(svgns, 'g');
+                userRulerContainer.classList.add('user-ruler-container');
+                svgSpz.appendChild(userRulerContainer);
+            } else {
+                userRulerContainer = userRulerContainer[0];
+            }
+
+            return userRulerContainer;
+        }
+
+        function EnsureFakeDot() {
+            let userRulerContainer = EnsureUserRulerContainer();
+            if (!userRulerContainer) {
+                return null;
+            }
+
+            let fakeDot = userRulerContainer.getElementsByClassName('the-fake-dot');
+
+            if (!fakeDot || fakeDot.length < 1) {
+                fakeDot = document.createElementNS(svgns, 'circle');
+                fakeDot.setAttributeNS(null, 'r', g_DotDiameter);
+                fakeDot.classList.add('the-fake-dot');
+                fakeDot.classList.add('user-line');
+                fakeDot.setAttributeNS(null, 'style', 'fill: #00ffc3; stroke: #4580ff; stroke-width: 2px; opacity: 0.5;');
+                userRulerContainer.appendChild(fakeDot);
+            } else {
+                fakeDot = fakeDot[0];
+            }
+
+            return fakeDot;
+        }
+
+        function RemoveFakeDot() {
+            let userRulerContainer = EnsureUserRulerContainer();
+            if (!userRulerContainer) {
+                return null;
+            }
+
+            let fakeDot = userRulerContainer.getElementsByClassName('the-fake-dot');
+
+            if (!fakeDot || fakeDot.length < 1) {
+                return;
+            } else {
+                fakeDot = fakeDot[0];
+                fakeDot.remove();
+            }
+        }
+
+        function EnsureFakeLine() {
+            let userRulerContainer = EnsureUserRulerContainer();
+            if (!userRulerContainer) {
+                return null;
+            }
+
+            let fakeLine = userRulerContainer.getElementsByClassName('the-fake-line');
+
+            if (!fakeLine || fakeLine.length < 1) {
+                fakeLine = document.createElementNS(svgns, 'line');
+                fakeLine.setAttributeNS(null, 'x2', 0);
+                fakeLine.setAttributeNS(null, 'y2', 0);
+                fakeLine.setAttributeNS(null, 'stroke-dasharray', g_RulerLineDash);
+                fakeLine.classList.add('the-fake-line');
+                fakeLine.classList.add('user-line');
+                fakeLine.setAttributeNS(null, 'style', `stroke: #000000; stroke-width: ${g_RulerLineThickness}; opacity: 0.5;`);
+                userRulerContainer.appendChild(fakeLine);
+            } else {
+                fakeLine = fakeLine[0];
+            }
+
+            fakeLine.setAttributeNS(null, 'x1', g_PreviousPoint.x);
+            fakeLine.setAttributeNS(null, 'y1', g_PreviousPoint.y);
+
+            return fakeLine;
+        }
+
+        function RemoveFakeLine() {
+            let userRulerContainer = EnsureUserRulerContainer();
+            if (!userRulerContainer) {
+                return null;
+            }
+
+            let fakeLine = userRulerContainer.getElementsByClassName('the-fake-line');
+
+            if (!fakeLine || fakeLine.length < 1) {
+                return;
+            } else {
+                fakeLine = fakeLine[0];
+                fakeLine.remove();
+            }
+        }
+
+        // assumes all objects exist already
+        function GetTranslatedCoordUnchecked(e) {
+            let svg = GetSvg();
+            if (!svg) {
+                return null;
+            }
+
+            g_SvgPoint.x = e.clientX;
+            g_SvgPoint.y = e.clientY;
+            var svgpoint = g_SvgPoint.matrixTransform(svg.getScreenCTM().inverse());
+
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            let pan = spz.getPan();
+
+            x = (svgpoint.x - pan.x) / spz.getSizes().realZoom;
+            y = (svgpoint.y - pan.y) / spz.getSizes().realZoom;
+
+            return { "x": x, "y": y };
+        }
+
+        function UiAppendDotAtMouseEvent(e) {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let userRulerContainer = EnsureUserRulerContainer();
+
+            let svgCoords = GetTranslatedCoordUnchecked(e);
+
+            let circle = document.createElementNS(svgns, 'circle');
+            circle.setAttributeNS(null, 'cx', svgCoords.x);
+            circle.setAttributeNS(null, 'cy', svgCoords.y);
+            circle.setAttributeNS(null, 'r', g_DotDiameter);
+            circle.classList.add('user-line');
+            circle.setAttributeNS(null, 'style', 'fill: #00ffc3; stroke: #4580ff; stroke-width: 2px;');
+            userRulerContainer.appendChild(circle);
+
+            return {
+                "screen": {
+                    "x": e.clientX,
+                    "y": e.clientY
+                },
+                "translated": {
+                    "x": svgCoords.x,
+                    "y": svgCoords.y
+                }
+            }
+        }
+
+        function UiAppendLineToMouseEvent(e) {
+            let results = {
+                "angle": 0,
+                "r": 0
+            };
+
+            let fakeLine = EnsureFakeLine();
+            if (!fakeLine) {
+                return;
+            }
+
+            //console.log("g_PreviousPoint at: " + g_PreviousPoint.x + ", " + g_PreviousPoint.y);
+
+            let svgCoords = GetTranslatedCoordUnchecked(e);
+
+            let xside = svgCoords.x - g_PreviousPoint.x;
+            let yside = svgCoords.y - g_PreviousPoint.y;
+            let r = Math.sqrt(xside * xside + yside * yside);
+
+            let userRulerContainer = EnsureUserRulerContainer();
+
+            let line = document.createElementNS(svgns, 'line');
+            line.setAttributeNS(null, 'x1', g_PreviousPoint.x);
+            line.setAttributeNS(null, 'y1', g_PreviousPoint.y);
+            line.setAttributeNS(null, 'x2', svgCoords.x);
+            line.setAttributeNS(null, 'y2', svgCoords.y);
+            line.setAttributeNS(null, 'stroke-dasharray', g_RulerLineDash);
+            line.classList.add('user-line');
+            line.setAttributeNS(null, 'style', `stroke: #000000; stroke-width: ${g_RulerLineThickness}; `);
+            userRulerContainer.appendChild(line);
+
+            results.r = r;
+            return results;
+        }
+
+        function UiSetFakeMarkerToMouseEvent(e) {
+            let fakeDot = EnsureFakeDot();
+            if (!fakeDot) {
+                return;
+            }
+
+            let svgCoords = GetTranslatedCoordUnchecked(e);
+
+            fakeDot.setAttributeNS(null, 'cx', svgCoords.x);
+            fakeDot.setAttributeNS(null, 'cy', svgCoords.y);
+        }
+        function UiDrawFakeLineToMouseEvent(e) {
+            let results = {
+                "angle": 0,
+                "r": 0
+            };
+
+            let fakeLine = EnsureFakeLine();
+            if (!fakeLine) {
+                return;
+            }
+
+            let svgCoords = GetTranslatedCoordUnchecked(e);
+
+            let xside = svgCoords.x - g_PreviousPoint.x;
+            let yside = svgCoords.y - g_PreviousPoint.y;
+            let r = Math.sqrt(xside * xside + yside * yside);
+
+            //let angle = Math.atan2(yside, xside);
+
+            fakeLine.setAttributeNS(null, 'x2', svgCoords.x);
+            fakeLine.setAttributeNS(null, 'y2', svgCoords.y);
+
+            results.r = r;
+            return results;
+        }
+        function RemoveAllUserLineNodes() {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let userRulerContainer = EnsureUserRulerContainer();
+
+            RemoveFakeDot();
+
+            let nodes = userRulerContainer.getElementsByClassName('user-line');
+            while (nodes.length > 0) {
+                for (const n of nodes) {
+                    n.remove();
+                }
+                nodes = userRulerContainer.getElementsByClassName('user-line');
+            }
+        }
+        function FloatToString(f, digits) {
+            let str = "" + f;
+            if (!str) {
+                return "";
+            }
+            if (digits < 1) {
+                return str;
+            }
+            let dec = str.indexOf(".");
+            if (dec < 1) {
+                return str;
+            }
+            let len = str.length;
+            if (dec + 1 + digits >= len) {
+                return str;
+            }
+            return str.substr(0, dec + 1 + digits);
+        }
+        function RulerUpdateStatusBar(dist, hoverDist) {
+            let html = '';
+            if (hoverDist === null) {
+                var a = 9;
+            }
+            if (Number.isFinite(dist)) {
+                html += `dist: ${FloatToString(dist, 3)}`;
+            }
+            if (Number.isFinite(hoverDist)) {
+                html += ` (to ${FloatToString(hoverDist, 3)})`;
+            }
+            document.getElementById('status-ruler-dist').innerHTML = html;
         }
     </script>
 
@@ -903,8 +1344,8 @@
                     <div class="big">Vertical bounds</div>
                     <div>(scaled)</div>
 
-                    <div>left: <input type="text" id="slider-left-y" /></div>
-                    <div>right: <input type="text" id="slider-right-y" /></div>
+                    <div>min: <input type="text" id="slider-left-y" /></div>
+                    <div>max: <input type="text" id="slider-right-y" /></div>
                     <div><input type="button" value="apply" onclick="ApplyManualBounds();" /></div>
                     <div id="slider-container">
                         <div id="slider"></div>
@@ -927,7 +1368,7 @@
                 <div class="s-row"><label>stan:hover outline color<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>stan:hover outline width<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>stan:hover fill color<input type="text" value="" data-selector=".gelib-stan:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
-                
+
                 <div class="s-row"><label>room outline color<input type="text" value="" data-selector=".gelib-room" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>room outline width<input type="text" value="" data-selector=".gelib-room" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>room fill color<input type="text" value="" data-selector=".gelib-room" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
@@ -935,7 +1376,7 @@
                 <div class="s-row"><label>room:hover outline color<input type="text" value="" data-selector=".gelib-room:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>room:hover outline width<input type="text" value="" data-selector=".gelib-room:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>room:hover fill color<input type="text" value="" data-selector=".gelib-room:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
-                
+
                 <div class="s-row"><label>pad outline color<input type="text" value="" data-selector=".gelib-pad" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad outline width<input type="text" value="" data-selector=".gelib-pad" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad fill color<input type="text" value="" data-selector=".gelib-pad" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
@@ -1002,21 +1443,42 @@
                     <!-- <img src="yourfallback.jpg" /> -->
                 </object>
 
-                <div id="pan-controls">
-                    <div class="pan-control-row"><input type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
-                    <div class="pan-control-row"><input type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
-                    <div class="pan-control-row"><input type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
+                <div id="mode-controls">
+
+                    <div>
+                        <div id="mode-control-ruler" style="display: inline-block;">
+                            <button onclick="ToggleControlMode('ruler');"><img src="img/ruler.png" /></button>
+                        </div>
+                        <div id="mode-control-move" style="display: inline-block;">
+                            <button onclick="ToggleControlMode('move');" disabled><img src="img/move.png" /></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div id="control-buttons-ruler" class="mode-control-panel" style="display: none;">
+                            <div class="float-control-row"><input type="button" value="Start" onclick="HandleButtonStart();" /></div>
+                            <div class="float-control-row"><input type="button" value="Stop" onclick="HandleButtonStop();" /></div>
+                            <div class="float-control-row"><input type="button" value="Continue" onclick="HandleButtonContinue();" /></div>
+                            <div class="float-control-row"><input type="button" value="Clear" onclick="HandleButtonClear();" /></div>
+                        </div>
+
+                        <div id="control-buttons-move" class="mode-control-panel">
+                            <div class="float-control-row"><input type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
+                            <div class="float-control-row"><input type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
+                            <div class="float-control-row"><input type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
 
             <div id="status-bar">
-                <div id="status-mouse-coord" style="display:none"></div>
+                <div id="status-mouse-coord"></div>
+                <div id="status-ruler-dist" style="display: none;"></div>
                 <div id="status-mouse-item"></div>
             </div>
         </div>
     </div>
-
 
     <script>
         document.getElementById('mmap').addEventListener('load', function () {

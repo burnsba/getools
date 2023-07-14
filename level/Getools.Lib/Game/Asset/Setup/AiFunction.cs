@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Getools.Lib.BinPack;
+using Getools.Lib.Game.Asset.Setup.Ai;
 using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
@@ -11,10 +12,12 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class AiFunction : IBinData, IGetoolsLibObject
     {
+        private AiCommandBlock? _aiblock = null;
+
         /// <summary>
         /// C file, type name. Should match known struct type.
         /// </summary>
-        public const string CTypeName = "u32";
+        public const string CTypeName = "u8";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AiFunction"/> class.
@@ -69,17 +72,28 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sb.Append($"{prefix}{CTypeName} {VariableName}[] = {{ ");
 
-            var s32count = Data.Length / 4;
-            int dataOffset = 0;
-            for (int i = 0; i < s32count - 1; i++, dataOffset += 4)
+            //var s32count = Data.Length / 4;
+            //int dataOffset = 0;
+            //for (int i = 0; i < s32count - 1; i++, dataOffset += 4)
+            //{
+            //    sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)) + ", ");
+            //}
+
+            //if (s32count > 0)
+            //{
+            //    sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)));
+            //}
+
+            if (VariableName == "ai_9")
             {
-                sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)) + ", ");
+                int a = 9;
             }
 
-            if (s32count > 0)
-            {
-                sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)));
-            }
+            sb.AppendLine();
+            var ai = GetParsedAiBlock();
+
+            sb.Append(ai.ToCMacro(prefix + "    "));
+            sb.AppendLine();
 
             sb.AppendLine(" };");
 
@@ -101,6 +115,16 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             var result = context.AssembleAppendBytes(Data, Config.TargetWordSize);
             BaseDataOffset = result.DataStartAddress;
+        }
+
+        public AiCommandBlock GetParsedAiBlock()
+        {
+            if (object.ReferenceEquals(null, _aiblock))
+            {
+                _aiblock = AiCommandBuilder.ParseBytes(Data);
+            }
+
+            return _aiblock;
         }
     }
 }
