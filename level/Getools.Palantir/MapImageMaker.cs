@@ -8,7 +8,6 @@ using Getools.Lib.Game;
 using Getools.Lib.Extensions;
 using SvgLib;
 using Microsoft.Win32.SafeHandles;
-using static Getools.Lib.Kaitai.Gen.Avtx;
 using Getools.Lib.Game.Asset.SetupObject;
 using System.Text.RegularExpressions;
 using Getools.Lib.Game.Asset.Stan;
@@ -21,7 +20,6 @@ using Getools.Lib.Game.Asset.Intro;
 using Getools.Palantir.Render;
 using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Bg;
-using Getools.Lib.Kaitai.Gen;
 
 namespace Getools.Palantir
 {
@@ -666,6 +664,7 @@ namespace Getools.Palantir
             SliceProcessSetupIntro(context);
 
             SliceProcessPathWaypoints(context);
+            SliceProcessPatrolPaths(context);
         }
 
         /// <summary>
@@ -869,7 +868,6 @@ namespace Getools.Palantir
                 }
 
                 var pad = pads[(int)waypoint.PadId];
-                
                 if (!TryGetRoomId(pad.Name.GetString(), out b))
                 {
                     // continue outer foreach, increment index
@@ -880,7 +878,6 @@ namespace Getools.Palantir
                 room1Id = b;
 
                 bool withinBounds = false;
-
                 if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
                 {
                     withinBounds = true;
@@ -913,7 +910,6 @@ namespace Getools.Palantir
                     }
 
                     room2Id = b;
-
                     withinBounds = false;
 
                     if (pad2.Position.Y >= context.Zmin!.Value && pad2.Position.Y <= context.Zmax!.Value)
@@ -927,9 +923,9 @@ namespace Getools.Palantir
                         tableIndex++;
                         continue;
                     }
-
+                    
                     // pad global min/max comparison already happened in the pad section.
-
+                    
                     var rl = new RenderLine(pad.Position.ToCoord3dd(), pad2.Position.ToCoord3dd())
                     {
                         WaypointIndex = index,
@@ -939,10 +935,73 @@ namespace Getools.Palantir
                         Pad1Id = (int)waypoint.PadId,
                         Pad2Id = (int)secondWaypoint.PadId,
                     };
-
+                    
                     context.PathWaypointLines.Add(rl);
 
                     tableIndex++;
+                }
+
+                // continue outer foreach, increment index
+                index++;
+            }
+        }
+
+
+        /// <summary>
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// </summary>
+        /// <param name="context">Current processing context.</param>
+        private void SliceProcessPatrolPaths(ProcessedStageDataContext context)
+        {
+            var waypoints = _stage.Setup.SectionPathTables.PathTables;
+            var pads = _stage.Setup.SectionPadList.PadList;
+
+            ushort index = 0;
+            foreach (var patrolpath in _stage.Setup.SectionPathSets.PathSets)
+            {
+                // list terminates with null pointer to pathset.
+                if (patrolpath.EntryPointer.IsNull || patrolpath.Entry == null)
+                {
+                    break;
+                }
+
+                var polyline = new RenderPolyline()
+                {
+                    OrderIndex = index,
+                };
+
+                foreach (var pathWaypointId in patrolpath.Entry.Ids)
+                {
+                    // list terminates with value of -1
+                    if (pathWaypointId < 0)
+                    {
+                        break;
+                    }
+
+                    var waypoint = waypoints[pathWaypointId];
+                    var pad = pads[(int)waypoint.PadId];
+
+                    bool withinBounds = false;
+
+                    if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
+                    {
+                        withinBounds = true;
+                    }
+
+                    if (!withinBounds)
+                    {
+                        // continue outer foreach
+                        continue;
+                    }
+
+                    var pos = pad.Position.ToCoord3dd();
+                    polyline.Bbox.IncludePoint(pos);
+                    polyline.Points.Add(pos);
+                }
+
+                if (polyline.Points.Any())
+                {
+                    context.PatrolPathLines.Add(polyline);
                 }
 
                 // continue outer foreach, increment index

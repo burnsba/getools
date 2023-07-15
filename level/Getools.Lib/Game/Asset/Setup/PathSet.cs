@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 namespace Getools.Lib.Game.Asset.Setup
 {
     /// <summary>
-    /// PathSet, points to a list of ids.
+    /// PathSet, points to a list of ids. This is the definition for a patrol.
     /// </summary>
     public class PathSet : IBinData, IGetoolsLibObject
     {

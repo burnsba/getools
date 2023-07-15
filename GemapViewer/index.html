@@ -102,6 +102,14 @@
             display: block;
         }
 
+        .h-space-16 {
+            display: inline-block;
+            min-width: 16px;
+            max-width: 16px;
+            margin: 0;
+            padding: 0;
+        }
+
         #slider-container {
             margin-left: 24px;
             margin-right: 48px;
@@ -229,13 +237,13 @@
             },
             '.gelib-room': {
                 'stroke': 'blue',
-                'stroke-width': 1,
+                'stroke-width': 2,
                 'fill': '#ffffff',
                 'fill-opacity': 0
             },
             '.gelib-room:hover': {
                 'stroke': 'blue',
-                'stroke-width': 4,
+                'stroke-width': 6,
                 'fill': '#ffffff'
             },
             '.gelib-pad': {
@@ -254,7 +262,15 @@
             },
             '.gelib-wpline:hover': {
                 'stroke': '#a831a8',
-                'stroke-width': 20
+                'stroke-width': 18
+            },
+            '.gelib-patrol': {
+                'stroke': '#3fb049',
+                'stroke-width': 18
+            },
+            '.gelib-patrol:hover': {
+                'stroke': '#94e34f',
+                'stroke-width': 24
             }
         };
 
@@ -349,6 +365,7 @@
                 case "check-stan-layer": svg_layer_id = "svg-stan-tile-layer"; break;
                 case "check-setup-pad-layer": svg_layer_id = "svg-pad-layer"; break;
                 case "check-setup-waypoint-layer": svg_layer_id = "svg-waypoint-layer"; break;
+                case "check-setup-patrol-layer": svg_layer_id = "svg-patrol-layer"; break;
                 case "check-setup-alarm-layer": svg_layer_id = "svg-setup-alarm-layer"; break;
                 case "check-setup-ammo-layer": svg_layer_id = "svg-setup-ammo-layer"; break;
                 case "check-setup-aircraft-layer": svg_layer_id = "svg-setup-aircraft-layer"; break;
@@ -400,6 +417,7 @@
             RebuildSlider();
             InjectDocumentStyle();
             BuildPropList();
+            BuildPatrolList();
             InjectEventHandlers();
             ApplyLayerFilter();
 
@@ -560,6 +578,44 @@
             }
         }
 
+        // iterate svg, extract unique prop ids, create UI checkbox input to allow disabling.
+        function BuildPatrolList() {
+
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let patrolContainerNodes = [... new Set(Array.from(svg.querySelectorAll('.gelib-patrol')).map(x => x.closest('.svg-logical-item')))];
+            let container = document.getElementById('show-hide-patrol-inputs');
+
+            container.innerHTML = '';
+
+            for (const node of patrolContainerNodes) {
+                let div = document.createElement('div');
+                div.classList.add("s-row");
+
+                let label = document.createElement('label');
+                let input = document.createElement('input');
+
+                let rem = node.id.match(/^svg-patrol-([0-9]+)$/);
+                if (!rem || rem.length < 2) {
+                    continue;
+                }
+                label.innerText = `patrol ${rem[1]}`;
+
+                input.setAttribute('type', 'checkbox');
+                input.dataset.patrolNodeId = node.id;
+                node.dataset.patrolNodeId = rem[1];
+                input.addEventListener('change', ToggleDisablePatrol);
+
+                label.appendChild(input);
+                div.appendChild(label);
+
+                container.appendChild(div);
+            }
+        }
+
         function ToggleDisableProp(e) {
             if (!e) {
                 return;
@@ -581,6 +637,89 @@
             }
 
             Array.from(xml.querySelectorAll('[data-prop-name="' + prop_name + '"]')).forEach(x => x.style.display = display_value);
+        }
+
+        function ToggleDisablePatrol(e) {
+            if (!e) {
+                return;
+            }
+            let node = e.target;
+            if (!node) {
+                return;
+            }
+
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return;
+            }
+
+            let patrolNodeId = node.dataset.patrolNodeId;
+            let display_value = '';
+            if (node.checked) {
+                display_value = 'none';
+            }
+
+            Array.from(xml.querySelectorAll('#' + patrolNodeId)).forEach(x => x.style.display = display_value);
+        }
+
+        function HideAllProps() {
+            ToggleVisibilityAllProps('hide');
+        }
+        function ShowAllProps() {
+            ToggleVisibilityAllProps('show');
+        }
+        function ToggleVisibilityAllProps(mode) {
+
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let display_value = '';
+            let checkvalue = false;
+            if (mode === 'hide') {
+                display_value = 'none';
+                checkvalue = true;
+            } else if (mode === 'show') {
+                // nothing to do
+            } else {
+                return;
+            }
+
+            // svg elements. Not all props are in the setup-prop-layer. [data-prop-name] is always .svg-logical-item
+            Array.from(svg.querySelectorAll('[data-prop-name]')).forEach(x => x.style.display = display_value);
+            // ui checkmark state
+            Array.from(document.getElementById('show-hide-prop-inputs').querySelectorAll('input')).forEach(x => x.checked = checkvalue);
+        }
+
+        function HideAllPatrols() {
+            ToggleVisibilityAllPatrols('hide');
+        }
+        function ShowAllPatrols() {
+            ToggleVisibilityAllPatrols('show');
+        }
+        function ToggleVisibilityAllPatrols(mode) {
+
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let display_value = '';
+            let checkvalue = false;
+            if (mode === 'hide') {
+                display_value = 'none';
+                checkvalue = true;
+            } else if (mode === 'show') {
+                // nothing to do
+            } else {
+                return;
+            }
+
+            // svg elements
+            Array.from(svg.querySelectorAll('#svg-patrol-layer .svg-logical-item')).forEach(x => x.style.display = display_value);
+            // ui checkmark state
+            Array.from(document.getElementById('show-hide-patrol-inputs').querySelectorAll('input')).forEach(x => x.checked = checkvalue);
         }
 
         var g_SliderInit = false;
@@ -741,16 +880,27 @@
                 return;
             }
 
+            if (node.dataset.ig) {
+                return;
+            }
+
             if (!node.dataset.typedef) {
                 let nodetype = NodeIdStringToType(node.id);
                 if (!nodetype) {
+                    node.dataset.ig = 1;
                     return;
                 }
                 node.dataset.typedef = nodetype['typemap']['type'];
                 node.dataset.display = nodetype['typemap']['display'];
             }
 
-            let mouseover_log = `${node.dataset.display}: roomid=${node.dataset.roomId}`;
+            let mouseover_log = "";
+
+            if (node.dataset.display === 'Patrol') {
+                mouseover_log += `${node.dataset.display}: id=${node.dataset.patrolNodeId}`;
+            } else {
+                mouseover_log += `${node.dataset.display}: roomid=${node.dataset.roomId}`;
+            }
 
             // scaled coord
             if (node.dataset.scX) {
@@ -781,6 +931,9 @@
             { "re": new RegExp("svg-room-([0-9]+)-setup-prop-([0-9]+)"), 'id': 3, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectStandard', 'display': 'Prop' },
             { "re": new RegExp("svg-room-([0-9]+)-setup-tank-([0-9]+)"), 'id': 2, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectTank', 'display': 'Tank' },
             { "re": new RegExp("svg-room-([0-9]+)-setup-intro-([0-9]+)"), 'id': 1, 'type': 'Getools.Lib.Game.Asset.Intro.IntroSpawn', 'display': 'Spawn' },
+
+            { "re": new RegExp("svg-patrol-([0-9]+)"), 'id': 19, 'type': 'Getools.Lib.Game.Asset.Setup.PathSet', 'display': 'Patrol' },
+
             { "re": new RegExp("svg-room-([0-9]+)-tile-([0-9]+)"), 'id': 17, 'type': 'Getools.Lib.Game.Asset.Stan.StandTile', 'display': 'Tile' },
             { "re": new RegExp("svg-room-([0-9]+)-pad-([0-9]+)"), 'id': 16, 'type': 'Getools.Lib.Game.Asset.Setup.Pad', 'display': 'Pad' },
             { "re": new RegExp("svg-room-([0-9]+)"), 'id': 18, 'type': 'Getools.Lib.Game.Asset.Bg.Room', 'display': 'Room' },
@@ -1330,6 +1483,7 @@
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-stan-layer" checked />stan</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-pad-layer" checked />setup: pad</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-waypoint-layer" checked />setup: path waypoint</label></div>
+                        <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-patrol-layer" checked />setup: patrol path</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-alarm-layer" checked />setup: alarm</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-ammo-layer" checked />setup: ammo</label></div>
                         <div class="s-row"><label><input type="checkbox" onchange="ToggleLayer(this);" name="check-setup-aircraft-layer" checked />setup: aircraft</label></div>
@@ -1371,6 +1525,18 @@
 
             <div class="col-left-sep"></div>
 
+            <div id="show-hide">
+                <div class="big">Hide props</div>
+                <div><input type="button" value="all" onclick="HideAllProps();"><div class="h-space-16"></div><input type="button" value="none" onclick="ShowAllProps();"/></div>
+                <div id="show-hide-prop-inputs"></div>
+
+                <div class="big">Hide patrols</div>
+                <div><input type="button" value="all" onclick="HideAllPatrols();"/><div class="h-space-16"></div><input type="button" value="none" onclick="ShowAllPatrols();"/></div>
+                <div id="show-hide-patrol-inputs"></div>
+            </div>
+
+            <div class="col-left-sep"></div>
+
             <div id="style-panel">
                 <div class="big">Style</div>
                 <div class="s-row"><label>stan outline color<input type="text" value="" data-selector=".gelib-stan" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
@@ -1394,16 +1560,12 @@
                 <div class="s-row"><label>pad:hover outline color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad:hover outline width<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>pad:hover fill color<input type="text" value="" data-selector=".gelib-pad:hover" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
-                
+
                 <div class="s-row"><label>path waypoint color<input type="text" value="" data-selector=".gelib-wpline" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>path waypoint:hover color<input type="text" value="" data-selector=".gelib-wpline:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
-            </div>
 
-            <div class="col-left-sep"></div>
-
-            <div id="show-hide">
-                <div class="big">Hide props</div>
-                <div id="show-hide-prop-inputs"></div>
+                <div class="s-row"><label>patrol path color<input type="text" value="" data-selector=".gelib-patrol" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
+                <div class="s-row"><label>patrol path:hover color<input type="text" value="" data-selector=".gelib-patrol:hover" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
             </div>
 
             <div class="col-left-sep"></div>

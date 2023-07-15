@@ -37,6 +37,7 @@ namespace Getools.Palantir
         private const string SvgStanLayerId = "svg-stan-tile-layer";
         private const string SvgPadLayerId = "svg-pad-layer";
         private const string SvgWaypointLayerId = "svg-waypoint-layer";
+        private const string SvgPatrolPathLayerId = "svg-patrol-layer";
 
         private const string SvgSetupAlarmLayerId = "svg-setup-alarm-layer";
         private const string SvgSetupAmmoLayerId = "svg-setup-ammo-layer";
@@ -57,6 +58,8 @@ namespace Getools.Palantir
         
         // waypoint, path table index
         private const string SvgItemIdPathWaypointFormat = "svg-waypoint-{0}-t-{1}";
+
+        private const string SvgItemIdPatrolPathFormat = "svg-patrol-{0}";
 
         private const string SvgItemIdRoomFormat = "svg-room-{0}";
         private const string SvgItemIdTileFormat = "svg-room-{0}-tile-{1}";
@@ -163,6 +166,7 @@ namespace Getools.Palantir
             cssText.AppendLine(".gelib-room { stroke: blue; stroke-width: 4; fill: #ffffff; fill-opacity: 0; }");
             cssText.AppendLine(".gelib-pad { stroke: #9c009e; stroke-width: 4; fill: #ff00ff; }");
             cssText.AppendLine(".gelib-wpline { stroke: #ff80ff; stroke-width: 12; }");
+            cssText.AppendLine(".gelib-patrol { stroke: #3fb049; stroke-width: 18; }");
 
             svg.SetStylesheet(cssText.ToString());
 
@@ -175,6 +179,9 @@ namespace Getools.Palantir
 
             // draw path waypoints on top of pads
             AddPathWaypointGroupToSvgDoc(svg, _context.PathWaypointLines);
+
+            // draw patrol paths on top of pads and waypoints
+            AddPatrolPathGroupToSvgDoc(svg, _context.PatrolPathLines);
 
             AddSetupGroupToSvgDoc(_context.SetupPolygonsCollection, PropDef.AmmoBox, svg, SvgSetupAmmoLayerId, SvgItemIdSetupAmmoFormat);
 
@@ -418,6 +425,52 @@ namespace Getools.Palantir
                     container.SetDataAttribute("room-id-p1", renderLine.Pad1RoomId.ToString());
                     container.SetDataAttribute("room-id-p2", renderLine.Pad2RoomId.ToString());
                 }
+            }
+        }
+
+        private void AddPatrolPathGroupToSvgDoc(SvgDocument svg, List<RenderPolyline> patrolPathLines)
+        {
+            if (!patrolPathLines.Any())
+            {
+                return;
+            }
+
+            var group = svg.AddGroup();
+            group.Id = SvgPatrolPathLayerId;
+
+            foreach (var pathset in patrolPathLines)
+            {
+                var container = group.AddGroup();
+                container.AddClass("svg-logical-item");
+
+                container.Id = string.Format(SvgItemIdPatrolPathFormat, pathset.OrderIndex);
+
+                var scaledPoints = pathset.Points.Select(x => x.Scale(1.0 / _stage.LevelScale).To2DXZ()).To1dArray();
+
+                var polyline = container.AddPolyLine();
+                polyline.SetPoints(scaledPoints.ToArray(), StandardDoubleToStringFormat);
+
+                // managed via css
+                //line.Stroke = "#ff0000";
+                //line.StrokeWidth = 60;
+                polyline.AddClass("gelib-patrol");
+                polyline.FillOpacity = 0;
+
+                container.SetDataAttribute("n-min-x", pathset.Bbox.MinX.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("n-max-x", pathset.Bbox.MaxX.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("n-min-y", pathset.Bbox.MinY.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("n-max-y", pathset.Bbox.MaxY.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("n-min-z", pathset.Bbox.MinZ.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("n-max-z", pathset.Bbox.MaxZ.ToString(StandardDoubleToStringFormat));
+
+                var scaledPos = pathset.Bbox.Scale(1 / _stage.LevelScale);
+
+                container.SetDataAttribute("s-min-x", scaledPos.MinX.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("s-max-x", scaledPos.MaxX.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("s-min-y", scaledPos.MinY.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("s-max-y", scaledPos.MaxY.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("s-min-z", scaledPos.MinZ.ToString(StandardDoubleToStringFormat));
+                container.SetDataAttribute("s-max-z", scaledPos.MaxZ.ToString(StandardDoubleToStringFormat));
             }
         }
 
