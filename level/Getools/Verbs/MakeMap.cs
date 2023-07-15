@@ -48,6 +48,11 @@ namespace Getools.Verbs
                 opts.StanFileType = check.Item2;
                 opts.StanTypeFormat = check.Item3;
                 opts.StanDataFormat = check.Item4;
+
+                if (opts.StanDataFormatIsBeta)
+                {
+                    opts.StanDataFormat = Lib.Game.DataFormats.BetaBin;
+                }
             }
 
             // setup

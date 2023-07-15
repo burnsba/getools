@@ -18,6 +18,12 @@ namespace Getools.Options
         [Option("stan", Required = false, HelpText = "stan filename.")]
         public string StanFilename { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to use beta structs or not for stan.
+        /// </summary>
+        [Option("stan-beta", Required = false, Default = false, HelpText = "Flag for input stan to use beta data structures/formats.")]
+        public bool StanDataFormatIsBeta { get; set; }
+
         [Option("setup", Required = false, HelpText = "setup filename.")]
         public string SetupFilename { get; set; }
 
