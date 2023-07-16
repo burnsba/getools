@@ -605,6 +605,14 @@ namespace Getools.Palantir
                     continue;
                 }
 
+                // if this is a guard, add the init script to the tracked reference scripts, in case this is
+                // a global script that needs to be included.
+                if (setupObject.Type == PropDef.Guard)
+                {
+                    var guard = (SetupObjectGuard)setupObject;
+                    context.RefAiListId.Add((int)guard.ActionPathAssignment);
+                }
+
                 // Points are scaled later, depending on type
                 var propPosition = new PropPosition()
                 {
@@ -1068,7 +1076,7 @@ namespace Getools.Palantir
                                  * define CHR_PRESET      -4
                                  * define CHR_SELF        -3
                                 */
-                                if (pvalue > 0xf0)
+                                if (pvalue > 0xf0 || pvalue < 0)
                                 {
                                     continue;
                                 }
@@ -1154,6 +1162,10 @@ namespace Getools.Palantir
                                     };
                                     context.AiCommandBlockToPathId.Add(fff.Id, list);
                                 }
+                            }
+                            else if (p.ParameterName == "ai_list")
+                            {
+                                context.RefAiListId.Add(pvalue);
                             }
                         }
                     }

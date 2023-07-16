@@ -147,15 +147,26 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return _valueLittle;
         }
 
+        public byte GetByteValue(ByteOrder endien = ByteOrder.BigEndien)
+        {
+            if (endien == ByteOrder.BigEndien)
+            {
+                return (byte)((_valueBig & 0xff000000) >> 24);
+            }
+
+            return (byte)((_valueLittle & 0xff) >> 0);
+        }
+
         private string GetValueText(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true)
         {
             int workingValue = GetIntValue(endien);
 
             if (expandSpecial && ParameterName == "chr_num")
             {
-                var bb = (int)(sbyte)workingValue;
+                // careful with sign extension here!
+                var bb = (int)(sbyte)GetByteValue(endien);
 
-                // chr_num has some reserved values:
+                // chr_num has some reserved values, but these are negative.
                 if (Enum.IsDefined(typeof(ChrNum), bb))
                 {
                     ChrNum reserverdChr = (ChrNum)bb;

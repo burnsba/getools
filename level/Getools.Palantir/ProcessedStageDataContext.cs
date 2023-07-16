@@ -31,6 +31,7 @@ namespace Getools.Palantir
         public Dictionary<int, HashSet<int>> ChrIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
         public Dictionary<int, HashSet<int>> PadIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
         public Dictionary<int, HashSet<int>> PathIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
+        public HashSet<int> RefAiListId { get; set; } = new HashSet<int>();
 
         public Dictionary<int, HashSet<int>> AiCommandBlockToChrId { get; set; } = new Dictionary<int, HashSet<int>>();
         public Dictionary<int, HashSet<int>> AiCommandBlockToPadId { get; set; } = new Dictionary<int, HashSet<int>>();

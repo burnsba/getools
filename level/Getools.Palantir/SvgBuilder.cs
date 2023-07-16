@@ -570,7 +570,21 @@ namespace Getools.Palantir
 
         private void AddAiListsToSvgDoc(SvgDocument svg, List<AiCommandBlock> scripts)
         {
-            if (!scripts.Any())
+            // copy to permute list.
+            var scriptList = scripts.ToArray().ToList();
+
+            // Global ai lists won't be included in the setup file, so manually add those.
+            foreach (var id in _context.RefAiListId)
+            {
+                if (id < 0x400)
+                {
+                    scriptList.Add(GlobalAiScript.GetGlobalAiScript((GlobalAiList)id));
+                }
+            }
+
+            scriptList = scriptList.OrderBy(x => x.Id).ToList();
+
+            if (!scriptList.Any())
             {
                 return;
             }
@@ -578,7 +592,7 @@ namespace Getools.Palantir
             var group = svg.AddGroup();
             group.Id = SvgAiListsId;
 
-            foreach (var script in scripts)
+            foreach (var script in scriptList)
             {
                 var container = group.AddGroup();
                 container.Id = string.Format(SvgAiScriptFormat, script.Id);
