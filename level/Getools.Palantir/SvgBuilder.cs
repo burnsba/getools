@@ -597,12 +597,14 @@ namespace Getools.Palantir
                 var container = group.AddGroup();
                 container.Id = string.Format(SvgAiScriptFormat, script.Id);
 
+                int lineIndex = 0;
                 foreach (var command in script.Commands)
                 {
+                    lineIndex++;
                     var text = container.AddText();
                     var sb = new StringBuilder();
 
-                    sb.Append($"0x{command.CommandId:x2}: {command.DecompName}");
+                    sb.Append($"{lineIndex:000}: [0x{command.CommandId:x2}] {command.DecompName}");
 
                     if (command is IAiFixedCommand fcommand)
                     {
@@ -622,8 +624,11 @@ namespace Getools.Palantir
                             {
                                 if (_context.AiCommandBlockToChrId.ContainsKey(script.Id))
                                 {
-                                    var chrIdJson = string.Join(", ", _context.AiCommandBlockToChrId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
-                                    text.SetDataAttribute("x-chr-id", $"[{chrIdJson}]");
+                                    var backId = p.GetIntValue(Lib.Architecture.ByteOrder.LittleEndien);
+                                    if (_context.ChrIdToAiCommandBlock.ContainsKey(backId))
+                                    {
+                                        text.SetDataAttribute("x-chr-id", backId.ToString());
+                                    }
                                 }
                             }
                             else if (p.ParameterName == "pad"
@@ -632,16 +637,22 @@ namespace Getools.Palantir
                             {
                                 if (_context.AiCommandBlockToPadId.ContainsKey(script.Id))
                                 {
-                                    var padIdJson = string.Join(", ", _context.AiCommandBlockToPadId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
-                                    text.SetDataAttribute("x-pad-id", $"[{padIdJson}]");
+                                    var backId = p.GetIntValue(Lib.Architecture.ByteOrder.LittleEndien);
+                                    if (_context.PadIdToAiCommandBlock.ContainsKey(backId))
+                                    {
+                                        text.SetDataAttribute("x-pad-id", backId.ToString());
+                                    }
                                 }
                             }
                             else if (p.ParameterName == "path_num")
                             {
                                 if (_context.AiCommandBlockToPathId.ContainsKey(script.Id))
                                 {
-                                    var patrolIdJson = string.Join(", ", _context.AiCommandBlockToPathId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
-                                    text.SetDataAttribute("x-patrol-id", $"[{patrolIdJson}]");
+                                    var backId = p.GetIntValue(Lib.Architecture.ByteOrder.LittleEndien);
+                                    if (_context.PathIdToAiCommandBlock.ContainsKey(backId))
+                                    {
+                                        text.SetDataAttribute("x-patrol-id", backId.ToString());
+                                    }
                                 }
                             }
                         }

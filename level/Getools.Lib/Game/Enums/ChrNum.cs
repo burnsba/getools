@@ -11,7 +11,7 @@ namespace Getools.Lib.Game.Enums
     /// </summary>
     public enum ChrNum
     {
-        DefaultUnknown = 0,
+        /* chr numbers start at 0. */
 
         CHR_BOND_CINEMA = -8,
         CHR_CLONE = -7,
