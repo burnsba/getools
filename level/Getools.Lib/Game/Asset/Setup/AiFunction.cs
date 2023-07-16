@@ -72,18 +72,6 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sb.Append($"{prefix}{CTypeName} {VariableName}[] = {{ ");
 
-            //var s32count = Data.Length / 4;
-            //int dataOffset = 0;
-            //for (int i = 0; i < s32count - 1; i++, dataOffset += 4)
-            //{
-            //    sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)) + ", ");
-            //}
-
-            //if (s32count > 0)
-            //{
-            //    sb.Append(Formatters.IntegralTypes.ToHex8(BitUtility.Read32Big(Data, dataOffset)));
-            //}
-
             if (VariableName == "ai_9")
             {
                 int a = 9;

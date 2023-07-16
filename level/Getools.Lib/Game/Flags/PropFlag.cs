@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Getools.Lib.Game
+namespace Getools.Lib.Game.Flags
 {
-    public static class Flags
+    public class PropFlag
     {
         public const int PropFlag1_AbsolutePosition = 0x1000;
 

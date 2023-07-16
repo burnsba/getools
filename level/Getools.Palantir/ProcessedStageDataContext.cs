@@ -1,4 +1,5 @@
 ﻿using Getools.Lib.Game;
+using Getools.Lib.Game.Asset.Setup.Ai;
 using Getools.Lib.Game.Enums;
 using Getools.Palantir.Render;
 
@@ -25,5 +26,14 @@ namespace Getools.Palantir
         public Coord3dd ScaledMax { get; set; } = Coord3dd.MinValue.Clone();
         public Coord3dd NativeMin { get; set; } = Coord3dd.MaxValue.Clone();
         public Coord3dd NativeMax { get; set; } = Coord3dd.MinValue.Clone();
+        public List<AiCommandBlock> AiScripts { get; set; } = new List<AiCommandBlock>();
+
+        public Dictionary<int, HashSet<int>> ChrIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
+        public Dictionary<int, HashSet<int>> PadIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
+        public Dictionary<int, HashSet<int>> PathIdToAiCommandBlock { get; set; } = new Dictionary<int, HashSet<int>>();
+
+        public Dictionary<int, HashSet<int>> AiCommandBlockToChrId { get; set; } = new Dictionary<int, HashSet<int>>();
+        public Dictionary<int, HashSet<int>> AiCommandBlockToPadId { get; set; } = new Dictionary<int, HashSet<int>>();
+        public Dictionary<int, HashSet<int>> AiCommandBlockToPathId { get; set; } = new Dictionary<int, HashSet<int>>();
     }
 }

@@ -20,6 +20,7 @@ using Getools.Lib.Game.Asset.Intro;
 using Getools.Palantir.Render;
 using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Bg;
+using Getools.Lib.Game.Asset.Setup.Ai;
 
 namespace Getools.Palantir
 {
@@ -504,6 +505,10 @@ namespace Getools.Palantir
             int setupObjectIndex = -1;
             byte roomId = 0;
 
+            // Preprocess the AI scripts. This will look for references to setup objects so an association
+            // can be tracked between object<->script.
+            SetupProcessAi(context);
+
             foreach (var setupObject in _stage.Setup.SectionObjects.Objects)
             {
                 setupObjectIndex++;
@@ -946,7 +951,6 @@ namespace Getools.Palantir
             }
         }
 
-
         /// <summary>
         /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
         /// </summary>
@@ -1006,6 +1010,154 @@ namespace Getools.Palantir
 
                 // continue outer foreach, increment index
                 index++;
+            }
+        }
+
+        /// <summary>
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// </summary>
+        /// <param name="context">Current processing context.</param>
+        private void SetupProcessAi(ProcessedStageDataContext context)
+        {
+            if (!_stage.Setup.SectionAiLists.AiLists.Any())
+            {
+                return;
+            }
+
+            foreach (var ailisty in _stage.Setup.SectionAiLists.AiLists)
+            {
+                if (ailisty.EntryPointer.IsNull || ailisty.Function == null)
+                {
+                    // end of section
+                    break;
+                }
+
+                var fff = ailisty.Function.GetParsedAiBlock();
+                fff.Id = (int)ailisty.Id;
+
+                if (ailisty.Id < 0x401)
+                {
+                    fff.ScriptType = AiScriptType.Global;
+                }
+                else if (ailisty.Id > 0x400 && ailisty.Id < 0x1000) // starts at 0x401
+                {
+                    fff.ScriptType = AiScriptType.Entity;
+                }
+                else
+                {
+                    fff.ScriptType = AiScriptType.Background;
+                }
+
+                foreach (var command in fff.Commands)
+                {
+                    if (command is IAiFixedCommand fcommand)
+                    {
+                        foreach (var p in fcommand.CommandParameters)
+                        {
+                            if (p.ParameterName == "chr_num")
+                            {
+                                // chr_num has some reserved values, ignore those:
+
+                                /***
+                                 * define CHR_BOND_CINEMA -8
+                                 * define CHR_CLONE       -7
+                                 * define CHR_SEE_SHOT    -6
+                                 * define CHR_SEE_DIE     -5
+                                 * define CHR_PRESET      -4
+                                 * define CHR_SELF        -3
+                                */
+                                if (p.ByteValue > 0xf0)
+                                {
+                                    continue;
+                                }
+
+                                if (context.ChrIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                {
+                                    context.ChrIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        fff.Id,
+                                    };
+                                    context.ChrIdToAiCommandBlock.Add(p.ByteValue, list);
+                                }
+
+                                if (context.AiCommandBlockToChrId.ContainsKey(fff.Id))
+                                {
+                                    context.AiCommandBlockToChrId[fff.Id].Add(p.ByteValue);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        p.ByteValue,
+                                    };
+                                    context.AiCommandBlockToChrId.Add(fff.Id, list);
+                                }
+                            }
+                            else if (p.ParameterName == "pad" || p.ParameterName == "chr_preset" || p.ParameterName == "pad_preset")
+                            {
+                                if (context.PadIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                {
+                                    context.PadIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        fff.Id,
+                                    };
+                                    context.PadIdToAiCommandBlock.Add(p.ByteValue, list);
+                                }
+
+                                if (context.AiCommandBlockToPadId.ContainsKey(fff.Id))
+                                {
+                                    context.AiCommandBlockToPadId[fff.Id].Add(p.ByteValue);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        p.ByteValue,
+                                    };
+                                    context.AiCommandBlockToPadId.Add(fff.Id, list);
+                                }
+                            }
+                            else if (p.ParameterName == "path_num")
+                            {
+                                if (context.PathIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                {
+                                    context.PathIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        fff.Id,
+                                    };
+                                    context.PathIdToAiCommandBlock.Add(p.ByteValue, list);
+                                }
+
+                                if (context.AiCommandBlockToPathId.ContainsKey(fff.Id))
+                                {
+                                    context.AiCommandBlockToPathId[fff.Id].Add(p.ByteValue);
+                                }
+                                else
+                                {
+                                    var list = new HashSet<int>()
+                                    {
+                                        p.ByteValue,
+                                    };
+                                    context.AiCommandBlockToPathId.Add(fff.Id, list);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                context.AiScripts.Add(fff);
             }
         }
 

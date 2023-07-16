@@ -22,6 +22,8 @@ using Getools.Palantir.Render;
 using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Bg;
 using Getools.Lib.Kaitai.Gen;
+using Getools.Lib.Game.Asset.Setup.Ai;
+using System.ComponentModel.Design;
 
 namespace Getools.Palantir
 {
@@ -81,6 +83,9 @@ namespace Getools.Palantir
         private const string SvgItemIdSetupTankFormat = "svg-room-{0}-setup-tank-{1}";
 
         private const string SvgItemIdSetupIntroFormat = "svg-room-{0}-setup-intro-{1}";
+
+        private const string SvgAiListsId = "svg-ailists";
+        private const string SvgAiScriptFormat = "svg-ai-{0}";
 
         private const double MaxPixelSizeError = 10000000;
 
@@ -167,6 +172,7 @@ namespace Getools.Palantir
             cssText.AppendLine(".gelib-pad { stroke: #9c009e; stroke-width: 4; fill: #ff00ff; }");
             cssText.AppendLine(".gelib-wpline { stroke: #ff80ff; stroke-width: 12; }");
             cssText.AppendLine(".gelib-patrol { stroke: #3fb049; stroke-width: 18; }");
+            cssText.AppendLine("#" + SvgAiListsId + " { display: none; }");
 
             svg.SetStylesheet(cssText.ToString());
 
@@ -207,6 +213,8 @@ namespace Getools.Palantir
             // Intro star should be above other layers
             AddIntroGroupToSvgDoc(svg, _context.IntroPolygons);
 
+            AddAiListsToSvgDoc(svg, _context.AiScripts);
+
             return svg;
         }
 
@@ -221,7 +229,18 @@ namespace Getools.Palantir
                     var svgprop = SvgAppend.PropToSvg.SetupObjectToSvgAppend(group, poly, _stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgprop))
                     {
-                        svgprop.Id = string.Format(itemFormatString, poly.Room, poly.OrderIndex);
+                        SetupObjectGuard? guard = null;
+
+                        // check for linked ai script
+                        if (key == PropDef.Guard)
+                        {
+                            guard = (SetupObjectGuard) poly.SetupObject!;
+                            svgprop.Id = string.Format(itemFormatString, poly.Room, (int)guard.ObjectId);
+                        }
+                        else
+                        {
+                            svgprop.Id = string.Format(itemFormatString, poly.Room, poly.OrderIndex);
+                        }
 
                         AddPropAttributes(svgprop, poly);
 
@@ -236,6 +255,32 @@ namespace Getools.Palantir
                         svgprop.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
 
                         svgprop.SetDataAttribute("room-id", poly.Room.ToString());
+
+                        // check for linked ai script
+                        if (key == PropDef.Guard)
+                        {
+                            svgprop.SetDataAttribute("chr-hdist", guard.HearingDistance.ToString());
+                            svgprop.SetDataAttribute("chr-vdist", guard.VisibileDistance.ToString());
+
+                            if ((guard.Flags & Getools.Lib.Game.Flags.SetupChrFlags.GUARD_SETUP_FLAG_CHR_CLONE) > 0)
+                            {
+                                svgprop.SetDataAttribute("chr-clone", string.Empty);
+                            }
+
+                            if ((guard.Flags & Getools.Lib.Game.Flags.SetupChrFlags.GUARD_SETUP_FLAG_CHR_INVINCIBLE) > 0)
+                            {
+                                svgprop.SetDataAttribute("chr-invincible", string.Empty);
+                            }
+
+                            svgprop.SetDataAttribute("x-ai-init", guard!.ActionPathAssignment.ToString());
+
+                            var chrId = (int)guard!.ObjectId;
+                            if (_context.ChrIdToAiCommandBlock.ContainsKey(chrId))
+                            {
+                                var aiIdJson = string.Join(", ", _context.ChrIdToAiCommandBlock[chrId].OrderBy(x => x).Select(x => x.ToString()));
+                                svgprop.SetDataAttribute("x-ai-id", $"[{aiIdJson}]");
+                            }
+                        }
                     }
                 }
             }
@@ -295,6 +340,14 @@ namespace Getools.Palantir
                         svgcontainer.SetDataAttribute("sc-y", scaledPos.Y.ToString(StandardDoubleToStringFormat));
                         svgcontainer.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
                         svgcontainer.SetDataAttribute("room-id", poly.Room.ToString());
+
+                        // check for linked ai script
+                        var padId = (int)poly.OrderIndex;
+                        if (_context.PadIdToAiCommandBlock.ContainsKey(padId))
+                        {
+                            var aiIdJson = string.Join(", ", _context.PadIdToAiCommandBlock[padId].OrderBy(x => x).Select(x => x.ToString()));
+                            svgcontainer.SetDataAttribute("x-ai-id", $"[{aiIdJson}]");
+                        }
                     }
                 }
             }
@@ -471,6 +524,14 @@ namespace Getools.Palantir
                 container.SetDataAttribute("s-max-y", scaledPos.MaxY.ToString(StandardDoubleToStringFormat));
                 container.SetDataAttribute("s-min-z", scaledPos.MinZ.ToString(StandardDoubleToStringFormat));
                 container.SetDataAttribute("s-max-z", scaledPos.MaxZ.ToString(StandardDoubleToStringFormat));
+
+                // check for linked ai script
+                var patrolId = (int)pathset.OrderIndex;
+                if (_context.PathIdToAiCommandBlock.ContainsKey(patrolId))
+                {
+                    var aiIdJson = string.Join(", ", _context.PathIdToAiCommandBlock[patrolId].OrderBy(x => x).Select(x => x.ToString()));
+                    container.SetDataAttribute("x-ai-id", $"[{aiIdJson}]");
+                }
             }
         }
 
@@ -504,6 +565,76 @@ namespace Getools.Palantir
                 var propid = (PropId)baseGenericObject.ObjectId;
                 container.SetDataAttribute("prop-name", propid.ToString());
                 container.SetDataAttribute("prop-id", ((int)propid).ToString());
+            }
+        }
+
+        private void AddAiListsToSvgDoc(SvgDocument svg, List<AiCommandBlock> scripts)
+        {
+            if (!scripts.Any())
+            {
+                return;
+            }
+
+            var group = svg.AddGroup();
+            group.Id = SvgAiListsId;
+
+            foreach (var script in scripts)
+            {
+                var container = group.AddGroup();
+                container.Id = string.Format(SvgAiScriptFormat, script.Id);
+
+                foreach (var command in script.Commands)
+                {
+                    var text = container.AddText();
+                    var sb = new StringBuilder();
+
+                    sb.Append($"0x{command.CommandId:x2}: {command.DecompName}");
+
+                    if (command is IAiFixedCommand fcommand)
+                    {
+                        var parameterKvp = fcommand.CommandParameters.ToDictionary(k => k.ParameterName, v => v.ValueToString());
+
+                        if (parameterKvp.Any())
+                        {
+                            sb.Append("(");
+                            sb.Append(string.Join(", ", parameterKvp.Select(x => $"{x.Key}={x.Value}")));
+                            sb.Append(")");
+                        }
+
+                        // Add any back references to parameter objects.
+                        foreach (var p in fcommand.CommandParameters)
+                        {
+                            if (p.ParameterName == "chr_num")
+                            {
+                                if (_context.AiCommandBlockToChrId.ContainsKey(script.Id))
+                                {
+                                    var chrIdJson = string.Join(", ", _context.AiCommandBlockToChrId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
+                                    text.SetDataAttribute("x-chr-id", $"[{chrIdJson}]");
+                                }
+                            }
+                            else if (p.ParameterName == "pad"
+                                || p.ParameterName == "chr_preset"
+                                || p.ParameterName == "pad_preset")
+                            {
+                                if (_context.AiCommandBlockToPadId.ContainsKey(script.Id))
+                                {
+                                    var padIdJson = string.Join(", ", _context.AiCommandBlockToPadId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
+                                    text.SetDataAttribute("x-pad-id", $"[{padIdJson}]");
+                                }
+                            }
+                            else if (p.ParameterName == "path_num")
+                            {
+                                if (_context.AiCommandBlockToPathId.ContainsKey(script.Id))
+                                {
+                                    var patrolIdJson = string.Join(", ", _context.AiCommandBlockToPathId[script.Id].OrderBy(x => x).Select(x => x.ToString()));
+                                    text.SetDataAttribute("x-patrol-id", $"[{patrolIdJson}]");
+                                }
+                            }
+                        }
+                    }
+
+                    text.Text = sb.ToString();
+                }
             }
         }
     }

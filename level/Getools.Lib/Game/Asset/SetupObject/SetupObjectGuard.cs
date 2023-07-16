@@ -55,17 +55,17 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// <summary>
         /// TODO: Unknown.
         /// </summary>
-        public ushort Unknown10 { get; set; }
+        public ushort HearingDistance { get; set; }
 
         /// <summary>
         /// TODO: Unknown.
         /// </summary>
-        public ushort Health { get; set; }
+        public ushort VisibileDistance { get; set; }
 
         /// <summary>
         /// TODO: Unknown.
         /// </summary>
-        public ushort ReactionTime { get; set; }
+        public ushort Flags { get; set; }
 
         /// <summary>
         /// Id of head to use with guard.
@@ -118,13 +118,13 @@ namespace Getools.Lib.Game.Asset.SetupObject
             BitUtility.Insert32Big(bytes, pos, PresetToTrigger);
             pos += Config.TargetWordSize;
 
-            BitUtility.InsertShortBig(bytes, pos, Unknown10);
+            BitUtility.InsertShortBig(bytes, pos, HearingDistance);
             pos += Config.TargetShortSize;
 
-            BitUtility.InsertShortBig(bytes, pos, Health);
+            BitUtility.InsertShortBig(bytes, pos, VisibileDistance);
             pos += Config.TargetShortSize;
 
-            BitUtility.InsertShortBig(bytes, pos, ReactionTime);
+            BitUtility.InsertShortBig(bytes, pos, Flags);
             pos += Config.TargetShortSize;
 
             BitUtility.InsertShortBig(bytes, pos, Head);
@@ -182,12 +182,12 @@ namespace Getools.Lib.Game.Asset.SetupObject
             sb.Append(", ");
             sb.AppendFormat(
                 Config.CMacro_WordFromShorts_Format,
-                Unknown10,
-                Health);
+                HearingDistance,
+                VisibileDistance);
             sb.Append(", ");
             sb.AppendFormat(
                 Config.CMacro_WordFromShorts_Format,
-                ReactionTime,
+                Flags,
                 Formatters.IntegralTypes.ToHex4(Head));
             sb.Append(", ");
             sb.Append(Formatters.IntegralTypes.ToHex8(PointerRuntimeData));

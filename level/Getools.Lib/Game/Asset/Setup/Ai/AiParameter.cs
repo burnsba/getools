@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Game.Enums;
+using Newtonsoft.Json.Linq;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
@@ -48,12 +51,29 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 
         public void CMacroAppend(string prefix, StringBuilder sb)
         {
-            sb.Append($"{prefix}0x{ByteValue:x2}");
+            var byteText = string.Join(string.Empty, ToByteArray().Select(x => x.ToString("x2")));
+
+            sb.Append($"{prefix}0x{byteText}");
         }
 
         public override string ToString()
         {
-            return $"{ParameterName}=0x{ByteValue:x2}";
+            return $"{ParameterName}={GetValueText()}";
+        }
+
+        public string ToStringReverse()
+        {
+            return $"{ParameterName}={GetValueText(true)}";
+        }
+
+        public string ValueToString()
+        {
+            return GetValueText();
+        }
+
+        public string ValueToStringReverse()
+        {
+            return GetValueText(true);
         }
 
         public byte[] ToByteArray()
@@ -81,6 +101,50 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
 
             return results;
+        }
+
+        private string GetValueText(bool reverse = false)
+        {
+            if (ParameterName == "chr_num")
+            {
+                var bb = (int)(sbyte)ByteValue;
+
+                // chr_num has some reserved values:
+                if (Enum.IsDefined(typeof(ChrNum), bb))
+                {
+                    ChrNum reserverdChr = (ChrNum)bb;
+                    return reserverdChr.ToString();
+                }
+            }
+            else if (ParameterName == "item_num")
+            {
+                if (Enum.IsDefined(typeof(ItemIds), ByteValue))
+                {
+                    ItemIds item = (ItemIds)ByteValue;
+                    return item.ToString();
+                }
+            }
+            else if (ParameterName == "prop_num")
+            {
+                if (Enum.IsDefined(typeof(PropId), ByteValue))
+                {
+                    PropId prop = (PropId)ByteValue;
+                    return prop.ToString();
+                }
+            }
+
+            if (reverse)
+            {
+                var byteText = string.Join(string.Empty, ToByteArray().Reverse().Select(x => x.ToString("x2")));
+
+                return $"0x{byteText}";
+            }
+            else
+            {
+                var byteText = string.Join(string.Empty, ToByteArray().Select(x => x.ToString("x2")));
+
+                return $"0x{byteText}";
+            }
         }
     }
 }

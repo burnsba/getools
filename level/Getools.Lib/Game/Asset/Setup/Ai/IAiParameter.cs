@@ -11,5 +11,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         string ParameterName { get; init; }
         int ByteLength { get; init; }
         int ByteValue { get; init; }
+
+        string ToStringReverse();
+        string ValueToString();
+        string ValueToStringReverse();
     }
 }

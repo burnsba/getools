@@ -980,9 +980,9 @@ namespace Getools.Lib.Kaitai
             objectDef.BodyId = kaitaiObject.BodyId;
             objectDef.ActionPathAssignment = kaitaiObject.ActionPathAssignment;
             objectDef.PresetToTrigger = kaitaiObject.PresetToTrigger;
-            objectDef.Unknown10 = kaitaiObject.Unknown10;
-            objectDef.Health = kaitaiObject.Health;
-            objectDef.ReactionTime = kaitaiObject.ReactionTime;
+            objectDef.HearingDistance = kaitaiObject.Unknown10;
+            objectDef.VisibileDistance = kaitaiObject.Health;
+            objectDef.Flags = kaitaiObject.ReactionTime;
             objectDef.Head = kaitaiObject.Head;
             objectDef.PointerRuntimeData = kaitaiObject.PointerRuntimeData;
 

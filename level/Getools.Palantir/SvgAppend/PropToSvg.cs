@@ -270,9 +270,9 @@ namespace Getools.Palantir.SvgAppend
                 var scaleLower = pp.SetupObject.Scale & 0xff;
                 setupScale = scaleUpper + ((double)scaleLower / (double)256);
 
-                toXPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_XToPresetBounds) > 0;
-                toYPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_YToPresetBounds) > 0;
-                toZPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_ZToPresetBounds) > 0;
+                toXPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag.PropFlag1_XToPresetBounds) > 0;
+                toYPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag.PropFlag1_YToPresetBounds) > 0;
+                toZPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag.PropFlag1_ZToPresetBounds) > 0;
             }
 
             bool boundToPad3dDimensions = false;
@@ -418,13 +418,13 @@ namespace Getools.Palantir.SvgAppend
             }
 
             // guard does not implement SetupObjectGenericBase
-            /*
-            var standardObject = (SetupObjectGenericBase)pp.SetupObject;
+            var guard = (SetupObjectGuard)pp.SetupObject!;
+            bool isClone = false;
 
-            var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
-            var scaleLower = pp.SetupObject.Scale & 0xff;
-            double setupScale = scaleUpper + ((double)scaleLower / (double)256);
-            */
+            if ((guard.Flags & Getools.Lib.Game.Flags.SetupChrFlags.GUARD_SETUP_FLAG_CHR_CLONE) > 0)
+            {
+                isClone = true;
+            }
 
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
@@ -454,8 +454,6 @@ namespace Getools.Palantir.SvgAppend
             {
                 container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
             }
-            
-            //container.Transform += $" scale({scaleFactor})";
 
             //
 
@@ -465,22 +463,31 @@ namespace Getools.Palantir.SvgAppend
             rect.Y = 0;
             rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
             rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
-            rect.Fill = "#c8ab37";
-            rect.Stroke = "#aa4400";
-            rect.StrokeWidth = 0.569023;
-
-            //rect.Width = 37.525127;
-            //rect.Height = 15.142623;
-            //rect.X = 0.28451145;
-            //rect.Y = 5.3028398;
+            if (isClone)
+            {
+                rect.Fill = "#ffad3b";
+            }
+            else
+            {
+                rect.Fill = "#ffdd55";
+            }
+            rect.Stroke = "#a87928";
+            rect.StrokeWidth = 1;
 
             ////
 
             var ellipse = container.AddEllipse();
 
-            ellipse.Fill = "#ffdd55";
-            ellipse.Stroke = "#aa4400";
-            ellipse.StrokeWidth = 0.876555;
+            if (isClone)
+            {
+                ellipse.Fill = "#ffad3b";
+            }
+            else
+            {
+                ellipse.Fill = "#ffdd55";
+            }
+            ellipse.Stroke = "#a87928";
+            ellipse.StrokeWidth = 1;
 
             ellipse.CX = 6 * scaleFactor;
             ellipse.CY = 3 * scaleFactor;
@@ -491,13 +498,20 @@ namespace Getools.Palantir.SvgAppend
 
             var path = container.AddPath();
 
-            path.Fill = "#ffeeaa";
-            path.Stroke = "#aa4400";
-            path.StrokeWidth = 0.701189;
+            if (isClone)
+            {
+                path.Fill = "#ffda91";
+            }
+            else
+            {
+                path.Fill = "#ffeeaa";
+            }
+            path.Stroke = "#a87928";
+            path.StrokeWidth = 1;
 
-            Coord2dd p1 = new Coord2dd(8, 4).Scale(scaleFactor);
-            Coord2dd p2 = new Coord2dd(4.5, 0).Scale(scaleFactor);
-            Coord2dd p3 = new Coord2dd(6.3, 0.3).Scale(scaleFactor);
+            Coord2dd p1 = new Coord2dd(7.7, 4).Scale(scaleFactor);
+            Coord2dd p2 = new Coord2dd(4.3, 0).Scale(scaleFactor);
+            Coord2dd p3 = new Coord2dd(6, 0.3).Scale(scaleFactor);
 
             path.D = $"M {Format.DoubleToStringFormat(p1.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p1.Y, StandardDoubleToStringFormat)} H {Format.DoubleToStringFormat(p2.X, StandardDoubleToStringFormat)} L {Format.DoubleToStringFormat(p3.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p3.Y, StandardDoubleToStringFormat)} Z";
 

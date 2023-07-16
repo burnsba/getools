@@ -8,6 +8,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 {
     public class AiCommandBlock
     {
+        public AiScriptType ScriptType { get; set; } = AiScriptType.DefaultUnknown;
+
+        public int Id { get; set; }
+
         public List<IAiConcreteCommand> Commands { get; set; } = new List<IAiConcreteCommand>();
 
         public string ToFriendlyLines(string prefix = "")
