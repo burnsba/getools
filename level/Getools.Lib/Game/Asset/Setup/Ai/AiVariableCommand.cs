@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Architecture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -121,7 +122,13 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
         }
 
-        public byte[] ToByteArray()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="endien">Ignored.</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             if (CommandLengthBytes < 1)
             {

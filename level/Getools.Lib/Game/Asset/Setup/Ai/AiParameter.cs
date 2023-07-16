@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Architecture;
 using Getools.Lib.Game.Enums;
 using Newtonsoft.Json.Linq;
 
@@ -11,16 +12,29 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 {
     public class AiParameter : IAiParameter
     {
+        private readonly byte[] _value;
+        private readonly ByteOrder _endien;
+        private readonly int _valueBig;
+        private readonly int _valueLittle;
+
         public string ParameterName { get; init; }
         public int ByteLength { get; init; }
-        public int ByteValue { get; init; }
+        public ByteOrder Endien => _endien;
 
         public AiParameter()
         {
             //
         }
 
-        public AiParameter(string name, int length, int val)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="length"></param>
+        /// <param name="val">Value of parameter. This parameter should use <paramref name="endien"/>.</param>
+        /// <param name="endien">Specifies the internal byte order of the parameter.</param>
+        /// <exception cref="NotSupportedException"></exception>
+        public AiParameter(string name, int length, byte[] val, ByteOrder endien = ByteOrder.BigEndien)
         {
             if (length < 1 || length > 4)
             {
@@ -29,23 +43,56 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 
             ParameterName = name;
             ByteLength = length;
-            ByteValue = val;
+            _endien = endien;
 
-            if (length == 1)
+            _value = new byte[ByteLength];
+            Array.Copy(val, _value, ByteLength);
+
+            if (endien == ByteOrder.BigEndien)
             {
-                ByteValue = val & 0xff;
+                _valueLittle = val[0] << 24;
+
+                if (ByteLength > 1)
+                {
+                    _valueLittle |= val[1] << 16;
+                }
+
+                if (ByteLength > 2)
+                {
+                    _valueLittle |= val[2] << 8;
+                }
+
+                if (ByteLength > 3)
+                {
+                    _valueLittle |= val[3] << 0;
+                }
+
+                _valueLittle >>= (8 * (4 - ByteLength));
+
+                _valueBig = BinaryPrimitives.ReverseEndianness(_valueLittle);
             }
-            else if (length == 2)
+            else
             {
-                ByteValue = val & 0xffff;
-            }
-            else if (length == 3)
-            {
-                ByteValue = val & 0xffffff;
-            }
-            else if (length == 4)
-            {
-                ByteValue = val;
+                _valueBig = val[0] << 24;
+
+                if (ByteLength > 1)
+                {
+                    _valueBig |= val[1] << 16;
+                }
+
+                if (ByteLength > 2)
+                {
+                    _valueBig |= val[2] << 8;
+                }
+
+                if (ByteLength > 3)
+                {
+                    _valueBig |= val[3] << 0;
+                }
+
+                _valueBig <<= (8 * (4 - ByteLength));
+
+                _valueLittle = BinaryPrimitives.ReverseEndianness(_valueBig);
             }
         }
 
@@ -61,53 +108,52 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return $"{ParameterName}={GetValueText()}";
         }
 
-        public string ToStringReverse()
+        public string ToStringBig()
         {
-            return $"{ParameterName}={GetValueText(true)}";
+            return $"{ParameterName}={GetValueText(ByteOrder.BigEndien)}";
         }
 
-        public string ValueToString()
+        public string ToStringLittle()
         {
-            return GetValueText();
+            return $"{ParameterName}={GetValueText(ByteOrder.LittleEndien)}";
         }
 
-        public string ValueToStringReverse()
+        public string ValueToString(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true)
         {
-            return GetValueText(true);
+            return GetValueText(endien, expandSpecial: expandSpecial);
         }
 
-        public byte[] ToByteArray()
+        public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             var results = new byte[ByteLength];
 
-            if (ByteLength > 3)
-            {
-                results[3] = (byte)((ByteValue & 0xFF000000) >> 24);
-            }
+            Array.Copy(_value, results, ByteLength);
 
-            if (ByteLength > 2)
+            if (endien != _endien)
             {
-                results[2] = (byte)((ByteValue & 0x00FF0000) >> 16);
-            }
-
-            if (ByteLength > 1)
-            {
-                results[1] = (byte)((ByteValue & 0x0000FF00) >> 8);
-            }
-
-            if (ByteLength > 0)
-            {
-                results[0] = (byte)((ByteValue & 0x000000FF) >> 0);
+                results = results.Reverse().ToArray();
             }
 
             return results;
         }
 
-        private string GetValueText(bool reverse = false)
+        public int GetIntValue(ByteOrder endien = ByteOrder.BigEndien)
         {
-            if (ParameterName == "chr_num")
+            if (endien == ByteOrder.BigEndien)
             {
-                var bb = (int)(sbyte)ByteValue;
+                return _valueBig;
+            }
+
+            return _valueLittle;
+        }
+
+        private string GetValueText(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true)
+        {
+            int workingValue = GetIntValue(endien);
+
+            if (expandSpecial && ParameterName == "chr_num")
+            {
+                var bb = (int)(sbyte)workingValue;
 
                 // chr_num has some reserved values:
                 if (Enum.IsDefined(typeof(ChrNum), bb))
@@ -116,24 +162,24 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     return reserverdChr.ToString();
                 }
             }
-            else if (ParameterName == "item_num")
+            else if (expandSpecial && ParameterName == "item_num")
             {
-                if (Enum.IsDefined(typeof(ItemIds), ByteValue))
+                if (Enum.IsDefined(typeof(ItemIds), workingValue))
                 {
-                    ItemIds item = (ItemIds)ByteValue;
+                    ItemIds item = (ItemIds)workingValue;
                     return item.ToString();
                 }
             }
-            else if (ParameterName == "prop_num")
+            else if (expandSpecial && ParameterName == "prop_num")
             {
-                if (Enum.IsDefined(typeof(PropId), ByteValue))
+                if (Enum.IsDefined(typeof(PropId), workingValue))
                 {
-                    PropId prop = (PropId)ByteValue;
+                    PropId prop = (PropId)workingValue;
                     return prop.ToString();
                 }
             }
 
-            if (reverse)
+            if (endien != _endien)
             {
                 var byteText = string.Join(string.Empty, ToByteArray().Reverse().Select(x => x.ToString("x2")));
 

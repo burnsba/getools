@@ -1054,6 +1054,8 @@ namespace Getools.Palantir
                     {
                         foreach (var p in fcommand.CommandParameters)
                         {
+                            int pvalue = p.GetIntValue(Lib.Architecture.ByteOrder.LittleEndien);
+
                             if (p.ParameterName == "chr_num")
                             {
                                 // chr_num has some reserved values, ignore those:
@@ -1066,14 +1068,14 @@ namespace Getools.Palantir
                                  * define CHR_PRESET      -4
                                  * define CHR_SELF        -3
                                 */
-                                if (p.ByteValue > 0xf0)
+                                if (pvalue > 0xf0)
                                 {
                                     continue;
                                 }
 
-                                if (context.ChrIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                if (context.ChrIdToAiCommandBlock.ContainsKey(pvalue))
                                 {
-                                    context.ChrIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                    context.ChrIdToAiCommandBlock[pvalue].Add(fff.Id);
                                 }
                                 else
                                 {
@@ -1081,27 +1083,27 @@ namespace Getools.Palantir
                                     {
                                         fff.Id,
                                     };
-                                    context.ChrIdToAiCommandBlock.Add(p.ByteValue, list);
+                                    context.ChrIdToAiCommandBlock.Add(pvalue, list);
                                 }
 
                                 if (context.AiCommandBlockToChrId.ContainsKey(fff.Id))
                                 {
-                                    context.AiCommandBlockToChrId[fff.Id].Add(p.ByteValue);
+                                    context.AiCommandBlockToChrId[fff.Id].Add(pvalue);
                                 }
                                 else
                                 {
                                     var list = new HashSet<int>()
                                     {
-                                        p.ByteValue,
+                                        pvalue,
                                     };
                                     context.AiCommandBlockToChrId.Add(fff.Id, list);
                                 }
                             }
                             else if (p.ParameterName == "pad" || p.ParameterName == "chr_preset" || p.ParameterName == "pad_preset")
                             {
-                                if (context.PadIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                if (context.PadIdToAiCommandBlock.ContainsKey(pvalue))
                                 {
-                                    context.PadIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                    context.PadIdToAiCommandBlock[pvalue].Add(fff.Id);
                                 }
                                 else
                                 {
@@ -1109,27 +1111,27 @@ namespace Getools.Palantir
                                     {
                                         fff.Id,
                                     };
-                                    context.PadIdToAiCommandBlock.Add(p.ByteValue, list);
+                                    context.PadIdToAiCommandBlock.Add(pvalue, list);
                                 }
 
                                 if (context.AiCommandBlockToPadId.ContainsKey(fff.Id))
                                 {
-                                    context.AiCommandBlockToPadId[fff.Id].Add(p.ByteValue);
+                                    context.AiCommandBlockToPadId[fff.Id].Add(pvalue);
                                 }
                                 else
                                 {
                                     var list = new HashSet<int>()
                                     {
-                                        p.ByteValue,
+                                        pvalue,
                                     };
                                     context.AiCommandBlockToPadId.Add(fff.Id, list);
                                 }
                             }
                             else if (p.ParameterName == "path_num")
                             {
-                                if (context.PathIdToAiCommandBlock.ContainsKey(p.ByteValue))
+                                if (context.PathIdToAiCommandBlock.ContainsKey(pvalue))
                                 {
-                                    context.PathIdToAiCommandBlock[p.ByteValue].Add(fff.Id);
+                                    context.PathIdToAiCommandBlock[pvalue].Add(fff.Id);
                                 }
                                 else
                                 {
@@ -1137,18 +1139,18 @@ namespace Getools.Palantir
                                     {
                                         fff.Id,
                                     };
-                                    context.PathIdToAiCommandBlock.Add(p.ByteValue, list);
+                                    context.PathIdToAiCommandBlock.Add(pvalue, list);
                                 }
 
                                 if (context.AiCommandBlockToPathId.ContainsKey(fff.Id))
                                 {
-                                    context.AiCommandBlockToPathId[fff.Id].Add(p.ByteValue);
+                                    context.AiCommandBlockToPathId[fff.Id].Add(pvalue);
                                 }
                                 else
                                 {
                                     var list = new HashSet<int>()
                                     {
-                                        p.ByteValue,
+                                        pvalue,
                                     };
                                     context.AiCommandBlockToPathId.Add(fff.Id, list);
                                 }

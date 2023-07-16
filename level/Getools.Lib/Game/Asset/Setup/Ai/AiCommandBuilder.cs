@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,13 +46,18 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     for (int i = 0; i < fcommand.NumberParameters; i++)
                     {
                         var len = fcommand.CommandParameters[i].ByteLength;
-                        int val = 0;
-                        for (var j = 0; j < len; j++)
-                        {
-                            val |= bytes[position++] << (8 * j);
-                        }
+                        //int val = 0;
+                        //for (var j = 0; j < len; j++)
+                        //{
+                        //    // read bigendien, store as bigendien
+                        //    val |= bytes[position++] << (8 * (3 - j));
+                        //}
 
-                        commandParameters.Add(new AiParameter(fcommand.CommandParameters[i].ParameterName, len, val));
+                        var byteValue = new byte[len];
+                        Array.Copy(bytes, position, byteValue, 0, len);
+                        position += len;
+
+                        commandParameters.Add(new AiParameter(fcommand.CommandParameters[i].ParameterName, len, byteValue, Architecture.ByteOrder.BigEndien));
                     }
 
                     aic = new AiFixedCommand(fcommand, commandParameters);

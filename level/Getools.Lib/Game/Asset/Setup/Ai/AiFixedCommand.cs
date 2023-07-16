@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Architecture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,14 +32,14 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         public int NumberParameters { get; set; }
         public List<IAiParameter> CommandParameters { get; set; }
 
-        public byte[] ToByteArray()
+        public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             var results = new byte[CommandLengthBytes];
             results[0] = CommandId;
             int resultPosition = 1;
             for (var i = 0; i < NumberParameters; i++)
             {
-                AppendParameter(results, resultPosition, CommandParameters[i]);
+                AppendParameter(results, resultPosition, CommandParameters[i], endien);
                 resultPosition += CommandParameters[i].ByteLength;
             }
 
@@ -57,7 +58,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             if (NumberParameters > 0)
             {
                 sb.AppendLine("(");
-                argsText = string.Join(", ", CommandParameters.Select(x => "0x" + x.ByteValue.ToString("x")));
+                argsText = string.Join(", ", CommandParameters.Select(x => x.ValueToString(expandSpecial: false)));
                 argsCommentText = string.Join(", ", CommandParameters.Select(x => x.ParameterName));
                 sb.AppendLine(prefix + indent + "// " + argsCommentText);
                 sb.Append(prefix + indent + argsText + ")");
@@ -77,32 +78,11 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
         }
 
-        private void AppendParameter(byte[] arr, int position, IAiParameter parameter)
+        private void AppendParameter(byte[] arr, int position, IAiParameter parameter, ByteOrder endien = ByteOrder.BigEndien)
         {
-            if (parameter.ByteLength < 1 || parameter.ByteLength > 4)
-            {
-                throw new NotSupportedException();
-            }
+            var bytes = parameter.ToByteArray(endien);
 
-            if (parameter.ByteLength > 3)
-            {
-                arr[position + 3] = (byte)((parameter.ByteValue & 0xFF000000) >> 24);
-            }
-
-            if (parameter.ByteLength > 2)
-            {
-                arr[position + 2] = (byte)((parameter.ByteValue & 0x00FF0000) >> 16);
-            }
-
-            if (parameter.ByteLength > 1)
-            {
-                arr[position + 1] = (byte)((parameter.ByteValue & 0x0000FF00) >> 8);
-            }
-
-            if (parameter.ByteLength > 0)
-            {
-                arr[position + 0] = (byte)((parameter.ByteValue & 0x000000FF) >> 0);
-            }
+            Array.Copy(bytes, 0, arr, position, bytes.Length);
         }
     }
 }
