@@ -159,7 +159,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 
         private string GetValueText(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true)
         {
-            int workingValue = GetIntValue(endien);
+            // x86 native format
+            int workingValue = GetIntValue(ByteOrder.LittleEndien);
 
             if (expandSpecial && ParameterName == "chr_num")
             {
@@ -187,6 +188,15 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                 {
                     PropId prop = (PropId)workingValue;
                     return prop.ToString();
+                }
+            }
+            else if (expandSpecial && ParameterName == "pad")
+            {
+                // 9000 is Special ID for selecting PadPreset in AI list.
+                // stored as chr->padpreset1
+                if (workingValue == 9000)
+                {
+                    return "PAD_PRESET1";
                 }
             }
 

@@ -1109,6 +1109,13 @@ namespace Getools.Palantir
                             }
                             else if (p.ParameterName == "pad" || p.ParameterName == "chr_preset" || p.ParameterName == "pad_preset")
                             {
+                                // 9000 is Special ID for selecting PadPreset in AI list.
+                                // stored as chr->padpreset1
+                                if (pvalue == 9000)
+                                {
+                                    continue;
+                                }
+
                                 if (context.PadIdToAiCommandBlock.ContainsKey(pvalue))
                                 {
                                     context.PadIdToAiCommandBlock[pvalue].Add(fff.Id);

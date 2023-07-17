@@ -65,24 +65,24 @@ namespace Getools.Palantir
 
         private const string SvgItemIdRoomFormat = "svg-room-{0}";
         private const string SvgItemIdTileFormat = "svg-room-{0}-tile-{1}";
-        private const string SvgItemIdPadFormat = "svg-room-{0}-pad-{1}";
+        private const string SvgItemIdPadFormat = "svg-pad-{0}";
 
-        private const string SvgItemIdSetupAlarmFormat = "svg-room-{0}-setup-alarm-{1}";
-        private const string SvgItemIdSetupAmmoFormat = "svg-room-{0}-setup-ammo-{1}";
-        private const string SvgItemIdSetupAircraftFormat = "svg-room-{0}-setup-aircraft-{1}";
-        private const string SvgItemIdSetupBodyArmorFormat = "svg-room-{0}-setup-bodyarmor-{1}";
-        private const string SvgItemIdSetupChrFormat = "svg-room-{0}-setup-chr-{1}";
-        private const string SvgItemIdSetupCctvFormat = "svg-room-{0}-setup-cctv-{1}";
-        private const string SvgItemIdSetupCollectableFormat = "svg-room-{0}-setup-collectable-{1}";
-        private const string SvgItemIdSetupDoorFormat = "svg-room-{0}-setup-door-{1}";
-        private const string SvgItemIdSetupDroneFormat = "svg-room-{0}-setup-drone-{1}";
-        private const string SvgItemIdSetupKeyFormat = "svg-room-{0}-setup-key-{1}";
-        private const string SvgItemIdSetupSafeFormat = "svg-room-{0}-setup-safe-{1}";
-        private const string SvgItemIdSetupSingleMonitorFormat = "svg-room-{0}-setup-singlemonitor-{1}";
-        private const string SvgItemIdSetupStandardPropFormat = "svg-room-{0}-setup-prop-{1}";
-        private const string SvgItemIdSetupTankFormat = "svg-room-{0}-setup-tank-{1}";
+        private const string SvgItemIdSetupAlarmFormat = "svg-setup-alarm-{0}";
+        private const string SvgItemIdSetupAmmoFormat = "svg-setup-ammo-{0}";
+        private const string SvgItemIdSetupAircraftFormat = "svg-setup-aircraft-{0}";
+        private const string SvgItemIdSetupBodyArmorFormat = "svg-setup-bodyarmor-{0}";
+        private const string SvgItemIdSetupChrFormat = "svg-setup-chr-{0}";
+        private const string SvgItemIdSetupCctvFormat = "svg-setup-cctv-{0}";
+        private const string SvgItemIdSetupCollectableFormat = "svg-setup-collectable-{0}";
+        private const string SvgItemIdSetupDoorFormat = "svg-setup-door-{0}";
+        private const string SvgItemIdSetupDroneFormat = "svg-setup-drone-{0}";
+        private const string SvgItemIdSetupKeyFormat = "svg-setup-key-{0}";
+        private const string SvgItemIdSetupSafeFormat = "svg-setup-safe-{0}";
+        private const string SvgItemIdSetupSingleMonitorFormat = "svg-setup-singlemonitor-{0}";
+        private const string SvgItemIdSetupStandardPropFormat = "svg-setup-prop-{0}";
+        private const string SvgItemIdSetupTankFormat = "svg-setup-tank-{0}";
 
-        private const string SvgItemIdSetupIntroFormat = "svg-room-{0}-setup-intro-{1}";
+        private const string SvgItemIdSetupIntroFormat = "svg-setup-intro-{0}";
 
         private const string SvgAiListsId = "svg-ailists";
         private const string SvgAiScriptFormat = "svg-ai-{0}";
@@ -235,11 +235,11 @@ namespace Getools.Palantir
                         if (key == PropDef.Guard)
                         {
                             guard = (SetupObjectGuard) poly.SetupObject!;
-                            svgprop.Id = string.Format(itemFormatString, poly.Room, (int)guard.ObjectId);
+                            svgprop.Id = string.Format(itemFormatString, (int)guard.ObjectId);
                         }
                         else
                         {
-                            svgprop.Id = string.Format(itemFormatString, poly.Room, poly.OrderIndex);
+                            svgprop.Id = string.Format(itemFormatString, poly.OrderIndex);
                         }
 
                         AddPropAttributes(svgprop, poly);
@@ -327,7 +327,7 @@ namespace Getools.Palantir
                     var svgcontainer = SvgAppend.PadToSvg.PadToSvgAppend(group, poly, _stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgcontainer))
                     {
-                        svgcontainer.Id = string.Format(SvgItemIdPadFormat, poly.Room, poly.OrderIndex);
+                        svgcontainer.Id = string.Format(SvgItemIdPadFormat, poly.OrderIndex);
                         svgcontainer.AddClass("gelib-pad");
 
                         var scaledPos = poly.Origin.Clone().Scale(1 / _stage.LevelScale);
@@ -339,6 +339,7 @@ namespace Getools.Palantir
                         svgcontainer.SetDataAttribute("sc-x", scaledPos.X.ToString(StandardDoubleToStringFormat));
                         svgcontainer.SetDataAttribute("sc-y", scaledPos.Y.ToString(StandardDoubleToStringFormat));
                         svgcontainer.SetDataAttribute("sc-z", scaledPos.Z.ToString(StandardDoubleToStringFormat));
+
                         svgcontainer.SetDataAttribute("room-id", poly.Room.ToString());
 
                         // check for linked ai script

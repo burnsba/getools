@@ -171,6 +171,12 @@
 
         .dialog-ai-command {
             margin-bottom: 6px;
+            border: 1px solid #cccccc;
+            padding: 4px;
+        }
+
+        .dialog-ai-command.ai-label {
+            background-color: #d7ffd7;
         }
 
         .dialog-content-seperator {
@@ -188,6 +194,8 @@
     <script>
 
         const svgns = "http://www.w3.org/2000/svg";
+
+        const g_MinZoomToPan = 8.0;
 
         /**
         * 0: not started
@@ -562,6 +570,15 @@
                     'transition-duration: 0.5s; ' +
                     'transition-timing-function: linear; ' +
                     ' } ', style.sheet.cssRules.length);
+            // style secondary selected item, including a transition effect when first selected.
+            style.sheet.insertRule('#svg-setup-chr-layer .svg-logical-item.secondary, #svg-pad-layer .svg-logical-item.secondary {' +
+                    'outline: 14px solid rgba(0,220,225,0.7); ' +
+                    'outline-offset: 30px; ' +
+                    'outline-style: dashed; ' +
+                    'transition-property: outline-offset; ' +
+                    'transition-duration: 0.5s; ' +
+                    'transition-timing-function: linear; ' +
+                    ' } ', style.sheet.cssRules.length);
 
             let index = 0;
             let rule = '';
@@ -893,9 +910,81 @@
 
                 let div = document.createElement('div');
                 div.classList.add('dialog-ai-command');
-                div.innerText = node.textContent;
+
+                let divContent = document.createElement('div');
+                divContent.innerText = node.textContent;
+                div.appendChild(divContent);
+
+                if (node.textContent.match(/^...: \[0x02\]/)) {
+                    div.classList.add('ai-label');
+                }
+
+                if (node.dataset.xPadId) {
+                    let id = parseInt(node.dataset.xPadId);
+
+                    let panToNode = document.createElement('input');
+                    panToNode.setAttribute("type", "button");
+                    panToNode.value = `goto pad 0x${id.toString(16)}`;
+                    panToNode.dataset.xPadId = id;
+                    panToNode.onclick = HandleDialogClickPanToPad;
+                    div.appendChild(panToNode);
+                }
+
+                if (node.dataset.xChrId) {
+                    let id = parseInt(node.dataset.xChrId);
+
+                    let target = svg.querySelectorAll(`#svg-setup-chr-layer #svg-setup-chr-${id}`);
+
+                    if (!target || target.length < 1) {
+                        let msgNode = document.createElement('div');
+                        msgNode.innerHTML = `LATE SPAWN: chr 0x${id.toString(16)}`;
+                        div.appendChild(msgNode);
+                    } else {
+                        let panToNode = document.createElement('input');
+                        panToNode.setAttribute("type", "button");
+                        panToNode.value = `goto chr 0x${id.toString(16)}`;
+                        panToNode.dataset.xChrId = id;
+                        panToNode.onclick = HandleDialogClickPanToChr;
+                        div.appendChild(panToNode);
+                    }
+                }
+
                 dialogContent.appendChild(div);
             }
+        }
+
+        function HandleDialogClickPanToPad(e) {
+            let node = this;
+
+            let id = parseInt(node.dataset.xPadId);
+
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let target = svg.querySelectorAll(`#svg-pad-layer #svg-pad-${id}`)[0];
+
+            SvgUnselectSecondary();
+            SpzPanToItem(target);
+            SpzNodeAddReClass(target, "secondary");
+        }
+
+        function HandleDialogClickPanToChr(e) {
+            let node = this;
+
+            let id = parseInt(node.dataset.xChrId);
+
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let target = svg.querySelectorAll(`#svg-setup-chr-layer #svg-setup-chr-${id}`)[0];
+
+            SvgUnselectSecondary();
+            SpzPanToItem(target);
+            SpzNodeAddReClass(target, "secondary");
         }
 
         function DialogSetTitlebar(text) {
@@ -950,8 +1039,9 @@
             }
         }
 
-        function SpzPanToSelectedItem() {
+        function SpzSelectAndPanToSelectedItem() {
             SpzPanToItem(g_SelectedItem);
+            SpzNodeAddReClass(g_SelectedItem, "selected");
         }
 
         function SpzPanToItem(node) {
@@ -974,19 +1064,34 @@
             }
 
             let spz = svgPanZoom(document.getElementById('mmap'));
+
+            let zoom = spz.getZoom();
+
+            // try to adjust for rounding error
+            if ((g_MinZoomToPan - zoom) > 0.01 ) {
+                spz.zoom(g_MinZoomToPan);
+            }
+
             let sizes = spz.getSizes();
             var areaWidth = parseInt(getComputedStyle(document.getElementById('mmap')).width);
             var areaHeight = parseInt(getComputedStyle(document.getElementById('mmap')).height);
             let x = (areaWidth / 2) - parseInt(node.dataset.scX) * sizes.realZoom;
             let y = (areaHeight / 2) - parseInt(node.dataset.scZ) * sizes.realZoom;
             spz.pan({ x: x, y: y });
+        }
 
-            node.classList.remove("selected");
+        function SpzNodeAddReClass(node, classname) {
+            node.classList.remove(classname);
             // re-trigger border animation
-            window.setTimeout(function () { node.classList.add("selected"); }, 20);
+            window.setTimeout(function () { node.classList.add(classname); }, 20);
         }
 
         function SvgUnselectItems() {
+            SvgUnselectPrimary();
+            SvgUnselectSecondary();
+        }
+
+        function SvgUnselectPrimary() {
             let svg = GetSvg();
             if (!svg) {
                 return;
@@ -995,6 +1100,18 @@
             let svgSelected = svg.querySelectorAll('.selected');
             for (const node of svgSelected) {
                 node.classList.remove("selected");
+            }
+        }
+
+        function SvgUnselectSecondary() {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let svgSecondary = svg.querySelectorAll('.secondary');
+            for (const node of svgSecondary) {
+                node.classList.remove("secondary");
             }
         }
 
@@ -1028,7 +1145,7 @@
             let panToNode = document.createElement('input');
             panToNode.setAttribute("type", "button");
             panToNode.value = "goto";
-            panToNode.onclick = SpzPanToSelectedItem;
+            panToNode.onclick = SpzSelectAndPanToSelectedItem;
             panToNodeParent.appendChild(panToNode);
             infoNode.appendChild(panToNodeParent);
 
@@ -1284,7 +1401,7 @@
                 if (node.dataset.display === 'Guard'
                     || node.dataset.display === 'Pad')
                 {
-                    node.dataset.displayId = nodetype["match"][2];
+                    node.dataset.displayId = nodetype["match"][1];
                 }
             }
 
@@ -1343,26 +1460,26 @@
 
         var ClassTypeMap = [
             /* need longer matches first */
-            { "re": new RegExp("svg-room-([0-9]+)-setup-alarm-([0-9]+)"), 'id': 15, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAlarm', 'display': 'Alarm' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-ammo-([0-9]+)"), 'id': 14, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAmmoBox', 'display': 'Ammo' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-aircraft-([0-9]+)"), 'id': 13, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAircraft', 'display': 'Aircraft' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-bodyarmor-([0-9]+)"), 'id': 12, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectBodyArmor', 'display': 'Body Armor' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-chr-([0-9]+)"), 'id': 11, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectGuard', 'display': 'Guard' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-cctv-([0-9]+)"), 'id': 10, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCctv', 'display': 'CCTV' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-collectable-([0-9]+)"), 'id': 9, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCollectObject', 'display': 'Collect' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-door-([0-9]+)"), 'id': 8, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDoor', 'display': 'Door' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-drone-([0-9]+)"), 'id': 7, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDrone', 'display': 'Drone' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-key-([0-9]+)"), 'id': 6, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectKey', 'display': 'Key' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-safe-([0-9]+)"), 'id': 5, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSafe', 'display': 'Safe' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-singlemonitor-([0-9]+)"), 'id': 4, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSingleMonitor', 'display': 'SingleMonitor' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-prop-([0-9]+)"), 'id': 3, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectStandard', 'display': 'Prop' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-tank-([0-9]+)"), 'id': 2, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectTank', 'display': 'Tank' },
-            { "re": new RegExp("svg-room-([0-9]+)-setup-intro-([0-9]+)"), 'id': 1, 'type': 'Getools.Lib.Game.Asset.Intro.IntroSpawn', 'display': 'Spawn' },
+            { "re": new RegExp("svg-setup-alarm-([0-9]+)"), 'id': 15, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAlarm', 'display': 'Alarm' },
+            { "re": new RegExp("svg-setup-ammo-([0-9]+)"), 'id': 14, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAmmoBox', 'display': 'Ammo' },
+            { "re": new RegExp("svg-setup-aircraft-([0-9]+)"), 'id': 13, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectAircraft', 'display': 'Aircraft' },
+            { "re": new RegExp("svg-setup-bodyarmor-([0-9]+)"), 'id': 12, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectBodyArmor', 'display': 'Body Armor' },
+            { "re": new RegExp("svg-setup-chr-([0-9]+)"), 'id': 11, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectGuard', 'display': 'Guard' },
+            { "re": new RegExp("svg-setup-cctv-([0-9]+)"), 'id': 10, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCctv', 'display': 'CCTV' },
+            { "re": new RegExp("svg-setup-collectable-([0-9]+)"), 'id': 9, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectCollectObject', 'display': 'Collect' },
+            { "re": new RegExp("svg-setup-door-([0-9]+)"), 'id': 8, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDoor', 'display': 'Door' },
+            { "re": new RegExp("svg-setup-drone-([0-9]+)"), 'id': 7, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectDrone', 'display': 'Drone' },
+            { "re": new RegExp("svg-setup-key-([0-9]+)"), 'id': 6, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectKey', 'display': 'Key' },
+            { "re": new RegExp("svg-setup-safe-([0-9]+)"), 'id': 5, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSafe', 'display': 'Safe' },
+            { "re": new RegExp("svg-setup-singlemonitor-([0-9]+)"), 'id': 4, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectSingleMonitor', 'display': 'SingleMonitor' },
+            { "re": new RegExp("svg-setup-prop-([0-9]+)"), 'id': 3, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectStandard', 'display': 'Prop' },
+            { "re": new RegExp("svg-setup-tank-([0-9]+)"), 'id': 2, 'type': 'Getools.Lib.Game.Asset.SetupObject.SetupObjectTank', 'display': 'Tank' },
+            { "re": new RegExp("svg-setup-intro-([0-9]+)"), 'id': 1, 'type': 'Getools.Lib.Game.Asset.Intro.IntroSpawn', 'display': 'Spawn' },
 
             { "re": new RegExp("svg-patrol-([0-9]+)"), 'id': 19, 'type': 'Getools.Lib.Game.Asset.Setup.PathSet', 'display': 'Patrol' },
 
             { "re": new RegExp("svg-room-([0-9]+)-tile-([0-9]+)"), 'id': 17, 'type': 'Getools.Lib.Game.Asset.Stan.StandTile', 'display': 'Tile' },
-            { "re": new RegExp("svg-room-([0-9]+)-pad-([0-9]+)"), 'id': 16, 'type': 'Getools.Lib.Game.Asset.Setup.Pad', 'display': 'Pad' },
+            { "re": new RegExp("svg-pad-([0-9]+)"), 'id': 16, 'type': 'Getools.Lib.Game.Asset.Setup.Pad', 'display': 'Pad' },
             { "re": new RegExp("svg-room-([0-9]+)"), 'id': 18, 'type': 'Getools.Lib.Game.Asset.Bg.Room', 'display': 'Room' },
         ];
 
