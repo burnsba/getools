@@ -36,6 +36,10 @@
             overscroll-behavior: none;
         }
 
+        .ul {
+            text-decoration: underline;
+        }
+
         .big, .big > * {
             font-size: 32px;
         }
@@ -73,9 +77,23 @@
 
         .float-control-row {
             margin: 8px;
+            display: flex;
         }
 
-        .float-control-row input {
+        .ann-state-disable {
+            opacity: 0.5;
+        }
+
+        .m8 {
+            margin: 8px;
+        }
+
+        .vstack {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ctl-button {
             font-size: 32px;
             padding: 6px;
         }
@@ -197,6 +215,36 @@
 
         const g_MinZoomToPan = 8.0;
 
+        let g_UseMode = 0;
+
+        const UseMode = Object.freeze({
+            Disable: Symbol("disable"),
+            Move: Symbol("move"),
+            Ruler: Symbol("ruler"),
+            Annotate: Symbol("annotate"),
+        });
+
+        /**
+         * 0: not started.
+         * 
+         * guard aim limit
+         * 10: started, ghost circle to place point
+         * 11: origin placed, ghost line to place aim limit
+         * 
+         * circle
+         * 20: started, ghost circle to place point
+         * 21: origin placed, ghost line to set radius
+         * 
+         * noise
+         * 30: started, ghost circle to place point
+         * 
+         * erase
+         * 99
+         */
+        let g_AnnotateState = 0;
+
+        let g_AnnotatePrevClick = { x: 0, y: 0 };
+
         /**
         * 0: not started
         * 1: started, no previous point
@@ -306,6 +354,8 @@
         let g_DialogBox = null;
         var g_AllowDialog = true;
         var g_SelectedItem = null;
+
+        var g_SliderInit = false;
 
         function DialogCheckSimpleMode() {
             g_AllowDialog = false;
@@ -599,7 +649,7 @@
             }
 
             svg.addEventListener('mousemove', MapMouseEvent);
-            svg.addEventListener('mousemove', HandleSurfaceMove);
+            svg.addEventListener('mousemove', HandleRulerMouseMove);
             svg.addEventListener('click', HandleSvgClick);
             svg.addEventListener('touchstart', HandleSvgClick);
         }
@@ -994,12 +1044,12 @@
 
         function HandleMaybeSelectItem(e) {
             if (!g_AllowDialog) {
-                return;
+                return false;
             }
 
             let xml = document.getElementById('mmap').contentDocument;
             if (!xml) {
-                return;
+                return false;
             }
 
             const x = e.clientX;
@@ -1007,7 +1057,7 @@
 
             let items = xml.elementsFromPoint(x, y);
             if (!items || items.length < 1) {
-                return;
+                return false;
             }
 
             for (let item of items) {
@@ -1024,7 +1074,7 @@
                 }
 
                 if (node == g_SelectedItem) {
-                    return;
+                    return true;
                 }
 
                 if (node.dataset.display === 'Guard'
@@ -1034,9 +1084,192 @@
                     DialogSelectItem(node);
                     g_SelectedItem = node;
                     node.classList.add("selected");
-                    return;
+                    return true;
                 }
             }
+
+            return false;
+        }
+
+        // entry for click in annotation node.
+        function HandleMaybeClickAnnotation(e) {
+            if (g_AnnotateState == 0) {
+                return false;
+            } else if (g_AnnotateState == 10 || g_AnnotateState == 11) {
+                return HandleAnnotateClickGuardAimLimit(e);
+            } else if (g_AnnotateState == 20 || g_AnnotateState == 21) {
+                return HandleAnnotateClickCircle(e);
+            } else if (g_AnnotateState == 30) {
+                return HandleAnnotateClickNoise(e);
+            } else if (g_AnnotateState == 99) {
+                return HandleAnnotateClickErase(e);
+            } else {
+                return false;
+            }
+        }
+
+        function HandleAnnotateClickGuardAimLimit(e) {
+
+            let mouse = MouseToScaledCoord(e);
+
+            if (g_AnnotateState == 10) {
+                // currently ghost button cursor, this click event needs to add the origin point
+                // and add ghost line
+
+                g_AnnotatePrevClick = mouse;
+
+                g_AnnotateState = 11;
+                return true;
+            } else if (g_AnnotateState == 11) {
+                // currently in ghost line mode, need to remove ghost line, remove origin point,
+                // and place aim limit with correct rotation.
+
+                let angle = Math.atan2(g_AnnotatePrevClick.y - mouse.y, mouse.x - g_AnnotatePrevClick.x);
+                DrawGuardAimLimit({ x: g_AnnotatePrevClick.x, y: g_AnnotatePrevClick.y, angle: angle });
+
+                ResetAnnotateState();
+                return true;
+            }
+        }
+
+        function HandleAnnotateClickCircle(e) {
+            ResetAnnotateState();
+            return true;
+        }
+
+        function HandleAnnotateClickNoise(e) {
+            ResetAnnotateState();
+            return true;
+        }
+
+        function HandleAnnotateClickErase(e) {
+
+            let xml = document.getElementById('mmap').contentDocument;
+            if (!xml) {
+                return false;
+            }
+
+            const x = e.clientX;
+            const y = e.clientY;
+
+            let items = xml.elementsFromPoint(x, y);
+            if (!items || items.length < 1) {
+                return false;
+            }
+
+            for (let item of items) {
+                let node = item;
+                if (!item.classList.contains('logical-annotation')) {
+                    node = item.closest('.logical-annotation');
+                    if (!node || node.tagName == "svg") {
+                        continue;
+                    }
+
+                    node.remove();
+                    ResetAnnotateState();
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function HandleButtonAimLimit(e) {
+            if (g_UseMode != UseMode.Annotate) {
+                return;
+            }
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            if (g_AnnotateState != 0) {
+                return;
+            }
+
+            g_AnnotateState = 10;
+            UiAnnotateDisableOtherButtons(e.target.closest('[onclick]'));
+        }
+        function HandleButtonCircle(e) {
+            if (g_UseMode != UseMode.Annotate) {
+                return;
+            }
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            if (g_AnnotateState != 0) {
+                return;
+            }
+
+            g_AnnotateState = 20;
+            UiAnnotateDisableOtherButtons(e.target.closest('[onclick]'));
+        }
+
+        function HandleButtonErase1(e) {
+            if (g_UseMode != UseMode.Annotate) {
+                return;
+            }
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            if (g_AnnotateState != 0) {
+                return;
+            }
+
+            g_AnnotateState = 99;
+            UiAnnotateDisableOtherButtons(e.target.closest('[onclick]'));
+        }
+
+        function HandleButtonEraseAll() {
+            if (g_UseMode != UseMode.Annotate) {
+                return;
+            }
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            if (g_AnnotateState != 0) {
+                return;
+            }
+        }
+
+        function HandleButtonNoise(e) {
+            if (g_UseMode != UseMode.Annotate) {
+                return;
+            }
+            if (!g_ZoomerLoaded) {
+                return;
+            }
+            if (g_AnnotateState != 0) {
+                return;
+            }
+
+            g_AnnotateState = 30;
+            UiAnnotateDisableOtherButtons(e.target.closest('[onclick]'));
+        }
+
+        function ResetAnnotateState() {
+            g_AnnotateState = 0;
+
+            Array.from(document.getElementById('control-buttons-annotate').querySelectorAll('button')).forEach(x => {
+                x.classList.remove("ann-state-disable");
+            });
+            Array.from(document.getElementById('control-buttons-annotate').querySelectorAll('input[type="button"]')).forEach(x => {
+                x.classList.remove("ann-state-disable");
+            });
+        }
+
+        function UiAnnotateDisableOtherButtons(self) {
+            Array.from(document.getElementById('control-buttons-annotate').querySelectorAll('button')).forEach(x => {
+                if (x == self) {
+                    return;
+                }
+                x.classList.add("ann-state-disable");
+            });
+            Array.from(document.getElementById('control-buttons-annotate').querySelectorAll('input[type="button"]')).forEach(x => {
+                if (x == self) {
+                    return;
+                }
+                x.classList.add("ann-state-disable");
+            });
         }
 
         function SpzSelectAndPanToSelectedItem() {
@@ -1230,8 +1463,6 @@
             dnode.innerHTML = "";
         }
 
-        var g_SliderInit = false;
-
         function RebuildSlider() {
 
             let slider = document.getElementById('slider');
@@ -1352,6 +1583,25 @@
                 return;
             }
 
+            let x = 1.0;
+            let y = 1.0;
+
+            //console.log(`mouse: ${e.clientX}, ${e.clientY}`);
+
+            let p = MouseToScaledCoord(e);
+            x = p.x;
+            y = p.y;
+
+            x = FloatToString(x, 3);
+            y = FloatToString(y, 3);
+
+            let mouseover_log = `pos: ${x}, ${y}`;
+
+            document.getElementById('status-mouse-coord').innerHTML = mouseover_log;
+        }
+
+        function MouseToScaledCoord(e) {
+
             let svg = GetSvg();
             if (!svg) {
                 return;
@@ -1361,27 +1611,17 @@
                 return;
             }
 
-            let spz = svgPanZoom(document.getElementById('mmap'));
-            let pan = spz.getPan();
-
-            let x = 1.0;
-            let y = 1.0;
-
-            //console.log(`mouse: ${e.clientX}, ${e.clientY}`);
-
             g_SvgPoint.x = e.clientX;
             g_SvgPoint.y = e.clientY;
             var svgpoint = g_SvgPoint.matrixTransform(svg.getScreenCTM().inverse());
 
-            x = (svgpoint.x - pan.x) / spz.getSizes().realZoom;
-            y = (svgpoint.y - pan.y) / spz.getSizes().realZoom;
+            let spz = svgPanZoom(document.getElementById('mmap'));
+            let pan = spz.getPan();
 
-            x = FloatToString(x, 3);
-            y = FloatToString(y, 3);
+            let x = (svgpoint.x - pan.x) / spz.getSizes().realZoom;
+            let y = (svgpoint.y - pan.y) / spz.getSizes().realZoom;
 
-            let mouseover_log = `pos: ${x}, ${y}`;
-
-            document.getElementById('status-mouse-coord').innerHTML = mouseover_log;
+            return { x: x, y: y };
         }
 
         function EnsureNodeTypedef(node) {
@@ -1420,7 +1660,11 @@
 
             let mouseover_log = GetNodeLogText(node);
 
-            document.getElementById('status-mouse-item').innerHTML = mouseover_log;
+            if (g_UseMode == UseMode.Move) {
+                document.getElementById('status-mouse-item').innerHTML = mouseover_log;
+            } else if (g_UseMode == UseMode.Annotate) {
+                document.getElementById('status-mouse-annotate').innerHTML = mouseover_log;
+            }
         }
 
         // Assumes EnsureNodeTypedef was called prior to this function.
@@ -1537,34 +1781,94 @@
             return svg[0];
         }
 
-        function ToggleControlMode(mode) {
+        function SetControlMode(mode) {
 
-            if (mode === 'ruler') {
+            if (!(typeof mode === 'symbol')) {
+                return;
+            }
+
+            g_UseMode = mode;
+
+            UpdateUiForControlMode();
+        }
+
+        function UpdateUiForControlMode() {
+            let btn = null;
+
+            if (g_UseMode == UseMode.Ruler) {
                 document.getElementById('control-buttons-ruler').style.display = '';
                 document.getElementById('control-buttons-move').style.display = 'none';
+                document.getElementById('control-buttons-annotate').style.display = 'none';
 
                 document.getElementById('status-ruler-dist').style.display = '';
                 document.getElementById('status-mouse-item').style.display = 'none';
+                document.getElementById('status-mouse-annotate').style.display = 'none';
 
-                document.getElementById('mode-control-ruler').getElementsByTagName('button')[0].disabled = true;
-                document.getElementById('mode-control-move').getElementsByTagName('button')[0].disabled = false;
-            } else if (mode === 'move') {
+                btn = document.getElementById('mode-control-ruler').getElementsByTagName('button')[0];
+                btn.style.opacity = 0.3;
+                btn.disabled = true;
+
+                btn = document.getElementById('mode-control-move').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+                btn = document.getElementById('mode-control-annotate').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+            } else if (g_UseMode == UseMode.Move) {
                 document.getElementById('control-buttons-ruler').style.display = 'none';
                 document.getElementById('control-buttons-move').style.display = '';
+                document.getElementById('control-buttons-annotate').style.display = 'none';
 
                 document.getElementById('status-ruler-dist').style.display = 'none';
                 document.getElementById('status-mouse-item').style.display = '';
+                document.getElementById('status-mouse-annotate').style.display = 'none';
 
-                document.getElementById('mode-control-ruler').getElementsByTagName('button')[0].disabled = false;
-                document.getElementById('mode-control-move').getElementsByTagName('button')[0].disabled = true;
+                btn = document.getElementById('mode-control-ruler').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+                btn = document.getElementById('mode-control-move').getElementsByTagName('button')[0];
+                btn.style.opacity = 0.3;
+                btn.disabled = true;
+
+                btn = document.getElementById('mode-control-annotate').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+            } else if (g_UseMode == UseMode.Annotate) {
+                document.getElementById('control-buttons-ruler').style.display = 'none';
+                document.getElementById('control-buttons-move').style.display = 'none';
+                document.getElementById('control-buttons-annotate').style.display = '';
+
+                document.getElementById('status-ruler-dist').style.display = 'none';
+                document.getElementById('status-mouse-item').style.display = 'none';
+                document.getElementById('status-mouse-annotate').style.display = '';
+
+                btn = document.getElementById('mode-control-ruler').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+                btn = document.getElementById('mode-control-move').getElementsByTagName('button')[0];
+                btn.style.opacity = 1;
+                btn.disabled = false;
+
+                btn = document.getElementById('mode-control-annotate').getElementsByTagName('button')[0];
+                btn.style.opacity = 0.3;
+                btn.disabled = true;
 
             }
         }
 
         /*** ruler code ****/
 
-        function HandleSurfaceMove(e) {
+        function HandleRulerMouseMove(e) {
             if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (g_UseMode != UseMode.Ruler) {
                 return;
             }
 
@@ -1583,12 +1887,18 @@
 
         function HandleSvgClick(e) {
 
-            if (g_RulerDropMode == 0) {
+            if (g_UseMode == UseMode.Move) {
                 if (g_AllowDialog) {
                     HandleMaybeSelectItem(e);
                 }
-            } else {
+            } else if (g_UseMode == UseMode.Ruler) {
                 HandleRulerClick(e);
+            } else if (g_UseMode == UseMode.Annotate) {
+                if (!HandleMaybeClickAnnotation(e)) {
+                    if (g_AllowDialog) {
+                        HandleMaybeSelectItem(e);
+                    }
+                }
             }
         }
 
@@ -1634,12 +1944,10 @@
                 spz.disablePan();
                 spz.disableZoom();
 
-                RemoveAllUserLineNodes();
+                RemoveAllUserRulerNodes();
 
                 g_TotalDistance = 0;
                 g_RulerDropMode = 1;
-
-                UiResetSurface();
 
                 RulerUpdateStatusBar(0, null);
             }
@@ -1687,9 +1995,7 @@
             UiHideFakeMarkers();
             RulerUpdateStatusBar(0, null);
         }
-        function UiResetSurface() {
-            // previously set cursor to crosshair here
-        }
+
         function UiHideFakeMarkers() {
             RemoveFakeDot();
             RemoveFakeLine();
@@ -1922,7 +2228,7 @@
             results.r = r;
             return results;
         }
-        function RemoveAllUserLineNodes() {
+        function RemoveAllUserRulerNodes() {
             let svg = GetSvg();
             if (!svg) {
                 return;
@@ -1970,6 +2276,105 @@
                 html += ` (to ${FloatToString(hoverDist, 3)})`;
             }
             document.getElementById('status-ruler-dist').innerHTML = html;
+        }
+
+        //
+
+        function EnsureAnnotationContainer() {
+            let svg = GetSvg();
+            if (!svg) {
+                return null;
+            }
+
+            let svgSpz = svg.getElementsByClassName('svg-pan-zoom_viewport');
+            if (!svgSpz || svgSpz.length < 1) {
+                return null;
+            }
+
+            svgSpz = svgSpz[0];
+
+            let annotationContainer = svgSpz.getElementsByClassName('annotation-container');
+
+            if (!annotationContainer || annotationContainer.length < 1) {
+                annotationContainer = document.createElementNS(svgns, 'g');
+                annotationContainer.classList.add('annotation-container');
+                svgSpz.appendChild(annotationContainer);
+            } else {
+                annotationContainer = annotationContainer[0];
+            }
+
+            return annotationContainer;
+        }
+
+        function BuildPieSlice(settings) {
+            /*** https://www.codedrome.com/drawing-arcs-pie-slices-with-svg/ */
+            let d = "";
+
+            const firstCircumferenceX = settings.centreX + settings.radius * Math.cos(settings.startAngleRadians);
+            const firstCircumferenceY = settings.centreY + settings.radius * Math.sin(settings.startAngleRadians);
+            const secondCircumferenceX = settings.centreX + settings.radius * Math.cos(settings.startAngleRadians + settings.sweepAngleRadians);
+            const secondCircumferenceY = settings.centreY + settings.radius * Math.sin(settings.startAngleRadians + settings.sweepAngleRadians);
+
+            // move to centre
+            d += "M" + settings.centreX + "," + settings.centreY + " ";
+            // line to first edge
+            d += "L" + firstCircumferenceX + "," + firstCircumferenceY + " ";
+            // arc
+            // Radius X, Radius Y, X Axis Rotation, Large Arc Flag, Sweep Flag, End X, End Y
+            d += "A" + settings.radius + "," + settings.radius + " 0 0,1 " + secondCircumferenceX + "," + secondCircumferenceY + " ";
+            // close path
+            d += "Z";
+
+            const arc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+            arc.setAttributeNS(null, "d", d);
+            arc.setAttributeNS(null, "fill", settings.fillColour);
+            arc.setAttributeNS(null, "style", "stroke: #000000; stroke-width: 4px;");
+
+            return arc;
+        }
+
+        function DrawGuardAimLimit(settings) {
+
+            let ac = EnsureAnnotationContainer();
+
+            let x = settings.x;
+            let y = settings.y;
+
+            const gnode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            gnode.classList.add("logical-annotation");
+
+            let deg = settings.angle * 180 / Math.PI;
+
+            gnode.setAttributeNS(null, "style", `transform-origin: ${x}px ${y}px; transform: rotate(${deg}deg);`);
+
+            gnode.dataset.scX = x;
+            gnode.dataset.scY = y;
+
+            let rad = 0;
+            let arc = null;
+
+            rad = Math.PI * 167.5 / 180;
+            arc = BuildPieSlice({ centreX: x, centreY: y, radius: 2400, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 255, 0, 0.3)" });
+            gnode.appendChild(arc);
+
+            rad = Math.PI * 83.5 / 180;
+            arc = BuildPieSlice({ centreX: x, centreY: y, radius: 1600, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 200, 0, 0.3)" });
+            gnode.appendChild(arc);
+
+            rad = Math.PI * 42.0 / 180;
+            arc = BuildPieSlice({ centreX: x, centreY: y, radius: 800, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 165, 0, 0.3)" });
+            gnode.appendChild(arc);
+
+            rad = Math.PI * 21.0 / 180;
+            arc = BuildPieSlice({ centreX: x, centreY: y, radius: 400, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 115, 0, 0.3)" });
+            gnode.appendChild(arc);
+
+            rad = Math.PI * 12.5 / 180;
+            arc = BuildPieSlice({ centreX: x, centreY: y, radius: 200, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 75, 0, 0.3)" });
+            gnode.appendChild(arc);
+
+            ac.appendChild(gnode);
         }
 
     </script>
@@ -2191,26 +2596,88 @@
                 <div id="mode-controls">
 
                     <div>
+                        <div id="mode-control-annotate" style="display: inline-block;">
+                            <button onclick="SetControlMode(UseMode.Annotate);"><img src="img/pencil.png" title="annotate"/></button>
+                        </div>
                         <div id="mode-control-ruler" style="display: inline-block;">
-                            <button onclick="ToggleControlMode('ruler');"><img src="img/ruler.png" /></button>
+                            <button onclick="SetControlMode(UseMode.Ruler);"><img src="img/ruler.png" title="measure"/></button>
                         </div>
                         <div id="mode-control-move" style="display: inline-block;">
-                            <button onclick="ToggleControlMode('move');" disabled><img src="img/move.png" /></button>
+                            <button onclick="SetControlMode(UseMode.Move);" disabled><img src="img/move.png" title="move"/></button>
                         </div>
                     </div>
 
                     <div>
+                        <div id="control-buttons-annotate" class="mode-control-panel" style="display: none;">
+                            <div class="float-control-row">
+                                <button class="m8" onclick="HandleButtonAimLimit(event);"><img src="img/aimlimit.png" title="guard aim limit"></button>
+                                <button class="m8" onclick="HandleButtonCircle(event);"><img src="img/circle.png" title="circle"></button>
+                                <div class="vstack m8" style="justify-content: center;">
+                                    <input type="button" onclick="HandleButtonErase1(event);" value="erase x1">
+                                    <div style="min-height: 8px;"></div>
+                                    <input type="button" onclick="HandleButtonEraseAll(event);" value="erase all">
+                                </div>
+                            </div>
+                            <div class="float-control-row">
+                                <div class="m8" style="display: flex; flex-direction: column; border: 1px solid #cccccc; padding: 8px; background-color: #ffffff;">
+                                    <div>
+                                        <span class="ul">noise</span>
+                                    </div>
+                                    <div>
+                                        <span>guard hearing</span>
+                                        <input type="number" min="1" max="1000" value="1000">
+                                        <select>
+                                            <option value="1" data-min="0" data-max="1" data-step="1">Unarmed</option>
+                                            <option value="1" data-min="0" data-max="1" data-step="1">Hunting Knife</option>
+                                            <option value="1" data-min="0" data-max="1" data-step="1">Throwing Knife</option>
+                                            <option value="12" data-min="1" data-max="12" data-step="2">PP7</option>
+                                            <option value="5" data-min="0" data-max="5" data-step="1">PP7 (Silenced)</option>
+                                            <option value="16" data-min="2" data-max="16" data-step="3">DD44</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">Klobb</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">KF7 Soviet</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">ZMG (9mm)</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">D5k</option>
+                                            <option value="7" data-min="0" data-max="7" data-step="1.2">D5k (Silenced)</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">Phantom</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">Ar33</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">RC-P90</option>
+                                            <option value="25" data-min="2" data-max="25" data-step="4">Shotgun</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="3">Auto Shotgun</option>
+                                            <option value="7" data-min="0" data-max="7" data-step="1.2">Sniper Rifle</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="3">Cougar Magnum</option>
+                                            <option value="9" data-min="1" data-max="9" data-step="1.5">Golden Gun</option>
+                                            <option value="12" data-min="1" data-max="12" data-step="2">Silver PP7</option>
+                                            <option value="12" data-min="1" data-max="12" data-step="2">Gold PP7</option>
+                                            <option value="16" data-min="2" data-max="16" data-step="2">Laser</option>
+                                            <option value="4" data-min="1" data-max="4" data-step="0.2">Watch Laser</option>
+                                            <option value="20" data-min="2" data-max="20" data-step="2">Grenade Launcher</option>
+                                            <option value="25" data-min="2" data-max="25" data-step="10">Rocket Launcher</option>
+                                            <option value="2" data-min="0" data-max="2" data-step="2">Grenade</option>
+                                            <option value="2" data-min="0" data-max="2" data-step="2">Timed Mine</option>
+                                            <option value="2" data-min="0" data-max="2" data-step="2">Proximity Mine</option>
+                                            <option value="2" data-min="0" data-max="2" data-step="2">Remote Mine</option>
+                                            <option value="0" data-min="0" data-max="0" data-step="0">Detonator</option>
+                                            <option value="10" data-min="2" data-max="10" data-step="2">Taser</option>
+                                            <option value="25" data-min="2" data-max="25" data-step="10">Tank</option>
+                                        </select>
+                                        <input type="button" onclick="HandleButtonNoise(event);" value="add" />
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+
                         <div id="control-buttons-ruler" class="mode-control-panel" style="display: none;">
-                            <div class="float-control-row"><input type="button" value="Start" onclick="HandleButtonStart();" /></div>
-                            <div class="float-control-row"><input type="button" value="Stop" onclick="HandleButtonStop();" /></div>
-                            <div class="float-control-row"><input type="button" value="Continue" onclick="HandleButtonContinue();" /></div>
-                            <div class="float-control-row"><input type="button" value="Clear" onclick="HandleButtonClear();" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" value="Start" onclick="HandleButtonStart();" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" value="Stop" onclick="HandleButtonStop();" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" value="Continue" onclick="HandleButtonContinue();" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" value="Clear" onclick="HandleButtonClear();" /></div>
                         </div>
 
                         <div id="control-buttons-move" class="mode-control-panel">
-                            <div class="float-control-row"><input type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
-                            <div class="float-control-row"><input type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
-                            <div class="float-control-row"><input type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
+                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
                         </div>
                     </div>
                 </div>
@@ -2221,6 +2688,7 @@
                 <div id="status-mouse-coord"></div>
                 <div id="status-ruler-dist" style="display: none;"></div>
                 <div id="status-mouse-item"></div>
+                <div id="status-mouse-annotate"></div>
             </div>
         </div>
     </div>
@@ -2245,13 +2713,19 @@
     </div>
 
     <script>
-        EnsureDialog();
+        document.addEventListener("DOMContentLoaded", function () {
+            g_UseMode = UseMode.Move;
+            UpdateUiForControlMode();
 
-        document.getElementById('mmap').addEventListener('load', function () {
-            UpdateControlPanel();
+            EnsureDialog();
+
+            document.getElementById('mmap').addEventListener('load', function () {
+                UpdateControlPanel();
+            });
+
+            SetInitialControlValues();
         });
 
-        SetInitialControlValues();
     </script>
 </body>
 </html>
