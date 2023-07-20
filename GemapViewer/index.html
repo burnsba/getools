@@ -178,6 +178,7 @@
         #column-left-head {
             height: 152px;
             overflow: hidden;
+            border: 1px solid #cccccc;
         }
 
         #column-left-body {
@@ -524,6 +525,8 @@
             InjectDocumentStyle();
             BuildPropList();
             BuildPatrolList();
+            BuildPadsList();
+            BuildGuardsList();
             BuildAiScriptsList();
             InjectEventHandlers();
             ApplyLayerFilter();
@@ -767,27 +770,73 @@
             container.innerHTML = '';
 
             for (const node of aiNodes) {
-                let div = document.createElement('div');
-                div.classList.add("s-row");
-
-                let input = document.createElement('input');
-
                 let rem = node.id.match(/^svg-ai-([0-9]+)$/);
                 if (!rem || rem.length < 2) {
                     continue;
                 }
+
                 let id = parseInt(rem[1]);
-                input.value = `ai 0x${id.toString(16)}`;
 
-                input.setAttribute('type', 'button');
+                let option = document.createElement('option');
+                option.dataset.aiId = id;
+                option.dataset.aiNodeId = node.id;
+                option.textContent = `ai 0x${id.toString(16)}`;
 
-                input.addEventListener('click', HandleAiListClick);
-                input.dataset.aiId = id;
-                input.dataset.aiNodeId = node.id;
+                container.appendChild(option);
+            }
+        }
 
-                div.appendChild(input);
+        function BuildGuardsList() {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
 
-                container.appendChild(div);
+            let aiNodes = [... new Set(Array.from(svg.querySelectorAll('#svg-setup-chr-layer > g')))];
+            let container = document.getElementById('list-guards');
+
+            container.innerHTML = '';
+
+            for (const node of aiNodes) {
+                let rem = node.id.match(/^svg-setup-chr-([0-9]+)$/);
+                if (!rem || rem.length < 2) {
+                    continue;
+                }
+
+                let id = parseInt(rem[1]);
+
+                let option = document.createElement('option');
+                option.dataset.xChrId = id;
+                option.textContent = `guard 0x${id.toString(16)}`;
+
+                container.appendChild(option);
+            }
+        }
+
+        function BuildPadsList() {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
+
+            let aiNodes = [... new Set(Array.from(svg.querySelectorAll('#svg-pad-layer > g')))];
+            let container = document.getElementById('list-pads');
+
+            container.innerHTML = '';
+
+            for (const node of aiNodes) {
+                let rem = node.id.match(/^svg-pad-([0-9]+)$/);
+                if (!rem || rem.length < 2) {
+                    continue;
+                }
+
+                let id = parseInt(rem[1]);
+
+                let option = document.createElement('option');
+                option.dataset.xPadId = id;
+                option.textContent = `pad 0x${id.toString(16)}`;
+
+                container.appendChild(option);
             }
         }
 
@@ -908,14 +957,55 @@
             //
         }
 
-        function HandleAiListClick(e) {
+        function HandlePadListClick() {
+
+            let select = document.getElementById('list-pads');
+            if (select.selectedIndex < 0) {
+                return;
+            }
+
+            let option = select.options[select.selectedIndex];
+            if (!option) {
+                return;
+            }
+            // the select option has dataset.xPadId, so we can reuse the dialog handle
+            // with the appropriate `this`
+            HandleDialogClickPanToPad.call(option);
+        }
+
+        function HandleGuardListClick() {
+            let select = document.getElementById('list-guards');
+            if (select.selectedIndex < 0) {
+                return;
+            }
+
+            let option = select.options[select.selectedIndex];
+            if (!option) {
+                return;
+            }
+            // the select option has dataset.xChrId, so we can reuse the dialog handle
+            // with the appropriate `this`
+            HandleDialogClickPanToChr.call(option);
+        }
+
+        function HandleAiListClick() {
             if (!g_AllowDialog) {
                 return;
             }
 
             EnsureDialog();
 
-            let aiId = parseInt(e.target.dataset.aiId);
+            let select = document.getElementById('list-ai-scripts');
+            if (select.selectedIndex < 0) {
+                return;
+            }
+
+            let option = select.options[select.selectedIndex];
+            if (!option) {
+                return;
+            }
+
+            let aiId = parseInt(option.dataset.aiId);
 
             DialogLoadAiScriptContent(aiId);
             DialogSetTitlebar(`ai 0x${aiId.toString(16)}`);
@@ -2735,9 +2825,26 @@
 
             <div class="col-left-sep"></div>
 
+            <div id="pads-panel">
+                <div class="big">Pads</div>
+                <select id="list-pads"></select>
+                <input type="button" onclick="HandlePadListClick();" value="goto" />
+            </div>
+
+            <div class="col-left-sep"></div>
+
+            <div id="guards-panel">
+                <div class="big">Guards</div>
+                <select id="list-guards"></select>
+                <input type="button" onclick="HandleGuardListClick();" value="goto" />
+            </div>
+
+            <div class="col-left-sep"></div>
+
             <div id="ai-scripts-panel">
                 <div class="big">AI Scripts</div>
-                <div id="list-ai-scripts"></div>
+                <select id="list-ai-scripts"></select>
+                <input type="button" onclick="HandleAiListClick();" value="show" />
             </div>
 
             <div class="col-left-sep"></div>
