@@ -243,7 +243,7 @@
          */
         let g_AnnotateState = 0;
 
-        let g_AnnotatePrevClick = { x: 0, y: 0 };
+        let g_AnnotatePrevPoint = { x: 0, y: 0 };
 
         /**
         * 0: not started
@@ -253,7 +253,7 @@
         let g_RulerDropMode = 0;
         let g_LastRulerDropMode = 0;
         // ruler point
-        let g_PreviousPoint = { "x": 0, "y": 0 };
+        let g_RulerPrevPoint = { "x": 0, "y": 0 };
         // ruler
         let g_TotalDistance = 0;
         let g_PxToMeterFactor = 3;
@@ -532,6 +532,9 @@
             FixMapDisplayStuff();
 
             SetSvgPoint();
+
+            // make sure control buttons are no longer disabled.
+            UiUpdateRulerControlButtons();
         }
 
         function ResetAndHideDialog() {
@@ -649,7 +652,6 @@
             }
 
             svg.addEventListener('mousemove', MapMouseEvent);
-            svg.addEventListener('mousemove', HandleRulerMouseMove);
             svg.addEventListener('click', HandleSvgClick);
             svg.addEventListener('touchstart', HandleSvgClick);
         }
@@ -1116,7 +1118,7 @@
                 // currently ghost button cursor, this click event needs to add the origin point
                 // and add ghost line
 
-                g_AnnotatePrevClick = mouse;
+                g_AnnotatePrevPoint = mouse;
 
                 g_AnnotateState = 11;
                 return true;
@@ -1124,8 +1126,8 @@
                 // currently in ghost line mode, need to remove ghost line, remove origin point,
                 // and place aim limit with correct rotation.
 
-                let angle = Math.atan2(g_AnnotatePrevClick.y - mouse.y, mouse.x - g_AnnotatePrevClick.x);
-                DrawGuardAimLimit({ x: g_AnnotatePrevClick.x, y: g_AnnotatePrevClick.y, angle: angle });
+                let angle = Math.atan2(mouse.y - g_AnnotatePrevPoint.y, mouse.x - g_AnnotatePrevPoint.x);
+                DrawGuardAimLimit({ x: g_AnnotatePrevPoint.x, y: g_AnnotatePrevPoint.y, angle: angle });
 
                 ResetAnnotateState();
                 return true;
@@ -1229,6 +1231,8 @@
             if (g_AnnotateState != 0) {
                 return;
             }
+
+            SvgNodeEmpty('annotation-container');
         }
 
         function HandleButtonNoise(e) {
@@ -1255,6 +1259,8 @@
             Array.from(document.getElementById('control-buttons-annotate').querySelectorAll('input[type="button"]')).forEach(x => {
                 x.classList.remove("ann-state-disable");
             });
+
+            RemoveAllAnnotationStateNodes();
         }
 
         function UiAnnotateDisableOtherButtons(self) {
@@ -1545,7 +1551,30 @@
                 return;
             }
 
+            // always show mouse position.
             LogMouseCoord(e);
+
+            // Draw cursor ghost dot if required
+            UiSetFakeMarkerToMouseEvent(e);
+
+            // Draw fake line to cursor if required.
+            let minfo = UiDrawFakeLineToMouseEvent(e);
+
+            if (g_UseMode == UseMode.Ruler) {
+
+                if (g_RulerDropMode == 2) {
+                    RulerUpdateStatusBar(g_TotalDistance, g_TotalDistance + minfo.r);
+                }
+
+                return;
+            }
+
+            if (g_UseMode == UseMode.Move
+                || g_UseMode == UseMode.Annotate) {
+                // continue and log the item under the mouse;
+            } else {
+                return;
+            }
 
             const x = e.clientX;
             const y = e.clientY;
@@ -1857,33 +1886,15 @@
                 btn = document.getElementById('mode-control-annotate').getElementsByTagName('button')[0];
                 btn.style.opacity = 0.3;
                 btn.disabled = true;
-
+            } else {
+                return;
             }
+
+            HandleButtonStop();
+            ResetAnnotateState();
         }
 
         /*** ruler code ****/
-
-        function HandleRulerMouseMove(e) {
-            if (!g_ZoomerLoaded) {
-                return;
-            }
-
-            if (g_UseMode != UseMode.Ruler) {
-                return;
-            }
-
-            if (g_RulerDropMode == 0) {
-                return;
-            }
-
-            UiSetFakeMarkerToMouseEvent(e);
-
-            if (g_RulerDropMode == 2) {
-                let minfo = UiDrawFakeLineToMouseEvent(e);
-
-                RulerUpdateStatusBar(g_TotalDistance, g_TotalDistance + minfo.r);
-            }
-        }
 
         function HandleSvgClick(e) {
 
@@ -1917,15 +1928,15 @@
 
             if (g_RulerDropMode == 2) {
 
-                let minfo = UiAppendLineToMouseEvent(e);
+                let minfo = UiAppendLineToMouseEvent(e, { parentId: 'user-ruler-container', lineClass: 'user-line', prev: g_RulerPrevPoint });
 
                 g_TotalDistance += minfo.r;
 
                 RulerUpdateStatusBar(g_TotalDistance, null);
             }
 
-            g_PreviousPoint.x = coords.translated.x;
-            g_PreviousPoint.y = coords.translated.y;
+            g_RulerPrevPoint.x = coords.translated.x;
+            g_RulerPrevPoint.y = coords.translated.y;
 
             if (g_RulerDropMode == 1) {
                 g_RulerDropMode = 2;
@@ -1945,11 +1956,14 @@
                 spz.disableZoom();
 
                 RemoveAllUserRulerNodes();
+                g_LastRulerDropMode = 0;
 
                 g_TotalDistance = 0;
                 g_RulerDropMode = 1;
 
                 RulerUpdateStatusBar(0, null);
+
+                UiUpdateRulerControlButtons();
             }
         }
         function HandleButtonStop() {
@@ -1964,13 +1978,29 @@
             g_LastRulerDropMode = g_RulerDropMode;
             if (g_RulerDropMode > 0) {
                 g_RulerDropMode = 0;
-                UiHideFakeMarkers();
+
+                parent = EnsureSvgRootContainer('user-ruler-container');
+                if (!parent) {
+                    return null;
+                }
+
+                UiHideFakeMarkers({ parent: parent });
             }
 
             RulerUpdateStatusBar(g_TotalDistance, null);
+
+            UiUpdateRulerControlButtons();
         }
         function HandleButtonContinue() {
             if (!g_ZoomerLoaded) {
+                return;
+            }
+
+            if (g_LastRulerDropMode == 2) {
+                g_RulerDropMode = 2;
+            } else if (g_LastRulerDropMode == 1) {
+                g_RulerDropMode = 1;
+            } else {
                 return;
             }
 
@@ -1978,11 +2008,7 @@
             spz.disablePan();
             spz.disableZoom();
 
-            if (g_LastRulerDropMode == 2) {
-                g_RulerDropMode = 2;
-            } else if (g_LastRulerDropMode == 1) {
-                g_RulerDropMode = 1;
-            }
+            UiUpdateRulerControlButtons();
         }
         function HandleButtonClear() {
             if (!g_ZoomerLoaded) {
@@ -1991,16 +2017,59 @@
 
             g_TotalDistance = 0;
             g_RulerDropMode = 0;
-            RemoveAllUserLineNodes();
-            UiHideFakeMarkers();
+            g_LastRulerDropMode = 0;
+            RemoveAllUserRulerNodes();
+            UiUpdateRulerControlButtons();
+
+            parent = EnsureSvgRootContainer('user-ruler-container');
+            if (!parent) {
+                return null;
+            }
+
+            UiHideFakeMarkers({ parent: parent });
             RulerUpdateStatusBar(0, null);
         }
 
-        function UiHideFakeMarkers() {
-            RemoveFakeDot();
-            RemoveFakeLine();
+        function UiUpdateRulerControlButtons() {
+
+            let bstart = document.getElementById('ruler-btn-start');
+            let bstop = document.getElementById('ruler-btn-stop');
+            let bcontinue = document.getElementById('ruler-btn-continue');
+            let bclear = document.getElementById('ruler-btn-clear');
+
+            if (g_RulerDropMode == 0) {
+                // not started
+                bstart.removeAttribute("disabled");
+                bstart.style.opacity = 1;
+                bstop.setAttribute("disabled", "disabled");
+                bstop.style.opacity = 0.3;
+            } else {
+                // started
+                bstart.setAttribute("disabled", "disabled");
+                bstart.style.opacity = 0.3;
+                bstop.removeAttribute("disabled");
+                bstop.style.opacity = 1;
+            }
+
+            if (g_LastRulerDropMode == 0) {
+                // no previous points
+                bcontinue.setAttribute("disabled", "disabled");
+                bcontinue.style.opacity = 0.3;
+            } else {
+                bcontinue.removeAttribute("disabled");
+                bcontinue.style.opacity = 1;
+            }
+
+            bclear.removeAttribute("disabled");
+            bclear.style.opacity = 1;
         }
-        function EnsureUserRulerContainer() {
+
+        function UiHideFakeMarkers(opt) {
+            RemoveFakeDot(opt);
+            RemoveFakeLine(opt);
+        }
+
+        function EnsureSvgRootContainer(id) {
             let svg = GetSvg();
             if (!svg) {
                 return null;
@@ -2013,34 +2082,33 @@
 
             svgSpz = svgSpz[0];
 
-            let userRulerContainer = svgSpz.getElementsByClassName('user-ruler-container');
+            let items = svgSpz.querySelectorAll("#" + id);
+            let item = null;
 
-            if (!userRulerContainer || userRulerContainer.length < 1) {
-                userRulerContainer = document.createElementNS(svgns, 'g');
-                userRulerContainer.classList.add('user-ruler-container');
-                svgSpz.appendChild(userRulerContainer);
+            if (!items || items.length < 1) {
+                item = document.createElementNS(svgns, 'g');
+                item.id = id;
+                svgSpz.appendChild(item);
             } else {
-                userRulerContainer = userRulerContainer[0];
+                item = items[0];
             }
 
-            return userRulerContainer;
+            return item;
         }
 
-        function EnsureFakeDot() {
-            let userRulerContainer = EnsureUserRulerContainer();
-            if (!userRulerContainer) {
-                return null;
-            }
+        function EnsureFakeDot(opt) {
+            let parent = opt.parent;
+            let dotclass = opt.dotclass;
 
-            let fakeDot = userRulerContainer.getElementsByClassName('the-fake-dot');
+            let fakeDot = parent.getElementsByClassName('the-fake-dot');
 
             if (!fakeDot || fakeDot.length < 1) {
                 fakeDot = document.createElementNS(svgns, 'circle');
                 fakeDot.setAttributeNS(null, 'r', g_DotDiameter);
                 fakeDot.classList.add('the-fake-dot');
-                fakeDot.classList.add('user-line');
+                fakeDot.classList.add(dotclass);
                 fakeDot.setAttributeNS(null, 'style', 'fill: #00ffc3; stroke: #4580ff; stroke-width: 2px; opacity: 0.5;');
-                userRulerContainer.appendChild(fakeDot);
+                parent.appendChild(fakeDot);
             } else {
                 fakeDot = fakeDot[0];
             }
@@ -2048,13 +2116,10 @@
             return fakeDot;
         }
 
-        function RemoveFakeDot() {
-            let userRulerContainer = EnsureUserRulerContainer();
-            if (!userRulerContainer) {
-                return null;
-            }
+        function RemoveFakeDot(opt) {
+            let parent = opt.parent;
 
-            let fakeDot = userRulerContainer.getElementsByClassName('the-fake-dot');
+            let fakeDot = parent.getElementsByClassName('the-fake-dot');
 
             if (!fakeDot || fakeDot.length < 1) {
                 return;
@@ -2064,13 +2129,11 @@
             }
         }
 
-        function EnsureFakeLine() {
-            let userRulerContainer = EnsureUserRulerContainer();
-            if (!userRulerContainer) {
-                return null;
-            }
+        function EnsureFakeLine(opt) {
+            let parent = opt.parent;
+            let lineClass = opt.lineClass;
 
-            let fakeLine = userRulerContainer.getElementsByClassName('the-fake-line');
+            let fakeLine = parent.getElementsByClassName('the-fake-line');
 
             if (!fakeLine || fakeLine.length < 1) {
                 fakeLine = document.createElementNS(svgns, 'line');
@@ -2078,26 +2141,23 @@
                 fakeLine.setAttributeNS(null, 'y2', 0);
                 fakeLine.setAttributeNS(null, 'stroke-dasharray', g_RulerLineDash);
                 fakeLine.classList.add('the-fake-line');
-                fakeLine.classList.add('user-line');
+                fakeLine.classList.add(lineClass);
                 fakeLine.setAttributeNS(null, 'style', `stroke: #000000; stroke-width: ${g_RulerLineThickness}; opacity: 0.5;`);
-                userRulerContainer.appendChild(fakeLine);
+                parent.appendChild(fakeLine);
             } else {
                 fakeLine = fakeLine[0];
             }
 
-            fakeLine.setAttributeNS(null, 'x1', g_PreviousPoint.x);
-            fakeLine.setAttributeNS(null, 'y1', g_PreviousPoint.y);
+            fakeLine.setAttributeNS(null, 'x1', opt.prev.x);
+            fakeLine.setAttributeNS(null, 'y1', opt.prev.y);
 
             return fakeLine;
         }
 
-        function RemoveFakeLine() {
-            let userRulerContainer = EnsureUserRulerContainer();
-            if (!userRulerContainer) {
-                return null;
-            }
+        function RemoveFakeLine(opt) {
+            let parent = opt.parent;
 
-            let fakeLine = userRulerContainer.getElementsByClassName('the-fake-line');
+            let fakeLine = parent.getElementsByClassName('the-fake-line');
 
             if (!fakeLine || fakeLine.length < 1) {
                 return;
@@ -2133,7 +2193,7 @@
                 return;
             }
 
-            let userRulerContainer = EnsureUserRulerContainer();
+            let userRulerContainer = EnsureSvgRootContainer('user-ruler-container');
 
             let svgCoords = GetTranslatedCoordUnchecked(e);
 
@@ -2157,44 +2217,84 @@
             }
         }
 
-        function UiAppendLineToMouseEvent(e) {
+        function UiAppendLineToMouseEvent(e, opt) {
             let results = {
                 "angle": 0,
                 "r": 0
             };
 
-            let fakeLine = EnsureFakeLine();
-            if (!fakeLine) {
-                return;
+            let parent = EnsureSvgRootContainer(opt.parentId);
+            if (!parent) {
+                return null;
             }
 
-            //console.log("g_PreviousPoint at: " + g_PreviousPoint.x + ", " + g_PreviousPoint.y);
+            let fakeLine = EnsureFakeLine({ parent: parent, lineClass: opt.lineClass, prev: opt.prev });
+            if (!fakeLine) {
+                return null;
+            }
+
+            //console.log("g_RulerPrevPoint at: " + g_RulerPrevPoint.x + ", " + g_RulerPrevPoint.y);
 
             let svgCoords = GetTranslatedCoordUnchecked(e);
 
-            let xside = svgCoords.x - g_PreviousPoint.x;
-            let yside = svgCoords.y - g_PreviousPoint.y;
+            let xside = svgCoords.x - g_RulerPrevPoint.x;
+            let yside = svgCoords.y - g_RulerPrevPoint.y;
             let r = Math.sqrt(xside * xside + yside * yside);
 
-            let userRulerContainer = EnsureUserRulerContainer();
-
             let line = document.createElementNS(svgns, 'line');
-            line.setAttributeNS(null, 'x1', g_PreviousPoint.x);
-            line.setAttributeNS(null, 'y1', g_PreviousPoint.y);
+            line.setAttributeNS(null, 'x1', g_RulerPrevPoint.x);
+            line.setAttributeNS(null, 'y1', g_RulerPrevPoint.y);
             line.setAttributeNS(null, 'x2', svgCoords.x);
             line.setAttributeNS(null, 'y2', svgCoords.y);
             line.setAttributeNS(null, 'stroke-dasharray', g_RulerLineDash);
-            line.classList.add('user-line');
+            line.classList.add(opt.lineClass);
             line.setAttributeNS(null, 'style', `stroke: #000000; stroke-width: ${g_RulerLineThickness}; `);
-            userRulerContainer.appendChild(line);
+            parent.appendChild(line);
 
             results.r = r;
             return results;
         }
 
         function UiSetFakeMarkerToMouseEvent(e) {
-            let fakeDot = EnsureFakeDot();
-            if (!fakeDot) {
+
+            let parent = '';
+            let fakeDot = null;
+
+            if (g_UseMode == UseMode.Ruler) {
+                if (g_RulerDropMode == 0) {
+                    // nothing to do.
+                    return;
+                }
+
+                parent = EnsureSvgRootContainer('user-ruler-container');
+                if (!parent) {
+                    return null;
+                }
+
+                fakeDot = EnsureFakeDot({ parent: parent, dotclass: 'user-line' });
+                if (!fakeDot) {
+                    return null;
+                }
+            } else if (g_UseMode == UseMode.Annotate) {
+
+                if (g_AnnotateState == 10
+                    || g_AnnotateState == 20
+                    || g_AnnotateState == 30) {
+                    // continue, draw ghost dot on cursor
+                } else {
+                    return;
+                }
+
+                parent = EnsureSvgRootContainer('annotation-container');
+                if (!parent) {
+                    return null;
+                }
+
+                fakeDot = EnsureFakeDot({ parent: parent, dotclass: 'ann-state' });
+                if (!fakeDot) {
+                    return null;
+                }
+            } else {
                 return;
             }
 
@@ -2203,21 +2303,61 @@
             fakeDot.setAttributeNS(null, 'cx', svgCoords.x);
             fakeDot.setAttributeNS(null, 'cy', svgCoords.y);
         }
+
         function UiDrawFakeLineToMouseEvent(e) {
             let results = {
                 "angle": 0,
                 "r": 0
             };
 
-            let fakeLine = EnsureFakeLine();
-            if (!fakeLine) {
-                return;
+            let parent = null;
+            let fakeLine = null;
+            let prev = null;
+
+            if (g_UseMode == UseMode.Ruler
+                && g_RulerDropMode == 2)
+            {
+                parent = EnsureSvgRootContainer('user-ruler-container');
+                if (!parent) {
+                    return null;
+                }
+
+                prev = g_RulerPrevPoint;
+
+                fakeLine = EnsureFakeLine({ parent: parent, lineClass: 'user-line', prev: prev });
+                if (!fakeLine) {
+                    return null;
+                }
+
+            } else if (g_UseMode == UseMode.Annotate) {
+
+                if (g_AnnotateState == 11
+                    || g_AnnotateState == 21) {
+                    // continue, draw line to cursor
+                } else {
+                    return;
+                }
+
+                parent = EnsureSvgRootContainer('annotation-container');
+                if (!parent) {
+                    return null;
+                }
+
+                prev = g_AnnotatePrevPoint;
+
+                fakeLine = EnsureFakeLine({ parent: parent, lineClass: 'ann-state', prev: prev });
+                if (!fakeLine) {
+                    return null;
+                }
+            } else {
+                return null;
             }
+
 
             let svgCoords = GetTranslatedCoordUnchecked(e);
 
-            let xside = svgCoords.x - g_PreviousPoint.x;
-            let yside = svgCoords.y - g_PreviousPoint.y;
+            let xside = svgCoords.x - prev.x;
+            let yside = svgCoords.y - prev.y;
             let r = Math.sqrt(xside * xside + yside * yside);
 
             //let angle = Math.atan2(yside, xside);
@@ -2228,22 +2368,32 @@
             results.r = r;
             return results;
         }
-        function RemoveAllUserRulerNodes() {
+        function SvgNodeEmpty(id) {
             let svg = GetSvg();
             if (!svg) {
                 return;
             }
 
-            let userRulerContainer = EnsureUserRulerContainer();
+            let node = EnsureSvgRootContainer(id);
+            node.innerHTML = "";
+        }
+        function RemoveAllUserRulerNodes() {
+            SvgNodeEmpty('user-ruler-container');
+        }
+        function RemoveAllAnnotationStateNodes() {
+            let svg = GetSvg();
+            if (!svg) {
+                return;
+            }
 
-            RemoveFakeDot();
+            let userRulerContainer = EnsureSvgRootContainer('annotation-container');
 
-            let nodes = userRulerContainer.getElementsByClassName('user-line');
+            let nodes = userRulerContainer.getElementsByClassName('ann-state');
             while (nodes.length > 0) {
                 for (const n of nodes) {
                     n.remove();
                 }
-                nodes = userRulerContainer.getElementsByClassName('user-line');
+                nodes = userRulerContainer.getElementsByClassName('ann-state');
             }
         }
         function FloatToString(f, digits) {
@@ -2280,32 +2430,6 @@
 
         //
 
-        function EnsureAnnotationContainer() {
-            let svg = GetSvg();
-            if (!svg) {
-                return null;
-            }
-
-            let svgSpz = svg.getElementsByClassName('svg-pan-zoom_viewport');
-            if (!svgSpz || svgSpz.length < 1) {
-                return null;
-            }
-
-            svgSpz = svgSpz[0];
-
-            let annotationContainer = svgSpz.getElementsByClassName('annotation-container');
-
-            if (!annotationContainer || annotationContainer.length < 1) {
-                annotationContainer = document.createElementNS(svgns, 'g');
-                annotationContainer.classList.add('annotation-container');
-                svgSpz.appendChild(annotationContainer);
-            } else {
-                annotationContainer = annotationContainer[0];
-            }
-
-            return annotationContainer;
-        }
-
         function BuildPieSlice(settings) {
             /*** https://www.codedrome.com/drawing-arcs-pie-slices-with-svg/ */
             let d = "";
@@ -2336,7 +2460,16 @@
 
         function DrawGuardAimLimit(settings) {
 
-            let ac = EnsureAnnotationContainer();
+            const a1 = Math.PI * (180 - 167.5) / 180;
+            const a2 = Math.PI * (180 - 83.5) / 180;
+            const a3 = Math.PI * (180 - 42.0) / 180;
+            const a4 = Math.PI * (180 - 21.0) / 180;
+            const a5 = Math.PI * (180 - 12.5) / 180;
+
+            let parent = EnsureSvgRootContainer('annotation-container');
+            if (!parent) {
+                return null;
+            }
 
             let x = settings.x;
             let y = settings.y;
@@ -2354,27 +2487,27 @@
             let rad = 0;
             let arc = null;
 
-            rad = Math.PI * 167.5 / 180;
+            rad = a1;
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 2400, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 255, 0, 0.3)" });
             gnode.appendChild(arc);
 
-            rad = Math.PI * 83.5 / 180;
+            rad = a2;
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 1600, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 200, 0, 0.3)" });
             gnode.appendChild(arc);
 
-            rad = Math.PI * 42.0 / 180;
+            rad = a3;
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 800, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 165, 0, 0.3)" });
             gnode.appendChild(arc);
 
-            rad = Math.PI * 21.0 / 180;
+            rad = a4;
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 400, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 115, 0, 0.3)" });
             gnode.appendChild(arc);
 
-            rad = Math.PI * 12.5 / 180;
+            rad = a5;
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 200, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 75, 0, 0.3)" });
             gnode.appendChild(arc);
 
-            ac.appendChild(gnode);
+            parent.appendChild(gnode);
         }
 
     </script>
@@ -2668,10 +2801,10 @@
                         </div>
 
                         <div id="control-buttons-ruler" class="mode-control-panel" style="display: none;">
-                            <div class="float-control-row"><input class="ctl-button" type="button" value="Start" onclick="HandleButtonStart();" /></div>
-                            <div class="float-control-row"><input class="ctl-button" type="button" value="Stop" onclick="HandleButtonStop();" /></div>
-                            <div class="float-control-row"><input class="ctl-button" type="button" value="Continue" onclick="HandleButtonContinue();" /></div>
-                            <div class="float-control-row"><input class="ctl-button" type="button" value="Clear" onclick="HandleButtonClear();" /></div>
+                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-start" type="button" value="Start" onclick="HandleButtonStart();" disabled /></div>
+                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-stop" type="button" value="Stop" onclick="HandleButtonStop();" disabled/></div>
+                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-continue" type="button" value="Continue" onclick="HandleButtonContinue();" disabled/></div>
+                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-clear" type="button" value="Clear" onclick="HandleButtonClear();" disabled/></div>
                         </div>
 
                         <div id="control-buttons-move" class="mode-control-panel">
