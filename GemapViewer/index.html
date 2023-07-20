@@ -651,7 +651,7 @@
                 return;
             }
 
-            svg.addEventListener('mousemove', MapMouseEvent);
+            svg.addEventListener('mousemove', HandleMouseMove);
             svg.addEventListener('click', HandleSvgClick);
             svg.addEventListener('touchstart', HandleSvgClick);
         }
@@ -1135,8 +1135,31 @@
         }
 
         function HandleAnnotateClickCircle(e) {
-            ResetAnnotateState();
-            return true;
+            let mouse = MouseToScaledCoord(e);
+
+            if (g_AnnotateState == 20) {
+                // currently ghost button cursor, this click event needs to add the origin point
+                // and add ghost line
+
+                g_AnnotatePrevPoint = mouse;
+
+                g_AnnotateState = 21;
+                return true;
+            } else if (g_AnnotateState == 21) {
+                // currently in ghost line mode, need to remove ghost line, remove origin point,
+                // and place circle.
+
+                let svgCoords = GetTranslatedCoordUnchecked(e);
+
+                let xside = svgCoords.x - g_AnnotatePrevPoint.x;
+                let yside = svgCoords.y - g_AnnotatePrevPoint.y;
+                let r = Math.sqrt(xside * xside + yside * yside);
+
+                DrawCircle({ x: g_AnnotatePrevPoint.x, y: g_AnnotatePrevPoint.y, radius: r, fillColour: "rgba(66, 236, 245, 0.4)" });
+
+                ResetAnnotateState();
+                return true;
+            }
         }
 
         function HandleAnnotateClickNoise(e) {
@@ -1545,7 +1568,7 @@
             Array.from(xml.querySelectorAll('[data-s-min-y]:not(svg)')).filter(x => Number(x.dataset.sMinY) < lower || Number(x.dataset.sMaxY) > upper).forEach(x => x.classList.add('vertical-bound-filter'));
         }
 
-        function MapMouseEvent(e) {
+        function HandleMouseMove(e) {
             let xml = document.getElementById('mmap').contentDocument;
             if (!xml) {
                 return;
@@ -1560,11 +1583,19 @@
             // Draw fake line to cursor if required.
             let minfo = UiDrawFakeLineToMouseEvent(e);
 
+            // If this is ruler mode, with ghost line, show the mouse distance and return.
             if (g_UseMode == UseMode.Ruler) {
 
                 if (g_RulerDropMode == 2) {
                     RulerUpdateStatusBar(g_TotalDistance, g_TotalDistance + minfo.r);
                 }
+
+                return;
+            }
+
+            // If this is annotate mode, with ghost line, show radius distance and return.
+            if (g_UseMode == UseMode.Annotate && g_AnnotateState == 21) {
+                AnnotateUpdateStatusBar(minfo.r);
 
                 return;
             }
@@ -1586,7 +1617,7 @@
 
             let logStatusBar = false;
 
-            //console.log('MapMouseEvent');
+            //console.log('HandleMouseMove');
 
             for (let item of items) {
                 let node = item;
@@ -2416,9 +2447,6 @@
         }
         function RulerUpdateStatusBar(dist, hoverDist) {
             let html = '';
-            if (hoverDist === null) {
-                var a = 9;
-            }
             if (Number.isFinite(dist)) {
                 html += `dist: ${FloatToString(dist, 3)}`;
             }
@@ -2426,6 +2454,13 @@
                 html += ` (to ${FloatToString(hoverDist, 3)})`;
             }
             document.getElementById('status-ruler-dist').innerHTML = html;
+        }
+        function AnnotateUpdateStatusBar(dist) {
+            let html = '';
+            if (Number.isFinite(dist)) {
+                html += `radius: ${FloatToString(dist, 3)}`;
+            }
+            document.getElementById('status-mouse-annotate').innerHTML = html;
         }
 
         //
@@ -2507,6 +2542,26 @@
             arc = BuildPieSlice({ centreX: x, centreY: y, radius: 200, startAngleRadians: -rad / 2, sweepAngleRadians: rad, fillColour: "rgba(255, 75, 0, 0.3)" });
             gnode.appendChild(arc);
 
+            parent.appendChild(gnode);
+        }
+
+        function DrawCircle(opt) {
+            let parent = EnsureSvgRootContainer('annotation-container');
+            if (!parent) {
+                return null;
+            }
+
+            const gnode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            gnode.classList.add("logical-annotation");
+
+            const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circ.setAttributeNS(null, "cx", opt.x);
+            circ.setAttributeNS(null, "cy", opt.y);
+            circ.setAttributeNS(null, "r", opt.radius);
+            circ.setAttributeNS(null, "fill", opt.fillColour);
+            circ.setAttributeNS(null, "style", "stroke: #000000; stroke-width: 4px;");
+
+            gnode.appendChild(circ);
             parent.appendChild(gnode);
         }
 
