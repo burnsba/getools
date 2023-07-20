@@ -143,6 +143,12 @@ namespace Getools.Palantir
                 Top = _context.ScaledMin.Z,
             };
 
+            svg.SetDataAttribute("created-with-tool", "getool");
+            svg.SetDataAttribute("created-home", "https://github.com/burnsba/getools");
+            //svg.SetDataAttribute("created-by", "Ben Burns");
+            //svg.SetDataAttribute("created-on", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            //svg.SetDataAttribute("author-home", "https://tolos.me/");
+
             // Log useful attributes to output image.
             svg.SetDataAttribute("adjustx", adjustx.ToString(StandardDoubleToStringFormat));
             svg.SetDataAttribute("adjusty", adjusty.ToString(StandardDoubleToStringFormat));
