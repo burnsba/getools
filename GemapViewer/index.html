@@ -1135,12 +1135,12 @@
         }
 
         function HandleAnnotateClickCircle(e) {
-            let mouse = MouseToScaledCoord(e);
 
             if (g_AnnotateState == 20) {
                 // currently ghost button cursor, this click event needs to add the origin point
                 // and add ghost line
 
+                let mouse = MouseToScaledCoord(e);
                 g_AnnotatePrevPoint = mouse;
 
                 g_AnnotateState = 21;
@@ -1160,11 +1160,55 @@
                 ResetAnnotateState();
                 return true;
             }
+            
+            return false;
         }
 
         function HandleAnnotateClickNoise(e) {
-            ResetAnnotateState();
-            return true;
+            if (g_AnnotateState == 30) {
+
+                let svgCoords = GetTranslatedCoordUnchecked(e);
+
+                let selectNode = document.getElementById('annotate-noise-weapon');
+                if (!selectNode) {
+                    return false;
+                }
+
+                let index = selectNode.selectedIndex;
+                let node = selectNode.options[index];
+
+                if (!node) {
+                    return false;
+                }
+
+                let hearing = parseInt(document.getElementById('annotate-noise-hearing').value);
+                // decomp formula: (guard.hearing / 1000) * noise * 100.0f
+                let scale = hearing / 10;
+                if (!scale) {
+                    return false;
+                }
+
+
+                // draw min hearing distance circle.
+                let rmin = parseInt(node.dataset.min);
+                let step = parseInt(node.dataset.step);
+                let rmax = parseInt(node.dataset.max);
+                if (rmin < 1) {
+                    rmin = step;
+                }
+                // only draw one circle if min/step == max
+                if (rmax > rmin) {
+                    DrawCircle({ x: svgCoords.x, y: svgCoords.y, radius: (scale * rmin), fillColour: "rgba(255, 43, 43, 0.2)" });
+                }
+
+                // draw max hearing distance circle
+                DrawCircle({ x: svgCoords.x, y: svgCoords.y, radius: (scale * rmax), fillColour: "rgba(243, 255, 69, 0.3)" });
+
+                ResetAnnotateState();
+                return true;
+            }
+
+            return false;
         }
 
         function HandleAnnotateClickErase(e) {
@@ -2813,8 +2857,8 @@
                                     </div>
                                     <div>
                                         <span>guard hearing</span>
-                                        <input type="number" min="1" max="1000" value="1000">
-                                        <select>
+                                        <input id="annotate-noise-hearing" type="number" min="1" max="1000" value="1000">
+                                        <select id="annotate-noise-weapon">
                                             <option value="1" data-min="0" data-max="1" data-step="1">Unarmed</option>
                                             <option value="1" data-min="0" data-max="1" data-step="1">Hunting Knife</option>
                                             <option value="1" data-min="0" data-max="1" data-step="1">Throwing Knife</option>
