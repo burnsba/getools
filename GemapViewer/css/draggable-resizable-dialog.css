@@ -1,0 +1,84 @@
+/*
+ * Stylesheet for Draggable and Resizable Dialog Box
+ *
+ * Designed by ZulNs, @Gorontalo, Indonesia, 7 June 2017
+ * Extended by FrankBuchholz, Germany, 2019
+ * You can change all colors
+ * You can change some of the sizes without expecting issues, see below
+*/
+
+.dialog {
+	display: none; /* not visible by default */
+	border: 1px solid #000000; /* change allowed; Border to separate multipe dialog boxes */
+	background: #eaf9ff;
+	margin: 0;
+	position: absolute;
+	box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.5);
+}
+.dialog .wrapper {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.dialog .titlebar {
+	min-height: 34px;
+	padding: 0 8px 0 8px; /* change NOT allowed */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: move;
+	background: #39c;
+	display: flex;
+}
+.dialog .titlebar .big {
+	font-size: 32px;
+}
+.dialog .titlebar .close-button {
+	font-size: 24px;
+    padding-left: 5px;
+    padding-top: 4px;
+}
+.dialog .titletext {
+	flex-grow: 1;
+	pointer-events: none;
+}
+.dialog .content {
+	overflow: auto;
+	font-size: 1em;
+	padding-left: 1px;
+	flex-grow: 1;
+	padding: 8px;
+	border: 1px solid #cccccc;
+    background-color: #ffffea;
+}
+.dialog .buttonpane {
+	width: 100%;
+	white-space: nowrap; /* keep buttons on one line */
+	padding: 8px;
+}
+.dialog .buttonset {
+	display: flex;
+	justify-content: space-between;
+}
+.dialog button {
+	-webkit-transition: 0.25s;
+	transition: 0.25s;
+}
+.dialog button::-moz-focus-inner {
+	border: 0;
+}
+/* .dialog button.hover, */ /* Let's use standard hover */
+.dialog button:hover,
+.dialog button.active
+{
+	cursor: pointer;
+}
+.dialog>button {
+	width: 32px; /* change NOT allowed */
+	height: 32px; /* same as .dialog .titlebar height */
+	padding: 0;
+	border: 0;
+	font-size: 1.4em;
+	background: #fa0;
+	color: #fff;
+}
