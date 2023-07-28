@@ -95,6 +95,9 @@ var g_SvgStyleSheet = null;
 var g_SvgStyleRuleIndexLookup = {};
 var g_SvgStyleCurrentValues = {
     /* default/starting values */
+    'svg': {
+        'background-color': '#ffffff'
+    },
     '.gelib-stan': {
         'stroke': '#9e87a3',
         'stroke-width': 1,
@@ -272,21 +275,29 @@ function SetInitialControlValues() {
     }
 }
 
-// Injects the selected svg filename into the svg container.
-// Setting the "data" attribute here triggers the load event.
-function ChangeLevel() {
+function GetStageSelectedOption() {
     const node = document.getElementById('level-select');
     if (!node) {
-        return;
+        return null;
     }
     const options = node.options;
     if (!options) {
-        return;
+        return null;
     }
     const selectedOption = options[options.selectedIndex];
     if (!selectedOption) {
-        return;
+        return null;
     }
+
+    return selectedOption;
+}
+
+// Injects the selected svg filename into the svg container.
+// Setting the "data" attribute here triggers the load event.
+function ChangeLevel() {
+
+    let selectedOption = GetStageSelectedOption();
+    
     let filename = selectedOption.dataset['filename'];
 
     if (!filename) {
@@ -364,6 +375,7 @@ function HandleSvgLoadEvent() {
     BuildPadsList();
     BuildGuardsList();
     BuildAiScriptsList();
+    BuildRoomList();
     InjectEventHandlers();
     ApplyLayerFilter();
 
@@ -599,6 +611,40 @@ function BuildPatrolList() {
     }
 }
 
+// iterate svg, extract unique room ids, create UI checkbox input to allow disabling in left panel.
+function BuildRoomList() {
+
+    let svg = GetSvg();
+    if (!svg) {
+        return;
+    }
+
+    let sroom = new Set(Array.from(svg.querySelectorAll('[data-room-id]')).map(x => parseInt(x.getAttribute('data-room-id'))));
+    let roomIds = Array.from(sroom).sort((a, b) => a - b);
+
+    let container = document.getElementById('show-hide-room-inputs');
+
+    container.innerHTML = '';
+
+    for (const id of roomIds) {
+        let div = document.createElement('div');
+        div.classList.add("s-row");
+
+        let label = document.createElement('label');
+        let input = document.createElement('input');
+
+        label.innerText = `room ${id}`;
+        input.setAttribute('type', 'checkbox');
+        input.dataset.roomId = id;
+        input.addEventListener('change', ToggleDisableRoom);
+
+        label.appendChild(input);
+        div.appendChild(label);
+
+        container.appendChild(div);
+    }
+}
+
 // Iterate svg, extract unique ai script list for left panel.
 function BuildAiScriptsList() {
     let svg = GetSvg();
@@ -732,6 +778,61 @@ function ToggleDisablePatrol(e) {
     Array.from(xml.querySelectorAll('#' + patrolNodeId)).forEach(x => x.style.display = display_value);
 }
 
+// Event handler, hides/unhides room for the associated checkbox arg.
+function ToggleDisableRoom(e) {
+    if (!e) {
+        return;
+    }
+    let node = e.target;
+    if (!node) {
+        return;
+    }
+
+    let xml = document.getElementById('mmap').contentDocument;
+    if (!xml) {
+        return;
+    }
+
+    let roomId = node.dataset.roomId;
+    let display_value = '';
+    if (node.checked) {
+        display_value = 'none';
+    }
+
+    Array.from(xml.querySelectorAll(`[data-room-id="${roomId}"]`)).forEach(x => x.style.display = display_value);
+}
+
+function HideAllRooms() {
+    ToggleVisibilityAllRooms('hide');
+}
+function ShowAllRooms() {
+    ToggleVisibilityAllRooms('show');
+}
+// Convenience function to handle all the hide/show logic for "all props".
+function ToggleVisibilityAllRooms(mode) {
+
+    let svg = GetSvg();
+    if (!svg) {
+        return;
+    }
+
+    let display_value = '';
+    let checkvalue = false;
+    if (mode === 'hide') {
+        display_value = 'none';
+        checkvalue = true;
+    } else if (mode === 'show') {
+        // nothing to do
+    } else {
+        return;
+    }
+
+    // svg elements. [data-room-id] is always .svg-logical-item
+    Array.from(svg.querySelectorAll('[data-room-id]')).forEach(x => x.style.display = display_value);
+    // ui checkmark state
+    Array.from(document.getElementById('show-hide-room-inputs').querySelectorAll('input')).forEach(x => x.checked = checkvalue);
+}
+
 function HideAllProps() {
     ToggleVisibilityAllProps('hide');
 }
@@ -792,6 +893,39 @@ function ToggleVisibilityAllPatrols(mode) {
     Array.from(svg.querySelectorAll('#svg-patrol-layer .svg-logical-item')).forEach(x => x.style.display = display_value);
     // ui checkmark state
     Array.from(document.getElementById('show-hide-patrol-inputs').querySelectorAll('input')).forEach(x => x.checked = checkvalue);
+}
+
+function TogglePropListVisibility(self) {
+    let display_value = '';
+    if (self.value == "<<<<") {
+        display_value = 'none';
+        self.value = ">>>>";
+    } else {
+        self.value = "<<<<";
+    }
+    document.getElementById('show-hide-prop-inputs').style.display = display_value;
+}
+
+function TogglePatrolListVisibility(self) {
+    let display_value = '';
+    if (self.value == "<<<<") {
+        display_value = 'none';
+        self.value = ">>>>";
+    } else {
+        self.value = "<<<<";
+    }
+    document.getElementById('show-hide-patrol-inputs').style.display = display_value;
+}
+
+function ToggleRoomListVisibility(self) {
+    let display_value = '';
+    if (self.value == "<<<<") {
+        display_value = 'none';
+        self.value = ">>>>";
+    } else {
+        self.value = "<<<<";
+    }
+    document.getElementById('show-hide-room-inputs').style.display = display_value;
 }
 
 // Instantiates the dialog object if it doesn't already exist.
@@ -2595,4 +2729,105 @@ function DrawCircle(opt) {
 
     gnode.appendChild(circ);
     parent.appendChild(gnode);
+}
+
+function ComponentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function RgbToHex(r, g, b) {
+    return "#" + ComponentToHex(r) + ComponentToHex(g) + ComponentToHex(b);
+}
+
+function RgbObjectToHex(obj) {
+    return RgbToHex(obj.r, obj.g, obj.b);
+}
+
+function ParseToRGB(val) {
+    const htmlColorRegex = /#?([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])/;
+    let result = {
+        valid: false,
+        r: 0,
+        g: 0,
+        b: 0
+    };
+
+    const bgmatch = val.match(htmlColorRegex);
+
+    if (bgmatch != null && bgmatch.length == 4) {
+        result.valid = true;
+        result.r = parseInt("0x" + bgmatch[1]);
+        result.g = parseInt("0x" + bgmatch[2]);
+        result.b = parseInt("0x" + bgmatch[3]);
+    }
+
+    return result;
+}
+
+function DownloadView() {
+    if (!g_ZoomerLoaded) {
+        return;
+    }
+
+    let svg = GetSvg();
+    if (!svg) {
+        return;
+    }
+    var svgURL = new XMLSerializer().serializeToString(svg);
+    var img = new Image();
+    img.onload = function () {
+
+        let selectedOption = GetStageSelectedOption();
+        if (!selectedOption) {
+            return;
+        }
+
+        let canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        let svg2 = GetSvg();
+        if (!svg2) {
+            return;
+        }
+
+        let spz = svgPanZoom(document.getElementById('mmap'));
+        let sizes = spz.getSizes();
+
+        canvas.width = sizes.width;
+        canvas.height = sizes.height;
+
+        // HACK: the root background-color style isn't applied on the output image, so draw
+        // a base rectangle of that color. Otherwise firefox will default to light grey.
+        let bgcolor = ParseToRGB(document.getElementById('style-panel').querySelector('[data-selector="svg"]').value);
+        if (bgcolor.valid) {
+            context.fillStyle = RgbObjectToHex(bgcolor);
+            context.fillRect(0, 0, sizes.width, sizes.height);
+        }
+
+        context.drawImage(this, 0, 0);
+
+        let result = document.getElementById('result');
+        result.src = canvas.toDataURL();
+
+        // Open the "save as" dialog by creating a an <a> element with the [download] attribute.
+        // https://stackoverflow.com/a/37521282/1462295
+        let link = document.getElementById('fake-download');
+        link.setAttribute("href", canvas.toDataURL());
+
+        // Create a filename based on the selected stage and current timestamp.
+        let filename = `${selectedOption.innerText}-${Date.now()}.png`;
+
+        link.setAttribute("download", filename);
+        link.click();
+    }
+
+    img.src = 'data:image/svg+xml; charset=utf8, ' + encodeURIComponent(svgURL);
+    /*
+     * download current SVG at this point:
+    let link = document.getElementById('fake-download');
+    link.setAttribute("href", img.src);
+    link.setAttribute("download", "aaa");
+    link.click();
+    */
 }

@@ -348,11 +348,21 @@
             <div id="show-hide">
                 <div class="big">Hide props</div>
                 <div><input type="button" value="all" onclick="HideAllProps();"><div class="h-space-16"></div><input type="button" value="none" onclick="ShowAllProps();" /></div>
+                <div class="vert-space-12"></div>
+                <div><input type="button" value="<<<<" onclick="TogglePropListVisibility(this);" /></div>
                 <div id="show-hide-prop-inputs"></div>
 
                 <div class="big">Hide patrols</div>
                 <div><input type="button" value="all" onclick="HideAllPatrols();" /><div class="h-space-16"></div><input type="button" value="none" onclick="ShowAllPatrols();" /></div>
+                <div class="vert-space-12"></div>
+                <div><input type="button" value="<<<<" onclick="TogglePatrolListVisibility(this);" /></div>
                 <div id="show-hide-patrol-inputs"></div>
+
+                <div class="big">Hide rooms</div>
+                <div><input type="button" value="all" onclick="HideAllRooms();" /><div class="h-space-16"></div><input type="button" value="none" onclick="ShowAllRooms();" /></div>
+                <div class="vert-space-12"></div>
+                <div><input type="button" value=">>>>" onclick="ToggleRoomListVisibility(this);" /></div>
+                <div id="show-hide-room-inputs" style="display:none;"></div>
             </div>
 
             <div class="col-left-sep"></div>
@@ -383,6 +393,7 @@
 
             <div id="style-panel">
                 <div class="big">Style</div>
+                <div class="s-row"><label>background color<input type="text" value="" data-selector="svg" data-prop="background-color" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>stan outline color<input type="text" value="" data-selector=".gelib-stan" data-prop="stroke" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>stan outline width<input type="text" value="" data-selector=".gelib-stan" data-prop="stroke-width" data-css-type="number" onchange="ApplyStyleChange(this);" /></label></div>
                 <div class="s-row"><label>stan fill color<input type="text" value="" data-selector=".gelib-stan" data-prop="fill" data-css-type="color" onchange="ApplyStyleChange(this);" /></label></div>
@@ -415,7 +426,10 @@
             <div class="col-left-sep"></div>
 
             <div id="direct-download">
-                <div class="big">Direct download svg:</div>
+                <div class="big">Direct download map:</div>
+                <div class="s-row">&nbsp;</div>
+                <input type="button" value="Download current view" onclick="DownloadView();" />
+                <div class="s-row">&nbsp;</div>
                 <div class="s-row"><a href="svgmap/u/Dam.svg">Dam</a></div>
                 <div class="s-row"><a href="svgmap/u/Facility.svg">Facility</a></div>
                 <div class="s-row"><a href="svgmap/u/Runway.svg">Runway</a></div>
@@ -484,17 +498,21 @@
                     <!-- <img src="yourfallback.jpg" /> -->
                 </object>
 
+                <canvas id="canvas" style="display:none;"></canvas>
+                <img id="result" style="display:none;" />
+                <a id="fake-download" style="display:none;" ></a>
+
                 <div id="mode-controls">
 
                     <div>
                         <div id="mode-control-annotate" style="display: inline-block;">
-                            <button onclick="SetControlMode(UseMode.Annotate);"><img src="img/pencil.png" title="annotate"/></button>
+                            <button onclick="SetControlMode(UseMode.Annotate);"><img src="img/pencil.png" title="annotate" /></button>
                         </div>
                         <div id="mode-control-ruler" style="display: inline-block;">
-                            <button onclick="SetControlMode(UseMode.Ruler);"><img src="img/ruler.png" title="measure"/></button>
+                            <button onclick="SetControlMode(UseMode.Ruler);"><img src="img/ruler.png" title="measure" /></button>
                         </div>
                         <div id="mode-control-move" style="display: inline-block;">
-                            <button onclick="SetControlMode(UseMode.Move);" disabled><img src="img/move.png" title="move"/></button>
+                            <button onclick="SetControlMode(UseMode.Move);" disabled><img src="img/move.png" title="move" /></button>
                         </div>
                     </div>
 
@@ -555,23 +573,23 @@
                                     </div>
                                 </div>
                             </div>
-                            </div>
-                        </div>
-
-                        <div id="control-buttons-ruler" class="mode-control-panel" style="display: none;">
-                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-start" type="button" value="Start" onclick="HandleButtonStart();" disabled /></div>
-                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-stop" type="button" value="Stop" onclick="HandleButtonStop();" disabled/></div>
-                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-continue" type="button" value="Continue" onclick="HandleButtonContinue();" disabled/></div>
-                            <div class="float-control-row"><input class="ctl-button" id="ruler-btn-clear" type="button" value="Clear" onclick="HandleButtonClear();" disabled/></div>
-                        </div>
-
-                        <div id="control-buttons-move" class="mode-control-panel">
-                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
-                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
-                            <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
                         </div>
                     </div>
+
+                    <div id="control-buttons-ruler" class="mode-control-panel" style="display: none;">
+                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-start" type="button" value="Start" onclick="HandleButtonStart();" disabled /></div>
+                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-stop" type="button" value="Stop" onclick="HandleButtonStop();" disabled /></div>
+                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-continue" type="button" value="Continue" onclick="HandleButtonContinue();" disabled /></div>
+                        <div class="float-control-row"><input class="ctl-button" id="ruler-btn-clear" type="button" value="Clear" onclick="HandleButtonClear();" disabled /></div>
+                    </div>
+
+                    <div id="control-buttons-move" class="mode-control-panel">
+                        <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-in" onclick="PanZoomIn();" value="+" /></div>
+                        <div class="float-control-row"><input class="ctl-button" type="button" id="control-reset" onclick="PanZoomReset();" value="reset" /></div>
+                        <div class="float-control-row"><input class="ctl-button" type="button" id="control-zoom-out" onclick="PanZoomOut();" value="-" /></div>
+                    </div>
                 </div>
+            </div>
 
             </div>
 
