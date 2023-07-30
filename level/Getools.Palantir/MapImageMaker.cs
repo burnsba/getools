@@ -1,26 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using Getools.Lib.Game;
-using Getools.Lib.Extensions;
-using SvgLib;
-using Microsoft.Win32.SafeHandles;
-using Getools.Lib.Game.Asset.SetupObject;
-using System.Text.RegularExpressions;
-using Getools.Lib.Game.Asset.Stan;
-using System.Drawing;
-using Getools.Lib.Game.Enums;
 using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using Getools.Lib.Game.Asset.Intro;
-using Getools.Palantir.Render;
-using Getools.Lib.Game.Asset.Setup;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Getools.Lib.Extensions;
+using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Bg;
+using Getools.Lib.Game.Asset.Intro;
+using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Setup.Ai;
+using Getools.Lib.Game.Asset.SetupObject;
+using Getools.Lib.Game.Asset.Stan;
+using Getools.Lib.Game.Enums;
+using Getools.Palantir.Render;
+using Microsoft.Win32.SafeHandles;
+using SvgLib;
 
 namespace Getools.Palantir
 {
@@ -39,19 +39,19 @@ namespace Getools.Palantir
         private readonly Stage _stage;
 
         /// <summary>
-        /// Gets or sets the output width.
-        /// Height will be automatically set based on stage data and map width/height ratio.
-        /// </summary>
-        public int OutputWidth { get; set; } = 2048;
-
-        /// <summary>
-        /// Construct a new instance of <see cref="MapImageMaker"/>.
+        /// Initializes a new instance of the <see cref="MapImageMaker"/> class.
         /// </summary>
         /// <param name="stage">Stage data.</param>
         public MapImageMaker(Stage stage)
         {
             _stage = stage;
         }
+
+        /// <summary>
+        /// Gets or sets the output width.
+        /// Height will be automatically set based on stage data and map width/height ratio.
+        /// </summary>
+        public int OutputWidth { get; set; } = 2048;
 
         /// <summary>
         /// Create an SVG image from stage data within vertical bounds.
@@ -63,7 +63,7 @@ namespace Getools.Palantir
         {
             var context = new ProcessedStageDataContext()
             {
-                OutputFormat = OutputImasgeFormat.Svg,
+                OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.BoundingBox,
                 Zmin = double.MinValue,
                 Zmax = double.MaxValue,
@@ -86,7 +86,7 @@ namespace Getools.Palantir
         {
             var context = new ProcessedStageDataContext()
             {
-                OutputFormat = OutputImasgeFormat.Svg,
+                OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.Slice,
                 Z = z,
             };
@@ -107,7 +107,7 @@ namespace Getools.Palantir
         {
             var context = new ProcessedStageDataContext()
             {
-                OutputFormat = OutputImasgeFormat.Svg,
+                OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.Unbound,
                 Zmin = double.MinValue,
                 Zmax = double.MaxValue,
@@ -125,7 +125,6 @@ namespace Getools.Palantir
         /// Entry point to begin processing stage data.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        /// <exception cref="InvalidOperationException"></exception>
         private void SliceCommon(ProcessedStageDataContext context)
         {
             if (OutputWidth < 1)
@@ -133,25 +132,17 @@ namespace Getools.Palantir
                 throw new InvalidOperationException($"{nameof(OutputWidth)} must be a positive integer");
             }
 
-            // Process the three main sources of information for the stage.
-            // This will collect min/max values (native and scaled).
+            /***
+             * Process the three main sources of information for the stage.
+             * This will collect min/max values (native and scaled).
+             * If a section is null, it will be skipped in the method.
+             */
 
-            if (!object.ReferenceEquals(null, _stage.Bg))
-            {
-                SliceProcessBg(context);
-            }
+            SliceProcessBg(context);
+            SliceProcessStan(context);
+            SliceProcessSetup(context);
 
-            if (!object.ReferenceEquals(null, _stage.Stan))
-            {
-                SliceProcessStan(context);
-            }
-
-            if (!object.ReferenceEquals(null, _stage.Setup) && (context.Mode == SliceMode.BoundingBox || context.Mode == SliceMode.Unbound))
-            {
-                SliceProcessSetup(context);
-            }
-
-            // After processing the data, reset any unset min/max value to zero.
+            //// After processing the data, reset any unset min/max value to zero.
 
             context.ScaledMax.X = (context.ScaledMax.X == double.MinValue) ? 0 : context.ScaledMax.X;
             context.ScaledMax.Y = (context.ScaledMax.Y == double.MinValue) ? 0 : context.ScaledMax.Y;
@@ -176,6 +167,11 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessBg(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Bg))
+            {
+                return;
+            }
+
             Console.WriteLine("MapImageMaker: Found bg");
 
             foreach (var roomData in _stage.Bg.RoomDataTable.Entries)
@@ -186,7 +182,7 @@ namespace Getools.Palantir
                     continue;
                 }
 
-                // Console.WriteLine($"process room # {roomData.OrderIndex}");
+                //// Console.WriteLine($"process room # {roomData.OrderIndex}");
 
                 var roomScaledMin = Coord3dd.MaxValue.Clone();
                 var roomScaledMax = Coord3dd.MinValue.Clone();
@@ -244,9 +240,9 @@ namespace Getools.Palantir
                     roomPoints.Add(roomPoint);
                 }
 
-                // Console.WriteLine($"found {roomPoints.Count} points");
+                //// Console.WriteLine($"found {roomPoints.Count} points");
 
-                List<Coord2dd> convexHull = null;
+                List<Coord2dd> convexHull;
 
                 if (context.Mode == SliceMode.Slice)
                 {
@@ -261,7 +257,7 @@ namespace Getools.Palantir
                     convexHull = MeshToConvexHullYBounds(roomPoints, double.MinValue, double.MaxValue);
                 }
 
-                // Console.WriteLine($"convexHull result: {convexHull.Count} points");
+                //// Console.WriteLine($"convexHull result: {convexHull.Count} points");
 
                 if (!convexHull.Any())
                 {
@@ -337,6 +333,11 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessStan(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Stan))
+            {
+                return;
+            }
+
             Console.WriteLine("MapImageMaker: Found stan");
 
             foreach (var tile in _stage.Stan.Tiles)
@@ -347,7 +348,7 @@ namespace Getools.Palantir
                     continue;
                 }
 
-                //Console.WriteLine($"process tile # {tile.OrderIndex}");
+                ////Console.WriteLine($"process tile # {tile.OrderIndex}");
 
                 var tileScaledMin = Coord3dd.MaxValue.Clone();
                 var tileScaledMax = Coord3dd.MinValue.Clone();
@@ -404,9 +405,9 @@ namespace Getools.Palantir
                     levelTilePoints.Add(roomPoint);
                 }
 
-                //Console.WriteLine($"found {levelTilePoints.Count} points");
+                ////Console.WriteLine($"found {levelTilePoints.Count} points");
 
-                List<Coord2dd> convexHull = null;
+                List<Coord2dd> convexHull;
 
                 if (context.Mode == SliceMode.Slice)
                 {
@@ -421,7 +422,7 @@ namespace Getools.Palantir
                     convexHull = MeshToConvexHullYBounds(levelTilePoints, double.MinValue, double.MaxValue);
                 }
 
-                //Console.WriteLine($"convexHull result: {convexHull.Count} points");
+                ////Console.WriteLine($"convexHull result: {convexHull.Count} points");
 
                 if (!convexHull.Any())
                 {
@@ -487,7 +488,7 @@ namespace Getools.Palantir
 
                 context.TilePolygons.Add(collection);
 
-                //Console.WriteLine($"tile min/max: {tileMinScaledX},{tileMinScaledY} and {tileMaxScaledX},{tileMaxScaledY}");
+                //// Console.WriteLine($"tile min/max: {tileMinScaledX},{tileMinScaledY} and {tileMaxScaledX},{tileMaxScaledY}");
             }
         }
 
@@ -497,6 +498,20 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessSetup(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup))
+            {
+                return;
+            }
+
+            if (context.Mode == SliceMode.BoundingBox || context.Mode == SliceMode.Unbound)
+            {
+                // process data below.
+            }
+            else
+            {
+                return;
+            }
+
             Console.WriteLine("MapImageMaker: Found setup");
 
             var presets = _stage.Setup.SectionPadList.PadList;
@@ -514,7 +529,7 @@ namespace Getools.Palantir
                 setupObjectIndex++;
 
                 string presetName = string.Empty;
-                Pad pad = null;
+                Pad? pad = null;
 
                 var baseObject = setupObject as SetupObjectBase;
 
@@ -545,15 +560,15 @@ namespace Getools.Palantir
 
                 switch (setupObject.Type)
                 {
-                    case Lib.Game.Enums.PropDef.Alarm:   // fallthrough
-                    case Lib.Game.Enums.PropDef.Aircraft:   // fallthrough
+                    case Lib.Game.Enums.PropDef.Alarm: // fallthrough
+                    case Lib.Game.Enums.PropDef.Aircraft: // fallthrough
                     case Lib.Game.Enums.PropDef.AmmoBox: // fallthrough
                     case Lib.Game.Enums.PropDef.Armour: // fallthrough
                     case Lib.Game.Enums.PropDef.Cctv: // fallthrough
                     case Lib.Game.Enums.PropDef.Collectable: // fallthrough
                     case Lib.Game.Enums.PropDef.Drone: // fallthrough
-                    case Lib.Game.Enums.PropDef.Guard:   // fallthrough
-                    case Lib.Game.Enums.PropDef.Key:   // fallthrough
+                    case Lib.Game.Enums.PropDef.Guard: // fallthrough
+                    case Lib.Game.Enums.PropDef.Key: // fallthrough
                     case Lib.Game.Enums.PropDef.Safe:
                     case Lib.Game.Enums.PropDef.SingleMonitor:
                     case Lib.Game.Enums.PropDef.StandardProp:
@@ -580,12 +595,13 @@ namespace Getools.Palantir
                             {
                                 throw new Exception("Could not resolve setup object point to preset (padlist) index");
                             }
+
                             break;
                         }
 
                     case Lib.Game.Enums.PropDef.Door:
                         {
-                            // important! door always uses bounding box preset
+                            //// important! door always uses bounding box preset
 
                             if (presetId < presets3d.Count)
                             {
@@ -601,6 +617,7 @@ namespace Getools.Palantir
                             {
                                 throw new Exception("Could not resolve setup object point to preset (padlist) index");
                             }
+
                             break;
                         }
                 }
@@ -651,7 +668,7 @@ namespace Getools.Palantir
                 // pad name is used to resolve the room id.
                 presetName = pad.Name.GetString();
 
-                // Console.WriteLine($"Setup object point: {workingPoint}");
+                //// Console.WriteLine($"Setup object point: {workingPoint}");
 
                 if (!object.ReferenceEquals(null, _stage.Stan))
                 {
@@ -701,7 +718,7 @@ namespace Getools.Palantir
 
             // add presets to the output.
             ushort index = 0;
-            foreach (var pad in _stage.Setup.SectionPadList.PadList)
+            foreach (var pad in _stage.Setup!.SectionPadList.PadList)
             {
                 roomId = 0;
                 if (!TryGetRoomId(pad.Name.GetString(), out roomId))
@@ -757,13 +774,12 @@ namespace Getools.Palantir
         {
             byte roomId;
             ushort index = 0;
-            foreach (var pad in _stage.Setup.SectionPad3dList.Pad3dList)
+            foreach (var pad in _stage.Setup!.SectionPad3dList.Pad3dList)
             {
                 roomId = 0;
                 if (!TryGetRoomId(pad.Name.GetString(), out roomId))
                 {
-                    //index++;
-                    //continue;
+                    // don't do anything if the room can't be resolved.
                 }
 
                 bool withinBounds = false;
@@ -803,7 +819,6 @@ namespace Getools.Palantir
 
                 index++;
             }
-
         }
 
         /// <summary>
@@ -815,7 +830,7 @@ namespace Getools.Palantir
             byte roomId;
             ushort index = 0;
 
-            var presets = _stage.Setup.SectionPadList.PadList;
+            var presets = _stage.Setup!.SectionPadList.PadList;
             var presets3d = _stage.Setup.SectionPad3dList.Pad3dList;
 
             // look for spawn location
@@ -880,7 +895,7 @@ namespace Getools.Palantir
             int room1Id;
             int room2Id;
 
-            var pathTables = _stage.Setup.SectionPathTables.PathTables;
+            var pathTables = _stage.Setup!.SectionPathTables.PathTables;
             var pads = _stage.Setup.SectionPadList.PadList;
 
             // add presets to the output.
@@ -953,9 +968,9 @@ namespace Getools.Palantir
                         tableIndex++;
                         continue;
                     }
-                    
-                    // pad global min/max comparison already happened in the pad section.
-                    
+
+                    //// pad global min/max comparison already happened in the pad section.
+
                     var rl = new RenderLine(pad.Position.ToCoord3dd(), pad2.Position.ToCoord3dd())
                     {
                         WaypointIndex = index,
@@ -965,7 +980,7 @@ namespace Getools.Palantir
                         Pad1Id = (int)waypoint.PadId,
                         Pad2Id = (int)secondWaypoint.PadId,
                     };
-                    
+
                     context.PathWaypointLines.Add(rl);
 
                     tableIndex++;
@@ -982,7 +997,7 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessPatrolPaths(ProcessedStageDataContext context)
         {
-            var waypoints = _stage.Setup.SectionPathTables.PathTables;
+            var waypoints = _stage.Setup!.SectionPathTables.PathTables;
             var pads = _stage.Setup.SectionPadList.PadList;
 
             ushort index = 0;
@@ -1044,7 +1059,7 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SetupProcessAi(ProcessedStageDataContext context)
         {
-            if (!_stage.Setup.SectionAiLists.AiLists.Any())
+            if (!_stage.Setup!.SectionAiLists.AiLists.Any())
             {
                 return;
             }
@@ -1064,7 +1079,8 @@ namespace Getools.Palantir
                 {
                     fff.ScriptType = AiScriptType.Global;
                 }
-                else if (ailisty.Id > 0x400 && ailisty.Id < 0x1000) // starts at 0x401
+                //// starts at 0x401
+                else if (ailisty.Id > 0x400 && ailisty.Id < 0x1000)
                 {
                     fff.ScriptType = AiScriptType.Entity;
                 }
@@ -1207,9 +1223,9 @@ namespace Getools.Palantir
         /// <remarks>
         /// "walking" coordinates are (x,z), vertical axis is y.
         /// </remarks>
-        /// <param name="mesh"></param>
-        /// <param name="z"></param>
-        /// <returns></returns>
+        /// <param name="mesh">Starting list of 3d points describing a mesh.</param>
+        /// <param name="z">Z value to slice mesh at (check for any lines that cross this value).</param>
+        /// <returns>Convex hull of points from any lines that cross the parameter value.</returns>
         private List<Coord2dd> MeshToConvexHullAtZ(List<Coord3dd> mesh, double z)
         {
             var points = Getools.Lib.Math.Geometry.PlaneIntersectZ(mesh, z);
@@ -1227,9 +1243,9 @@ namespace Getools.Palantir
         /// <remarks>
         /// "walking" coordinates are (x,z), vertical axis is y.
         /// </remarks>
-        /// <param name="mesh"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
+        /// <param name="mesh">Starting list of 3d points describing a mesh.</param>
+        /// <param name="y">Y value to slice mesh at (check for any lines that cross this value).</param>
+        /// <returns>Convex hull of points from any lines that cross the parameter value.</returns>
         private List<Coord2dd> MeshToConvexHullAtY(List<Coord3dd> mesh, double y)
         {
             var points = Getools.Lib.Math.Geometry.PlaneIntersectY(mesh, y);
@@ -1243,10 +1259,10 @@ namespace Getools.Palantir
         /// For each point, if it is between the upper and lower bounds,
         /// project to 2d and create a convex hull of these points.
         /// </summary>
-        /// <param name="mesh"></param>
-        /// <param name="ymin"></param>
-        /// <param name="ymax"></param>
-        /// <returns></returns>
+        /// <param name="mesh">Starting list of 3d points describing a mesh.</param>
+        /// <param name="ymin">Min Y value to allow points.</param>
+        /// <param name="ymax">Max Y value to allow points.</param>
+        /// <returns>Convex hull of points from any lines that are between the bounds.</returns>
         private List<Coord2dd> MeshToConvexHullYBounds(List<Coord3dd> mesh, double ymin, double ymax)
         {
             var points2d = new List<Coord2dd>();
@@ -1279,6 +1295,11 @@ namespace Getools.Palantir
                 return false;
             }
 
+            if (object.ReferenceEquals(null, _stage.Stan))
+            {
+                return false;
+            }
+
             var rematch = _matchDigitsRegex.Match(presetName);
             if (rematch.Success)
             {
@@ -1297,6 +1318,7 @@ namespace Getools.Palantir
                     {
                         tileGroupId += int.Parse(rematch.Groups[3].Value);
                     }
+
                     tile = _stage.Stan.Tiles.FirstOrDefault(x => x.TileId == tilenameDecimal && x.GroupId == tileGroupId);
                 }
                 else

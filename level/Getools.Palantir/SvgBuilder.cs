@@ -1,34 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
-using System.Threading.Tasks;
-using Getools.Lib.Game;
-using Getools.Lib.Extensions;
-using SvgLib;
-using Microsoft.Win32.SafeHandles;
-using static Getools.Lib.Kaitai.Gen.Avtx;
-using Getools.Lib.Game.Asset.SetupObject;
 using System.Text.RegularExpressions;
-using Getools.Lib.Game.Asset.Stan;
-using System.Drawing;
-using Getools.Lib.Game.Enums;
-using System.ComponentModel;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using Getools.Lib.Game.Asset.Intro;
-using Getools.Palantir.Render;
-using Getools.Lib.Game.Asset.Setup;
+using System.Threading.Tasks;
+using Getools.Lib.Extensions;
+using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Bg;
-using Getools.Lib.Kaitai.Gen;
+using Getools.Lib.Game.Asset.Intro;
+using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Setup.Ai;
-using System.ComponentModel.Design;
+using Getools.Lib.Game.Asset.SetupObject;
+using Getools.Lib.Game.Asset.Stan;
+using Getools.Lib.Game.Enums;
+using Getools.Palantir.Render;
+using SvgLib;
 
 namespace Getools.Palantir
 {
     /// <summary>
-    /// Internal helper class. Used to translated the processed stage data to an output SVG document.
+    /// Internal helper class. Used to translate the processed stage data to an output SVG document.
     /// </summary>
     internal class SvgBuilder
     {
@@ -57,7 +51,7 @@ namespace Getools.Palantir
         private const string SvgSetupTankLayerId = "svg-setup-tank-layer";
 
         private const string SvgSetupIntroLayerId = "svg-setup-intro-layer";
-        
+
         // waypoint, path table index
         private const string SvgItemIdPathWaypointFormat = "svg-waypoint-{0}-t-{1}";
 
@@ -92,19 +86,27 @@ namespace Getools.Palantir
         private readonly ProcessedStageDataContext _context;
         private readonly Stage _stage;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SvgBuilder"/> class.
+        /// </summary>
+        /// <param name="context">Current stage data context.</param>
+        /// <param name="stage">Stage data.</param>
         public SvgBuilder(ProcessedStageDataContext context, Stage stage)
         {
             _context = context;
             _stage = stage;
         }
 
+        /// <summary>
+        /// Gets or sets default output width.
+        /// Height will be automatically set according to required aspect ratio.
+        /// </summary>
         public int OutputWidth { get; set; } = 2048;
 
         /// <summary>
         /// Final processing step, should be called after the stage has been "sliced".
         /// </summary>
         /// <returns>SVG.</returns>
-        /// <exception cref="Exception"></exception>
         public SvgDocument BuildSvg()
         {
             // The resulting output should cover the range of the level.
@@ -145,9 +147,10 @@ namespace Getools.Palantir
 
             svg.SetDataAttribute("created-with-tool", "getool");
             svg.SetDataAttribute("created-home", "https://github.com/burnsba/getools");
-            //svg.SetDataAttribute("created-by", "Ben Burns");
-            //svg.SetDataAttribute("created-on", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            //svg.SetDataAttribute("author-home", "https://tolos.me/");
+            svg.SetDataAttribute("created-on", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            //// svg.SetDataAttribute("created-by", "Ben Burns");
+            //// svg.SetDataAttribute("author-home", "https://tolos.me/");
 
             // Log useful attributes to output image.
             svg.SetDataAttribute("adjustx", adjustx.ToString(StandardDoubleToStringFormat));
@@ -240,7 +243,7 @@ namespace Getools.Palantir
                         // check for linked ai script
                         if (key == PropDef.Guard)
                         {
-                            guard = (SetupObjectGuard) poly.SetupObject!;
+                            guard = (SetupObjectGuard)poly.SetupObject!;
                             svgprop.Id = string.Format(itemFormatString, (int)guard.ObjectId);
                         }
                         else
@@ -265,7 +268,7 @@ namespace Getools.Palantir
                         // check for linked ai script
                         if (key == PropDef.Guard)
                         {
-                            svgprop.SetDataAttribute("chr-hdist", guard.HearingDistance.ToString());
+                            svgprop.SetDataAttribute("chr-hdist", guard!.HearingDistance.ToString());
                             svgprop.SetDataAttribute("chr-vdist", guard.VisibileDistance.ToString());
 
                             if ((guard.Flags & Getools.Lib.Game.Flags.SetupChrFlags.GUARD_SETUP_FLAG_CHR_CLONE) > 0)
@@ -298,6 +301,11 @@ namespace Getools.Palantir
             group2.Id = SvgBgLayerId;
             foreach (var poly in roomPolygons)
             {
+                if (object.ReferenceEquals(null, poly.Points))
+                {
+                    throw new NullReferenceException();
+                }
+
                 var polyline = group2.AddPolyLine();
 
                 polyline.AddClass("svg-logical-item");
@@ -367,6 +375,11 @@ namespace Getools.Palantir
             group1.Id = SvgStanLayerId;
             foreach (var poly in tilePolygons)
             {
+                if (object.ReferenceEquals(null, poly.Points))
+                {
+                    throw new NullReferenceException();
+                }
+
                 var polyline = group1.AddPolyLine();
 
                 polyline.AddClass("svg-logical-item");
@@ -462,9 +475,7 @@ namespace Getools.Palantir
                     line.SetX2(p2.X, StandardDoubleToStringFormat);
                     line.SetY2(p2.Z, StandardDoubleToStringFormat);
 
-                    // managed via css
-                    //line.Stroke = "#ff80ff";
-                    //line.StrokeWidth = 12;
+                    // style is managed via css
                     line.AddClass("gelib-wpline");
 
                     container.SetDataAttribute("n-min-x", renderLine.Bbox.MinX.ToString(StandardDoubleToStringFormat));
@@ -511,9 +522,7 @@ namespace Getools.Palantir
                 var polyline = container.AddPolyLine();
                 polyline.SetPoints(scaledPoints.ToArray(), StandardDoubleToStringFormat);
 
-                // managed via css
-                //line.Stroke = "#ff0000";
-                //line.StrokeWidth = 60;
+                // style is managed via css
                 polyline.AddClass("gelib-patrol");
                 polyline.FillOpacity = 0;
 
@@ -548,7 +557,6 @@ namespace Getools.Palantir
         /// </summary>
         /// <param name="container">SVG element to add attributes on.</param>
         /// <param name="prop">Prop containing setup object.</param>
-        /// <exception cref="NullReferenceException"></exception>
         private void AddPropAttributes(SvgContainer container, PropPosition prop)
         {
             if (object.ReferenceEquals(null, prop.SetupObject))

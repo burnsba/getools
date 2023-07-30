@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace Getools.Palantir
 {
-    public enum OutputImasgeFormat
+    /// <summary>
+    /// Describes output image format.
+    /// </summary>
+    public enum OutputImageFormat
     {
+        /// <summary>
+        /// Default / unknown value.
+        /// </summary>
         DefaultUnknown,
 
         /// <summary>

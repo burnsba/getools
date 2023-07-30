@@ -17,11 +17,21 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Getools.Palantir.SvgAppend
 {
+    /// <summary>
+    /// Helper class to draw props onto SVG.
+    /// </summary>
     internal static class PropToSvg
     {
         // three decimal places
         private const string StandardDoubleToStringFormat = "0.###";
 
+        /// <summary>
+        /// Main entry method to append prop to SVG.
+        /// </summary>
+        /// <param name="appendTo">Base SVG container to add item to.</param>
+        /// <param name="rp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
         {
             if (object.ReferenceEquals(null, rp))
@@ -45,7 +55,7 @@ namespace Getools.Palantir.SvgAppend
                 {
                     case PropDef.Door:
                         return SvgAppendPropDefaultModelBbox_door(appendTo, pp, levelScale, "#8d968e", 4, "#e1ffdb");
-                    
+
                     case PropDef.Guard:
                         return SvgAppendPropDefaultModelBbox_chr(appendTo, pp, levelScale);
 
@@ -127,7 +137,7 @@ namespace Getools.Palantir.SvgAppend
                             case PropId.PROP_DISK_DRIVE1:
                             case PropId.PROP_CHRDATTAPE:
                                 return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#ff0000", 4, "#ff0000");
-                            
+
                             case PropId.PROP_TIGER:
                             case PropId.PROP_MILCOPTER:
                             case PropId.PROP_HELICOPTER:
@@ -136,7 +146,7 @@ namespace Getools.Palantir.SvgAppend
                             default:
                                 return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#916b2a", 4, "#ffdfa8");
                         }
-                    
+
                     case PropDef.Tank:
                         return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#255c25", 4, "#00ff00");
                 }
@@ -145,16 +155,30 @@ namespace Getools.Palantir.SvgAppend
             }
             else
             {
-                //
                 throw new NotImplementedException();
             }
         }
 
+        /// <summary>
+        /// Helper function to draw door in the usual manner. The doors bounding box is used.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <param name="stroke">Border edge color.</param>
+        /// <param name="strokeWidth">Border edge thickness.</param>
+        /// <param name="fill">Fill color.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
+            if (object.ReferenceEquals(null, pp.SetupObject))
+            {
+                throw new NullReferenceException();
+            }
+
             var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
             var scaleLower = pp.SetupObject.Scale & 0xff;
-            double setupScale = scaleUpper + ((double)scaleLower / (double)256);
+            double setupScale = scaleUpper + ((double)scaleLower / 256D);
 
             if (object.ReferenceEquals(null, pp.Bbox))
             {
@@ -198,8 +222,7 @@ namespace Getools.Palantir.SvgAppend
 
             var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox).Scale(1.0 / levelScale);
 
-            // if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
-            //
+            //// if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
 
             double modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
             double modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
@@ -228,7 +251,7 @@ namespace Getools.Palantir.SvgAppend
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - halfw,StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - halfh,StandardDoubleToStringFormat)})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - halfw, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - halfh, StandardDoubleToStringFormat)})";
 
             if (rotAngle != 0)
             {
@@ -248,6 +271,16 @@ namespace Getools.Palantir.SvgAppend
             return container;
         }
 
+        /// <summary>
+        /// Helper function to a prop in the usual manner. The item's bounding box is used.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <param name="stroke">Border edge color.</param>
+        /// <param name="strokeWidth">Border edge thickness.</param>
+        /// <param name="fill">Fill color.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
@@ -268,7 +301,7 @@ namespace Getools.Palantir.SvgAppend
 
                 var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
                 var scaleLower = pp.SetupObject.Scale & 0xff;
-                setupScale = scaleUpper + ((double)scaleLower / (double)256);
+                setupScale = scaleUpper + ((double)scaleLower / 256D);
 
                 toXPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag.PropFlag1_XToPresetBounds) > 0;
                 toYPresetBounds = (standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag.PropFlag1_YToPresetBounds) > 0;
@@ -287,7 +320,8 @@ namespace Getools.Palantir.SvgAppend
 
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
-            //if ((standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_AbsolutePosition) > 0)
+            //// if ((standardObject.Flags1 & Getools.Lib.Game.Flags.PropFlag1_AbsolutePosition) > 0)
+
             if (has3dBoundBox)
             {
                 pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox!).Scale(1.0 / levelScale);
@@ -335,7 +369,7 @@ namespace Getools.Palantir.SvgAppend
                 pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox);
 
                 // if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
-                //
+                ////
 
                 modelSizeX *= setupScale * xscale;
                 modelSizeY *= setupScale * yscale;
@@ -410,6 +444,13 @@ namespace Getools.Palantir.SvgAppend
             return container;
         }
 
+        /// <summary>
+        /// Helper function to draw a guard in the usual manner. A hand drawn SVG item is used for the image.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgAppendPropDefaultModelBbox_chr(SvgGroup group, PropPosition pp, double levelScale)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
@@ -439,9 +480,9 @@ namespace Getools.Palantir.SvgAppend
             double translateX = pos.X - halfw;
             double translateY = pos.Z - halfh;
 
-            // chr ??
+            //// chr ??
             double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
-            // rotAngleRad *= -1; // but not for chr ??
+            //// rotAngleRad *= -1; // but not for chr ??
             double rotAngle = rotAngleRad * 180 / System.Math.PI;
 
             var container = group.AddGroup();
@@ -455,7 +496,7 @@ namespace Getools.Palantir.SvgAppend
                 container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
             }
 
-            //
+            ////
 
             var rect = container.AddRect();
 
@@ -471,6 +512,7 @@ namespace Getools.Palantir.SvgAppend
             {
                 rect.Fill = "#ffdd55";
             }
+
             rect.Stroke = "#a87928";
             rect.StrokeWidth = 1;
 
@@ -486,6 +528,7 @@ namespace Getools.Palantir.SvgAppend
             {
                 ellipse.Fill = "#ffdd55";
             }
+
             ellipse.Stroke = "#a87928";
             ellipse.StrokeWidth = 1;
 
@@ -506,6 +549,7 @@ namespace Getools.Palantir.SvgAppend
             {
                 path.Fill = "#ffeeaa";
             }
+
             path.Stroke = "#a87928";
             path.StrokeWidth = 1;
 
@@ -515,11 +559,18 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = $"M {Format.DoubleToStringFormat(p1.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p1.Y, StandardDoubleToStringFormat)} H {Format.DoubleToStringFormat(p2.X, StandardDoubleToStringFormat)} L {Format.DoubleToStringFormat(p3.X, StandardDoubleToStringFormat)},{Format.DoubleToStringFormat(p3.Y, StandardDoubleToStringFormat)} Z";
 
-            //
+            ////
 
             return container;
         }
 
+        /// <summary>
+        /// Helper function to draw a key in the usual manner. A hand drawn SVG item is used for the image.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgGroupAppendKey(SvgGroup group, PropPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
@@ -545,6 +596,13 @@ namespace Getools.Palantir.SvgAppend
             return container;
         }
 
+        /// <summary>
+        /// Helper function to draw a security camera in the usual manner. A hand drawn SVG item is used for the image.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgGroupAppendCctv(SvgGroup group, PropPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
@@ -561,9 +619,9 @@ namespace Getools.Palantir.SvgAppend
             // Rotate it by the preset definition, around the center of the cctv svg.
             container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 10, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 45 30)";
 
-            SvgPath path = null;
+            SvgPath path;
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -573,7 +631,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "m 66.842669,47.084191 v 6.569513 H 45.49174 v -6.569513 z";
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -583,7 +641,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "M 34.862376,18.053258 11.514484,15.189837 11.001787,27.375645 1.1475142,15.878994 V 9.3094783 L 33.100271,14.969574 Z";
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -593,7 +651,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "m 11.001787,10.951858 22.993304,4.927136 v 26.27806 L 11.001787,37.229918 Z";
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -603,7 +661,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "M 33.995091,42.157054 75.054559,24.090887 V 15.878994 L 33.995091,27.375645 Z";
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -613,7 +671,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "m 45.49174,37.229918 v 9.854273 h 6.56952 V 34.165424 Z";
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -623,7 +681,7 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "m 13.857191,14.310917 17.230768,3.824947 V 38.535596 L 13.857191,34.710651 Z";
 
-            //
+            ////
 
             var ellipse = container.AddEllipse();
 
@@ -636,7 +694,7 @@ namespace Getools.Palantir.SvgAppend
             ellipse.RX = 5.396447;
             ellipse.RY = 6.3876319;
 
-            //
+            ////
 
             path = container.AddPath();
 
@@ -649,6 +707,13 @@ namespace Getools.Palantir.SvgAppend
             return container;
         }
 
+        /// <summary>
+        /// Helper function to draw a lock in the usual manner. A hand drawn SVG item is used for the image.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgAppendPadlock(SvgGroup group, PropPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
@@ -665,9 +730,9 @@ namespace Getools.Palantir.SvgAppend
             // Rotate it by the preset definition, around the center of the svg.
             container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 8, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - 18, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 8 18)";
 
-            SvgRect rect = null;
+            SvgRect rect;
 
-            //
+            ////
 
             rect = container.AddRect();
 
@@ -680,7 +745,7 @@ namespace Getools.Palantir.SvgAppend
             rect.X = 0.44301221;
             rect.Y = 10.843964;
 
-            //
+            ////
 
             var path = container.AddPath();
 
@@ -690,11 +755,18 @@ namespace Getools.Palantir.SvgAppend
 
             path.D = "M 7.2412021,0.69852204 C 1.0085037,0.68070391 0.68529965,5.2915851 0.68481911,10.909995 L 13.865147,10.801897 C 13.826836,5.1838055 13.473901,0.71634014 7.2412021,0.69852204 Z M 7.4564339,3.2948227 c 3.7810651,0.013199 3.9947521,3.3229823 4.0179921,7.4858393 l -7.9954469,0.08011 C 3.4792705,6.6976769 3.6753692,3.28162 7.4564339,3.2948227 Z";
 
-            //
+            ////
 
             return container;
         }
 
+        /// <summary>
+        /// Helper function to draw a drone gun in the usual manner. A hand drawn SVG item is used for the image.
+        /// </summary>
+        /// <param name="group">Base SVG container to add item to.</param>
+        /// <param name="pp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         private static SvgGroup SvgAppendHeavyGun(SvgGroup group, PropPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
@@ -711,9 +783,9 @@ namespace Getools.Palantir.SvgAppend
             // Rotate it by the preset definition, around the center of the svg.
             container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - 30, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - 32, StandardDoubleToStringFormat)}) rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} 30 32) scale(2)";
 
-            SvgRect rect = null;
+            SvgRect rect;
 
-            //
+            ////
 
             var circle = container.AddCircle();
 
@@ -725,7 +797,7 @@ namespace Getools.Palantir.SvgAppend
             circle.CX = 30.219355;
             circle.R = 29.951891;
 
-            //
+            ////
 
             rect = container.AddRect();
 

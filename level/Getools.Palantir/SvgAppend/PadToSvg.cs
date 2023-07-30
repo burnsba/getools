@@ -1,29 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using Getools.Lib.Game;
 using Getools.Lib.Extensions;
+using Getools.Lib.Game;
 using Getools.Palantir.Render;
 using SvgLib;
-using System.Reflection.Metadata;
 
 namespace Getools.Palantir.SvgAppend
 {
+    /// <summary>
+    /// Helper class to draw pad onto SVG.
+    /// </summary>
     internal static class PadToSvg
     {
         // three decimal places
         private const string StandardDoubleToStringFormat = "0.###";
 
+        /// <summary>
+        /// Appends pad to SVG.
+        /// </summary>
+        /// <param name="appendTo">Base SVG container to add item to.</param>
+        /// <param name="rp">Object information for item to be added to SVG.</param>
+        /// <param name="levelScale">Stage scale factor.</param>
+        /// <returns>New item that was appended.</returns>
         internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
         {
             double scaleFactor = 1 / levelScale;
-
-            if (rp.PadId == 0x27a3)
-            {
-                var a = 0;
-            }
 
             Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
 
@@ -40,8 +45,8 @@ namespace Getools.Palantir.SvgAppend
                 double bbz = (rp.Bbox.MinZ + rp.Bbox.MaxZ) / 2;
 
                 // Rotate offset by the angle described by Look
-                double xoffset = bbx * cos - bbz * sin;
-                double zoffset = bbx * sin + bbz * cos;
+                double xoffset = (bbx * cos) - (bbz * sin);
+                double zoffset = (bbx * sin) + (bbz * cos);
 
                 pos.X += xoffset * scaleFactor;
                 pos.Z += zoffset * scaleFactor;
@@ -70,6 +75,5 @@ namespace Getools.Palantir.SvgAppend
 
             return container;
         }
-
     }
 }

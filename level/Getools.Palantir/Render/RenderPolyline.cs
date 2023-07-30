@@ -7,8 +7,14 @@ using Getools.Lib.Game;
 
 namespace Getools.Palantir.Render
 {
+    /// <summary>
+    /// General container for rendering a sequence of lines, such as patrol path.
+    /// </summary>
     internal class RenderPolyline
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RenderPolyline"/> class.
+        /// </summary>
         public RenderPolyline()
         {
             Bbox = new BoundingBoxd()
@@ -22,8 +28,19 @@ namespace Getools.Palantir.Render
             };
         }
 
+        /// <summary>
+        /// Gets or sets the order index of the item.
+        /// </summary>
         public int OrderIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the points defining the lines. These should be listed in order.
+        /// </summary>
         public List<Coord3dd> Points { get; set; } = new List<Coord3dd>();
+
+        /// <summary>
+        /// Gets or sets the bounding box of the entire sequence of lines.
+        /// </summary>
         public BoundingBoxd Bbox { get; set; }
     }
 }

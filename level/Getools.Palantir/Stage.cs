@@ -19,7 +19,7 @@ namespace Getools.Palantir
         /// Gets or sets the bg data.
         /// </summary>
         public BgFile? Bg { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the setup data.
         /// </summary>
