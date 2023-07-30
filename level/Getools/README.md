@@ -7,7 +7,7 @@ Available actions:
 - convert_stan: convert stan file between/from various file formats
 - convert_setup: convert setup file between/from various file formats
 - make_map: generate a map from stage data
-- unzip: Unzip compress gzip or Rare 1172 file
+- unzip: Unzip compressed gzip or Rare 1172 file
 
 ## Command documentation
 

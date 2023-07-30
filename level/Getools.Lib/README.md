@@ -11,6 +11,6 @@ The project is split into the following namespaces:
 - Error: Exception definitions.
 - Extensions: Class extension methods.
 - Formatters: Used to format/display type information.
-- [Game](Game\README.md): Core C# code to define game objects. This matches original c type definitions.
+- [Game](Game/README.md): Core C# code to define game objects. This matches original c type definitions.
 - Kaitai: [Kaitai struct](https://kaitai.io/) definitions and C# parsers for binary data formats.
 - Math: Various math libraries; direct ports of original game math functions.
