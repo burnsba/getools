@@ -2660,11 +2660,11 @@ function BuildPieSlice(settings) {
 // Draw guard aim limit as svg objects.
 function DrawGuardAimLimit(settings) {
 
-    const a1 = Math.PI * (180 - 167.5) / 180;
-    const a2 = Math.PI * (180 - 83.5) / 180;
-    const a3 = Math.PI * (180 - 42.0) / 180;
-    const a4 = Math.PI * (180 - 21.0) / 180;
-    const a5 = Math.PI * (180 - 12.5) / 180;
+    const a1 = 2 * Math.PI / 167.5;
+    const a2 = 2 * Math.PI / 83.5;
+    const a3 = 2 * Math.PI / 42.0;
+    const a4 = 2 * Math.PI / 21.0;
+    const a5 = 2 * Math.PI / 12.5;
 
     let parent = EnsureSvgRootContainer('annotation-container');
     if (!parent) {

@@ -333,7 +333,9 @@ namespace Getools.Palantir
                     var svgcontainer = SvgAppend.PadToSvg.PadToSvgAppend(group, poly, _stage.LevelScale);
                     if (!object.ReferenceEquals(null, svgcontainer))
                     {
-                        svgcontainer.Id = string.Format(SvgItemIdPadFormat, poly.OrderIndex);
+                        var padId = (int)poly.PadId;
+
+                        svgcontainer.Id = string.Format(SvgItemIdPadFormat, padId);
                         svgcontainer.AddClass("gelib-pad");
 
                         var scaledPos = poly.Origin.Clone().Scale(1 / _stage.LevelScale);
@@ -349,7 +351,6 @@ namespace Getools.Palantir
                         svgcontainer.SetDataAttribute("room-id", poly.Room.ToString());
 
                         // check for linked ai script
-                        var padId = (int)poly.OrderIndex;
                         if (_context.PadIdToAiCommandBlock.ContainsKey(padId))
                         {
                             var aiIdJson = string.Join(", ", _context.PadIdToAiCommandBlock[padId].OrderBy(x => x).Select(x => x.ToString()));

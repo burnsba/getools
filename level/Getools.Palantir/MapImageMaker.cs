@@ -532,6 +532,7 @@ namespace Getools.Palantir
                 }
 
                 var presetId = ((IHasPreset)setupObject).Preset;
+                int usePresetId = -1;
 
                 if (setupObject.Type == PropDef.Key || setupObject.Type == PropDef.Collectable)
                 {
@@ -568,10 +569,12 @@ namespace Getools.Palantir
                             else if (presetId < presets.Count)
                             {
                                 pad = presets[presetId];
+                                usePresetId = presetId;
                             }
                             else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
                             {
                                 pad = presets3d[presetId - 10000];
+                                usePresetId = presetId - 10000;
                             }
                             else
                             {
@@ -587,10 +590,12 @@ namespace Getools.Palantir
                             if (presetId < presets3d.Count)
                             {
                                 pad = presets3d[presetId];
+                                usePresetId = presetId;
                             }
                             else if ((presetId >= 10000) && (presetId - 10000) < presets3d.Count)
                             {
                                 pad = presets3d[presetId - 10000];
+                                usePresetId = presetId - 10000;
                             }
                             else
                             {
@@ -613,10 +618,16 @@ namespace Getools.Palantir
                     context.RefAiListId.Add((int)guard.ActionPathAssignment);
                 }
 
+                if (usePresetId < 0)
+                {
+                    usePresetId = setupObjectIndex;
+                }
+
                 // Points are scaled later, depending on type
                 var propPosition = new PropPosition()
                 {
                     OrderIndex = setupObjectIndex,
+                    PadId = usePresetId,
                     SetupObject = setupObject,
                     Origin = pad.Position.ToCoord3dd(),
                     Up = pad.Up.ToCoord3dd(),
@@ -729,6 +740,8 @@ namespace Getools.Palantir
                     OrderIndex = index,
                     Room = roomId,
                     Origin = pad.Position.ToCoord3dd(),
+                    Up = pad.Up.ToCoord3dd(),
+                    Look = pad.Look.ToCoord3dd(),
                 });
 
                 // continue outer foreach, increment index
@@ -779,9 +792,13 @@ namespace Getools.Palantir
 
                 context.PresetPolygons.Add(new RenderPosition()
                 {
-                    OrderIndex = index + 10000, // back to bound3d id convention
+                    OrderIndex = index,
+                    PadId = index + 10000, // back to bound3d id convention
                     Room = roomId,
                     Origin = pad.Position.ToCoord3dd(),
+                    Up = pad.Up.ToCoord3dd(),
+                    Look = pad.Look.ToCoord3dd(),
+                    Bbox = pad.BoundingBox.ToBoundingBoxd(),
                 });
 
                 index++;

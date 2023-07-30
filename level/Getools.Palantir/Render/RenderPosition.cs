@@ -11,6 +11,8 @@ namespace Getools.Palantir.Render
     {
         public int OrderIndex { get; set; }
 
+        public int PadId { get; set; }
+
         public int Room { get; set; }
 
         public Coord3dd Origin { get; set; } = Coord3dd.Zero.Clone();

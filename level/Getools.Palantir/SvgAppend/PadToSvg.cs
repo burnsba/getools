@@ -7,6 +7,7 @@ using Getools.Lib.Game;
 using Getools.Lib.Extensions;
 using Getools.Palantir.Render;
 using SvgLib;
+using System.Reflection.Metadata;
 
 namespace Getools.Palantir.SvgAppend
 {
@@ -19,7 +20,32 @@ namespace Getools.Palantir.SvgAppend
         {
             double scaleFactor = 1 / levelScale;
 
+            if (rp.PadId == 0x27a3)
+            {
+                var a = 0;
+            }
+
             Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
+
+            // If this is a pad3d, need to calculate orientation, then translate by the
+            // 3d bounds.
+            if (rp.Bbox != null && rp.Up.Y > 0)
+            {
+                double angle = -1.0 * System.Math.Atan2(rp.Look.X, rp.Look.Z);
+                var cos = System.Math.Cos(angle);
+                var sin = System.Math.Sin(angle);
+
+                // Find the center point of the x and z bounds.
+                double bbx = (rp.Bbox.MinX + rp.Bbox.MaxX) / 2;
+                double bbz = (rp.Bbox.MinZ + rp.Bbox.MaxZ) / 2;
+
+                // Rotate offset by the angle described by Look
+                double xoffset = bbx * cos - bbz * sin;
+                double zoffset = bbx * sin + bbz * cos;
+
+                pos.X += xoffset * scaleFactor;
+                pos.Z += zoffset * scaleFactor;
+            }
 
             double modelSizeX = 36;
             double modelSizeZ = 36;
