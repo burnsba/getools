@@ -34,8 +34,6 @@ namespace Getools.Lib.Kaitai
 
             var bg = Convert(kaitaiObject);
 
-            //setup.DeserializeFix();
-
             return bg;
         }
 

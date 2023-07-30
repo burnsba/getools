@@ -11,7 +11,7 @@ namespace Getools.Lib.Game.Asset.Intro
     /// </summary>
     public class IntroSwirlCam : IntroBase
     {
-        public const int SizeOf = IntroBase.BaseSizeOf + (7 * Config.TargetWordSize);
+        public new const int SizeOf = IntroBase.BaseSizeOf + (7 * Config.TargetWordSize);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntroSwirlCam"/> class.

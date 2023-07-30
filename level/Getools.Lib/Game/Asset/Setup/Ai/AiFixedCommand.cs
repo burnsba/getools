@@ -1,16 +1,17 @@
-﻿using Getools.Lib.Architecture;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
     public class AiFixedCommand : IAiFixedCommand
     {
         public AiFixedCommand()
-        { }
+        {
+        }
 
         public AiFixedCommand(IAiCommandDescription description)
         {
@@ -27,9 +28,13 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         }
 
         public string DecompName { get; set; }
+
         public byte CommandId { get; set; }
+
         public int CommandLengthBytes { get; set; }
+
         public int NumberParameters { get; set; }
+
         public List<IAiParameter> CommandParameters { get; set; }
 
         public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
@@ -65,7 +70,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
         }
 
-        public string ToString()
+        public override string ToString()
         {
             if (NumberParameters > 0)
             {

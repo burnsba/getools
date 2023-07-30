@@ -9,8 +9,11 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
     public class AiVariableCommandDescription : IAiVariableCommandDescription
     {
         public string DecompName { get; set; }
+
         public byte CommandId { get; set; }
+
         public int CommandLengthBytes { get; set; }
+
         public byte[] CommandData { get; set; }
     }
 }

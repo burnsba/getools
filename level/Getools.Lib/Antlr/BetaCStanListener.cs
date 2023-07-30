@@ -36,10 +36,10 @@ namespace Getools.Lib.Antlr
         private int _ignoreAssignmentCount = 0;
         private Listener _lastListenerEntered = Listener.Unset;
 
-        private StandTile _workingTile = null;
-        private StandTilePoint _workingPoint = null;
+        private StandTile? _workingTile = null;
+        private StandTilePoint? _workingPoint = null;
 
-        private StandFile _workingResult = null;
+        private StandFile? _workingResult = null;
 
         private bool _footerDone = false;
 
@@ -107,7 +107,7 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Gets the result after parsing a stan C file.
         /// </summary>
-        public StandFile Result { get; private set; }
+        public StandFile? Result { get; private set; }
 
         /// <summary>
         /// Entry point to begin parsing.
@@ -127,7 +127,7 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void ExitCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
-            _workingResult.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderIndex).ToList();
+            _workingResult!.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderIndex).ToList();
 
             string msg;
 
@@ -201,7 +201,7 @@ namespace Getools.Lib.Antlr
                         }
                     }
 
-                    _workingResult.Tiles.Add(_workingTile);
+                    _workingResult!.Tiles.Add(_workingTile);
                 }
 
                 _workingTile = null;
@@ -254,7 +254,7 @@ namespace Getools.Lib.Antlr
             if (_parseState == ParseState.Header)
             {
                 // header
-                if (object.ReferenceEquals(null, _workingResult.Header))
+                if (object.ReferenceEquals(null, _workingResult!.Header))
                 {
                     _workingResult.Header = new StandFileHeader();
                 }
@@ -328,47 +328,47 @@ namespace Getools.Lib.Antlr
                         break;
 
                     case 1:
-                        _workingTile.Flags = (byte)val.Value;
+                        _workingTile.Flags = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 2:
-                        _workingTile.R = (byte)val.Value;
+                        _workingTile.R = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 3:
-                        _workingTile.G = (byte)val.Value;
+                        _workingTile.G = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 4:
-                        _workingTile.B = (byte)val.Value;
+                        _workingTile.B = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 5:
-                        _workingTile.UnknownBeta = (short)val.Value;
+                        _workingTile.UnknownBeta = (short)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 6:
-                        _workingTile.PointCount = (byte)val.Value;
+                        _workingTile.PointCount = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 7:
-                        _workingTile.FirstPoint = (byte)val.Value;
+                        _workingTile.FirstPoint = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 8:
-                        _workingTile.SecondPoint = (byte)val.Value;
+                        _workingTile.SecondPoint = (byte)val!.Value;
                         _currentFieldIndex++;
                         break;
 
                     case 9:
-                        _workingTile.ThirdPoint = (byte)val.Value;
+                        _workingTile.ThirdPoint = (byte)val!.Value;
 
                         // after the tile properties is the array of points related to the tile.
                         // advance state to start parsing points if there are any.
@@ -518,19 +518,19 @@ namespace Getools.Lib.Antlr
                         break;
 
                     case 3:
-                        _workingPoint.Link = (int)val.Value;
+                        _workingPoint.Link = (int)val!.Value;
 
                         // This declaration is an inline array listing, so need to reset the working point
                         // for the next value in the array.
                         _currentFieldIndex = 0;
-                        _workingTile.Points.Add(_workingPoint);
+                        _workingTile!.Points.Add(_workingPoint);
                         break;
                 }
             }
             else if (_parseState == ParseState.Footer)
             {
                 // footer
-                if (object.ReferenceEquals(null, _workingResult.Footer))
+                if (object.ReferenceEquals(null, _workingResult!.Footer))
                 {
                     _workingResult.Footer = new StandFileFooter();
                 }
@@ -647,7 +647,7 @@ namespace Getools.Lib.Antlr
 
             if (_parseState == ParseState.Header)
             {
-                if (object.ReferenceEquals(null, _workingResult.Header))
+                if (object.ReferenceEquals(null, _workingResult!.Header))
                 {
                     _workingResult.Header = new StandFileHeader();
                 }
@@ -686,7 +686,7 @@ namespace Getools.Lib.Antlr
             }
             else if (_parseState == ParseState.Footer)
             {
-                if (object.ReferenceEquals(null, _workingResult.Footer))
+                if (object.ReferenceEquals(null, _workingResult!.Footer))
                 {
                     _workingResult.Footer = new StandFileFooter();
                 }

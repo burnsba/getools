@@ -8,6 +8,15 @@ namespace Getools.Lib.Math
 {
     public class Mtxd
     {
+        public Mtxd()
+        {
+            M = new double[4][];
+            for (int i = 0; i < 4; i++)
+            {
+                M[i] = new double[4];
+            }
+        }
+
         public double[][] M { get; set; }
 
         public double this[int index]
@@ -44,15 +53,6 @@ namespace Getools.Lib.Math
                 }
 
                 M[col][index] = value;
-            }
-        }
-
-        public Mtxd()
-        {
-            M = new double[4][];
-            for (int i = 0; i < 4; i++)
-            {
-                M[i] = new double[4];
             }
         }
     }

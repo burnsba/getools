@@ -8,6 +8,15 @@ namespace Getools.Lib.Math
 {
     public class Mtxf
     {
+        public Mtxf()
+        {
+            M = new Single[4][];
+            for (int i = 0; i < 4; i++)
+            {
+                M[i] = new Single[4];
+            }
+        }
+
         public Single[][] M { get; set; }
 
         public Single this[int index]
@@ -44,15 +53,6 @@ namespace Getools.Lib.Math
                 }
 
                 M[col][index] = value;
-            }
-        }
-
-        public Mtxf()
-        {
-            M = new Single[4][];
-            for (int i = 0; i < 4; i++)
-            {
-                M[i] = new Single[4];
             }
         }
     }

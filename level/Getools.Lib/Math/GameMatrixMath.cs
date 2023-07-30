@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Math
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:Element should begin with upper-case letter", Justification = "match game name")]
     public static class GameMatrixMath
     {
         public static void matrix_4x4_7F059708(Mtxf arg0, Single arg1, Single arg2, Single arg3, Single arg4, Single arg5, Single arg6, Single arg7, Single arg8, Single arg9)

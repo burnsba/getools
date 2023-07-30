@@ -1,16 +1,17 @@
-﻿using Getools.Lib.Architecture;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
     public class AiVariableCommand : IAiVariableCommand
     {
         public AiVariableCommand()
-        { }
+        {
+        }
 
         public AiVariableCommand(IAiCommandDescription description)
         {
@@ -34,12 +35,14 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         }
 
         public string DecompName { get; set; }
+
         public byte CommandId { get; set; }
 
         /// <summary>
         /// Gets or sets length of all byte data, including leading commandid byte.
         /// </summary>
         public int CommandLengthBytes { get; set; }
+
         public byte[] CommandData { get; set; }
 
         public void CMacroAppend(string prefix, StringBuilder sb)

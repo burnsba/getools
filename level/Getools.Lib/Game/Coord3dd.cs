@@ -13,10 +13,6 @@ namespace Getools.Lib.Game
     /// </summary>
     public class Coord3dd
     {
-        public static Coord3dd Zero => new Coord3dd(0, 0, 0);
-        public static Coord3dd MaxValue => new Coord3dd(double.MaxValue, double.MaxValue, double.MaxValue);
-        public static Coord3dd MinValue => new Coord3dd(double.MinValue, double.MinValue, double.MinValue);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Coord3dd"/> class.
         /// </summary>
@@ -37,6 +33,12 @@ namespace Getools.Lib.Game
             Y = y;
             Z = z;
         }
+
+        public static Coord3dd Zero => new Coord3dd(0, 0, 0);
+
+        public static Coord3dd MaxValue => new Coord3dd(double.MaxValue, double.MaxValue, double.MaxValue);
+
+        public static Coord3dd MinValue => new Coord3dd(double.MinValue, double.MinValue, double.MinValue);
 
         /// <summary>
         /// Gets or sets x position.

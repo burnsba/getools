@@ -7,8 +7,17 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// <see cref="AiCommandBuilder"/> main methods.
+    /// </summary>
     public partial class AiCommandBuilder
     {
+        /// <summary>
+        /// Parses a block of bytes as ai commands.
+        /// </summary>
+        /// <param name="bytes">Bytes to read.</param>
+        /// <returns>Command block.</returns>
+        /// <exception cref="NotSupportedException"></exception>
         public static AiCommandBlock ParseBytes(byte[] bytes)
         {
             int position = 0;
@@ -46,12 +55,6 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     for (int i = 0; i < fcommand.NumberParameters; i++)
                     {
                         var len = fcommand.CommandParameters[i].ByteLength;
-                        //int val = 0;
-                        //for (var j = 0; j < len; j++)
-                        //{
-                        //    // read bigendien, store as bigendien
-                        //    val |= bytes[position++] << (8 * (3 - j));
-                        //}
 
                         var byteValue = new byte[len];
                         Array.Copy(bytes, position, byteValue, 0, len);

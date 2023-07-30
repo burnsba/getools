@@ -87,7 +87,7 @@ namespace Getools.Lib.Math
         /// and return all points on the boundary.
         /// </summary>
         /// <param name="source"></param>
-        /// <param name="z"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static List<Coord3dd> PlaneIntersectY(List<Coord3dd> source, double y)
         {
@@ -166,8 +166,10 @@ namespace Getools.Lib.Math
         /// <returns></returns>
         public static double FindPointOnSegment(double p1x, double p1y, double p2x, double p2y, double atx)
         {
-            // (y - y1) / (y2 - y1) = (x - x1) / (x2 - x1)
-            // y = (y2 - y1) * (x - x1) / (x2 - x1) + y1
+            /***
+            * (y - y1) / (y2 - y1) = (x - x1) / (x2 - x1)
+            * y = (y2 - y1) * (x - x1) / (x2 - x1) + y1
+            */
 
             if (p2y == p1y)
             {
@@ -203,7 +205,7 @@ namespace Getools.Lib.Math
             }
 
             int n = points.Count(), k = 0;
-            List<Coord2dd> H = new List<Coord2dd>(new Coord2dd[2 * n]);
+            List<Coord2dd> hull = new List<Coord2dd>(new Coord2dd[2 * n]);
 
             points.Sort((a, b) =>
                  a.X == b.X ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
@@ -211,26 +213,26 @@ namespace Getools.Lib.Math
             // Build lower hull
             for (int i = 0; i < n; ++i)
             {
-                while (k >= 2 && HullCross(H[k - 2], H[k - 1], points[i]) <= 0)
+                while (k >= 2 && HullCross(hull[k - 2], hull[k - 1], points[i]) <= 0)
                 {
                     k--;
                 }
 
-                H[k++] = points[i];
+                hull[k++] = points[i];
             }
 
             // Build upper hull
             for (int i = n - 2, t = k + 1; i >= 0; i--)
             {
-                while (k >= t && HullCross(H[k - 2], H[k - 1], points[i]) <= 0)
+                while (k >= t && HullCross(hull[k - 2], hull[k - 1], points[i]) <= 0)
                 {
                     k--;
                 }
 
-                H[k++] = points[i];
+                hull[k++] = points[i];
             }
 
-            return H.Take(k - 1).ToList();
+            return hull.Take(k - 1).ToList();
         }
 
         public static BoundingBoxd GetBounds(Coord3dd p1, Coord3dd p2)

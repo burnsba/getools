@@ -9,7 +9,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
     public interface IAiCommandDescription
     {
         string DecompName { get; set; }
+
         byte CommandId { get; set; }
+
         int CommandLengthBytes { get; set; }
     }
 }

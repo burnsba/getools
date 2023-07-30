@@ -17,10 +17,6 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         private readonly int _valueBig;
         private readonly int _valueLittle;
 
-        public string ParameterName { get; init; }
-        public int ByteLength { get; init; }
-        public ByteOrder Endien => _endien;
-
         public AiParameter()
         {
             //
@@ -67,7 +63,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     _valueLittle |= val[3] << 0;
                 }
 
-                _valueLittle >>= (8 * (4 - ByteLength));
+                _valueLittle >>= 8 * (4 - ByteLength);
 
                 _valueBig = BinaryPrimitives.ReverseEndianness(_valueLittle);
             }
@@ -90,11 +86,17 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     _valueBig |= val[3] << 0;
                 }
 
-                _valueBig <<= (8 * (4 - ByteLength));
+                _valueBig <<= 8 * (4 - ByteLength);
 
                 _valueLittle = BinaryPrimitives.ReverseEndianness(_valueBig);
             }
         }
+
+        public string ParameterName { get; init; }
+
+        public int ByteLength { get; init; }
+
+        public ByteOrder Endien => _endien;
 
         public void CMacroAppend(string prefix, StringBuilder sb)
         {

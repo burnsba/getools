@@ -1,5 +1,20 @@
 // This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
-
+#pragma warning disable SA1502 // Element should not be on a single line
+#pragma warning disable SA1208 // System using directives should be placed before other using directives
+#pragma warning disable SA1516 // Elements should be separated by blank line
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1513 // Closing brace should be followed by blank line
+#pragma warning disable SA1601 // Partial elements should be documented
+#pragma warning disable SA1201 // Elements should appear in the correct order
+#pragma warning disable SA1308 // Variable names should not be prefixed
+#pragma warning disable SA1300 // Element should begin with upper-case letter
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable SA1128 // Put constructor initializers on their own line
+#pragma warning disable SA1500 // Braces for multi-line statements should not share line
+#pragma warning disable SA1503 // Braces should not be omitted
+#pragma warning disable SA1312 // Variable names should begin with lower-case letter
+#pragma warning disable SA1119 // Statement should not use unnecessary parenthesis
 using Kaitai;
 using System.Collections.Generic;
 
@@ -354,3 +369,21 @@ namespace Getools.Lib.Kaitai.Gen
         public KaitaiStruct M_Parent { get { return m_parent; } }
     }
 }
+
+
+#pragma warning restore SA1503 // Braces should not be omitted
+#pragma warning restore SA1312 // Variable names should begin with lower-case letter
+#pragma warning restore SA1119 // Statement should not use unnecessary parenthesis
+#pragma warning restore SA1500 // Braces for multi-line statements should not share line
+#pragma warning restore SA1128 // Put constructor initializers on their own line
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning restore SA1300 // Element should begin with upper-case letter
+#pragma warning restore SA1308 // Variable names should not be prefixed
+#pragma warning restore SA1201 // Elements should appear in the correct order
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore SA1513 // Closing brace should be followed by blank line
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore SA1516 // Elements should be separated by blank line
+#pragma warning restore SA1208 // System using directives should be placed before other using directives
+#pragma warning restore SA1502 // Element should not be on a single line

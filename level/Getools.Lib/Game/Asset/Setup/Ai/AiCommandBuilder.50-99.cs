@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// <see cref="AiCommandBuilder"/> command bytes 50-99.
+    /// </summary>
     public partial class AiCommandBuilder
     {
         /// <summary>
@@ -26,8 +29,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -48,7 +51,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     CommandId = 51,
                     CommandLengthBytes = 1,
                     NumberParameters = 0,
-                    CommandParameters = new List<IAiParameter>()
+                    CommandParameters = new List<IAiParameter>(),
                 };
             }
         }
@@ -71,9 +74,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "cbyte", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "cbyte", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -96,9 +99,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "cbyte", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "cbyte", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -121,8 +124,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -142,8 +145,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -166,8 +169,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -190,8 +193,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -214,8 +217,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -238,8 +241,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -262,8 +265,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -286,8 +289,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -310,8 +313,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -334,8 +337,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -355,9 +358,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -380,8 +383,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -404,8 +407,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -428,8 +431,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -452,9 +455,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -477,8 +480,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -501,8 +504,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -525,9 +528,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "direction", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "direction", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -550,9 +553,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "direction", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "direction", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -575,9 +578,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "direction", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "direction", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -600,9 +603,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "direction", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "direction", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -625,9 +628,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -650,9 +653,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -675,11 +678,11 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 4,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -702,11 +705,11 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 4,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -729,10 +732,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -755,10 +758,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -781,9 +784,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -806,10 +809,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -832,10 +835,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "distance", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "distance", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -855,10 +858,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -878,9 +881,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "pad", ByteLength = 2 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "pad", ByteLength = 2 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -900,9 +903,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -925,9 +928,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "item_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "item_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -950,10 +953,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 3,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "item_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "item_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -973,9 +976,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "item_num", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "item_num", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -995,9 +998,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1017,9 +1020,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1042,9 +1045,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1067,9 +1070,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 2,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                        new AiParameter(){ ParameterName = "label", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                        new AiParameter() { ParameterName = "label", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1092,8 +1095,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1116,8 +1119,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1140,8 +1143,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1164,8 +1167,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1188,8 +1191,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "chr_num", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "chr_num", ByteLength = 1 },
+                    },
                 };
             }
         }
@@ -1212,8 +1215,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                     NumberParameters = 1,
                     CommandParameters = new List<IAiParameter>()
                     {
-                        new AiParameter(){ ParameterName = "object_tag", ByteLength = 1 },
-                    }
+                        new AiParameter() { ParameterName = "object_tag", ByteLength = 1 },
+                    },
                 };
             }
         }

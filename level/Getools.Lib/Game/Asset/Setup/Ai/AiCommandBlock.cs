@@ -64,7 +64,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
 
                 c.CMacroAppend(prefix, sb);
 
-                // the c macros are defined with trailing commas, so don't add one here.
+                //// the c macros are defined with trailing commas, so don't add one here.
 
                 sb.AppendLine();
             }
