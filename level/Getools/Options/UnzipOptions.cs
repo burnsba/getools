@@ -6,6 +6,7 @@ using CommandLine.Text;
 
 namespace Getools.Options
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     /// <summary>
     /// Verb to inflate gzip compressed data.
     /// </summary>
@@ -28,7 +29,11 @@ namespace Getools.Options
         [Value(0, Hidden = true)]
         public IEnumerable<string> TypoCatch { get; set; }
 
+        /// <summary>
+        /// Gets or sets flag to show debug trace information. Used to match against original c implementation.
+        /// </summary>
         [Option('t', "trace", Required = false, HelpText = "Debug level TRACE.", Default = false)]
         public bool Trace { get; set; }
     }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 }

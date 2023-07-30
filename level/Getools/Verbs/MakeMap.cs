@@ -17,6 +17,10 @@ using static SvgLib.SvgDefaults.Attributes;
 
 namespace Getools.Verbs
 {
+    /// <summary>
+    /// Program command verb make_map.
+    /// Used to combine data sources and output image file.
+    /// </summary>
     public class MakeMap : VerbBase
     {
         /// <summary>
@@ -178,9 +182,9 @@ namespace Getools.Verbs
 
         private void Go(MakeMapOptions opts)
         {
-            StageSetupFile setup = null;
-            StandFile stan = null;
-            BgFile bg = null;
+            StageSetupFile? setup = null;
+            StandFile? stan = null;
+            BgFile? bg = null;
 
             if (!string.IsNullOrEmpty(opts.SetupFilename))
             {

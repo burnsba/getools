@@ -6,6 +6,7 @@ using CommandLine.Text;
 
 namespace Getools.Options
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     /// <summary>
     /// Verb to build a map from provided inputs.
     /// </summary>
@@ -24,21 +25,39 @@ namespace Getools.Options
         [Option("stan-beta", Required = false, Default = false, HelpText = "Flag for input stan to use beta data structures/formats.")]
         public bool StanDataFormatIsBeta { get; set; }
 
+        /// <summary>
+        /// Gets or sets complete path and filename to setup file.
+        /// </summary>
         [Option("setup", Required = false, HelpText = "setup filename.")]
         public string SetupFilename { get; set; }
 
+        /// <summary>
+        /// Gets or sets complete path and filename to bg file.
+        /// </summary>
         [Option("bg", Required = false, HelpText = "bg filename.")]
         public string BgFilename { get; set; }
 
+        /// <summary>
+        /// Gets or sets level scale.
+        /// </summary>
         [Option("scale", Required = false, Default = 1.0, HelpText = "Level scale.")]
         public double LevelScale { get; set; }
 
+        /// <summary>
+        /// Gets or sets vertical value to slice level at (game internal Y value).
+        /// </summary>
         [Option("slice-z", Required = false, HelpText = "Slice stage at singular value (plane), perpendicular offset from ground (internal y value).")]
         public double? SlizeZ { get; set; }
 
+        /// <summary>
+        /// Gets or sets min vertical value to bound level objects at (game internal Y value).
+        /// </summary>
         [Option("min-z", Required = false, HelpText = "Lower boundary of bounding box to determine points of interest (internal y value).")]
         public double? ZMin { get; set; }
 
+        /// <summary>
+        /// Gets or sets max vertical value to bound level objects at (game internal Y value).
+        /// </summary>
         [Option("max-z", Required = false, HelpText = "Upper boundary of bounding box to determine points of interest (internal y value).")]
         public double? ZMax { get; set; }
 
@@ -99,4 +118,5 @@ namespace Getools.Options
         /// </summary>
         public Getools.Lib.Game.DataFormats BgDataFormat { get; set; }
     }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 }

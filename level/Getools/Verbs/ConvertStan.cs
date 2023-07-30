@@ -24,6 +24,11 @@ namespace Getools.Verbs
         /// <param name="opts">Options verb.</param>
         public void CheckRun<T>(ParserResult<T> result, ConvertStanOptions opts)
         {
+            if (object.ReferenceEquals(null, opts))
+            {
+                throw new NullReferenceException();
+            }
+
             TypoCheck(result, opts);
 
             /* begin input description */
@@ -36,7 +41,7 @@ namespace Getools.Verbs
 
             if (!StandFile.SupportedInputFormats.Contains(opts.InputDataFormat))
             {
-                ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta.Value}\"");
+                ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{opts.InputFileTypeString}\", beta=\"{opts.InputDataFormatIsBeta ?? false}\"");
 
                 DisplayHelp(result, null);
                 Environment.Exit(1);
@@ -54,7 +59,7 @@ namespace Getools.Verbs
 
             if (!StandFile.SupportedOutputFormats.Contains(opts.OutputDataFormat))
             {
-                ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta.Value}\"");
+                ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{opts.OutputFileTypeString}\", beta=\"{opts.OutputDataFormatIsBeta ?? false}\"");
 
                 DisplayHelp(result, null);
                 Environment.Exit(1);
@@ -181,7 +186,7 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{thisOpts.InputFileTypeString}\", beta=\"{thisOpts.InputDataFormatIsBeta.Value}\"");
+                    ConsoleColor.ConsoleWriteLineRed($"Input format not supported: file type=\"{thisOpts.InputFileTypeString}\", beta=\"{thisOpts.InputDataFormatIsBeta ?? false}\"");
                     Environment.Exit(1);
                     return;
             }
@@ -213,7 +218,7 @@ namespace Getools.Verbs
                     break;
 
                 default:
-                    ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{thisOpts.OutputFileTypeString}\", beta=\"{thisOpts.OutputDataFormatIsBeta.Value}\"");
+                    ConsoleColor.ConsoleWriteLineRed($"Output format not supported: file type=\"{thisOpts.OutputFileTypeString}\", beta=\"{thisOpts.OutputDataFormatIsBeta ?? false}\"");
                     Environment.Exit(1);
                     return;
             }

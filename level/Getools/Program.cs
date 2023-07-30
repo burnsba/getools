@@ -53,7 +53,7 @@ namespace Getools
         /// <param name="opts">Options verb.</param>
         private static void CheckRun<T>(ParserResult<T> result, object opts)
         {
-            VerbBase verb = null;
+            VerbBase verb;
 
             switch (opts)
             {

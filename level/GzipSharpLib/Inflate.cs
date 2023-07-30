@@ -1307,7 +1307,7 @@ namespace GzipSharpLib
 
             while ((UInt32)i < n)
             {
-                Huft td_while = null;
+                Huft td_while;
 
                 if (_context.Trace)
                 {
