@@ -18,5 +18,5 @@ The namespace is further broken down:
 
 See also
 
-- [Asset/data_readme.md](Asset/data_readme.md): Technical information on setup data types
-- [Asset/data_readme_propdef.md](Asset/data_readme_propdef.md): Technical information on PROPDEF
+- [Asset/Setup/data_readme.md](Asset/Setup/data_readme.md): Technical information on setup data types
+- [Asset/Setup/data_readme_propdef.md](Asset/Setup/data_readme_propdef.md): Technical information on PROPDEF
