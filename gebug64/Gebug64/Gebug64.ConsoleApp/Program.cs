@@ -1,5 +1,6 @@
 ﻿using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
+using System.IO.Ports;
 using System.Text;
 
 /**
@@ -22,27 +23,48 @@ namespace Gebug64.ConsoleApp
                 _sigint = true;
             };
 
+            var ports = SerialPort.GetPortNames();
+            foreach (var port in ports)
+            {
+                Console.WriteLine($"serial port: {port}");
+            }
+
+            var usePort = "COM5";
             var device = new Unfloader.Flashcart.Everdrive();
             var dm = new DeviceManager(device);
 
-            dm.Init();
+            dm.Init(usePort);
             dm.Start();
+            var testResult = dm.Test();
 
-            while (true)
+            Console.WriteLine($"testResult: {testResult}");
+
+            if (!testResult)
             {
-                if (_sigint)
-                {
-                    break;
-                }
-
-                IGebugMessage? msg = null;
-
-                if (dm.MessagesFromConsole.TryDequeue(out msg))
-                {
-                    Log(msg);
-                    Print(msg);
-                }
+                dm.Stop();
+                Console.WriteLine("Test command failed.");
+                return;
             }
+
+            dm.SendRom("sm64.z64");
+
+            System.Threading.Thread.Sleep(3000);
+
+            //while (true)
+            //{
+            //    if (_sigint)
+            //    {
+            //        break;
+            //    }
+
+            //    IGebugMessage? msg = null;
+
+            //    if (dm.MessagesFromConsole.TryDequeue(out msg))
+            //    {
+            //        Log(msg);
+            //        Print(msg);
+            //    }
+            //}
 
             dm.Stop();
         }

@@ -5,12 +5,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>gebug64</AssemblyName>
   </PropertyGroup>
-
-    <Target Name="Rename" AfterTargets="AfterBuild">
-	    <Move SourceFiles="$(OUTDIR)\Gebug64.ConsoleApp.exe" DestinationFiles="$(OUTDIR)\gebug64.exe" />
-	    <Message Text="Renamed executable file." Importance="high" />
-    </Target>
 
     <ItemGroup>
       <ProjectReference Include="..\Gebug64.Unfloader\Gebug64.Unfloader.csproj" />

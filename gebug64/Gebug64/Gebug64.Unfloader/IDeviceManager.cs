@@ -17,10 +17,12 @@ namespace Gebug64.Unfloader
 
         ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
 
-        void Init();
+        void Init(string portName);
 
         void Start();
 
         void Stop();
+
+        void SendRom(string path);
     }
 }

@@ -9,7 +9,7 @@ namespace Gebug64.Unfloader
 {
     public interface IFlashcart : IDisposable
     {
-        void Init();
+        void Init(string portName);
 
         void Send(IGebugMessage message);
 
@@ -17,6 +17,14 @@ namespace Gebug64.Unfloader
 
         void Disconnect();
 
+        bool Test();
+
+        byte[]? Read();
+
+        void SendRom(byte[] filedata);
+
         Queue<IGebugMessage> MessagesFromConsole { get; }
+
+        bool HasReadData { get; }
     }
 }
