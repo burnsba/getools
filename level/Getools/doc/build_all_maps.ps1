@@ -85,7 +85,7 @@ $app = '..\Getools\bin\Debug\net6.0\Getools.exe'
 # ------
 
 # credits
-& $app make_map --stan="stan/Tbg_len_all_p_stanZ.bin" --setup="setup/u/UsetuplenZ.bin" --output-file="${outFolder}u/Cuba.svg" --scale=0.094662853
+& $app make_map --bg="bg/bg_len_all_p.bin" --stan="stan/Tbg_len_all_p_stanZ.bin" --setup="setup/u/UsetuplenZ.bin" --output-file="${outFolder}u/Cuba.svg" --scale=0.094662853
 
 # ------
 
@@ -103,7 +103,7 @@ $app = '..\Getools\bin\Debug\net6.0\Getools.exe'
 # multiplayer (mp maps)
 & $app make_map --bg="bg/bg_ame_all_p.bin" --stan="stan/Tbg_ame_all_p_stanZ.bin" --setup="setup/Ump_setupimpZ.bin" --output-file="${outFolder}u/Mp_Basement.svg" --scale=0.65999997
 & $app make_map --bg="bg/bg_ame_all_p.bin" --stan="stan/Tbg_ame_all_p_stanZ.bin" --setup="setup/Ump_setupashZ.bin" --output-file="${outFolder}u/Mp_Stack.svg" --scale=0.65999997
-& $app make_map --stan="stan/Tbg_oat_all_p_stanZ.bin" --setup="setup/Ump_setupoatZ.bin" --output-file="${outFolder}u/Mp_Caves.svg" --scale=0.14142857
+& $app make_map --bg="bg/bg_oat_all_p.bin" --stan="stan/Tbg_oat_all_p_stanZ.bin" --setup="setup/Ump_setupoatZ.bin" --output-file="${outFolder}u/Mp_Caves.svg" --scale=0.14142857
 & $app make_map --bg="bg/bg_ame_all_p.bin" --stan="stan/Tbg_ame_all_p_stanZ.bin" --setup="setup/Ump_setupameZ.bin" --output-file="${outFolder}u/Mp_Library.svg" --scale=0.65999997
 & $app make_map --bg="bg/bg_dish_all_p.bin" --stan="stan/Tbg_dish_all_p_stanZ.bin" --setup="setup/Ump_setupdishZ.bin" --output-file="${outFolder}u/Mp_Temple.svg" --scale=0.47142857
 & $app make_map --bg="bg/bg_ref_all_p.bin" --stan="stan/Tbg_ref_all_p_stanZ.bin" --setup="setup/Ump_setuprefZ.bin" --output-file="${outFolder}u/Mp_Complex.svg" --scale=0.94285715
@@ -112,6 +112,3 @@ $app = '..\Getools\bin\Debug\net6.0\Getools.exe'
 
 # Citadel
 & $app make_map --bg="bg/bg_cat_all_p.bin" --stan="stan/Tbg_cat_all_p_stanZ.bin" --stan-beta --output-file="${outFolder}u/Citadel.svg" --scale=0.76852286
-
-& $app make_map --bg="bg/bg_rit_all_p.bin"  --output-file="${outFolder}u/Rit.svg" --scale=0.94285715
-& $app make_map --bg="bg/bg_lip_all_p.bin"  --output-file="${outFolder}u/Lip.svg" --scale=0.94285715
