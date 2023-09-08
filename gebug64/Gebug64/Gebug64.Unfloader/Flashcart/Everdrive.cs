@@ -1,4 +1,5 @@
 ﻿using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.UsbPacket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,25 +32,21 @@ namespace Gebug64.Unfloader.Flashcart
             throw new NotImplementedException();
         }
 
-        public override bool Test()
+        internal override void SendTest()
         {
             SendEverdriveCommand(Command_Test_Send, 0, 0, 0);
+        }
 
-            System.Threading.Thread.Sleep(100);
+        internal override bool IsTestCommandResponse(Packet packet)
+        {
+            var data = packet.GetData();
 
-            var response = Read();
-
-            if (object.ReferenceEquals(null, response))
+            if (object.ReferenceEquals(null, data) || data.Length < 4)
             {
                 return false;
             }
 
-            if (response.Length < 4)
-            {
-                return false;
-            }
-
-            var commandResponse = System.Text.Encoding.ASCII.GetString(response.Take(Command_Test_Response.Length).ToArray());
+            var commandResponse = System.Text.Encoding.ASCII.GetString(data.Take(Command_Test_Response.Length).ToArray());
 
             return commandResponse == Command_Test_Response;
         }
@@ -104,38 +101,38 @@ namespace Gebug64.Unfloader.Flashcart
                 Console.WriteLine($"loop: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
             }
 
-            var startSpin = System.Diagnostics.Stopwatch.StartNew();
-            int spinCount = 0;
+            //var startSpin = System.Diagnostics.Stopwatch.StartNew();
+            //int spinCount = 0;
 
-            while (true)
-            {
-                SendEverdriveCommand(Command_Test_Send, 0, 0, 0);
-                System.Threading.Thread.Sleep(100);
-                var response = Read();
-                string commandResponse;
-                if (!object.ReferenceEquals(null, response))
-                {
-                    commandResponse = System.Text.Encoding.ASCII.GetString(response);
-                    if (commandResponse.StartsWith(Command_Test_Response))
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    spinCount++;
-                }
+            //while (true)
+            //{
+            //    SendEverdriveCommand(Command_Test_Send, 0, 0, 0);
+            //    System.Threading.Thread.Sleep(100);
+            //    var response = Read();
+            //    string commandResponse;
+            //    if (!object.ReferenceEquals(null, response))
+            //    {
+            //        commandResponse = System.Text.Encoding.ASCII.GetString(response);
+            //        if (commandResponse.StartsWith(Command_Test_Response))
+            //        {
+            //            break;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        spinCount++;
+            //    }
 
-                if (spinCount > 1000)
-                {
-                    throw new InvalidOperationException("Error uploading rom. All bytes written, but can't receive valid test command response from everdrive.");
-                }
-            }
+            //    if (spinCount > 1000)
+            //    {
+            //        throw new InvalidOperationException("Error uploading rom. All bytes written, but can't receive valid test command response from everdrive.");
+            //    }
+            //}
 
-            startSpin.Stop();
+            //startSpin.Stop();
 
             // Delay is needed or it won't boot properly
-            System.Threading.Thread.Sleep(500);
+            System.Threading.Thread.Sleep(2000);
 
             SendEverdriveCommand(Command_PifBoot_Send, 0, 0, 0);
 

@@ -17,8 +17,6 @@ namespace Gebug64.Unfloader
 
         void Disconnect();
 
-        bool Test();
-
         byte[]? Read();
 
         void SendRom(byte[] filedata);

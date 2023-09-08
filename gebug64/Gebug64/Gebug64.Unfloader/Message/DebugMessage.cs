@@ -8,6 +8,5 @@ namespace Gebug64.Unfloader.Message
 {
     public class DebugMessage : GebugMessageBase
     {
-        public string MessageDescription => "debug message";
     }
 }

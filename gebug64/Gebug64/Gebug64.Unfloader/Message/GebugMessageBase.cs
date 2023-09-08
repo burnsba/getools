@@ -1,9 +1,9 @@
-﻿using Gebug64.Unfloader.Message.Packet;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.UsbPacket;
 
 namespace Gebug64.Unfloader.Message
 {
@@ -13,28 +13,10 @@ namespace Gebug64.Unfloader.Message
 
         public Guid Id => _id;
 
-        public CommunicationSource Source { get; private set; }
+        public CommunicationSource Source { get; set; }
 
-        public IPacket Packet { get; protected set; }
+        public Packet UsbPacket { get; set; }
 
-        public IPacket? OriginationPacket { get; protected set; }
-
-        public string MessageDescription { get; protected set; }
-
-        public string GetFriendlyLogText()
-        {
-            string addtional = Packet.GetAdditionalDescription() ?? string.Empty;
-
-            var sb = new StringBuilder();
-            sb.Append($"Received [{MessageDescription}]: [{Packet.PacketDescription}]");
-
-            if (!string.IsNullOrEmpty(addtional))
-            {
-                sb.Append(" ");
-                sb.Append(addtional);
-            }
-
-            return sb.ToString();
-        }
+        public DateTime InstantiateTime { get; set; }
     }
 }

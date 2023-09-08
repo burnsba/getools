@@ -19,7 +19,21 @@ namespace Gebug64.ConsoleApp
 
         static void Main(string[] args)
         {
-            Console.CancelKeyPress += delegate {
+            string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath);
+            if (!Directory.Exists(strWorkPath))
+            {
+                throw new DirectoryNotFoundException(strWorkPath);
+            }
+            var localFiles = Directory.GetFiles(strWorkPath).Select(x => Path.GetFileName(x));
+            var filename = localFiles.Where(x => x.StartsWith("ge007")).Where(x => x.EndsWith(".z64")).OrderBy(x => x).Last();
+
+            Console.CancelKeyPress += (_, ccea) => {
+                // Console.CancelKeyPress event immediately terminates the program after this
+                // event handler finishes, resulting in a race condition where the program
+                // is stuck looking at the remaining code but unwilling to execute it.
+                // Setting the cancel property will communicate the app shouldn't be terminated.
+                ccea.Cancel = true;
                 _sigint = true;
             };
 
@@ -46,16 +60,34 @@ namespace Gebug64.ConsoleApp
                 return;
             }
 
-            dm.SendRom("sm64.z64");
+            Console.WriteLine($"Send file: {filename}");
+            dm.SendRom(filename);
 
             System.Threading.Thread.Sleep(3000);
 
-            //while (true)
-            //{
-            //    if (_sigint)
-            //    {
-            //        break;
-            //    }
+            while (true)
+            {
+                if (_sigint)
+                {
+                    break;
+                }
+
+                //if (device.HasReadData)
+                //{
+                //    var bytes = device.Read()!;
+
+                //    UsbPacket pp = null;
+                //    var parseResult = UsbPacket.Unwrap(bytes, out pp);
+                //    if (parseResult == UsbPacketParseResult.Success)
+                //    {
+                //        var text = System.Text.Encoding.ASCII.GetString(pp.GetData());
+                //        Console.WriteLine($"n64: size={pp.Size}, type={pp.DataType}, text={text}");
+                //    }
+                //    else
+                //    {
+                //        Console.WriteLine($"Error reading packet: {parseResult}");
+                //    }
+                //}
 
             //    IGebugMessage? msg = null;
 
@@ -64,19 +96,34 @@ namespace Gebug64.ConsoleApp
             //        Log(msg);
             //        Print(msg);
             //    }
-            //}
 
+                if (!dm.MessagesFromConsole.IsEmpty)
+                {
+                    IGebugMessage? msg = null;
+                    
+                    while (!dm.MessagesFromConsole.TryDequeue(out msg))
+                    {
+                        ;
+                    }
+
+                    Console.WriteLine(msg.UsbPacket.ToString());
+                }
+            }
+
+            device.Disconnect();
             dm.Stop();
+
+            System.Threading.Thread.Sleep(3000);
         }
 
-        static void Log(IGebugMessage msg)
-        {
-            //
-        }
+        //static void Log(IGebugMessage msg)
+        //{
+        //    //
+        //}
 
-        static void Print(IGebugMessage msg)
-        {
-            Console.WriteLine(msg.GetFriendlyLogText());
-        }
+        //static void Print(IGebugMessage msg)
+        //{
+        //    Console.WriteLine(msg.GetFriendlyLogText());
+        //}
     }
 }

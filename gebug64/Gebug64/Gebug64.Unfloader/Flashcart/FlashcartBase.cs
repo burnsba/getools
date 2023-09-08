@@ -5,15 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.UsbPacket;
 
 namespace Gebug64.Unfloader.Flashcart
 {
     public abstract class FlashcartBase : IFlashcart
     {
         private const int DefaultWriteLength = 32768;
-        private bool _isInit = false;
+        protected bool _isInit = false;
 
-        private object _lock = new object();
+        protected object _lock = new object();
 
         protected SerialPort? _serialPort = null;
         protected Queue<byte> _readQueue = new Queue<byte>();
@@ -51,12 +52,18 @@ namespace Gebug64.Unfloader.Flashcart
 
                 if (_serialPort.IsOpen)
                 {
+                    _serialPort.DtrEnable = false;
+                    _serialPort.RtsEnable = false;
+                    _serialPort.DiscardInBuffer();
+                    _serialPort.DiscardOutBuffer();
+                    _serialPort.BaseStream.Close();
                     _serialPort.Close();
                 }
             }
 
             _serialPort = null;
             _isInit = false;
+            _serialPort = null;
         }
 
         public void Dispose()
@@ -64,7 +71,9 @@ namespace Gebug64.Unfloader.Flashcart
             Disconnect();
         }
 
-        public abstract bool Test();
+        internal abstract void SendTest();
+
+        internal abstract bool IsTestCommandResponse(Packet packet);
 
         public abstract void SendRom(byte[] filedata);
 
