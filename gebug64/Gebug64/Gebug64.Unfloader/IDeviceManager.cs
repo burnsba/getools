@@ -24,5 +24,7 @@ namespace Gebug64.Unfloader
         void Stop();
 
         void SendRom(string path);
+
+        bool Test();
     }
 }

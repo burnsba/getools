@@ -3,14 +3,6 @@ using Gebug64.Unfloader.Message;
 using System.IO.Ports;
 using System.Text;
 
-/**
-TODO:
-
-  - handle ungraceful disconnect
-  - resolve whether a message has a response or not
- 
-*/
-
 namespace Gebug64.ConsoleApp
 {
     internal class Program
@@ -19,6 +11,8 @@ namespace Gebug64.ConsoleApp
 
         static void Main(string[] args)
         {
+            var logger = new Logger();
+
             string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
             string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath);
             if (!Directory.Exists(strWorkPath))
@@ -44,7 +38,7 @@ namespace Gebug64.ConsoleApp
             }
 
             var usePort = "COM5";
-            var device = new Unfloader.Flashcart.Everdrive();
+            var device = new Unfloader.Flashcart.Everdrive(logger);
             var dm = new DeviceManager(device);
 
             dm.Init(usePort);

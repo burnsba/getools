@@ -1,0 +1,50 @@
+﻿<Window x:Class="Gebug64.Win.Windows.ErrorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gebug64.Win.Windows"
+        mc:Ignorable="d"
+        Name="TheErrorWindow"
+        Title="{Binding Path=WindowTitle}" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBox
+                    Grid.Row="0"
+                    Margin="30,10,30,20"
+                    Text="{Binding Path=HeaderMessage}"
+                    IsReadOnly="True"
+                    Height="Auto"
+                    TextWrapping="Wrap"
+                    FontSize="24"
+                    />
+
+                <TextBox
+                    Grid.Row="1"
+                    Margin="30,0,30,0"
+                    Text="{Binding Path=TextContent}"
+                    IsReadOnly="True"
+                    Height="Auto"
+                    TextWrapping="Wrap"
+                    VerticalScrollBarVisibility="Visible"
+                    HorizontalScrollBarVisibility="Hidden"
+                    />
+            </Grid>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Margin="0,10,10,10" Padding="12,6,12,6" Command="{Binding Path=CloseCommand}" CommandParameter="{Binding ElementName=TheErrorWindow}" Content="{Binding Path=ButtonText}"></Button>
+        </StackPanel>
+    </Grid>
+</Window>

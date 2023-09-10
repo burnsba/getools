@@ -1,5 +1,6 @@
 ﻿using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.UsbPacket;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,9 +18,11 @@ namespace Gebug64.Unfloader.Flashcart
         private const string Command_WriteRom = "cmdW";
         private const string Command_PifBoot_Send = "cmds";
 
-        public Everdrive()
-        {
+        private readonly ILogger _logger;
 
+        public Everdrive(ILogger logger)
+        {
+            _logger = logger;
         }
 
         public override void ProcessData()
@@ -67,7 +70,7 @@ namespace Gebug64.Unfloader.Flashcart
                 filedata = newFileData;
             }
 
-            Console.WriteLine($"Sending command: {Command_WriteRom}");
+            _logger.Log(LogLevel.Debug, $"Sending command: {Command_WriteRom}");
 
             var chunks = bytesLeft / 512;
             SendEverdriveCommand(Command_WriteRom, WriteRomTargetAddress, chunks, 0);
@@ -98,45 +101,15 @@ namespace Gebug64.Unfloader.Flashcart
 
                 double percentDone = 100.0 * (double)bytesDone / (double)((int)padSize);
 
-                Console.WriteLine($"loop: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
+                _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
             }
-
-            //var startSpin = System.Diagnostics.Stopwatch.StartNew();
-            //int spinCount = 0;
-
-            //while (true)
-            //{
-            //    SendEverdriveCommand(Command_Test_Send, 0, 0, 0);
-            //    System.Threading.Thread.Sleep(100);
-            //    var response = Read();
-            //    string commandResponse;
-            //    if (!object.ReferenceEquals(null, response))
-            //    {
-            //        commandResponse = System.Text.Encoding.ASCII.GetString(response);
-            //        if (commandResponse.StartsWith(Command_Test_Response))
-            //        {
-            //            break;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        spinCount++;
-            //    }
-
-            //    if (spinCount > 1000)
-            //    {
-            //        throw new InvalidOperationException("Error uploading rom. All bytes written, but can't receive valid test command response from everdrive.");
-            //    }
-            //}
-
-            //startSpin.Stop();
 
             // Delay is needed or it won't boot properly
             System.Threading.Thread.Sleep(2000);
 
             SendEverdriveCommand(Command_PifBoot_Send, 0, 0, 0);
 
-            Console.WriteLine($"Sending command: {Command_PifBoot_Send}");
+            _logger.Log(LogLevel.Debug, $"Sending command: {Command_PifBoot_Send}");
         }
 
         /// <summary>

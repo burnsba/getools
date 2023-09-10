@@ -188,7 +188,7 @@ namespace Gebug64.Unfloader
                         }
                         else if (!object.ReferenceEquals(null, pp))
                         {
-                            if (pp.Size < 15 && pp.GetData().All(x => x == 0))
+                            if (pp.GetData() == null || pp.GetData()!.All(x => x == 0))
                             {
                                 // ignore this, zero pad ending of packet.
                             }
