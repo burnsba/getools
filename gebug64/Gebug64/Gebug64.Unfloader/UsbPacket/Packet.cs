@@ -49,11 +49,11 @@ namespace Gebug64.Unfloader.UsbPacket
 
             var length = _data?.Length ?? 0;
 
+            toSend.Add((byte)DataType);
+
             toSend.Add((byte)(length >> 16));
             toSend.Add((byte)(length >> 8));
             toSend.Add((byte)(length >> 0));
-
-            toSend.Add((byte)DataType);
 
             if (!ReferenceEquals(null, _data))
             {

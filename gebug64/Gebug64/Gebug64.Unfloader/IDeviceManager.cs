@@ -17,6 +17,8 @@ namespace Gebug64.Unfloader
 
         ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
 
+        bool IsShutdown { get; }
+
         void Init(string portName);
 
         void Start();
@@ -25,6 +27,8 @@ namespace Gebug64.Unfloader
 
         void SendRom(string path);
 
-        bool Test();
+        bool TestFlashcartConnected();
+
+        bool TestRomConnected();
     }
 }

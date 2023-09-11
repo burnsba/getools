@@ -25,14 +25,11 @@ namespace Gebug64.Unfloader.Flashcart
             _logger = logger;
         }
 
-        public override void ProcessData()
-        {
-            throw new NotImplementedException();
-        }
-
         public override void Send(IGebugMessage message)
         {
-            throw new NotImplementedException();
+            var packet = message.GetUsbPacket();
+
+            Write(packet.Wrap());
         }
 
         internal override void SendTest()

@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}"
-        Title="MainWindow" Height="450" Width="800"
+        Title="MainWindow" Height="450" Width="900"
         Closing="Window_Closing"
         >
     <Window.Resources>
@@ -50,6 +50,9 @@
                 <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ConnectDeviceCommand}">
                     <TextBlock Text="{Binding ConnectCommandText}"></TextBlock>
                 </Button>
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ResetConnectionCommand}">
+                    <TextBlock Text="Reset"></TextBlock>
+                </Button>
 
             </StackPanel>
         </Grid>
@@ -57,7 +60,7 @@
         <Grid Grid.Row="1" Margin="10">
             <StackPanel Orientation="Horizontal">
                 <Label Margin="10 0 10 0">Load ROM (in everdrive menu):</Label>
-                <TextBox Width="180" VerticalAlignment="Center" Text="{Binding SelectedRom}" IsReadOnly="True" Name="SelectedRomTextBox"></TextBox>
+                <TextBox Width="180" VerticalAlignment="Center" Text="{Binding SelectedRom}" IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="SelectedRomTextBox"></TextBox>
                 <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ChooseSelectedRomCommand}">...</Button>
                 <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SendRomCommand}">Send</Button>
 
@@ -69,9 +72,9 @@
             <TabControl>
                 <TabItem Header="Ramrom demo">
                     [Native ramrom replay methods]
-                    capture inputs from RAM
-                    save to PC
-                    load from PC
+                    start/stop recording,
+                    save_ramrom_to_devtool,
+                    load_ramrom_from_devtool
                 </TabItem>
                 <TabItem Header="Replay">
                     [gebug replay]
@@ -87,14 +90,16 @@
                     asdf
                 </TabItem>
                 <TabItem Header="Objectives">
-                    Read, set, clear
+                    override single objective
                 </TabItem>
                 <TabItem Header="Cheat">
                     Enable, disable
                 </TabItem>
                 <TabItem Header="Memory">
                     Read memory
-                    Write memory
+                    Write memory,
+                    specific variables / blocks:
+                    get/set random seed
                 </TabItem>
                 <TabItem Header="Sound">
                     Load, play music
@@ -141,6 +146,13 @@
                 <TabItem Header="Vi">
                     Set FoV
                     Dump framebuffer
+                </TabItem>
+                <TabItem Header="Meta">
+                    Ping,
+                    Echo on/off
+                </TabItem>
+                <TabItem Header="Misc">
+                    Get ostime
                 </TabItem>
             </TabControl>
         </Grid>

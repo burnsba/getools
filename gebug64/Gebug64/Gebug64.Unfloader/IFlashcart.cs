@@ -13,8 +13,6 @@ namespace Gebug64.Unfloader
 
         void Send(IGebugMessage message);
 
-        void ProcessData();
-
         void Disconnect();
 
         byte[]? Read();

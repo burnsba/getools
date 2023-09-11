@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
@@ -30,6 +31,18 @@ namespace Gebug64.Win.ViewModels
     /// </summary>
     public class MainWindowViewModel : WindowViewModelBase
     {
+        /// <summary>
+        /// If the device is connected, and no communication occurs for this many seconds,
+        /// then try to send the ping command.
+        /// </summary>
+        private const int PingIntervalSec = 20;
+
+        /// <summary>
+        /// If no communiation occurs for this many seconds, assume the device is no
+        /// longer connected.
+        /// </summary>
+        private const int TimeoutDisconnectSec = 70;
+
         private bool _isConnected = false;
         private bool _isConnecting = false;
         private bool _isRefreshing = false;
@@ -56,11 +69,16 @@ namespace Gebug64.Win.ViewModels
 
         private readonly ILogger _logger;
 
-        private IDeviceManager _deviceManager;
+        private IDeviceManager? _deviceManager;
 
         private readonly Dispatcher _dispatcher;
         private bool _shutdown = false;
         private Thread _thread;
+
+        private Stopwatch? _lastMessageReceived = null;
+        private Stopwatch? _lastMessageSent = null;
+
+        private ConnectionLevel _connectionLevel = ConnectionLevel.NotConnected;
 
         public string? CurrentSerialPort
         {
@@ -122,6 +140,10 @@ namespace Gebug64.Win.ViewModels
 
         public ICommand ConnectDeviceCommand { get; set; }
 
+        public bool CanResetConnection => _connectionError;
+
+        public ICommand ResetConnectionCommand { get; set; }
+
         public string SelectedRom
         {
             get { return _selectedRomPath; }
@@ -136,7 +158,12 @@ namespace Gebug64.Win.ViewModels
 
         public ICommand ChooseSelectedRomCommand { get; set; }
 
-        public bool CanSendRom => _isConnected && _selectedRomPathIsValid && !_currentlySendingRom && _connectionError == false;
+        public bool CanSendRom =>
+            _isConnected
+            && _selectedRomPathIsValid
+            && !_currentlySendingRom
+            && _connectionError == false
+            && _connectionLevel == ConnectionLevel.Everdrive;
 
         public ICommand SendRomCommand { get; set; }
 
@@ -178,6 +205,7 @@ namespace Gebug64.Win.ViewModels
 
             RefreshAvailableSerialPortsCommand = new CommandHandler(RefreshAvailableSerialPortsCommandHandler, () => CanRefresh);
             ConnectDeviceCommand = new CommandHandler(ConnectDeviceCommandHandler, () => CanConnect);
+            ResetConnectionCommand = new CommandHandler(ResetConnectionCommandHandler, () => CanResetConnection);
             ChooseSelectedRomCommand = new CommandHandler(ChooseSelectedRomCommandHandler);
             SendRomCommand = new CommandHandler(SendRomCommandHandler, () => CanSendRom);
             SaveLogCommand = new CommandHandler(SaveLogCommandHandler);
@@ -188,6 +216,13 @@ namespace Gebug64.Win.ViewModels
             SetAvailableFlashcarts();
 
             StartThread();
+        }
+
+        private enum ConnectionLevel
+        {
+            NotConnected,
+            Everdrive,
+            Rom,
         }
 
         public void Shutdown()
@@ -217,6 +252,11 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 IsRefreshing = false;
+
+                if (string.IsNullOrEmpty(CurrentSerialPort) && ports.Any())
+                {
+                    CurrentSerialPort = AvailableSerialPorts.Last();
+                }
             });
         }
 
@@ -229,11 +269,40 @@ namespace Gebug64.Win.ViewModels
 
             _deviceManager.Stop();
 
+            var sw = Stopwatch.StartNew();
+
+            while (!_deviceManager.IsShutdown)
+            {
+                System.Threading.Thread.Sleep(10);
+
+                if (sw.Elapsed.TotalSeconds > 5)
+                {
+                    throw new Exception("Could not safely terminate device manager thread.");
+                }
+            }
+
+            _deviceManager = null;
+            _connectionLevel = ConnectionLevel.NotConnected;
+
+            if (!object.ReferenceEquals(null, _lastMessageReceived))
+            {
+                _lastMessageReceived.Stop();
+                _lastMessageReceived = null;
+            }
+
+            if (!object.ReferenceEquals(null, _lastMessageSent))
+            {
+                _lastMessageSent.Stop();
+                _lastMessageSent = null;
+            }
+
             _isConnected = false;
             OnPropertyChanged(nameof(CanConnect));
             OnPropertyChanged(nameof(CanSendRom));
 
             SetConnectCommandText();
+
+            _logger.Log(LogLevel.Information, $"Disconnected");
         }
 
         private void SetConnectCommandText()
@@ -290,25 +359,45 @@ namespace Gebug64.Win.ViewModels
                 _deviceManager.Init(CurrentSerialPort);
                 _deviceManager.Start();
 
-                var testResult = _deviceManager.Test();
+                var testResult = _deviceManager.TestFlashcartConnected();
 
-                _logger.Log(LogLevel.Information, $"Connect device test response: {testResult}");
+                _logger.Log(LogLevel.Information, $"Connection level test, checking if in flashcart menu: {testResult}");
+
+                if (testResult)
+                {
+                    _connectionLevel = ConnectionLevel.Everdrive;
+                }
 
                 if (!testResult)
                 {
-                    _deviceManager.Stop();
-                    _logger.Log(LogLevel.Error, $"Connect device test response: test command failed");
+                    testResult = _deviceManager.TestRomConnected();
+                    _logger.Log(LogLevel.Information, $"Connection level test, checking if in rom: {testResult}");
 
-                    _connectionError = true;
-                    _isConnected = false;
+                    if (testResult)
+                    {
+                        _connectionLevel = ConnectionLevel.Rom;
 
-                    _isConnecting = false;
-                    OnPropertyChanged(nameof(CanConnect));
-                    OnPropertyChanged(nameof(CanSendRom));
+                        _logger.Log(LogLevel.Information, $"Send ping");
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                    }
 
-                    SetConnectCommandText();
+                    if (testResult == false)
+                    {
+                        _deviceManager.Stop();
+                        _logger.Log(LogLevel.Error, $"Connection level test: test command failed");
 
-                    return;
+                        _connectionError = true;
+                        _isConnected = false;
+
+                        _isConnecting = false;
+                        OnPropertyChanged(nameof(CanResetConnection));
+                        OnPropertyChanged(nameof(CanConnect));
+                        OnPropertyChanged(nameof(CanSendRom));
+
+                        SetConnectCommandText();
+
+                        return;
+                    }
                 }
 
                 _isConnected = true;
@@ -335,6 +424,17 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        private void ResetConnectionCommandHandler()
+        {
+            Disconnect();
+
+            _isConnected = false;
+            _isConnecting = false;
+
+            _connectionError = false;
+            OnPropertyChanged(nameof(CanResetConnection));
+        }
+
         private void SetAvailableFlashcarts()
         {
             if (_setAvailableFlashcarts)
@@ -345,6 +445,11 @@ namespace Gebug64.Win.ViewModels
             _setAvailableFlashcarts = true;
 
             AvailableFlashcarts.Add((Everdrive)Workspace.Instance.ServiceProvider.GetService(typeof(Everdrive))!);
+
+            if (object.ReferenceEquals(null, CurrentFlashcart))
+            {
+                CurrentFlashcart = AvailableFlashcarts.Last();
+            }
         }
 
         private void SendRomCommandHandler()
@@ -365,7 +470,15 @@ namespace Gebug64.Win.ViewModels
                     });
 
                     _logger.Log(LogLevel.Information, $"Send file: {SelectedRom}");
-                    _deviceManager.SendRom(SelectedRom);
+                    _deviceManager!.SendRom(SelectedRom);
+
+                    // need to delay after loading rom or everdrive gets cranky
+                    Task.Run(() =>
+                    {
+                        System.Threading.Thread.Sleep(5000);
+                        _logger.Log(LogLevel.Information, $"Send ping");
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                    });
 
                     _dispatcher.BeginInvoke(() =>
                     {
@@ -459,16 +572,67 @@ namespace Gebug64.Win.ViewModels
 
                         while (!_deviceManager.MessagesFromConsole.TryDequeue(out msg))
                         {
-                            ;
+                            if (_deviceManager.MessagesFromConsole.IsEmpty)
+                            {
+                                return;
+                            }
                         }
 
-                        _logger.Log(LogLevel.Information, msg.UsbPacket.ToString());
+                        if (!object.ReferenceEquals(null, _lastMessageReceived))
+                        {
+                            _lastMessageReceived.Stop();
+                        }
+
+                        _lastMessageReceived = Stopwatch.StartNew();
+
+                        if (msg is RomMessage)
+                        {
+                            _connectionLevel = ConnectionLevel.Rom;
+                            OnPropertyChanged(nameof(CanSendRom));
+
+                            _logger.Log(LogLevel.Information, ((RomMessage)msg).ToString());
+                        }
+                        else
+                        {
+                            _logger.Log(LogLevel.Information, msg.GetUsbPacket().ToString());
+                        }
 
                         if (_shutdown)
                         {
                             return;
                         }
                     });
+
+                    if (_shutdown)
+                    {
+                        break;
+                    }
+                }
+
+                if (_connectionLevel == ConnectionLevel.Rom
+                    && !object.ReferenceEquals(null, _lastMessageReceived)
+                    && _lastMessageReceived.Elapsed.TotalSeconds > PingIntervalSec)
+                {
+                    if (object.ReferenceEquals(null, _lastMessageSent))
+                    {
+                        _lastMessageSent = Stopwatch.StartNew();
+                    }
+
+                    if (_lastMessageSent.Elapsed.TotalSeconds > PingIntervalSec)
+                    {
+                        _logger.Log(LogLevel.Information, $"Send ping");
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                        _lastMessageSent.Stop();
+                        _lastMessageSent = Stopwatch.StartNew();
+                    }
+                }
+
+                if (_connectionLevel == ConnectionLevel.Rom
+                    && !object.ReferenceEquals(null, _lastMessageReceived)
+                    && _lastMessageReceived.Elapsed.TotalSeconds > TimeoutDisconnectSec)
+                {
+                    _dispatcher.BeginInvoke(() => Task.Run(() => Disconnect()));
                 }
 
                 System.Threading.Thread.Sleep(5);

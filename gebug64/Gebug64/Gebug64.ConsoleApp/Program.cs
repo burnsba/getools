@@ -43,21 +43,24 @@ namespace Gebug64.ConsoleApp
 
             dm.Init(usePort);
             dm.Start();
-            var testResult = dm.Test();
+            //var testResult = dm.TestEverdriveConnected();
 
-            Console.WriteLine($"testResult: {testResult}");
+            //Console.WriteLine($"testResult: {testResult}");
 
-            if (!testResult)
-            {
-                dm.Stop();
-                Console.WriteLine("Test command failed.");
-                return;
-            }
+            //if (!testResult)
+            //{
+            //    dm.Stop();
+            //    Console.WriteLine("Test command failed.");
+            //    return;
+            //}
 
-            Console.WriteLine($"Send file: {filename}");
-            dm.SendRom(filename);
+            //Console.WriteLine($"Send file: {filename}");
+            //dm.SendRom(filename);
 
-            System.Threading.Thread.Sleep(3000);
+            //System.Threading.Thread.Sleep(3000);
+
+            bool toggle = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
 
             while (true)
             {
@@ -65,31 +68,6 @@ namespace Gebug64.ConsoleApp
                 {
                     break;
                 }
-
-                //if (device.HasReadData)
-                //{
-                //    var bytes = device.Read()!;
-
-                //    UsbPacket pp = null;
-                //    var parseResult = UsbPacket.Unwrap(bytes, out pp);
-                //    if (parseResult == UsbPacketParseResult.Success)
-                //    {
-                //        var text = System.Text.Encoding.ASCII.GetString(pp.GetData());
-                //        Console.WriteLine($"n64: size={pp.Size}, type={pp.DataType}, text={text}");
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine($"Error reading packet: {parseResult}");
-                //    }
-                //}
-
-            //    IGebugMessage? msg = null;
-
-            //    if (dm.MessagesFromConsole.TryDequeue(out msg))
-            //    {
-            //        Log(msg);
-            //        Print(msg);
-            //    }
 
                 if (!dm.MessagesFromConsole.IsEmpty)
                 {
@@ -100,8 +78,36 @@ namespace Gebug64.ConsoleApp
                         ;
                     }
 
-                    Console.WriteLine(msg.UsbPacket.ToString());
+                    if (msg is RomMessage)
+                    {
+                        Console.WriteLine(((RomMessage)msg).ToString());
+                    }
+                    else
+                    {
+                        Console.WriteLine(msg.GetUsbPacket().ToString());
+                    }
                 }
+
+                if (sw.Elapsed.TotalSeconds > 5)
+                {
+                    sw.Stop();
+
+                    Console.WriteLine("enqueue message ...");
+                    if (toggle)
+                    {
+                        dm.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc } );
+                    }
+                    else
+                    {
+                        dm.EnqueueMessage(new RomMiscMessage(Unfloader.Message.MessageType.GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc } );
+                    }
+
+                    toggle = !toggle;
+
+                    sw = System.Diagnostics.Stopwatch.StartNew();
+                }
+
+                System.Threading.Thread.Sleep(10);
             }
 
             device.Disconnect();
@@ -109,15 +115,5 @@ namespace Gebug64.ConsoleApp
 
             System.Threading.Thread.Sleep(3000);
         }
-
-        //static void Log(IGebugMessage msg)
-        //{
-        //    //
-        //}
-
-        //static void Print(IGebugMessage msg)
-        //{
-        //    Console.WriteLine(msg.GetFriendlyLogText());
-        //}
     }
 }

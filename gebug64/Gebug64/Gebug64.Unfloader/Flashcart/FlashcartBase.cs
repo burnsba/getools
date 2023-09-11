@@ -29,8 +29,6 @@ namespace Gebug64.Unfloader.Flashcart
             }
         }
 
-        public abstract void ProcessData();
-
         public abstract void Send(IGebugMessage message);
 
         public void Init(string portName)
@@ -52,12 +50,17 @@ namespace Gebug64.Unfloader.Flashcart
 
                 if (_serialPort.IsOpen)
                 {
-                    _serialPort.DtrEnable = false;
-                    _serialPort.RtsEnable = false;
-                    _serialPort.DiscardInBuffer();
-                    _serialPort.DiscardOutBuffer();
-                    _serialPort.BaseStream.Close();
-                    _serialPort.Close();
+                    try
+                    {
+                        _serialPort.DtrEnable = false;
+                        _serialPort.RtsEnable = false;
+                        _serialPort.DiscardInBuffer();
+                        _serialPort.DiscardOutBuffer();
+                        _serialPort.BaseStream.Close();
+                        _serialPort.Close();
+                    }
+                    catch (System.ObjectDisposedException)
+                    { }
                 }
             }
 

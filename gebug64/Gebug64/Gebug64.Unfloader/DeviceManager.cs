@@ -1,5 +1,6 @@
 ﻿using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.UsbPacket;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,10 +19,17 @@ namespace Gebug64.Unfloader
         private bool _stop = true;
         private ConcurrentQueue<IGebugMessage> _sendToConsoleQueue = new ConcurrentQueue<IGebugMessage>();
         private ConcurrentQueue<IGebugMessage> _receiveFromConsoleQueue = new ConcurrentQueue<IGebugMessage>();
+        private ConcurrentQueue<IGebugMessage> _emptyQueue = new ConcurrentQueue<IGebugMessage>();
+
+        private bool _priorityLock = false;
 
         public IFlashcart? Flashcart => _flashcart;
 
-        public ConcurrentQueue<IGebugMessage> MessagesFromConsole => _receiveFromConsoleQueue;
+        public ConcurrentQueue<IGebugMessage> MessagesFromConsole => _priorityLock ? _emptyQueue : _receiveFromConsoleQueue;
+
+        public ConcurrentQueue<IGebugMessage> SendToConsole => _sendToConsoleQueue;
+
+        public bool IsShutdown => object.ReferenceEquals(null, _thread) || !_thread.IsAlive;
 
         public DeviceManager(IFlashcart flashcart)
         {
@@ -57,8 +65,58 @@ namespace Gebug64.Unfloader
             _flashcart!.Init(portName);
         }
 
-        public bool Test()
+        public bool TestRomConnected()
         {
+            _priorityLock = true;
+
+            // Send the test command.
+            var sendMsg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
+            _flashcart.Send(sendMsg);
+
+            // Wait a short while for the device to respond.
+            System.Threading.Thread.Sleep(500);
+
+            IGebugMessage msg;
+
+            // If there's no response, the test failed.
+            if (_receiveFromConsoleQueue.IsEmpty)
+            {
+                _priorityLock = false;
+                return false;
+            }
+
+            // Else, get the next message response.
+            while (!_receiveFromConsoleQueue.TryDequeue(out msg))
+            {
+                ;
+            }
+
+            if (msg != null && msg is RomMessage romMessage)
+            {
+                if (romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
+                {
+                    var ackMessage = (RomAckMessage)romMessage;
+
+                    if (ackMessage.AckCategory == Unfloader.Message.MessageType.GebugMessageCategory.Meta
+                        && ackMessage.AckCommand == (int)Unfloader.Message.MessageType.GebugCmdMeta.Ping)
+                    {
+                        // success
+                        _priorityLock = false;
+                        return true;
+                    }
+                }
+            }
+
+            // Otherwise, put the message back on the queue for anyone else.
+            _receiveFromConsoleQueue.Enqueue(msg);
+            _priorityLock = false;
+            return false;
+        }
+
+        public bool TestFlashcartConnected()
+        {
+            _priorityLock = true;
+
             // Send the test command.
             ((Flashcart.FlashcartBase)_flashcart)!.SendTest();
 
@@ -70,6 +128,7 @@ namespace Gebug64.Unfloader
             // If there's no response, the test failed.
             if (_receiveFromConsoleQueue.IsEmpty)
             {
+                _priorityLock = false;
                 return false;
             }
 
@@ -81,13 +140,15 @@ namespace Gebug64.Unfloader
 
             // Check the device specific response format. If this is valid,
             // then we're done.
-            if (((Flashcart.FlashcartBase)_flashcart)!.IsTestCommandResponse(msg.UsbPacket))
+            if (((Flashcart.FlashcartBase)_flashcart)!.IsTestCommandResponse(msg.GetUsbPacket()))
             {
+                _priorityLock = false;
                 return true;
             }
 
             // Otherwise, put the message back on the queue for anyone else.
             _receiveFromConsoleQueue.Enqueue(msg);
+            _priorityLock = false;
             return false;
         }
 
@@ -175,33 +236,63 @@ namespace Gebug64.Unfloader
 
                         if (parseResult == PacketParseResult.Success)
                         {
-                            var msg = new DebugMessage()
-                            {
-                                UsbPacket = pp!,
-                                Source = CommunicationSource.N64,
-                                InstantiateTime = DateTime.Now,
-                            };
+                            var packetBytes = pp.GetData();
 
-                            _receiveFromConsoleQueue.Enqueue(msg);
+                            // try to parse as gebug rom message.
+                            RomMessage romMessage;
+                            var romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
 
-                            offset += pp!.Size + Packet.ProtocolByteLength;
-                        }
-                        else if (!object.ReferenceEquals(null, pp))
-                        {
-                            if (pp.GetData() == null || pp.GetData()!.All(x => x == 0))
+                            if (romMessageParseResult == RomMessageParseResult.Success)
                             {
-                                // ignore this, zero pad ending of packet.
+                                romMessage!.Source = CommunicationSource.N64;
+                                romMessage.InstantiateTime = DateTime.Now;
+
+                                _receiveFromConsoleQueue.Enqueue(romMessage);
                             }
                             else
                             {
-                                var msg = new DebugMessage()
+                                var msg = new DebugMessage(pp!)
                                 {
-                                    UsbPacket = pp,
                                     Source = CommunicationSource.N64,
                                     InstantiateTime = DateTime.Now,
                                 };
 
                                 _receiveFromConsoleQueue.Enqueue(msg);
+                            }
+
+                            offset += pp!.Size + Packet.ProtocolByteLength;
+                        }
+                        else if (!object.ReferenceEquals(null, pp))
+                        {
+                            var packetBytes = pp.GetData();
+
+                            if (packetBytes == null || packetBytes!.All(x => x == 0))
+                            {
+                                // ignore this, zero pad ending of packet.
+                            }
+                            else
+                            {
+                                // try to parse as gebug rom message.
+                                RomMessage romMessage;
+                                var romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
+
+                                if (romMessageParseResult == RomMessageParseResult.Success)
+                                {
+                                    romMessage!.Source = CommunicationSource.N64;
+                                    romMessage.InstantiateTime = DateTime.Now;
+
+                                    _receiveFromConsoleQueue.Enqueue(romMessage);
+                                }
+                                else
+                                {
+                                    var msg = new DebugMessage(pp)
+                                    {
+                                        Source = CommunicationSource.N64,
+                                        InstantiateTime = DateTime.Now,
+                                    };
+
+                                    _receiveFromConsoleQueue.Enqueue(msg);
+                                }
 
                                 offset += pp.Size;
                             }
@@ -218,6 +309,30 @@ namespace Gebug64.Unfloader
                         }
 
                         bytes = bytes.Skip(offset).ToArray();
+                    }
+                }
+
+                while (!_sendToConsoleQueue.IsEmpty)
+                {
+                    IGebugMessage msg;
+                    while (!_sendToConsoleQueue.TryDequeue(out msg))
+                    {
+                        if (_stop)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (object.ReferenceEquals(null, msg))
+                    {
+                        throw new NullReferenceException();
+                    }
+
+                    _flashcart.Send(msg);
+
+                    if (_stop)
+                    {
+                        break;
                     }
                 }
             }

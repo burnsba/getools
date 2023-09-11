@@ -15,6 +15,6 @@ namespace Gebug64.Unfloader.Message
 
         CommunicationSource Source { get; }
 
-        Packet UsbPacket { get; set; }
+        Packet GetUsbPacket();
     }
 }

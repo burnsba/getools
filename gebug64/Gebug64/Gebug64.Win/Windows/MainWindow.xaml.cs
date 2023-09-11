@@ -29,13 +29,6 @@ namespace Gebug64.Win.Windows
         private readonly Dispatcher _dispatcher;
         private readonly MainWindowViewModel _vm;
 
-        private int _imageZoomLittleScrollIndex = 0;
-        private int _imageZoomBigScrollIndex = 0;
-
-        private Point _panMousePoint;
-        private double _verticalPanOffset = 1;
-        private double _horizontalPanOffset = 1;
-
         public MainWindow(MainWindowViewModel vm)
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
@@ -55,6 +48,13 @@ namespace Gebug64.Win.Windows
                     scrollViewer.ScrollToBottom();
                 }
             };
+
+            SelectedRomTextBox.TextChanged += (sender, e) =>
+            {
+                SelectedRomTextBox.CaretIndex = SelectedRomTextBox.Text.Length;
+                var rect = SelectedRomTextBox.GetRectFromCharacterIndex(SelectedRomTextBox.CaretIndex);
+                SelectedRomTextBox.ScrollToHorizontalOffset(rect.Right);
+            };
         }
 
         /// <summary>
@@ -64,6 +64,8 @@ namespace Gebug64.Win.Windows
         /// <param name="e"></param>
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            _vm.Shutdown();
+
             Workspace.Instance.CloseWindows<ErrorWindow>();
         }
     }
