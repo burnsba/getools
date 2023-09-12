@@ -1,0 +1,136 @@
+﻿<Window x:Class="Gebug64.Win.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gebug64.Win.Windows"
+        xmlns:converters="clr-namespace:Gebug64.Win.Converters"
+        mc:Ignorable="d"
+        xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
+        xmlns:selectors="clr-namespace:Gebug64.Win.Xaml.Selectors"
+        d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}"
+        Title="MainWindow" Height="450" Width="900"
+        Closing="Window_Closing"
+        >
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_NothingTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MetaTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MiscTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_StageTemplate.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <converters:BoolToInvertedBoolConverter x:Key="BoolToInvertedBoolConverter" />
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <converters:FlashcartToNameComboConverter x:Key="FlashcartToNameComboConverter" />
+
+            <selectors:CategoryTabContentTemplateSelector
+                    x:Key="CompareContentSelector"
+                    NothingTemplate="{StaticResource CategoryTabContentNothingTemplate}"
+                    MetaTemplate="{StaticResource CategoryTabContentMetaTemplate}"
+                    MiscTemplate="{StaticResource CategoryTabContentMiscTemplate}"
+                    StageTemplate="{StaticResource CategoryTabContentStageTemplate}"
+                    />
+
+            <DataTemplate x:Key="CategoryTabHeader">
+                <StackPanel Orientation="Horizontal">
+                    <Border BorderBrush="{x:Null}" Height="20">
+                        <TextBlock Text="{Binding Path=TabName}"
+                               VerticalAlignment="Center"
+                               >
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="10">
+            <StackPanel Orientation="Horizontal">
+                <Label Margin="10 0 10 0">Serial port:</Label>
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=RefreshAvailableSerialPortsCommand}">refresh</Button>
+                <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableSerialPorts}" SelectedItem="{Binding CurrentSerialPort}">
+                </ComboBox>
+
+                <Label Margin="50 0 50 0"></Label>
+
+                <Label Margin="10 0 10 0">Device:</Label>
+                <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableFlashcarts}" SelectedItem="{Binding CurrentFlashcart}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Path=., Converter={StaticResource FlashcartToNameComboConverter}}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ComboBox>
+
+                <Label Margin="50 0 50 0"></Label>
+
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ConnectDeviceCommand}">
+                    <TextBlock Text="{Binding ConnectCommandText}"></TextBlock>
+                </Button>
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ResetConnectionCommand}">
+                    <TextBlock Text="Reset"></TextBlock>
+                </Button>
+
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="10">
+            <StackPanel Orientation="Horizontal">
+                <Label Margin="10 0 10 0">Load ROM (in everdrive menu):</Label>
+                <TextBox Width="180" VerticalAlignment="Center" Text="{Binding SelectedRom}" IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="SelectedRomTextBox"></TextBox>
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ChooseSelectedRomCommand}">...</Button>
+                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SendRomCommand}">Send</Button>
+
+            </StackPanel>
+        </Grid>
+        
+        <Grid Grid.Row="2">
+            <!-- TabStripPlacement="Left" -->
+            <TabControl
+                x:Name="CategoryTabList"
+                ItemsSource="{Binding Tabs}"
+                ItemTemplate="{StaticResource CategoryTabHeader}"
+                ContentTemplateSelector="{StaticResource CompareContentSelector}"
+                >
+                
+            </TabControl>
+        </Grid>
+        
+        <Grid Grid.Row="3">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SaveLogCommand}">Save log</Button>
+                    <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ClearLogCommand}">Clear log</Button>
+                </StackPanel>
+
+                <ListBox Grid.Row="1" Margin="2" Name="LogBox" MinHeight="80" MaxHeight="140" 
+                         ItemsSource="{Binding LogMessages}"
+                         ScrollViewer.VerticalScrollBarVisibility="Visible">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="16" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Grid>
+    </Grid>
+    
+</Window>

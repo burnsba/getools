@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Version>21.9.18.1</Version>
+    <Authors>Ben Burns</Authors>
+    <RepositoryUrl>https://github.com/burnsba/getools</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/burnsba/getools</PackageProjectUrl>
+    <AssemblyVersion>21.9.18.1</AssemblyVersion>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Kaitai\Schema\Setup.cs" />
+    <Compile Remove="Kaitai\Schema\Stan.cs" />
+    <Compile Remove="Kaitai\Schema\StanBeta.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Game\Asset\Model\ModelBboxDefinition.json" />
+    <None Remove="Game\Asset\Model\ModelScaleDefinition.json" />
+    <None Remove="test.c" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Game\Asset\Model\ModelBboxDefinition.json" />
+    <EmbeddedResource Include="Game\Asset\Model\ModelScaleDefinition.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Antlr\Gen\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+    <PackageReference Include="KaitaiStruct.Runtime.CSharp" Version="0.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GzipSharpLib\GzipSharpLib.csproj" />
+  </ItemGroup>
+
+</Project>

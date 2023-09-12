@@ -159,6 +159,11 @@ level/workbin/
 level/Getools.Lib/Kaitai/Schema/*.cs
 level/asset/
 level/asset/**
+Getools/workbin/
+Getools/Getools.Lib/Kaitai/Schema/*.cs
+Getools/asset/
+Getools/asset/**
 audio/bin/*
 audio/obj/*
 audio/backup
+z64/
