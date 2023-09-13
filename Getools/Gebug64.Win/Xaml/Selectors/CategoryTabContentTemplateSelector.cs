@@ -14,6 +14,7 @@ namespace Gebug64.Win.Xaml.Selectors
         public DataTemplate MetaTemplate { get; set; }
         public DataTemplate MiscTemplate { get; set; }
         public DataTemplate StageTemplate { get; set; }
+        public DataTemplate DebugTemplate { get; set; }
 
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
@@ -27,7 +28,8 @@ namespace Gebug64.Win.Xaml.Selectors
             {
                 case MetaTabViewModel metaTabViewModel: return MetaTemplate;
                 case MiscTabViewModel miscTabViewModel: return MiscTemplate;
-                case StageTabViewModel StageTabViewModel: return StageTemplate;
+                case StageTabViewModel stageTabViewModel: return StageTemplate;
+                case DebugTabViewModel debugTabViewModel: return DebugTemplate;
                 default: return NothingTemplate;
             }
         }

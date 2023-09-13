@@ -53,10 +53,9 @@ namespace Gebug64.Unfloader.Message
         {
             if (Command == GebugCmdStage.SetStage && Parameters.Count > 0)
             {
-                var p1 = Parameters[0];
-                var pvalue = ((CommandParameterBase<byte>)p1).Value;
+                var pvalue = Parameters[0].GetValueIntOrDefault();
+                var value = LevelIdX.SinglePlayerStages.FirstOrDefault(x => x.Id == pvalue);
 
-                var value = LevelIdX.SinglePlayerStages.FirstOrDefault(x => x.Id == (int)pvalue);
                 if (value != null && value.Id > 0 && pvalue > 0)
                 {
                     return $"{Category} {Command} {value.Name}";

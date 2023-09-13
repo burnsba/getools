@@ -8,8 +8,8 @@
                     mc:Ignorable="d"
                     >
     <DataTemplate
-        x:Key="CategoryTabContentStageTemplate"
-        DataType="{x:Type ctvm:StageTabViewModel}"
+        x:Key="CategoryTabContentDebugTemplate"
+        DataType="{x:Type ctvm:DebugTabViewModel}"
         >
         <DataTemplate.Resources>
         </DataTemplate.Resources>
@@ -23,16 +23,21 @@
             <StackPanel Orientation="Vertical" Grid.Row="0">
 
                 <StackPanel Orientation="Horizontal">
+                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=SetDebugMenuOpenOnCommand}" HorizontalAlignment="Left">Show debug menu (hold C_UP+C_DOWN)</Button>
+                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=SetDebugMenuOpenOffCommand}" HorizontalAlignment="Left">Hide debug menu</Button>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal">
 
-                    <ComboBox Width="120" Padding="6 0 6 0" VerticalAlignment="Center" Height="20" ItemsSource="{Binding Path=Stages}" SelectedItem="{Binding Path=SelectedStage}">
+                    <ComboBox Width="120" Padding="6 0 6 0" VerticalAlignment="Center" Height="20" ItemsSource="{Binding Path=MenuItems}" SelectedItem="{Binding Path=SelectedMenuItem}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock  Text="{Binding Name}"></TextBlock>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                        
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=SetStageCommand}" HorizontalAlignment="Left">Set stage</Button>
+
+                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=DebugMenuCommand}" HorizontalAlignment="Left">Send debug menu command</Button>
                     
                 </StackPanel>
                 

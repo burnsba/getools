@@ -14,18 +14,6 @@
         <DataTemplate.Resources>
         </DataTemplate.Resources>
         
-        <!--
-        This content is being shown via a ContentPresenter/ContentTemplateSelector, so fix the datacontext
-        -->
-        <!--<Grid
-            DataContext="{Binding
-                Path=DataContext,
-                RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Border}}"
-                d:DataContext="{d:DesignInstance Type={x:Type ctvm:TabViewModelBase}}"
-            >
-            
-        </Grid>-->
-
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition></RowDefinition>

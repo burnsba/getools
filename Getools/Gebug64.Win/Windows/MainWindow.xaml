@@ -15,9 +15,10 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_NothingTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_DebugTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MetaTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MiscTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_NothingTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_StageTemplate.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
@@ -31,6 +32,7 @@
                     MetaTemplate="{StaticResource CategoryTabContentMetaTemplate}"
                     MiscTemplate="{StaticResource CategoryTabContentMiscTemplate}"
                     StageTemplate="{StaticResource CategoryTabContentStageTemplate}"
+                    DebugTemplate="{StaticResource CategoryTabContentDebugTemplate}"
                     />
 
             <DataTemplate x:Key="CategoryTabHeader">

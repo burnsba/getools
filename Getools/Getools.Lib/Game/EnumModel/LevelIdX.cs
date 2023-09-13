@@ -13,12 +13,8 @@ namespace Getools.Lib.Game.EnumModel
     /// <remarks>
     /// typedef enum LEVELID
     /// </remarks>
-    public record LevelIdX
+    public record LevelIdX : EnumModelBase
     {
-        public int Id { get; init; }
-        public int DisplayOrder { get; init; }
-        public string Name { get; init; }
-
         public static LevelIdX Dam { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Dam,

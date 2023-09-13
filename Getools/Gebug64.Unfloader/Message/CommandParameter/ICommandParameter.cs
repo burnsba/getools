@@ -11,5 +11,8 @@ namespace Gebug64.Unfloader.Message.CommandParameter
         int Size { get; }
         byte[] GetBytes(Endianness endianness);
         Type UnderlyingType { get; }
+
+        bool TryGetValue<TValue>(out TValue value);
+        int GetValueIntOrDefault();
     }
 }
