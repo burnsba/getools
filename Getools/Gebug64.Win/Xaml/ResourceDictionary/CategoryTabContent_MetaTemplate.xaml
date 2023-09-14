@@ -22,7 +22,7 @@
 
             <StackPanel Orientation="Vertical" Grid.Row="0">
 
-                <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=PingCommand}" HorizontalAlignment="Left">Ping</Button>
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=PingCommand}" HorizontalAlignment="Left">Ping</Button>
                 
             </StackPanel>
         </Grid>

@@ -39,8 +39,10 @@
 
             <DataTemplate x:Key="CategoryTabHeader">
                 <StackPanel Orientation="Horizontal">
-                    <Border BorderBrush="{x:Null}" Height="20">
-                        <TextBlock Text="{Binding Path=TabName}"
+                    <Border BorderBrush="{x:Null}" Height="32">
+                        <TextBlock 
+                            Padding="16"
+                            Text="{Binding Path=TabName}"
                                VerticalAlignment="Center"
                                >
                         </TextBlock>
@@ -118,8 +120,8 @@
                 </Grid.RowDefinitions>
                 
                 <StackPanel Grid.Row="0" Orientation="Horizontal">
-                    <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SaveLogCommand}">Save log</Button>
-                    <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ClearLogCommand}">Clear log</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SaveLogCommand}">Save log</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ClearLogCommand}">Clear log</Button>
                 </StackPanel>
 
                 <ListBox Grid.Row="1" Margin="2" Name="LogBox" MinHeight="80" MaxHeight="140" 
@@ -128,7 +130,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="16" />
+                                <TextBlock Text="{Binding}" FontFamily="pack://application:,,,/Font/#Ac437 IBM EGA 9x14" FontSize="28" />
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

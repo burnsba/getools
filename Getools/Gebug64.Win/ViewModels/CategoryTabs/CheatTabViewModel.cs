@@ -128,7 +128,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             CheatIdX.AllUnlockStage.ForEach(x => UnlockStageCheats.Add(x));
         }
 
-        public void SetCheatStatusOnCommandHandler()
+        private void SetCheatStatusOnCommandHandler()
         {
             IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
 
@@ -149,7 +149,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             deviceManager.EnqueueMessage(msg);
         }
 
-        public void SetCheatStatusOffCommandHandler()
+        private void SetCheatStatusOffCommandHandler()
         {
             IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
 
@@ -170,7 +170,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             deviceManager.EnqueueMessage(msg);
         }
 
-        public void UnlockRuntimeCheatCommandHandler()
+        private void UnlockRuntimeCheatCommandHandler()
         {
             IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
 
@@ -190,8 +190,8 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             deviceManager.EnqueueMessage(msg);
         }
-        
-        public void UnlockStageCheatCommandHandler()
+
+        private void UnlockStageCheatCommandHandler()
         {
             IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
 
@@ -212,7 +212,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             deviceManager.EnqueueMessage(msg);
         }
         
-        public void DisableAllCommandHandler()
+        private void DisableAllCommandHandler()
         {
             IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
 

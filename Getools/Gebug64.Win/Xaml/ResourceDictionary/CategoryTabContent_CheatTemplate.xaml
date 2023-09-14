@@ -28,7 +28,9 @@
 
                     <TextBlock Padding="6 0 6 0" Height="24">Runtime cheat</TextBlock>
 
-                    <ComboBox Width="120" Padding="6 0 6 0" VerticalAlignment="Center" Height="20" ItemsSource="{Binding Path=RuntimeCheats}" SelectedItem="{Binding Path=SelectedCheatStatusItem}">
+                    <ComboBox Style="{DynamicResource MonoCombo}" Height="Auto" Width="Auto"
+                              ItemsSource="{Binding Path=RuntimeCheats}"
+                              SelectedItem="{Binding Path=SelectedCheatStatusItem}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock  Text="{Binding Name}"></TextBlock>
@@ -36,8 +38,8 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=SetCheatStatusOnCommand}" HorizontalAlignment="Left">On</Button>
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=SetCheatStatusOffCommand}" HorizontalAlignment="Left">Off</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SetCheatStatusOnCommand}" HorizontalAlignment="Left">On</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SetCheatStatusOffCommand}" HorizontalAlignment="Left">Off</Button>
 
                 </StackPanel>
 
@@ -45,7 +47,9 @@
 
                     <TextBlock Padding="6 0 6 0" Height="24">Unlock runtime cheat</TextBlock>
 
-                    <ComboBox Width="120" Padding="6 0 6 0" VerticalAlignment="Center" Height="20" ItemsSource="{Binding Path=UnlockRuntimeCheats}" SelectedItem="{Binding Path=SelectedUnlockRuntimeCheat}">
+                    <ComboBox Style="{DynamicResource MonoCombo}" Height="Auto" Width="Auto"
+                              ItemsSource="{Binding Path=UnlockRuntimeCheats}"
+                              SelectedItem="{Binding Path=SelectedUnlockRuntimeCheat}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock  Text="{Binding Name}"></TextBlock>
@@ -53,7 +57,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=UnlockRuntimeCheatCommand}" HorizontalAlignment="Left">Unlock</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=UnlockRuntimeCheatCommand}" HorizontalAlignment="Left">Unlock</Button>
 
                 </StackPanel>
 
@@ -61,7 +65,9 @@
 
                     <TextBlock Padding="6 0 6 0" Height="24">Unlock stage</TextBlock>
 
-                    <ComboBox Width="120" Padding="6 0 6 0" VerticalAlignment="Center" Height="20" ItemsSource="{Binding Path=UnlockStageCheats}" SelectedItem="{Binding Path=SelectedUnlockStageCheat}">
+                    <ComboBox Style="{DynamicResource MonoCombo}" Height="Auto" Width="Auto"
+                              ItemsSource="{Binding Path=UnlockStageCheats}"
+                              SelectedItem="{Binding Path=SelectedUnlockStageCheat}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock  Text="{Binding Name}"></TextBlock>
@@ -69,13 +75,13 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=UnlockStageCheatCommand}" HorizontalAlignment="Left">Unlock</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=UnlockStageCheatCommand}" HorizontalAlignment="Left">Unlock</Button>
 
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Grid.Row="3">
 
-                    <Button Padding="6 0 6 0" Height="24" Command="{Binding Path=DisableAllCommand}" HorizontalAlignment="Left">Disable all cheats</Button>
+                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=DisableAllCommand}" HorizontalAlignment="Left">Disable all cheats</Button>
 
                 </StackPanel>
 

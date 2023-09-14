@@ -4,6 +4,10 @@
              xmlns:local="clr-namespace:Gebug64.Win"
              Startup="App_Startup">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/Style.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
