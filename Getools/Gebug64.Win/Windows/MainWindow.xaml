@@ -15,6 +15,7 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_CheatTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_DebugTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MetaTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MiscTemplate.xaml"/>
@@ -28,11 +29,12 @@
 
             <selectors:CategoryTabContentTemplateSelector
                     x:Key="CompareContentSelector"
-                    NothingTemplate="{StaticResource CategoryTabContentNothingTemplate}"
+                    CheatTemplate="{StaticResource CategoryTabContentCheatTemplate}"
+                    DebugTemplate="{StaticResource CategoryTabContentDebugTemplate}"
                     MetaTemplate="{StaticResource CategoryTabContentMetaTemplate}"
                     MiscTemplate="{StaticResource CategoryTabContentMiscTemplate}"
+                    NothingTemplate="{StaticResource CategoryTabContentNothingTemplate}"
                     StageTemplate="{StaticResource CategoryTabContentStageTemplate}"
-                    DebugTemplate="{StaticResource CategoryTabContentDebugTemplate}"
                     />
 
             <DataTemplate x:Key="CategoryTabHeader">
