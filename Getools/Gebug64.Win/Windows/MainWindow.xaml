@@ -15,6 +15,8 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/Controls.xaml"/>
+                
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_CheatTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_DebugTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MetaTemplate.xaml"/>
@@ -52,91 +54,119 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-        </Grid.RowDefinitions>
+    <DockPanel LastChildFill="True">
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Quit"/>
+            </MenuItem>
+            <MenuItem Header="Connection">
 
-        <Grid Grid.Row="0" Margin="10">
-            <StackPanel Orientation="Horizontal">
-                <Label Margin="10 0 10 0">Serial port:</Label>
-                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=RefreshAvailableSerialPortsCommand}">refresh</Button>
-                <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableSerialPorts}" SelectedItem="{Binding CurrentSerialPort}">
-                </ComboBox>
+                <MenuItem Header="Disconnect"/>
+                <MenuItem Header="Reset"/>
 
-                <Label Margin="50 0 50 0"></Label>
+                <MenuItem Header="Serial Port" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuSerialPorts}">
+                </MenuItem>
 
-                <Label Margin="10 0 10 0">Device:</Label>
-                <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableFlashcarts}" SelectedItem="{Binding CurrentFlashcart}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Path=., Converter={StaticResource FlashcartToNameComboConverter}}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ComboBox>
+                <MenuItem Header="Device" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuDevice}">
+                </MenuItem>
 
-                <Label Margin="50 0 50 0"></Label>
+            </MenuItem>
+        </Menu>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock>connected</TextBlock>
+            </StatusBarItem>
+        </StatusBar>
+        <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="5"></RowDefinition>
+                    <RowDefinition Height="Auto" MinHeight="120"></RowDefinition>
+                </Grid.RowDefinitions>
 
-                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ConnectDeviceCommand}">
-                    <TextBlock Text="{Binding ConnectCommandText}"></TextBlock>
-                </Button>
-                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ResetConnectionCommand}">
-                    <TextBlock Text="Reset"></TextBlock>
-                </Button>
+                <Grid Grid.Row="0" Margin="10">
+                    <StackPanel Orientation="Horizontal">
+                        <Label Margin="10 0 10 0">Serial port:</Label>
+                        <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=RefreshAvailableSerialPortsCommand}">refresh</Button>
+                        <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableSerialPorts}" SelectedItem="{Binding CurrentSerialPort}">
+                        </ComboBox>
 
-            </StackPanel>
-        </Grid>
+                        <Label Margin="50 0 50 0"></Label>
 
-        <Grid Grid.Row="1" Margin="10">
-            <StackPanel Orientation="Horizontal">
-                <Label Margin="10 0 10 0">Load ROM (in everdrive menu):</Label>
-                <TextBox Width="180" VerticalAlignment="Center" Text="{Binding SelectedRom}" IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="SelectedRomTextBox"></TextBox>
-                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ChooseSelectedRomCommand}">...</Button>
-                <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SendRomCommand}">Send</Button>
+                        <Label Margin="10 0 10 0">Device:</Label>
+                        <ComboBox Width="100" Margin="10 0 10 0" Height="24" ItemsSource="{Binding AvailableFlashcarts}" SelectedItem="{Binding CurrentFlashcart}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=., Converter={StaticResource FlashcartToNameComboConverter}}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ComboBox>
 
-            </StackPanel>
-        </Grid>
-        
-        <Grid Grid.Row="2">
-            <!-- TabStripPlacement="Left" -->
-            <TabControl
+                        <Label Margin="50 0 50 0"></Label>
+
+                        <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ConnectDeviceCommand}">
+                            <TextBlock Text="{Binding ConnectCommandText}"></TextBlock>
+                        </Button>
+                        <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ResetConnectionCommand}">
+                            <TextBlock Text="Reset"></TextBlock>
+                        </Button>
+
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="10">
+                    <StackPanel Orientation="Horizontal">
+                        <Label Margin="10 0 10 0">Load ROM (in everdrive menu):</Label>
+                        <TextBox Width="180" VerticalAlignment="Center" Text="{Binding SelectedRom}" IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="SelectedRomTextBox"></TextBox>
+                        <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=ChooseSelectedRomCommand}">...</Button>
+                        <Button Margin="10 0 10 0" Padding="6" Command="{Binding Path=SendRomCommand}">Send</Button>
+
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="2">
+                    <!-- TabStripPlacement="Left" -->
+                    <TabControl
                 x:Name="CategoryTabList"
                 ItemsSource="{Binding Tabs}"
                 ItemTemplate="{StaticResource CategoryTabHeader}"
                 ContentTemplateSelector="{StaticResource CompareContentSelector}"
                 >
-                
-            </TabControl>
-        </Grid>
-        
-        <Grid Grid.Row="3">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"></RowDefinition>
-                    <RowDefinition Height="*"></RowDefinition>
-                </Grid.RowDefinitions>
-                
-                <StackPanel Grid.Row="0" Orientation="Horizontal">
-                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SaveLogCommand}">Save log</Button>
-                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ClearLogCommand}">Clear log</Button>
-                </StackPanel>
 
-                <ListBox Grid.Row="1" Margin="2" Name="LogBox" MinHeight="80" MaxHeight="140" 
+                    </TabControl>
+                </Grid>
+
+                <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" />
+
+                <Grid Grid.Row="4">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SaveLogCommand}">Save log</Button>
+                            <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ClearLogCommand}">Clear log</Button>
+                        </StackPanel>
+
+                        <ListBox Grid.Row="1" Margin="2" Name="LogBox"
                          ItemsSource="{Binding LogMessages}"
                          ScrollViewer.VerticalScrollBarVisibility="Visible">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding}" FontFamily="pack://application:,,,/Font/#Ac437 IBM EGA 9x14" FontSize="28" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding}" FontFamily="pack://application:,,,/Font/#Ac437 IBM EGA 9x14" FontSize="28" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Grid>
             </Grid>
-        </Grid>
-    </Grid>
+    </DockPanel>
+    
     
 </Window>

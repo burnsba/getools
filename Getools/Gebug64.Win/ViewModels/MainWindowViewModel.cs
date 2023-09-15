@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
@@ -26,6 +27,88 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels
 {
+    public interface IIsCheckedabled
+    {
+        bool IsChecked { get; set; }
+    }
+
+    public class OnlyOneChecked<T, TKey>
+        where T : IIsCheckedabled
+        where TKey : struct, IEquatable<TKey>
+    {
+        private Dictionary<TKey, T> _objects = new Dictionary<TKey, T>();
+
+        public OnlyOneChecked()
+        {
+        }
+
+        public void AddItem(T obj, TKey key)
+        {
+            if (object.ReferenceEquals(null, obj))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (_objects.ContainsKey(key))
+            {
+                return;
+            }
+
+            _objects.Add(key, obj);
+        }
+
+        public void RemoveItem(TKey key)
+        {
+            if (!_objects.ContainsKey(key))
+            {
+                return;
+            }
+
+            _objects.Remove(key);
+        }
+
+        public void CheckOne(TKey key)
+        {
+            foreach (var kvp in  _objects)
+            {
+                if (kvp.Key.Equals(key))
+                {
+                    kvp.Value.IsChecked = true;
+                }
+                else
+                {
+                    kvp.Value.IsChecked = false;
+                }
+            }
+        }
+    }
+
+    public class MenuItemViewModel : ViewModelBase, IIsCheckedabled
+    {
+        private bool _isChecked = false;
+
+        public MenuItemViewModel()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        public Guid Id { get; init; }
+        public string Header { get; set; }
+        public bool IsChecked
+        {
+            get { return _isChecked; }
+            set
+            {
+                _isChecked = value;
+                OnPropertyChanged(nameof(IsChecked));
+            }
+        }
+        public bool IsCheckable { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public ICommand Command { get; set; }
+        public object Value { get; set; }
+    }
+
     /// <summary>
     /// Primary class of the application.
     /// Handles all "backend" logic routed from main ui window.
@@ -198,6 +281,12 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        private OnlyOneChecked<MenuItemViewModel, Guid> _menuDeviceGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
+        private OnlyOneChecked<MenuItemViewModel, Guid> _menuSerialPortGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
+
+        public ObservableCollection<MenuItemViewModel> MenuDevice { get; set; } = new ObservableCollection<MenuItemViewModel>();
+        public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
         public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
         {
             _logger = logger;
@@ -265,23 +354,56 @@ namespace Gebug64.Win.ViewModels
 
             _dispatcher.BeginInvoke(() =>
             {
+                foreach (var x in MenuSerialPorts)
+                {
+                    _menuSerialPortGroup.RemoveItem(x.Id);
+                }
+                MenuSerialPorts.Clear();
+
+                var mivm = new MenuItemViewModel() { Header = "Refresh" };
+                mivm.Command = new CommandHandler(RefreshAvailableSerialPortsCommandHandler, () => CanRefresh);
+
+                MenuSerialPorts.Add(mivm);
+
+                mivm = new MenuItemViewModel() { Header = "-----", IsEnabled = false };
+                MenuSerialPorts.Add(mivm);
+
                 IsRefreshing = true;
                 CurrentSerialPort = null;
                 AvailableSerialPorts.Clear();
+
+                MenuItemViewModel? last = null;
 
                 var ports = SerialPort.GetPortNames();
                 foreach (var port in ports)
                 {
                     AvailableSerialPorts.Add(port);
+
+                    Action<object?> dddd = x => MenuSerialPortClick((MenuItemViewModel)x!);
+
+                    mivm = new MenuItemViewModel() { Header = port, IsCheckable = true, IsChecked = false };
+                    mivm.Command = new CommandHandler(dddd);
+                    mivm.Value = port;
+
+                    _menuSerialPortGroup.AddItem(mivm, mivm.Id);
+                    MenuSerialPorts.Add(mivm);
+                    
+                    last = mivm;
                 }
 
                 IsRefreshing = false;
 
-                if (string.IsNullOrEmpty(CurrentSerialPort) && ports.Any())
+                if (string.IsNullOrEmpty(CurrentSerialPort) && !object.ReferenceEquals(null, last))
                 {
-                    CurrentSerialPort = AvailableSerialPorts.Last();
+                    MenuSerialPortClick(last);
                 }
             });
+        }
+
+        private void MenuSerialPortClick(MenuItemViewModel self)
+        {
+            _menuSerialPortGroup.CheckOne(self.Id);
+            CurrentSerialPort = (string)self.Value;
         }
 
         private void Disconnect()
@@ -472,12 +594,30 @@ namespace Gebug64.Win.ViewModels
 
             _setAvailableFlashcarts = true;
 
-            AvailableFlashcarts.Add((Everdrive)Workspace.Instance.ServiceProvider.GetService(typeof(Everdrive))!);
+            MenuDevice.Clear();
 
-            if (object.ReferenceEquals(null, CurrentFlashcart))
+            MenuItemViewModel? last = null;
+            var mivm = new MenuItemViewModel() { Header = "Everdrive", IsCheckable = true, IsChecked = true };
+            mivm.Command = new CommandHandler(() => MenuFlashcartClick(mivm));
+            mivm.Value = (Everdrive)Workspace.Instance.ServiceProvider.GetService(typeof(Everdrive))!;
+
+            _menuDeviceGroup.AddItem(mivm, mivm.Id);
+            MenuDevice.Add(mivm);
+
+            AvailableFlashcarts.Add((Everdrive)mivm.Value);
+
+            last = mivm;
+
+            if (object.ReferenceEquals(null, CurrentFlashcart) && !object.ReferenceEquals(null, last))
             {
-                CurrentFlashcart = AvailableFlashcarts.Last();
+                MenuFlashcartClick(last);
             }
+        }
+
+        private void MenuFlashcartClick(MenuItemViewModel self)
+        {
+            _menuDeviceGroup.CheckOne(self.Id);
+            CurrentFlashcart = (IFlashcart)self.Value;
         }
 
         private void SendRomCommandHandler()

@@ -136,8 +136,10 @@ namespace Gebug64.Win.Mvvm
             {
                 _actionWithArgs!(parameter);
             }
-
-            _actionEmpty!();
+            else
+            {
+                _actionEmpty!();
+            }
         }
     }
 }
