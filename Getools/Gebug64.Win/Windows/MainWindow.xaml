@@ -26,6 +26,8 @@
             </ResourceDictionary.MergedDictionaries>
             
             <converters:BoolToInvertedBoolConverter x:Key="BoolToInvertedBoolConverter" />
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:BoolToInvertedVisibilityConverter x:Key="BoolToInvertedVisibilityConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <converters:FlashcartToNameComboConverter x:Key="FlashcartToNameComboConverter" />
 
@@ -61,21 +63,51 @@
             </MenuItem>
             <MenuItem Header="Connection">
 
-                <MenuItem Header="Disconnect"/>
-                <MenuItem Header="Reset"/>
+                <MenuItem Header="{Binding ConnectCommandText}" Command="{Binding ConnectDeviceCommand}"/>
+                <MenuItem Header="Reset" Command="{Binding ResetConnectionCommand}" IsEnabled="{Binding CanResetConnection}"/>
 
-                <MenuItem Header="Serial Port" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuSerialPorts}">
+                <MenuItem Header="Serial Port" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuSerialPorts}" IsEnabled="{Binding IsConnected, Converter={StaticResource BoolToInvertedBoolConverter}}">
                 </MenuItem>
 
-                <MenuItem Header="Device" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuDevice}">
+                <MenuItem Header="Device" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuDevice}" IsEnabled="{Binding IsConnected, Converter={StaticResource BoolToInvertedBoolConverter}}">
+                </MenuItem>
+
+                <Separator />
+
+                <MenuItem Header="Send ROM" Style="{StaticResource MivmMenuItem}" IsEnabled="{Binding CanSendRom}" ItemsSource="{Binding MenuSendRom}">
                 </MenuItem>
 
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
-            <StatusBarItem>
-                <TextBlock>connected</TextBlock>
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" MinWidth="60"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto" MinWidth="40"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto" MinWidth="40"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0" >
+                <TextBlock Text="{Binding StatusConnectedText}"/>
             </StatusBarItem>
+            <Separator Grid.Column="1"  />
+            <StatusBarItem Grid.Column="2">
+                <TextBlock Text="{Binding StatusConnectionLevelText}"/>
+            </StatusBarItem>
+            <Separator Grid.Column="3"  />
+            <StatusBarItem Grid.Column="4" >
+                <TextBlock Text="{Binding StatusSerialPort}"/>
+            </StatusBarItem>
+            <Separator Grid.Column="5"  />
         </StatusBar>
         <Grid>
                 <Grid.RowDefinitions>

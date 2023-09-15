@@ -22,93 +22,13 @@ using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
 using Gebug64.Unfloader.Message;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.Ui;
 using Gebug64.Win.ViewModels.CategoryTabs;
+using Getools.Lib.Game.Asset.SetupObject;
 using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels
 {
-    public interface IIsCheckedabled
-    {
-        bool IsChecked { get; set; }
-    }
-
-    public class OnlyOneChecked<T, TKey>
-        where T : IIsCheckedabled
-        where TKey : struct, IEquatable<TKey>
-    {
-        private Dictionary<TKey, T> _objects = new Dictionary<TKey, T>();
-
-        public OnlyOneChecked()
-        {
-        }
-
-        public void AddItem(T obj, TKey key)
-        {
-            if (object.ReferenceEquals(null, obj))
-            {
-                throw new NullReferenceException();
-            }
-
-            if (_objects.ContainsKey(key))
-            {
-                return;
-            }
-
-            _objects.Add(key, obj);
-        }
-
-        public void RemoveItem(TKey key)
-        {
-            if (!_objects.ContainsKey(key))
-            {
-                return;
-            }
-
-            _objects.Remove(key);
-        }
-
-        public void CheckOne(TKey key)
-        {
-            foreach (var kvp in  _objects)
-            {
-                if (kvp.Key.Equals(key))
-                {
-                    kvp.Value.IsChecked = true;
-                }
-                else
-                {
-                    kvp.Value.IsChecked = false;
-                }
-            }
-        }
-    }
-
-    public class MenuItemViewModel : ViewModelBase, IIsCheckedabled
-    {
-        private bool _isChecked = false;
-
-        public MenuItemViewModel()
-        {
-            Id = Guid.NewGuid();
-        }
-
-        public Guid Id { get; init; }
-        public string Header { get; set; }
-        public bool IsChecked
-        {
-            get { return _isChecked; }
-            set
-            {
-                _isChecked = value;
-                OnPropertyChanged(nameof(IsChecked));
-            }
-        }
-        public bool IsCheckable { get; set; }
-        public bool IsEnabled { get; set; } = true;
-        public ICommand Command { get; set; }
-        public object Value { get; set; }
-    }
-
     /// <summary>
     /// Primary class of the application.
     /// Handles all "backend" logic routed from main ui window.
@@ -270,6 +190,49 @@ namespace Gebug64.Win.ViewModels
 
         public ObservableCollection<TabViewModelBase> Tabs { get; set; } = new ObservableCollection<TabViewModelBase>();
 
+        public string StatusConnectedText
+        {
+            get
+            {
+                if (IsConnected)
+                {
+                    return "connected";
+                }
+
+                return "disconnected";
+            }
+        }
+
+        public string StatusConnectionLevelText
+        {
+            get
+            {
+                if (_connectionLevel == ConnectionLevel.Everdrive)
+                {
+                    return "menu";
+                }
+                else if (_connectionLevel == ConnectionLevel.Rom)
+                {
+                    return "rom";
+                }
+
+                return string.Empty;
+            }
+        }
+
+        public string StatusSerialPort
+        {
+            get
+            {
+                if (IsConnected)
+                {
+                    return CurrentSerialPort!;
+                }
+
+                return string.Empty;
+            }
+        }
+
         private bool IsRefreshing
         {
             get { return _isRefreshing; }
@@ -286,6 +249,7 @@ namespace Gebug64.Win.ViewModels
 
         public ObservableCollection<MenuItemViewModel> MenuDevice { get; set; } = new ObservableCollection<MenuItemViewModel>();
         public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
+        public ObservableCollection<MenuItemViewModel> MenuSendRom { get; set; } = new ObservableCollection<MenuItemViewModel>();
 
         public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
         {
@@ -444,7 +408,11 @@ namespace Gebug64.Win.ViewModels
             }
 
             _isConnected = false;
+            OnPropertyChanged(nameof(IsConnected));
             OnPropertyChanged(nameof(CanConnect));
+            OnPropertyChanged(nameof(StatusConnectedText));
+            OnPropertyChanged(nameof(StatusConnectionLevelText));
+            OnPropertyChanged(nameof(StatusSerialPort));
             OnPropertyChanged(nameof(CanSendRom));
 
             SetConnectCommandText();
@@ -540,9 +508,14 @@ namespace Gebug64.Win.ViewModels
                         _isConnected = false;
 
                         _isConnecting = false;
+                        OnPropertyChanged(nameof(IsConnected));
                         OnPropertyChanged(nameof(CanResetConnection));
                         OnPropertyChanged(nameof(CanConnect));
                         OnPropertyChanged(nameof(CanSendRom));
+
+                        OnPropertyChanged(nameof(StatusConnectedText));
+                        OnPropertyChanged(nameof(StatusConnectionLevelText));
+                        OnPropertyChanged(nameof(StatusSerialPort));
 
                         SetConnectCommandText();
 
@@ -552,8 +525,13 @@ namespace Gebug64.Win.ViewModels
 
                 _isConnected = true;
                 _isConnecting = false;
+                OnPropertyChanged(nameof(IsConnected));
                 OnPropertyChanged(nameof(CanConnect));
                 OnPropertyChanged(nameof(CanSendRom));
+
+                OnPropertyChanged(nameof(StatusConnectedText));
+                OnPropertyChanged(nameof(StatusConnectionLevelText));
+                OnPropertyChanged(nameof(StatusSerialPort));
 
                 SetConnectCommandText();
             });
@@ -567,8 +545,13 @@ namespace Gebug64.Win.ViewModels
 
                 _isConnected = false;
                 _isConnecting = false;
+                OnPropertyChanged(nameof(IsConnected));
                 OnPropertyChanged(nameof(CanConnect));
                 OnPropertyChanged(nameof(CanSendRom));
+
+                OnPropertyChanged(nameof(StatusConnectedText));
+                OnPropertyChanged(nameof(StatusConnectionLevelText));
+                OnPropertyChanged(nameof(StatusSerialPort));
 
                 SetConnectCommandText();
             });
