@@ -67,6 +67,8 @@ namespace Gebug64.Unfloader.Flashcart
             _serialPort = null;
             _isInit = false;
             _serialPort = null;
+
+            _readQueue.Clear();
         }
 
         public void Dispose()

@@ -102,7 +102,7 @@ namespace Gebug64.Unfloader.Flashcart
             }
 
             // Delay is needed or it won't boot properly
-            System.Threading.Thread.Sleep(2000);
+            System.Threading.Thread.Sleep(3000);
 
             SendEverdriveCommand(Command_PifBoot_Send, 0, 0, 0);
 

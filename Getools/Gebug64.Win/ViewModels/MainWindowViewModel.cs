@@ -62,9 +62,7 @@ namespace Gebug64.Win.ViewModels
         private IFlashcart _currentFlashCart;
         private string _selectedRomPath;
 
-        private bool _serialPortIsValid = false;
         private bool _flashcartIsValid = false;
-        private bool _selectedRomPathIsValid = false;
         private bool _currentlySendingRom = false;
 
         private bool _setAvailableFlashcarts = false;
@@ -81,7 +79,6 @@ namespace Gebug64.Win.ViewModels
         private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
 
         private readonly object _recentlySentFilesLock = new object();
-        private ObservableCollection<string> _recentlySentFiles = new ObservableCollection<string>();
 
         private readonly ILogger _logger;
 
@@ -112,7 +109,6 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 AppConfig.Connection.SerialPort = value ?? string.Empty;
-                _serialPortIsValid = !string.IsNullOrEmpty(value);
                 OnPropertyChanged(nameof(CurrentSerialPort));
                 OnPropertyChanged(nameof(CanConnect));
 
@@ -179,7 +175,7 @@ namespace Gebug64.Win.ViewModels
             set { _isConnected = value; OnPropertyChanged(nameof(IsConnected)); }
         }
 
-        public bool CanConnect => !_isConnecting && _serialPortIsValid && _flashcartIsValid && _connectionError == false;
+        public bool CanConnect => !_isConnecting && !string.IsNullOrEmpty(CurrentSerialPort) && _flashcartIsValid && _connectionError == false;
 
         public string ConnectCommandText { get; set; }
 
@@ -195,7 +191,6 @@ namespace Gebug64.Win.ViewModels
             set
             {
                 _selectedRomPath = value;
-                _selectedRomPathIsValid = !string.IsNullOrEmpty(value) && File.Exists(_selectedRomPath);
                 OnPropertyChanged(nameof(SelectedRom));
                 OnPropertyChanged(nameof(CanSendRom));
             }
@@ -290,11 +285,10 @@ namespace Gebug64.Win.ViewModels
 
         public ObservableCollection<string> RecentlySentFiles
         {
-            get { return _recentlySentFiles; }
+            get { return AppConfig.RecentSendRom; }
             set
             {
-                _recentlySentFiles = value;
-                BindingOperations.EnableCollectionSynchronization(_recentlySentFiles, _recentlySentFilesLock);
+                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentSendRom, _recentlySentFilesLock);
             }
         }
 
@@ -674,6 +668,8 @@ namespace Gebug64.Win.ViewModels
 
             _connectionError = false;
             OnPropertyChanged(nameof(CanResetConnection));
+
+            SetConnectCommandText();
         }
 
         private void SetAvailableFlashcarts()
@@ -730,6 +726,8 @@ namespace Gebug64.Win.ViewModels
             {
                 MenuSendRom.RemoveAt(3);
             }
+
+            SaveAppSettings();
         }
 
         private void ChooseAndSendRom()
@@ -779,6 +777,8 @@ namespace Gebug64.Win.ViewModels
             {
                 RecentlySentFiles.RemoveAt(MaxRecentlySentFiles);
             }
+
+            SaveAppSettings();
 
             int i;
             bool found = false;

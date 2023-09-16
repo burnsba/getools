@@ -202,6 +202,9 @@ namespace Gebug64.Unfloader
             }
 
             _thread = null;
+
+            _receiveFromConsoleQueue.Clear();
+            _sendToConsoleQueue.Clear();
         }
 
         public void SendRom(string path)
