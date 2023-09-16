@@ -17,7 +17,23 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public ICommand PingCommand { get; set; }
 
+        public ICommand VersionCommand { get; set; }
+
         public bool CanSendPingCommand
+        {
+            get
+            {
+                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, deviceManager))
+                {
+                    return false;
+                }
+
+                return !deviceManager.IsShutdown;
+            }
+        }
+
+        public bool CanSendVersionCommand
         {
             get
             {
@@ -35,6 +51,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             : base(_tabName, logger, deviceManagerResolver)
         {
             PingCommand = new CommandHandler(PingCommandHandler, () => CanSendPingCommand);
+            VersionCommand = new CommandHandler(VersionCommandHandler, () => CanSendVersionCommand);
 
             DisplayOrder = 90;
         }
@@ -49,6 +66,21 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
 
             var msg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            deviceManager.EnqueueMessage(msg);
+        }
+
+        public void VersionCommandHandler()
+        {
+            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, deviceManager))
+            {
+                return;
+            }
+
+            var msg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc };
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             deviceManager.EnqueueMessage(msg);

@@ -55,6 +55,8 @@ namespace Gebug64.Win.ViewModels
 
         private bool _ignoreAppSettingsChange = false;
 
+        private Version? _romVersion = null;
+
         private bool _isConnected = false;
         private bool _isConnecting = false;
         private bool _isRefreshing = false;
@@ -296,6 +298,19 @@ namespace Gebug64.Win.ViewModels
 
         public AppConfigViewModel AppConfig { get; set; }
 
+        public Version? RomVersion
+        {
+            get => _romVersion;
+            set
+            {
+                _romVersion = value;
+                OnPropertyChanged(nameof(RomVersion));
+                OnPropertyChanged(nameof(RomVersionString));
+            }
+        }
+
+        public string RomVersionString => _romVersion?.ToString() ?? "unk";
+
         public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver, AppConfigViewModel appConfig)
         {
             _ignoreAppSettingsChange = true;
@@ -518,6 +533,8 @@ namespace Gebug64.Win.ViewModels
                 _lastMessageSent = null;
             }
 
+            RomVersion = null;
+
             _isConnected = false;
             OnPropertyChanged(nameof(IsConnected));
             OnPropertyChanged(nameof(CanConnect));
@@ -610,6 +627,9 @@ namespace Gebug64.Win.ViewModels
 
                         _logger.Log(LogLevel.Information, $"Send ping");
                         _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                        _logger.Log(LogLevel.Information, $"Send version request");
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
                     }
 
                     if (testResult == false)
@@ -855,6 +875,9 @@ namespace Gebug64.Win.ViewModels
                         {
                             _logger.Log(LogLevel.Information, $"Send ping");
                             _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                            _logger.Log(LogLevel.Information, $"Send version request");
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
                         }
                     });
 
@@ -954,11 +977,31 @@ namespace Gebug64.Win.ViewModels
 
                 _lastMessageReceived = Stopwatch.StartNew();
 
-                if (msg is RomMessage)
+                // if the receieved message is RomMessage, then the connection level is now known.
+                if (msg is RomMessage romMessage)
                 {
                     _connectionLevel = ConnectionLevel.Rom;
                     OnPropertyChanged(nameof(CanSendRom));
                     OnPropertyChanged(nameof(StatusConnectionLevelText));
+
+                    // If the message is a version message, then the connected rom version is now known.
+                    if (object.ReferenceEquals(null, RomVersion)
+                        && romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
+                    {
+                        var ackMessage = (RomAckMessage)romMessage;
+                        if (ackMessage?.Reply?.Category == Unfloader.Message.MessageType.GebugMessageCategory.Meta)
+                        {
+                            var metaMessage = (RomMetaMessage)ackMessage.Reply;
+                            if (metaMessage.Command == Unfloader.Message.MessageType.GebugCmdMeta.Version)
+                            {
+                                var version = metaMessage.GetVersion();
+                                if (version != null)
+                                {
+                                    RomVersion = version;
+                                }
+                            }
+                        }
+                    }
 
                     _logger.Log(LogLevel.Information, ((RomMessage)msg).ToString());
                 }

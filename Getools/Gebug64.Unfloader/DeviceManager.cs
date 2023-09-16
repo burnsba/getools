@@ -1,6 +1,7 @@
 ﻿using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.UsbPacket;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -97,12 +98,15 @@ namespace Gebug64.Unfloader
                 {
                     var ackMessage = (RomAckMessage)romMessage;
 
-                    if (ackMessage.AckCategory == Unfloader.Message.MessageType.GebugMessageCategory.Meta
-                        && ackMessage.AckCommand == (int)Unfloader.Message.MessageType.GebugCmdMeta.Ping)
+                    if (ackMessage?.Reply?.Category == Unfloader.Message.MessageType.GebugMessageCategory.Meta)
                     {
-                        // success
-                        _priorityLock = false;
-                        return true;
+                        var metaMessage = (RomMetaMessage)ackMessage.Reply;
+                        if (metaMessage.Command == Unfloader.Message.MessageType.GebugCmdMeta.Ping)
+                        {
+                            // success
+                            _priorityLock = false;
+                            return true;
+                        }
                     }
                 }
             }

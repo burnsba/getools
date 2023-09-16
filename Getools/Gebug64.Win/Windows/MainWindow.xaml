@@ -90,6 +90,8 @@
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="Auto" MinWidth="40"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto" MinWidth="40"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="*"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
@@ -108,6 +110,10 @@
                 <TextBlock Text="{Binding StatusSerialPort}"/>
             </StatusBarItem>
             <Separator Grid.Column="5"  />
+            <StatusBarItem Grid.Column="6" >
+                <TextBlock Text="{Binding RomVersionString}"/>
+            </StatusBarItem>
+            <Separator Grid.Column="7"  />
         </StatusBar>
         <Grid>
             <Grid.RowDefinitions>

@@ -54,8 +54,12 @@ namespace Gebug64.Unfloader.Message
             {
                 case GebugCmdMisc.OsTime:
                 {
-                    var time = BitUtility.Read32Big(data, 0);
-                    self.Parameters.Add(new U32Parameter(time));
+                    int offset = 2; // skip category and command
+                    int val;
+
+                    val = BitUtility.Read32Big(data, offset);
+                    self.Parameters.Add(new U32Parameter(val));
+                    offset += 4;
                 }
                 break;
             }
@@ -63,6 +67,18 @@ namespace Gebug64.Unfloader.Message
 
         public override string ToString()
         {
+            switch (Command)
+            {
+                case GebugCmdMisc.OsTime:
+                    {
+                        if (Parameters.Count > 0)
+                        {
+                            return $"{Category} {Command} {Parameters[0]}";
+                        }
+                    }
+                    break;
+            }
+
             return $"{Category} {Command}";
         }
     }

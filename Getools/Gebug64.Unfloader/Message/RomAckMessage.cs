@@ -10,8 +10,10 @@ namespace Gebug64.Unfloader.Message
 {
     public class RomAckMessage : RomMessage
     {
+        public RomMessage Reply { get; set; }
+
         public GebugMessageCategory AckCategory { get; set; }
-        public int AckCommand { get; set; }
+        //public int AckCommand { get; set; }
 
         public RomAckMessage()
             : base (GebugMessageCategory.Ack, 0)
@@ -30,11 +32,21 @@ namespace Gebug64.Unfloader.Message
 
         public void Unwrap(byte[] data)
         {
-            switch (AckCategory)
+            var category = (GebugMessageCategory)data[0];
+            int command = (int)data[1];
+            switch (category)
             {
+                case GebugMessageCategory.Meta:
+                    {
+                        Reply = new RomMetaMessage((GebugCmdMeta)command);
+                        RomMetaMessage.Unwrap(Reply, (GebugCmdMeta)command, data);
+                    }
+                    break;
+
                 case GebugMessageCategory.Misc:
                     {
-                        RomMiscMessage.Unwrap(this, (GebugCmdMisc)AckCommand, data);
+                        Reply = new RomMiscMessage((GebugCmdMisc)command);
+                        RomMiscMessage.Unwrap(Reply, (GebugCmdMisc)command, data);
                     }
                     break;
             }
@@ -42,23 +54,17 @@ namespace Gebug64.Unfloader.Message
 
         public override string ToString()
         {
-            var parameters = Parameters.Take(3);
-
             var sb = new StringBuilder();
 
-            var commandName = ResolveCommand(AckCategory, AckCommand);
-
-            sb.Append($"{Category} {AckCategory} {commandName}");
-
-            if (parameters.Any())
+            if (!object.ReferenceEquals(null, Reply))
             {
-                sb.Append(" ");
-                sb.Append(string.Join(", ", parameters.Select(x => x.ToString())));
+                var replyString = Reply.ToString();
+
+                sb.Append($"{Category} {replyString}");
             }
-
-            if (Parameters.Count > 3)
+            else
             {
-                sb.Append(" ...");
+                sb.Append($"{Category} {AckCategory}");
             }
 
             return sb.ToString();

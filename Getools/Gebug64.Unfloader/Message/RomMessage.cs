@@ -61,21 +61,13 @@ namespace Gebug64.Unfloader.Message
                             return RomMessageParseResult.Error;
                         }
 
-                        var ackCommand = (byte)data[2];
-
                         result = new RomAckMessage()
                         {
                             Source = CommunicationSource.N64,
                             AckCategory = ackCategory,
-                            AckCommand = ackCommand,
                         };
 
-                        if (data.Length > 3)
-                        {
-                            var packetData = new byte[data.Length - 3];
-                            Array.Copy(data, 3, packetData, 0, data.Length - 3);
-                            ((RomAckMessage)result).Unwrap(packetData);
-                        }
+                        ((RomAckMessage)result).Unwrap(data.Skip(1).ToArray());
                     }
                     break;
 

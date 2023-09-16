@@ -17,6 +17,12 @@ namespace Gebug64.Unfloader.Message.CommandParameter
 
         public bool TryGetValue<TValue>(out TValue value)
         {
+            if (typeof(TValue) == typeof(T))
+            {
+                value = (TValue)(object)(T)Value;
+                return true;
+            }
+
             var converter = TypeDescriptor.GetConverter(typeof(TValue));
             if (converter.CanConvertFrom(typeof(T)))
             {

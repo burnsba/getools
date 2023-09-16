@@ -12,5 +12,6 @@ namespace Gebug64.Unfloader.Message.MessageType
 
         ConfigEcho = 1,
         Ping = 2,
+        Version = 10,
     }
 }
