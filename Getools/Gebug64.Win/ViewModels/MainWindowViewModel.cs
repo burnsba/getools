@@ -47,6 +47,8 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private const int TimeoutDisconnectSec = 70;
 
+        private const int MaxRecentlySentFiles = 10;
+
         private bool _isConnected = false;
         private bool _isConnecting = false;
         private bool _isRefreshing = false;
@@ -72,6 +74,9 @@ namespace Gebug64.Win.ViewModels
 
         private readonly object _logMessagesLock = new object();
         private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
+
+        private readonly object _recentlySentFilesLock = new object();
+        private ObservableCollection<string> _recentlySentFiles = new ObservableCollection<string>();
 
         private readonly ILogger _logger;
 
@@ -167,7 +172,6 @@ namespace Gebug64.Win.ViewModels
 
         public bool CanSendRom =>
             _isConnected
-            && _selectedRomPathIsValid
             && !_currentlySendingRom
             && _connectionError == false
             && _connectionLevel == ConnectionLevel.Everdrive;
@@ -251,6 +255,16 @@ namespace Gebug64.Win.ViewModels
         public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
         public ObservableCollection<MenuItemViewModel> MenuSendRom { get; set; } = new ObservableCollection<MenuItemViewModel>();
 
+        public ObservableCollection<string> RecentlySentFiles
+        {
+            get { return _recentlySentFiles; }
+            set
+            {
+                _recentlySentFiles = value;
+                BindingOperations.EnableCollectionSynchronization(_recentlySentFiles, _recentlySentFilesLock);
+            }
+        }
+
         public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
         {
             _logger = logger;
@@ -274,6 +288,7 @@ namespace Gebug64.Win.ViewModels
             RefreshAvailableSerialPortsCommandHandler();
             SetConnectCommandText();
             SetAvailableFlashcarts();
+            BuildMenuSendRom();
 
             // Look up the tabs to add based on the interface ICategoryTabViewModel.
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
@@ -307,6 +322,35 @@ namespace Gebug64.Win.ViewModels
             _shutdown = true;
 
             // cleanup handled at end of ThreadMain
+        }
+
+        private void BuildMenuSendRom()
+        {
+            MenuSendRom.Clear();
+
+            var mivm = new MenuItemViewModel() { Header = "Open ..." };
+            mivm.Command = new CommandHandler(ChooseAndSendRom, () => CanSendRom);
+
+            MenuSendRom.Add(mivm);
+
+            mivm = new MenuItemViewModel() { Header = "-----", IsEnabled = false };
+            MenuSendRom.Add(mivm);
+
+            mivm = new MenuItemViewModel() { Header = "Clear" };
+            mivm.Command = new CommandHandler(ClearRecentlySentFiles);
+
+            MenuSendRom.Add(mivm);
+
+            Action<object?> dddd = x => SendSelectedRom((MenuItemViewModel)x!);
+
+            foreach (var recent in RecentlySentFiles)
+            {
+                mivm = new MenuItemViewModel() { Header = recent };
+                mivm.Command = new CommandHandler(dddd, () => CanSendRom);
+                mivm.Value = (string)recent;
+
+                MenuSendRom.Add(mivm);
+            }
         }
 
         private void RefreshAvailableSerialPortsCommandHandler()
@@ -603,6 +647,90 @@ namespace Gebug64.Win.ViewModels
             CurrentFlashcart = (IFlashcart)self.Value;
         }
 
+        private void ClearRecentlySentFiles()
+        {
+            RecentlySentFiles.Clear();
+
+            while (MenuSendRom.Count > 3)
+            {
+                MenuSendRom.RemoveAt(3);
+            }
+        }
+
+        private void ChooseAndSendRom()
+        {
+            ChooseSelectedRomCommandHandler();
+
+            // If the user cancels, don't try to send the last file.
+            if (string.IsNullOrEmpty(SelectedRom))
+            {
+                return;
+            }
+
+            var mivm = new MenuItemViewModel()
+            {
+                Value = SelectedRom,
+            };
+
+            SendSelectedRom(mivm);
+        }
+
+        private void SendSelectedRom(MenuItemViewModel self)
+        {
+            string path = (string)self.Value;
+
+            if (!File.Exists(path))
+            {
+                string messageBoxText = $"File no longer exists: {path}";
+                string caption = "File not found";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Error;
+                MessageBoxResult result;
+
+                MessageBox.Show(messageBoxText, caption, button, icon, MessageBoxResult.OK);
+
+                RecentlySentFiles.Remove(path);
+                return;
+            }
+
+            if (RecentlySentFiles.Contains(path))
+            {
+                RecentlySentFiles.Remove(path);
+            }
+
+            RecentlySentFiles.Insert(0, path);
+
+            if (RecentlySentFiles.Count > MaxRecentlySentFiles)
+            {
+                RecentlySentFiles.RemoveAt(MaxRecentlySentFiles);
+            }
+
+            int i;
+            bool found = false;
+            for (i = 0; i < MenuSendRom.Count; i++)
+            {
+                if (string.Compare(path, (string)MenuSendRom[i].Value, true) == 0)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                MenuSendRom.RemoveAt(i);
+            }
+
+            Action<object?> dddd = x => SendSelectedRom((MenuItemViewModel)x!);
+            var mivm = new MenuItemViewModel() { Header = path };
+            mivm.Command = new CommandHandler(dddd, () => CanSendRom);
+            mivm.Value = (string)path;
+            MenuSendRom.Insert(3, mivm);
+
+            SelectedRom = path;
+            SendRomCommandHandler();
+        }
+
         private void SendRomCommandHandler()
         {
             if (_currentlySendingRom)
@@ -649,13 +777,19 @@ namespace Gebug64.Win.ViewModels
                 Filter = "z64 format | *.z64" // Filter files by extension
             };
 
-            // Show save file dialog box
+            // Show open file dialog box
             bool? result = dialog.ShowDialog();
 
-            // Process save file dialog box results
+            // Process open file dialog box results
             if (result == true && !string.IsNullOrEmpty(dialog.FileName))
             {
                 SelectedRom = dialog.FileName;
+            }
+            else
+            {
+                // clear last selected rom if user cancels.
+                // This is used to communicate status in the "send rom" menu click ...
+                SelectedRom = string.Empty;
             }
         }
 
@@ -720,6 +854,7 @@ namespace Gebug64.Win.ViewModels
                 {
                     _connectionLevel = ConnectionLevel.Rom;
                     OnPropertyChanged(nameof(CanSendRom));
+                    OnPropertyChanged(nameof(StatusConnectionLevelText));
 
                     _logger.Log(LogLevel.Information, ((RomMessage)msg).ToString());
                 }
