@@ -207,7 +207,7 @@ namespace Gebug64.Unfloader
             _sendToConsoleQueue.Clear();
         }
 
-        public void SendRom(string path)
+        public void SendRom(string path, Nullable<CancellationToken> token = null)
         {
             if (!System.IO.File.Exists(path))
             {
@@ -227,7 +227,7 @@ namespace Gebug64.Unfloader
                 }
             }
 
-            _flashcart!.SendRom(filedata);
+            _flashcart!.SendRom(filedata, token);
         }
 
         public Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)

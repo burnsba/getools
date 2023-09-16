@@ -94,6 +94,8 @@ namespace Gebug64.Win.ViewModels
 
         private ConnectionLevel _connectionLevel = ConnectionLevel.NotConnected;
 
+        private CancellationTokenSource? _sendRomCancellation = null;
+
         public string? CurrentSerialPort
         {
             get
@@ -479,6 +481,13 @@ namespace Gebug64.Win.ViewModels
                 return;
             }
 
+            if (!object.ReferenceEquals(null, _sendRomCancellation))
+            {
+                _sendRomCancellation.Cancel();
+
+                System.Threading.Thread.Sleep(1000);
+            }
+
             _deviceManager.Unsubscribe(_messageBusLogSubscription);
             _deviceManager.Stop();
 
@@ -520,6 +529,8 @@ namespace Gebug64.Win.ViewModels
             SetConnectCommandText();
 
             _logger.Log(LogLevel.Information, $"Disconnected");
+            
+            _sendRomCancellation = null;
         }
 
         private void SetConnectCommandText()
@@ -824,14 +835,27 @@ namespace Gebug64.Win.ViewModels
                     });
 
                     _logger.Log(LogLevel.Information, $"Send file: {SelectedRom}");
-                    _deviceManager!.SendRom(SelectedRom);
 
-                    // need to delay after loading rom or everdrive gets cranky
+                    if (object.ReferenceEquals(null, _sendRomCancellation))
+                    {
+                        _sendRomCancellation = new CancellationTokenSource();
+                    }
+
+                    _deviceManager!.SendRom(SelectedRom, _sendRomCancellation.Token);
+
+                    _sendRomCancellation = null;
+
                     Task.Run(() =>
                     {
+                        // need to delay after loading rom or everdrive gets cranky
                         System.Threading.Thread.Sleep(5000);
-                        _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                        // if disconnected during above sleep, don't send ping.
+                        if (!object.ReferenceEquals(null, _deviceManager))
+                        {
+                            _logger.Log(LogLevel.Information, $"Send ping");
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        }
                     });
 
                     _dispatcher.BeginInvoke(() =>
@@ -839,8 +863,13 @@ namespace Gebug64.Win.ViewModels
                         _currentlySendingRom = false;
                         OnPropertyChanged(nameof(CanSendRom));
                     });
+                }).ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        _logger.Log(LogLevel.Information, $"SendRom failed");
+                    }
                 });
-
             });
         }
 

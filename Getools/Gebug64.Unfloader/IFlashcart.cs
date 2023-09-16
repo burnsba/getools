@@ -17,7 +17,7 @@ namespace Gebug64.Unfloader
 
         byte[]? Read();
 
-        void SendRom(byte[] filedata);
+        void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
         Queue<IGebugMessage> MessagesFromConsole { get; }
 

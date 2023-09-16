@@ -25,7 +25,7 @@ namespace Gebug64.Unfloader
 
         void Stop();
 
-        void SendRom(string path);
+        void SendRom(string path, Nullable<CancellationToken> token = null);
 
         bool TestFlashcartConnected();
 

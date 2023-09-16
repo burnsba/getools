@@ -51,7 +51,7 @@ namespace Gebug64.Unfloader.Flashcart
             return commandResponse == Command_Test_Response;
         }
 
-        public override void SendRom(byte[] filedata)
+        public override void SendRom(byte[] filedata, Nullable<CancellationToken> token = null)
         {
             var size = filedata.Length;
             UInt32 padSize = BitUtility.CalculatePadsize((UInt32)size);
@@ -99,6 +99,12 @@ namespace Gebug64.Unfloader.Flashcart
                 double percentDone = 100.0 * (double)bytesDone / (double)((int)padSize);
 
                 _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
+
+                if (token.HasValue && token.Value.IsCancellationRequested)
+                {
+                    _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: cancelled");
+                    return;
+                }
             }
 
             // Delay is needed or it won't boot properly

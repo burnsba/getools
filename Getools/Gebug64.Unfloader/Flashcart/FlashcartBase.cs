@@ -80,7 +80,7 @@ namespace Gebug64.Unfloader.Flashcart
 
         internal abstract bool IsTestCommandResponse(Packet packet);
 
-        public abstract void SendRom(byte[] filedata);
+        public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
         public byte[]? Read()
         {
