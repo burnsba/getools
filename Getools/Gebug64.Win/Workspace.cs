@@ -11,6 +11,11 @@ using Microsoft.Extensions.Configuration;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.Windows;
 using System.Windows.Threading;
+using Gebug64.Win.Session;
+using Gebug64.Win.Config;
+using Gebug64.Win.ViewModels.Config;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Gebug64.Win
 {
@@ -285,6 +290,21 @@ namespace Gebug64.Win
 
                 Workspace.Instance.RecreateSingletonWindow<ErrorWindow>(ewvm);
             }
+        }
+
+        public void SaveAppSettings()
+        {
+            var translateService = (TranslateService)ServiceProvider.GetService(typeof(TranslateService))!;
+            var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
+
+            var settings = translateService.Translate<AppConfigViewModel, AppConfigSettings>(appConfig);
+
+            var jobj = JObject.FromObject(settings);
+            // parent the C# class into a container called "AppConfigSettings"
+            var container = JObject.FromObject(new { AppConfigSettings = jobj });
+
+            string json = JsonConvert.SerializeObject(container, Newtonsoft.Json.Formatting.Indented);
+            File.WriteAllText(AppConfigSettings.DefaultFilename, json);
         }
     }
 }

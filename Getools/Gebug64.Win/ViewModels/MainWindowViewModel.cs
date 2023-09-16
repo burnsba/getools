@@ -18,12 +18,16 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
 using Gebug64.Unfloader.Message;
+using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.Session;
 using Gebug64.Win.Ui;
 using Gebug64.Win.ViewModels.CategoryTabs;
+using Gebug64.Win.ViewModels.Config;
 using Getools.Lib.Game.Asset.SetupObject;
 using Microsoft.Extensions.Logging;
 
@@ -49,12 +53,13 @@ namespace Gebug64.Win.ViewModels
 
         private const int MaxRecentlySentFiles = 10;
 
+        private bool _ignoreAppSettingsChange = false;
+
         private bool _isConnected = false;
         private bool _isConnecting = false;
         private bool _isRefreshing = false;
         private bool _connectionError = false;
         private IFlashcart _currentFlashCart;
-        private string _currentSerialPort;
         private string _selectedRomPath;
 
         private bool _serialPortIsValid = false;
@@ -94,13 +99,24 @@ namespace Gebug64.Win.ViewModels
 
         public string? CurrentSerialPort
         {
-            get { return _currentSerialPort; }
+            get
+            {
+                return AppConfig?.Connection?.SerialPort ?? string.Empty;
+            }
+
             set
             {
-                _currentSerialPort = value;
+                if ((AppConfig?.Connection?.SerialPort ?? string.Empty) == value)
+                {
+                    return;
+                }
+
+                AppConfig.Connection.SerialPort = value ?? string.Empty;
                 _serialPortIsValid = !string.IsNullOrEmpty(value);
                 OnPropertyChanged(nameof(CurrentSerialPort));
                 OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
             }
         }
 
@@ -123,10 +139,27 @@ namespace Gebug64.Win.ViewModels
             get { return _currentFlashCart; }
             set
             {
+                if (object.ReferenceEquals(_currentFlashCart, value))
+                {
+                    return;
+                }
+
                 _currentFlashCart = value;
+
+                if (!object.ReferenceEquals(value, null))
+                {
+                    AppConfig.Device.Flashcart = value.GetType().Name;
+                }
+                else
+                {
+                    AppConfig.Device.Flashcart = string.Empty;
+                }
+
                 _flashcartIsValid = !object.ReferenceEquals(null, value);
                 OnPropertyChanged(nameof(CurrentFlashcart));
                 OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
             }
         }
 
@@ -265,11 +298,18 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
-        public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
+        public AppConfigViewModel AppConfig { get; set; }
+
+        public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver, AppConfigViewModel appConfig)
         {
+            _ignoreAppSettingsChange = true;
+
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
             _deviceManagerResolver = deviceManagerResolver;
+
+            // Need to supply AppConfig early because some properties reference this.
+            AppConfig = appConfig;
 
             // MainWindowViewModel is singleton, so don't need to worry about attaching multiple callbacks.
             ((Logger)_logger).AddCallback((level, msg) =>
@@ -308,6 +348,8 @@ namespace Gebug64.Win.ViewModels
             }
 
             StartThread();
+
+            _ignoreAppSettingsChange = false;
         }
 
         private enum ConnectionLevel
@@ -362,6 +404,10 @@ namespace Gebug64.Win.ViewModels
 
             _dispatcher.BeginInvoke(() =>
             {
+                string loadPort = AppConfig?.Connection?.SerialPort ?? string.Empty;
+                MenuItemViewModel? loadInstance = null;
+                MenuItemViewModel? last = null;
+
                 foreach (var x in MenuSerialPorts)
                 {
                     _menuSerialPortGroup.RemoveItem(x.Id);
@@ -376,11 +422,14 @@ namespace Gebug64.Win.ViewModels
                 mivm = new MenuItemViewModel() { Header = "-----", IsEnabled = false };
                 MenuSerialPorts.Add(mivm);
 
+                // Don't write empty serial port to appsettings.
+                // CurrentSerialPort = ...
                 IsRefreshing = true;
-                CurrentSerialPort = null;
+
+                // Clearing the list sometimes clears AppConfig.Connection.SerialPort ?
                 AvailableSerialPorts.Clear();
 
-                MenuItemViewModel? last = null;
+                List<string> foundPorts = new List<string>();
 
                 var ports = SerialPort.GetPortNames();
                 foreach (var port in ports)
@@ -393,17 +442,32 @@ namespace Gebug64.Win.ViewModels
                     mivm.Command = new CommandHandler(dddd);
                     mivm.Value = port;
 
+                    // check each instance if this is what was saved in the config.
+                    if (loadPort == port)
+                    {
+                        loadInstance = mivm;
+                    }
+
                     _menuSerialPortGroup.AddItem(mivm, mivm.Id);
                     MenuSerialPorts.Add(mivm);
                     
                     last = mivm;
+
+                    foundPorts.Add(port);
                 }
+
+                _logger.Log(LogLevel.Information, "Found ports: " + String.Join(", ", foundPorts));
 
                 IsRefreshing = false;
 
-                if (string.IsNullOrEmpty(CurrentSerialPort) && !object.ReferenceEquals(null, last))
+                if (object.ReferenceEquals(null, loadInstance))
                 {
-                    MenuSerialPortClick(last);
+                    loadInstance = last;
+                }
+
+                if (!object.ReferenceEquals(null, loadInstance))
+                {
+                    MenuSerialPortClick(loadInstance);
                 }
             });
         }
@@ -621,23 +685,34 @@ namespace Gebug64.Win.ViewModels
 
             _setAvailableFlashcarts = true;
 
+            string loadTypeName = AppConfig?.Device?.Flashcart ?? string.Empty;
+            MenuItemViewModel? loadInstance = null;
+
             MenuDevice.Clear();
 
-            MenuItemViewModel? last = null;
             var mivm = new MenuItemViewModel() { Header = "Everdrive", IsCheckable = true, IsChecked = true };
             mivm.Command = new CommandHandler(() => MenuFlashcartClick(mivm));
             mivm.Value = (Everdrive)Workspace.Instance.ServiceProvider.GetService(typeof(Everdrive))!;
+
+            // If this were iterating a loop, check each instance if this is what was saved in the config.
+            if (loadTypeName == typeof(Everdrive).Name)
+            {
+                loadInstance = mivm;
+            }
 
             _menuDeviceGroup.AddItem(mivm, mivm.Id);
             MenuDevice.Add(mivm);
 
             AvailableFlashcarts.Add((Everdrive)mivm.Value);
 
-            last = mivm;
-
-            if (object.ReferenceEquals(null, CurrentFlashcart) && !object.ReferenceEquals(null, last))
+            if (object.ReferenceEquals(null, loadInstance))
             {
-                MenuFlashcartClick(last);
+                loadInstance = mivm;
+            }
+
+            if (object.ReferenceEquals(null, CurrentFlashcart) && !object.ReferenceEquals(null, loadInstance))
+            {
+                MenuFlashcartClick(loadInstance);
             }
         }
 
@@ -863,6 +938,18 @@ namespace Gebug64.Win.ViewModels
                     _logger.Log(LogLevel.Information, msg.GetUsbPacket().ToString());
                 }
             });
+        }
+
+        private void SaveAppSettings()
+        {
+            if (_ignoreAppSettingsChange)
+            {
+                return;
+            }
+
+            Workspace.Instance.SaveAppSettings();
+
+            AppConfig.ClearIsDirty();
         }
 
         private void ThreadMain()
