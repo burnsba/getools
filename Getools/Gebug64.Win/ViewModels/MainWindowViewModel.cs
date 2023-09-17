@@ -22,6 +22,7 @@ using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Message.MessageType;
 using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.Session;
@@ -1000,6 +1001,27 @@ namespace Gebug64.Win.ViewModels
                                     RomVersion = version;
                                 }
                             }
+                        }
+                    }
+
+                    if (romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
+                    {
+                        var ackMessage = (RomAckMessage)romMessage;
+                        if (ackMessage?.Reply?.Category == Unfloader.Message.MessageType.GebugMessageCategory.Vi
+                            && ackMessage?.Reply?.RawCommand == (int)GebugCmdVi.GrabFramebuffer)
+                        {
+                            var viMessage = (RomViMessage)ackMessage.Reply;
+                            var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.FrameBuffer, viMessage.Width, viMessage.Height);
+                            string path = $"framegrab-{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.jpg";
+                            Image.Utility.SaveRawToFile(windowsFrameBuffer, viMessage.Width, viMessage.Height, path, System.Drawing.Imaging.ImageFormat.Jpeg);
+
+                            //var geImageData = ((Unfloader.Message.CommandParameter.S16Parameter)viMessage.Parameters[0]).Value;
+                            //var geImageData = ((Unfloader.Message.CommandParameter.S16Parameter)viMessage.Parameters[1]).Value;
+                            //var geImageData = ((Unfloader.Message.CommandParameter.U8ArrayParameter)viMessage.Parameters[2]).Value;
+
+                            //TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+                            //int secondsSinceEpoch = (int)t.TotalSeconds;
+                            //System.IO.File.WriteAllBytes($"framegrab-{secondsSinceEpoch}.bin", p3.Value);
                         }
                     }
 

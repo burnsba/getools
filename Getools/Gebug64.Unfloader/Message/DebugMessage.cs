@@ -12,9 +12,14 @@ namespace Gebug64.Unfloader.Message
         public DebugMessage()
         {
         }
+
+        public DebugMessage(GebugMessageBase copy)
+            : base(copy)
+        {
+        }
         
-        public DebugMessage(Packet usbPacket)
-        : base (usbPacket)
+        public DebugMessage(IPacket usbPacket)
+            : base (usbPacket)
         {
         }
     }

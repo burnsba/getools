@@ -20,6 +20,8 @@ namespace Gebug64.Unfloader.Flashcart
 
         private readonly ILogger _logger;
 
+        private bool _disableProcessIncoming = false;
+
         public Everdrive(ILogger logger)
         {
             _logger = logger;
@@ -27,9 +29,18 @@ namespace Gebug64.Unfloader.Flashcart
 
         public override void Send(IGebugMessage message)
         {
+            if (!message.PacketDataSet)
+            {
+                message.SetUsbPacket(new EverdrivePacket(PacketType.Binary, message.ToSendData()));
+            }
+
             var packet = message.GetUsbPacket();
 
-            Write(packet.Wrap());
+            _disableProcessIncoming = true;
+
+            Write(packet.GetOuterData()!);
+
+            _disableProcessIncoming = false;
         }
 
         internal override void SendTest()
@@ -37,9 +48,9 @@ namespace Gebug64.Unfloader.Flashcart
             SendEverdriveCommand(Command_Test_Send, 0, 0, 0);
         }
 
-        internal override bool IsTestCommandResponse(Packet packet)
+        internal override bool IsTestCommandResponse(IPacket packet)
         {
-            var data = packet.GetData();
+            var data = packet.GetInnerData();
 
             if (object.ReferenceEquals(null, data) || data.Length < 4)
             {
@@ -66,6 +77,8 @@ namespace Gebug64.Unfloader.Flashcart
                 Array.Copy(filedata, newFileData, size);
                 filedata = newFileData;
             }
+
+            _disableProcessIncoming = true;
 
             _logger.Log(LogLevel.Debug, $"Sending command: {Command_WriteRom}");
 
@@ -102,10 +115,13 @@ namespace Gebug64.Unfloader.Flashcart
 
                 if (token.HasValue && token.Value.IsCancellationRequested)
                 {
+                    _disableProcessIncoming = false;
                     _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: cancelled");
                     return;
                 }
             }
+
+            _disableProcessIncoming = false;
 
             // Delay is needed or it won't boot properly
             System.Threading.Thread.Sleep(3000);
@@ -113,6 +129,72 @@ namespace Gebug64.Unfloader.Flashcart
             SendEverdriveCommand(Command_PifBoot_Send, 0, 0, 0);
 
             _logger.Log(LogLevel.Debug, $"Sending command: {Command_PifBoot_Send}");
+        }
+
+        protected override void ProcessReadData()
+        {
+            if (_readData.Count == 0 || _disableProcessIncoming)
+            {
+                return;
+            }
+
+            lock (_readData)
+            {
+                PacketParseContext parseCtx;
+
+                do
+                {
+                    if (!_isInit)
+                    {
+                        return;
+                    }
+
+                    if (_readData.Count >= 4 && _readData.Count <= 16)
+                    {
+                        //System.Diagnostics.Debug.WriteLine($"Everdrive.ProcessReadData receieve 16: {string.Join(", ", _readData)}");
+
+                        if (_readData[0] == 'c'
+                            && _readData[1] == 'm'
+                            && _readData[2] == 'd')
+                        {
+                            var msg = new PendingGebugMessage(new RawPacket(_readData.ToArray()));
+                            MessagesFromConsole.Enqueue(msg);
+
+                            // Remove the packet, and any following zeroes, up to the Everdrive single command size (16 bytes).
+                            int size = _readData.Count;
+
+                            _readData.RemoveRange(0, size);
+                            break;
+                        }
+                    }
+
+                    parseCtx = EverdrivePacket.Parse(_readData.ToArray());
+
+                    if (parseCtx.ParseResult == PacketParseResult.Success)
+                    {
+
+                    //System.Diagnostics.Debug.WriteLine($"Everdrive.ProcessReadData parseResult: {parseCtx.ParseResult}: {string.Join(", ", parseCtx.Packet.GetOuterData())}");
+
+                        var msg = new PendingGebugMessage(parseCtx.Packet!);
+                        MessagesFromConsole.Enqueue(msg);
+
+                        _readData.RemoveRange(0, parseCtx.TotalBytesRead);
+                    }
+                    else
+                    {
+                        if (parseCtx.ParseResult == PacketParseResult.SizeMismatch)
+                        {
+                            // wait for more data.
+                            break;
+                        }
+                    }
+
+                    if (_readData.Count == 0)
+                    {
+                        break;
+                    }
+                } while (parseCtx.ParseResult == PacketParseResult.Success);
+            }
         }
 
         /// <summary>

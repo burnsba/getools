@@ -10,43 +10,89 @@ namespace Gebug64.Unfloader.Message
 {
     public class RomAckMessage : RomMessage
     {
+        // size in bytes
+        public const int AckProtocolHeaderSize = 8;
+
+        public const int AckProtocolHeaderPacketNumberOffset = 1;
+        public const int AckProtocolHeaderTotalPacketsOffset = 3;
+        public const int AckProtocolHeaderReplyCategoryOffset = 6;
+        public const int AckProtocolHeaderReplyCommandOffset = 7;
+
+
         public RomMessage Reply { get; set; }
 
         public GebugMessageCategory AckCategory { get; set; }
-        //public int AckCommand { get; set; }
+        
+        public int PacketNumber { get; set; }
+
+        public int TotalNumberPackets { get; set; }
+
+        public byte[] FragmentBytes { get; set; }
 
         public RomAckMessage()
             : base (GebugMessageCategory.Ack, 0)
         {
         }
 
-        public override Packet GetUsbPacket()
+        public static RomMessageParseResult Parse(byte[] data, out RomAckMessage? result)
         {
-            if (object.ReferenceEquals(null, _usbPacket))
+            result = null;
+
+            var packetNumber = BitUtility.Read16Big(data, AckProtocolHeaderPacketNumberOffset);
+            var totalPackets = BitUtility.Read16Big(data, AckProtocolHeaderTotalPacketsOffset);
+
+            var ackCategory = (GebugMessageCategory)data[AckProtocolHeaderReplyCategoryOffset];
+
+            if (data.Length < AckProtocolHeaderSize)
             {
-                _usbPacket = new Packet(PacketType.Binary, ToSendData());
+                return RomMessageParseResult.Error;
             }
 
-            return _usbPacket;
+            result = new RomAckMessage()
+            {
+                Source = CommunicationSource.N64,
+                AckCategory = ackCategory,
+                PacketNumber = packetNumber,
+                TotalNumberPackets = totalPackets,
+            };
+
+            if (totalPackets == 1)
+            {
+                result.Unwrap(data);
+            }
+            else
+            {
+                result.FragmentBytes = data;
+            }
+
+            return RomMessageParseResult.Success;
         }
 
         public void Unwrap(byte[] data)
         {
-            var category = (GebugMessageCategory)data[0];
-            int command = (int)data[1];
-            switch (category)
+            AckCategory = (GebugMessageCategory)data[AckProtocolHeaderReplyCategoryOffset];
+            int command = (int)data[AckProtocolHeaderReplyCommandOffset];
+
+            switch (AckCategory)
             {
                 case GebugMessageCategory.Meta:
                     {
                         Reply = new RomMetaMessage((GebugCmdMeta)command);
-                        RomMetaMessage.Unwrap(Reply, (GebugCmdMeta)command, data);
+                        RomMetaMessage.ParseParameters((RomMetaMessage)Reply, (GebugCmdMeta)command, data, AckProtocolHeaderSize);
                     }
                     break;
 
                 case GebugMessageCategory.Misc:
                     {
                         Reply = new RomMiscMessage((GebugCmdMisc)command);
-                        RomMiscMessage.Unwrap(Reply, (GebugCmdMisc)command, data);
+                        RomMiscMessage.ParseParameters((RomMiscMessage)Reply, (GebugCmdMisc)command, data, AckProtocolHeaderSize);
+                    }
+                    break;
+
+                case GebugMessageCategory.Vi:
+                    {
+                        Reply = new RomViMessage((GebugCmdVi)command);
+                        RomViMessage.ParseParameters((RomViMessage)Reply, (GebugCmdVi)command, data, AckProtocolHeaderSize);
                     }
                     break;
             }

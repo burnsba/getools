@@ -15,8 +15,6 @@ namespace Gebug64.Unfloader
 
         void EnqueueMessage(IGebugMessage message);
 
-        //ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
-
         bool IsShutdown { get; }
 
         void Init(string portName);

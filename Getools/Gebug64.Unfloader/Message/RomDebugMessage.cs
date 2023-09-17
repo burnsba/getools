@@ -39,16 +39,6 @@ namespace Gebug64.Unfloader.Message
             Command = command;
         }
 
-        public override Packet GetUsbPacket()
-        {
-            if (object.ReferenceEquals(null, _usbPacket))
-            {
-                _usbPacket = new Packet(PacketType.Binary, ToSendData());
-            }
-
-            return _usbPacket;
-        }
-
         public override string ToString()
         {
             switch (Command)

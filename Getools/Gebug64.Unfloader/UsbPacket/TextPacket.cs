@@ -7,7 +7,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Gebug64.Unfloader.UsbPacket
 {
-    public class TextPacket : Packet
+    public class TextPacket : PacketBase
     {
         public string? Content
         {

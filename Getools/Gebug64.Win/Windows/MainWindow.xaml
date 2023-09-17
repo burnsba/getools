@@ -9,7 +9,7 @@
         xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
         xmlns:selectors="clr-namespace:Gebug64.Win.Xaml.Selectors"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}"
-        Title="Gebug64" Height="450" Width="900"
+        Title="Gebug64" Height="600" Width="940"
         Closing="Window_Closing"
         >
     <Window.Resources>
@@ -23,6 +23,7 @@
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MiscTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_NothingTemplate.xaml"/>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_StageTemplate.xaml"/>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_ViTemplate.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
             <converters:BoolToInvertedBoolConverter x:Key="BoolToInvertedBoolConverter" />
@@ -39,6 +40,7 @@
                     MiscTemplate="{StaticResource CategoryTabContentMiscTemplate}"
                     NothingTemplate="{StaticResource CategoryTabContentNothingTemplate}"
                     StageTemplate="{StaticResource CategoryTabContentStageTemplate}"
+                    ViTemplate="{StaticResource CategoryTabContentViTemplate}"
                     />
 
             <DataTemplate x:Key="CategoryTabHeader">

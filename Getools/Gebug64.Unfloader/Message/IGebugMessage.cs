@@ -15,6 +15,16 @@ namespace Gebug64.Unfloader.Message
 
         CommunicationSource Source { get; }
 
-        Packet GetUsbPacket();
+        IPacket GetUsbPacket();
+
+        void SetUsbPacket(IPacket packet);
+
+        bool PacketDataSet { get; }
+
+        /// <summary>
+        /// Message data to byte array, without any protocol data.
+        /// </summary>
+        /// <returns></returns>
+        byte[] ToSendData();
     }
 }

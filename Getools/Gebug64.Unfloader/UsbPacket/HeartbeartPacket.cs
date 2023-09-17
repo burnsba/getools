@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader.UsbPacket
 {
-    public class HeartbeartPacket : Packet
+    public class HeartbeartPacket : PacketBase
     {
         public int UsbProtocolVersion
         {

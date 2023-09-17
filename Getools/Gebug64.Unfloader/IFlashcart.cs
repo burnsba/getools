@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,12 +16,8 @@ namespace Gebug64.Unfloader
 
         void Disconnect();
 
-        byte[]? Read();
-
         void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
-        Queue<IGebugMessage> MessagesFromConsole { get; }
-
-        bool HasReadData { get; }
+        ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
     }
 }

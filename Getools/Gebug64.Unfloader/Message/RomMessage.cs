@@ -10,6 +10,8 @@ namespace Gebug64.Unfloader.Message
 {
     public abstract class RomMessage : GebugMessageBase
     {
+        public const int ProtocolHeaderCategoryOffset = 0;
+
         public GebugMessageCategory Category { get; set; }
 
         public int RawCommand { get; set; }
@@ -26,7 +28,7 @@ namespace Gebug64.Unfloader.Message
             RawCommand = rawCommand;
         }
 
-        public virtual byte[] ToSendData()
+        public override byte[] ToSendData()
         {
             var results = new List<byte[]>();
 
@@ -44,6 +46,7 @@ namespace Gebug64.Unfloader.Message
         public static RomMessageParseResult Parse(byte[] data, out RomMessage? result)
         {
             result = null;
+            RomMessageParseResult parseResult = RomMessageParseResult.Error;
 
             if (data == null || data.Length < 2)
             {
@@ -54,20 +57,13 @@ namespace Gebug64.Unfloader.Message
             {
                 case GebugMessageCategory.Ack:
                     {
-                        var ackCategory = (GebugMessageCategory)data[1];
-
-                        if (data.Length < 3)
+                        RomAckMessage ackMessage;
+                        parseResult = RomAckMessage.Parse(data, out ackMessage);
+                        if (parseResult == RomMessageParseResult.Success)
                         {
-                            return RomMessageParseResult.Error;
+                            result = ackMessage;
                         }
-
-                        result = new RomAckMessage()
-                        {
-                            Source = CommunicationSource.N64,
-                            AckCategory = ackCategory,
-                        };
-
-                        ((RomAckMessage)result).Unwrap(data.Skip(1).ToArray());
+                        return parseResult;
                     }
                     break;
 
@@ -92,6 +88,7 @@ namespace Gebug64.Unfloader.Message
                 case GebugMessageCategory.Meta: return ((GebugCmdMeta)command).ToString();
                 case GebugMessageCategory.Misc: return ((GebugCmdMisc)command).ToString();
                 case GebugMessageCategory.Stage: return ((GebugCmdStage)command).ToString();
+                case GebugMessageCategory.Vi: return ((GebugCmdVi)command).ToString();
             }
 
             throw new NotImplementedException();

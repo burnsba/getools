@@ -22,7 +22,11 @@ namespace Gebug64.Unfloader
         private ConcurrentQueue<IGebugMessage> _sendToConsoleQueue = new ConcurrentQueue<IGebugMessage>();
         private ConcurrentQueue<IGebugMessage> _receiveFromConsoleQueue = new ConcurrentQueue<IGebugMessage>();
 
-        private bool _priorityLock = false;
+        private List<RomAckMessage> _receiveFragments = new List<RomAckMessage>();
+
+        private Mutex _priorityLock = new Mutex();
+
+        //private bool _priorityLock = false;
 
         private MessageBus<IGebugMessage> _messageBus = new MessageBus<IGebugMessage>();
 
@@ -68,26 +72,29 @@ namespace Gebug64.Unfloader
 
         public bool TestRomConnected()
         {
-            _priorityLock = true;
+            if (!_priorityLock.WaitOne(1000))
+            {
+                return false;
+            }
 
             // Send the test command.
             var sendMsg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
             _flashcart.Send(sendMsg);
 
             // Wait a short while for the device to respond.
-            System.Threading.Thread.Sleep(500);
+            System.Threading.Thread.Sleep(100);
 
             IGebugMessage msg;
 
             // If there's no response, the test failed.
-            if (_receiveFromConsoleQueue.IsEmpty)
+            if (_flashcart!.MessagesFromConsole.IsEmpty)
             {
-                _priorityLock = false;
+                _priorityLock.ReleaseMutex();
                 return false;
             }
 
             // Else, get the next message response.
-            while (!_receiveFromConsoleQueue.TryDequeue(out msg))
+            while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
             {
                 ;
             }
@@ -104,7 +111,7 @@ namespace Gebug64.Unfloader
                         if (metaMessage.Command == Unfloader.Message.MessageType.GebugCmdMeta.Ping)
                         {
                             // success
-                            _priorityLock = false;
+                            _priorityLock.ReleaseMutex();
                             return true;
                         }
                     }
@@ -112,14 +119,17 @@ namespace Gebug64.Unfloader
             }
 
             // Otherwise, put the message back on the queue for anyone else.
-            _receiveFromConsoleQueue.Enqueue(msg);
-            _priorityLock = false;
+            _flashcart!.MessagesFromConsole.Enqueue(msg);
+            _priorityLock.ReleaseMutex();
             return false;
         }
 
         public bool TestFlashcartConnected()
         {
-            _priorityLock = true;
+            if (!_priorityLock.WaitOne(1000))
+            {
+                return false;
+            }
 
             // Send the test command.
             ((Flashcart.FlashcartBase)_flashcart)!.SendTest();
@@ -130,14 +140,14 @@ namespace Gebug64.Unfloader
             IGebugMessage msg;
 
             // If there's no response, the test failed.
-            if (_receiveFromConsoleQueue.IsEmpty)
+            if (_flashcart!.MessagesFromConsole.IsEmpty)
             {
-                _priorityLock = false;
+                _priorityLock.ReleaseMutex();
                 return false;
             }
 
             // Else, get the next message response.
-            while (!_receiveFromConsoleQueue.TryDequeue(out msg))
+            while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
             {
                 ;
             }
@@ -146,13 +156,13 @@ namespace Gebug64.Unfloader
             // then we're done.
             if (((Flashcart.FlashcartBase)_flashcart)!.IsTestCommandResponse(msg.GetUsbPacket()))
             {
-                _priorityLock = false;
+                _priorityLock.ReleaseMutex();
                 return true;
             }
 
             // Otherwise, put the message back on the queue for anyone else.
-            _receiveFromConsoleQueue.Enqueue(msg);
-            _priorityLock = false;
+            _flashcart!.MessagesFromConsole.Enqueue(msg);
+            _priorityLock.ReleaseMutex();
             return false;
         }
 
@@ -209,6 +219,7 @@ namespace Gebug64.Unfloader
 
             _receiveFromConsoleQueue.Clear();
             _sendToConsoleQueue.Clear();
+            _receiveFragments.Clear();
         }
 
         public void SendRom(string path, Nullable<CancellationToken> token = null)
@@ -253,119 +264,370 @@ namespace Gebug64.Unfloader
                     break;
                 }
 
-                if (_flashcart!.HasReadData)
+                if (_flashcart!.MessagesFromConsole.Any() && _priorityLock.WaitOne(10))
                 {
-                    var bytes = _flashcart.Read()!;
-                    int offset = 0;
-
                     while (true)
                     {
+                        if (_stop || !_flashcart!.MessagesFromConsole.Any())
+                        {
+                            break;
+                        }
+
+                        IGebugMessage msg;
+                        while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
+                        {
+                            if (_stop || !_flashcart!.MessagesFromConsole.Any())
+                            {
+                                break;
+                            }
+                        }
+
+                        if (!object.ReferenceEquals(null, msg))
+                        {
+                            var pending = msg as PendingGebugMessage;
+
+                            // try to parse as gebug rom message.
+                            RomMessage romMessage = null;
+                            var romMessageParseResult = RomMessageParseResult.Error;
+
+                            try
+                            {
+                                romMessageParseResult = RomMessage.Parse(pending.GetUsbPacket()!.GetInnerData()!, out romMessage);
+                            }
+                            catch
+                            {
+                                romMessageParseResult = RomMessageParseResult.Error;
+                            }
+
+                            if (romMessageParseResult == RomMessageParseResult.Success)
+                            {
+                                bool queued = false;
+
+                                //System.Diagnostics.Debug.WriteLine("parse Success");
+
+                                romMessage!.Source = CommunicationSource.N64;
+
+                                if (romMessage.Category == Message.MessageType.GebugMessageCategory.Ack)
+                                {
+                                    var ackMessage = (RomAckMessage)romMessage;
+                                    if (ackMessage.TotalNumberPackets > 1)
+                                    {
+                                        queued = true;
+                                        _receiveFragments.Add(ackMessage);
+
+                                        //System.Diagnostics.Debug.WriteLine($"Multi Ack {ackMessage.PacketNumber} of {ackMessage.TotalNumberPackets}");
+                                    }
+
+                                    if (_receiveFragments.Count >= ackMessage.TotalNumberPackets)
+                                    {
+                                        RomMultiAckMessage multiMessage = new RomMultiAckMessage()
+                                        {
+                                            Source = CommunicationSource.N64,
+                                            InstantiateTime = romMessage.InstantiateTime,
+                                            PacketNumber = 1,
+                                            TotalNumberPackets = ackMessage.TotalNumberPackets,
+                                        };
+
+                                        foreach (var f in _receiveFragments)
+                                        {
+                                            multiMessage.Fragments.Add(f);
+                                        }
+
+                                        multiMessage.UnwrapFragments();
+
+                                        _receiveFragments.Clear();
+                                        _receiveFromConsoleQueue.Enqueue(multiMessage);
+                                    }
+                                }
+
+                                if (!queued)
+                                {
+                                    _receiveFromConsoleQueue.Enqueue(romMessage);
+                                }
+                            }
+                            else
+                            {
+                                // else: raw text string (osSyncPrintf),
+                                // Unfloader heartbeat message,
+                                // etc.
+
+                                bool queueDone = false;
+                                GebugMessageBase? gebug = msg as GebugMessageBase;
+
+                                if (!object.ReferenceEquals(null, gebug) && msg.PacketDataSet)
+                                {
+                                    IPacket packet = msg.GetUsbPacket();
+
+                                    if (packet.DataType == PacketType.HeartBeat
+                                        || packet.DataType == PacketType.Text)
+                                    {
+                                        var transform = new DebugMessage(gebug);
+                                        _receiveFromConsoleQueue.Enqueue(transform);
+                                        queueDone = true;
+                                    }
+                                }
+
+                                //System.Diagnostics.Debug.WriteLine($"romMessageParseResult error: {string.Join(", ", pending.GetUsbPacket()!.GetOuterData()!)}");
+
+                                //var msg = new DebugMessage(pp!)
+                                //{
+                                //    Source = CommunicationSource.N64,
+                                //    InstantiateTime = DateTime.Now,
+                                //};
+
+                                if (!queueDone)
+                                {
+                                    _receiveFromConsoleQueue.Enqueue(msg);
+                                }
+                            }
+                        }
+                    }
+
+                    _priorityLock.ReleaseMutex();
+                }
+
+                //if (_flashcart!.HasReadData)
+                //{
+                //    //int startCount = _flashcart.PendingReadCount;
+
+                //    //System.Threading.Thread.Sleep(1000);
+
+                //    //var nowCount = _flashcart.PendingReadCount;
+
+                //    //// Wait for the read queue to stabilize.
+                //    //if (nowCount > startCount)
+                //    //{
+                //    //    continue;
+                //    //}
+
+                //    var bytes = _flashcart.Read()!;
+
+                //    while (true)
+                //    {
+                //        if (_stop)
+                //        {
+                //            break;
+                //        }
+
+                //        int offset = 0;
+                //        Packet? pp = null;
+                //        var parseResult = Packet.Unwrap(bytes, out pp);
+
+                //        if (pp != null)
+                //        {
+                //            System.Diagnostics.Debug.WriteLine($"parseResult: {parseResult}, bytes={pp.Size}");
+                //        }
+
+                //        //var logBytes = bytes.Take(20);
+                //        // System.Diagnostics.Debug.WriteLine("r: " + string.Join(", ", bytes));
+
+                //        if (parseResult == PacketParseResult.Success)
+                //        {
+                //            var packetBytes = pp.GetData();
+
+                //            // try to parse as gebug rom message.
+                //            RomMessage romMessage = null;
+                //            var romMessageParseResult = RomMessageParseResult.Error;
+
+                //            try
+                //            {
+                //                romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
+                //            }
+                //            catch
+                //            {
+                //                romMessageParseResult = RomMessageParseResult.Error;
+
+                //                System.Diagnostics.Debug.WriteLine("parse exception");
+                //            }
+
+                //            if (romMessageParseResult == RomMessageParseResult.Success)
+                //            {
+                //                bool queued = false;
+
+                //                System.Diagnostics.Debug.WriteLine("parse Success");
+
+                //                romMessage!.Source = CommunicationSource.N64;
+                //                romMessage.InstantiateTime = DateTime.Now;
+
+                //                if (romMessage.Category == Message.MessageType.GebugMessageCategory.Ack)
+                //                {
+                //                    var ackMessage = (RomAckMessage)romMessage;
+                //                    if (ackMessage.TotalNumberPackets > 1)
+                //                    {
+                //                        queued = true;
+                //                        _receiveFragments.Add(ackMessage);
+
+                //                        System.Diagnostics.Debug.WriteLine($"Multi Ack {ackMessage.PacketNumber} of {ackMessage.TotalNumberPackets}");
+                //                    }
+
+                //                    if (_receiveFragments.Count >= ackMessage.TotalNumberPackets)
+                //                    {
+                //                        RomMultiAckMessage multiMessage = new RomMultiAckMessage()
+                //                        {
+                //                            Source = CommunicationSource.N64,
+                //                            InstantiateTime = romMessage.InstantiateTime,
+                //                            PacketNumber = 1,
+                //                            TotalNumberPackets = ackMessage.TotalNumberPackets,
+                //                        };
+
+                //                        foreach (var f in _receiveFragments)
+                //                        {
+                //                            multiMessage.Fragments.Add(f);
+                //                        }
+
+                //                        multiMessage.UnwrapFragments();
+
+                //                        _receiveFragments.Clear();
+                //                        _receiveFromConsoleQueue.Enqueue(multiMessage);
+                //                    }
+                //                }
+
+                //                if (!queued)
+                //                {
+                //                    _receiveFromConsoleQueue.Enqueue(romMessage);
+                //                }
+                //            }
+                //            else
+                //            {
+                //                System.Diagnostics.Debug.WriteLine("romMessageParseResult error");
+
+                //                var msg = new DebugMessage(pp!)
+                //                {
+                //                    Source = CommunicationSource.N64,
+                //                    InstantiateTime = DateTime.Now,
+                //                };
+
+                //                _receiveFromConsoleQueue.Enqueue(msg);
+                //            }
+
+                //            offset += pp!.Size + Packet.ProtocolByteLength;
+                //        }
+                //        else if (!object.ReferenceEquals(null, pp))
+                //        {
+                //            System.Diagnostics.Debug.WriteLine("parseResult error");
+
+                //            var packetBytes = pp.GetData();
+
+                //            if (packetBytes == null)
+                //            {
+                //                // ignore this, zero pad ending of packet.
+                //            }
+                //            else if (packetBytes!.All(x => x == 0))
+                //            {
+                //                offset += packetBytes.Length;
+                //                System.Diagnostics.Debug.WriteLine("zero packet");
+                //            }
+                //            else
+                //            {
+                //                // try to parse as gebug rom message.
+                //                RomMessage romMessage;
+                //                var romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
+
+                //                if (romMessageParseResult == RomMessageParseResult.Success)
+                //                {
+                //                    bool queued = false;
+
+                //                    romMessage!.Source = CommunicationSource.N64;
+                //                    romMessage.InstantiateTime = DateTime.Now;
+
+                //                    if (romMessage.Category == Message.MessageType.GebugMessageCategory.Ack)
+                //                    {
+                //                        var ackMessage = (RomAckMessage)romMessage;
+                //                        if (ackMessage.TotalNumberPackets > 1)
+                //                        {
+                //                            queued = true;
+                //                            _receiveFragments.Add(ackMessage);
+
+                //                            System.Diagnostics.Debug.WriteLine($"Multi Ack (bad) {ackMessage.PacketNumber} of {ackMessage.TotalNumberPackets}");
+                //                        }
+
+                //                        if (_receiveFragments.Count >= ackMessage.TotalNumberPackets)
+                //                        {
+                //                            RomMultiAckMessage multiMessage = new RomMultiAckMessage()
+                //                            {
+                //                                Source = CommunicationSource.N64,
+                //                                InstantiateTime = romMessage.InstantiateTime,
+                //                                PacketNumber = 1,
+                //                                TotalNumberPackets = ackMessage.TotalNumberPackets,
+                //                            };
+
+                //                            foreach (var f in _receiveFragments)
+                //                            {
+                //                                multiMessage.Fragments.Add(f);
+                //                            }
+
+                //                            multiMessage.UnwrapFragments();
+
+                //                            _receiveFragments.Clear();
+                //                            _receiveFromConsoleQueue.Enqueue(multiMessage);
+                //                        }
+                //                    }
+
+                //                    if (!queued)
+                //                    {
+                //                        _receiveFromConsoleQueue.Enqueue(romMessage);
+                //                    }
+
+                //                    System.Diagnostics.Debug.WriteLine("parseResult error => RomMessage");
+                //                }
+                //                else
+                //                {
+                //                    System.Diagnostics.Debug.WriteLine("parseResult error => DebugMessage");
+
+                //                    var msg = new DebugMessage(pp)
+                //                    {
+                //                        Source = CommunicationSource.N64,
+                //                        InstantiateTime = DateTime.Now,
+                //                    };
+
+                //                    _receiveFromConsoleQueue.Enqueue(msg);
+                //                }
+
+                //                offset += pp.Size;
+                //            }
+                //        }
+                //        else
+                //        {
+                //            System.Diagnostics.Debug.WriteLine("bad");
+
+                //            // Should only happen with a zero length packet.
+                //            break;
+                //        }
+
+                //        if (offset >= bytes.Length)
+                //        {
+                //            break;
+                //        }
+
+                //        bytes = bytes.Skip(offset).ToArray();
+                //    }
+                //}
+
+                if (_priorityLock.WaitOne(10))
+                {
+                    while (!_receiveFromConsoleQueue.IsEmpty)
+                    {
+                        IGebugMessage msg;
+                        while (!_receiveFromConsoleQueue.TryDequeue(out msg))
+                        {
+                            if (_stop)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (!object.ReferenceEquals(null, msg))
+                        {
+                            _messageBus.Publish(msg);
+                        }
+
                         if (_stop)
                         {
                             break;
                         }
-
-                        Packet? pp = null;
-                        var parseResult = Packet.Unwrap(bytes, out pp);
-
-                        if (parseResult == PacketParseResult.Success)
-                        {
-                            var packetBytes = pp.GetData();
-
-                            // try to parse as gebug rom message.
-                            RomMessage romMessage;
-                            var romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
-
-                            if (romMessageParseResult == RomMessageParseResult.Success)
-                            {
-                                romMessage!.Source = CommunicationSource.N64;
-                                romMessage.InstantiateTime = DateTime.Now;
-
-                                _receiveFromConsoleQueue.Enqueue(romMessage);
-                            }
-                            else
-                            {
-                                var msg = new DebugMessage(pp!)
-                                {
-                                    Source = CommunicationSource.N64,
-                                    InstantiateTime = DateTime.Now,
-                                };
-
-                                _receiveFromConsoleQueue.Enqueue(msg);
-                            }
-
-                            offset += pp!.Size + Packet.ProtocolByteLength;
-                        }
-                        else if (!object.ReferenceEquals(null, pp))
-                        {
-                            var packetBytes = pp.GetData();
-
-                            if (packetBytes == null || packetBytes!.All(x => x == 0))
-                            {
-                                // ignore this, zero pad ending of packet.
-                            }
-                            else
-                            {
-                                // try to parse as gebug rom message.
-                                RomMessage romMessage;
-                                var romMessageParseResult = RomMessage.Parse(packetBytes, out romMessage);
-
-                                if (romMessageParseResult == RomMessageParseResult.Success)
-                                {
-                                    romMessage!.Source = CommunicationSource.N64;
-                                    romMessage.InstantiateTime = DateTime.Now;
-
-                                    _receiveFromConsoleQueue.Enqueue(romMessage);
-                                }
-                                else
-                                {
-                                    var msg = new DebugMessage(pp)
-                                    {
-                                        Source = CommunicationSource.N64,
-                                        InstantiateTime = DateTime.Now,
-                                    };
-
-                                    _receiveFromConsoleQueue.Enqueue(msg);
-                                }
-
-                                offset += pp.Size;
-                            }
-                        }
-                        else
-                        {
-                            // Should only happen with a zero length packet.
-                            break;
-                        }
-
-                        if (offset >= bytes.Length)
-                        {
-                            break;
-                        }
-
-                        bytes = bytes.Skip(offset).ToArray();
-                    }
-                }
-
-                while (!_priorityLock && !_receiveFromConsoleQueue.IsEmpty)
-                {
-                    IGebugMessage msg;
-                    while (!_receiveFromConsoleQueue.TryDequeue(out msg))
-                    {
-                        if (_stop || _priorityLock)
-                        {
-                            break;
-                        }
                     }
 
-                    if (!object.ReferenceEquals(null, msg))
-                    {
-                        _messageBus.Publish(msg);
-                    }
-
-                    if (_stop || _priorityLock)
-                    {
-                        break;
-                    }
+                    _priorityLock.ReleaseMutex();
                 }
 
                 while (!_sendToConsoleQueue.IsEmpty)

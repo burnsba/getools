@@ -8,6 +8,8 @@ namespace Gebug64.Unfloader.UsbPacket
 {
     public enum PacketParseResult
     {
+        DefaultUnknown,
+
         Success,
 
         /// <summary>

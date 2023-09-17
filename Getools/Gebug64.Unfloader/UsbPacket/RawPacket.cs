@@ -7,10 +7,10 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Gebug64.Unfloader.UsbPacket
 {
-    public class UnknownPacket : PacketBase
+    public class RawPacket : PacketBase
     {
-        public UnknownPacket(byte[] data)
-            : base(PacketType.Unknown, data)
+        public RawPacket(byte[] data)
+            : base(PacketType.Binary, data)
         { }
     }
 }

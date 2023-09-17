@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -17,17 +18,19 @@ namespace Gebug64.Unfloader.Flashcart
         protected object _lock = new object();
 
         protected SerialPort? _serialPort = null;
-        protected Queue<byte> _readQueue = new Queue<byte>();
+        protected List<byte> _readData = new List<byte>();
 
-        public Queue<IGebugMessage> MessagesFromConsole => throw new NotImplementedException();
+        public ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; set; } = new ConcurrentQueue<IGebugMessage>();
 
-        public bool HasReadData
-        {
-            get
-            {
-                return _readQueue.Count > 0;
-            }
-        }
+        //public bool HasReadData
+        //{
+        //    get
+        //    {
+        //        return _readQueue.Count > 0;
+        //    }
+        //}
+
+        //public int PendingReadCount => _readQueue.Count;
 
         public abstract void Send(IGebugMessage message);
 
@@ -68,7 +71,7 @@ namespace Gebug64.Unfloader.Flashcart
             _isInit = false;
             _serialPort = null;
 
-            _readQueue.Clear();
+            _readData.Clear();
         }
 
         public void Dispose()
@@ -78,41 +81,43 @@ namespace Gebug64.Unfloader.Flashcart
 
         internal abstract void SendTest();
 
-        internal abstract bool IsTestCommandResponse(Packet packet);
+        internal abstract bool IsTestCommandResponse(IPacket packet);
 
         public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
-        public byte[]? Read()
+        //public byte[]? Read()
+        //{
+        //    if (!_isInit)
+        //    {
+        //        throw new InvalidOperationException($"Call {nameof(Init)} first");
+        //    }
+
+        //    var result = new List<byte>();
+
+        //    lock (_lock)
+        //    {
+        //        while (_readQueue.Count > 0)
+        //        {
+        //            result.Add(_readQueue.Dequeue());
+        //        }
+        //    }
+
+        //    if (!result.Any())
+        //    {
+        //        return null;
+        //    }
+
+        //    return result.ToArray();
+        //}
+
+        protected void Write(byte[] data)
         {
-            if (!_isInit)
-            {
-                throw new InvalidOperationException($"Call {nameof(Init)} first");
-            }
+            // System.Diagnostics.Debug.WriteLine($"FlashcartBase Write: " + string.Join(", ", data));
 
-            var result = new List<byte>();
-
-            lock (_lock)
-            {
-                while (_readQueue.Count > 0)
-                {
-                    result.Add(_readQueue.Dequeue());
-                }
-            }
-
-            if (!result.Any())
-            {
-                return null;
-            }
-
-            return result.ToArray();
-        }
-
-        public void Write(byte[] data)
-        {
             Write(data, 0, data.Length);
         }
 
-        public void Write(byte[] data, int offset, int length)
+        protected void Write(byte[] data, int offset, int length)
         {
             if (!_isInit)
             {
@@ -156,14 +161,23 @@ namespace Gebug64.Unfloader.Flashcart
             }
         }
 
+        protected abstract void ProcessReadData();
+
         private void DataReceived(object s, SerialDataReceivedEventArgs e)
         {
             byte[] data = new byte[_serialPort!.BytesToRead];
             _serialPort.Read(data, 0, data.Length);
             lock (_lock)
             {
-                data.ToList().ForEach(b => _readQueue.Enqueue(b));
+                _readData.AddRange(data);
             }
+
+            if (!_isInit)
+            {
+                return;
+            }
+
+            ProcessReadData();
         }
     }
 }

@@ -9,6 +9,53 @@ namespace Gebug64.Unfloader
     public static class BitUtility
     {
         /// <summary>
+        /// Converts 16 bit value to LSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert16Little(byte[] arr, Int16 index, Int16 value)
+        {
+            arr[index + 0] = (byte)(value & 0xff);
+            arr[index + 1] = (byte)((value >> 8) & 0xff);
+        }
+        /// <summary>
+        /// Converts 16 bit value to LSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert16Little(byte[] arr, Int16 index, UInt16 value)
+        {
+            arr[index + 0] = (byte)(value & 0xff);
+            arr[index + 1] = (byte)((value >> 8) & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 16 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert16Big(byte[] arr, Int16 index, Int16 value)
+        {
+            arr[index + 0] = (byte)((value >> 8) & 0xff);
+            arr[index + 1] = (byte)(value & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 16 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert16Big(byte[] arr, Int16 index, UInt16 value)
+        {
+            arr[index + 0] = (byte)((value >> 8) & 0xff);
+            arr[index + 1] = (byte)(value & 0xff);
+        }
+
+        /// <summary>
         /// Converts 32 bit value to LSB and inserts into array at index.
         /// </summary>
         /// <param name="arr">Array to insert value into.</param>
@@ -79,6 +126,31 @@ namespace Gebug64.Unfloader
             size++;
 
             return size;
+        }
+
+        /// <summary>
+        /// Reads 2 bytes from a byte array as big endian 16-bit int.
+        /// </summary>
+        /// <param name="arr">Array to read.</param>
+        /// <param name="index">Starting index in array.</param>
+        /// <returns>Int.</returns>
+        public static Int16 Read16Big(byte[] arr, int index)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentException("Array index must be non-negative integer");
+            }
+
+            if (index + 2 > arr.Length)
+            {
+                throw new EndOfStreamException("Reading 4 bytes from array exceeds array length");
+            }
+
+            Int16 i = arr[index];
+            i <<= 8;
+            i |= arr[index + 1];
+
+            return i;
         }
 
         /// <summary>

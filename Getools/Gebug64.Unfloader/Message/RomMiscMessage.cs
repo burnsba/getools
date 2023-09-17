@@ -38,23 +38,12 @@ namespace Gebug64.Unfloader.Message
             Command = command;
         }
 
-        public override Packet GetUsbPacket()
-        {
-            if (object.ReferenceEquals(null, _usbPacket))
-            {
-                _usbPacket = new Packet(PacketType.Binary, ToSendData());
-            }
-
-            return _usbPacket;
-        }
-
-        static internal void Unwrap(RomMessage self, GebugCmdMisc command, byte[] data)
+        static internal void ParseParameters(RomMiscMessage self, GebugCmdMisc command, byte[] data, int offset)
         {
             switch (command)
             {
                 case GebugCmdMisc.OsTime:
                 {
-                    int offset = 2; // skip category and command
                     int val;
 
                     val = BitUtility.Read32Big(data, offset);
