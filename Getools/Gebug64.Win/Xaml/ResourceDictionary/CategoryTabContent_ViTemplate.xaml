@@ -13,23 +13,37 @@
         >
         <DataTemplate.Resources>
         </DataTemplate.Resources>
-        
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition></RowDefinition>
-                <RowDefinition></RowDefinition>
-            </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Vertical" Grid.Row="0">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Vertical" Grid.Row="0">
 
-                    <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GetFrameBufferCommand}" HorizontalAlignment="Left">Get framebuffer</Button>
+                    <StackPanel Orientation="Horizontal">
+
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GetFrameBufferCommand}" HorizontalAlignment="Left">Get framebuffer</Button>
                     
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                        <TextBlock VerticalAlignment="Center">Save path:</TextBlock>
+                        <TextBox Text="{Binding FramebufferGrabSavePath}" MinWidth="200" MaxWidth="400" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"/>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SetSaveFrameBufferPathCommand}" HorizontalAlignment="Left">...</Button>
+
+                    </StackPanel>
+
+                    <TextBlock>Frame buffer grab preview:</TextBlock>
+                    <Border BorderThickness="2" BorderBrush="Blue" HorizontalAlignment="Center">
+                        <Image Source="{Binding FrameBufferGrab}" MaxWidth="440" MaxHeight="330" MinHeight="16" MinWidth="16"/>
+                    </Border>
+
                 </StackPanel>
-                
-            </StackPanel>
-        </Grid>
+            </Grid>
+        </ScrollViewer>
     </DataTemplate>
     
 </ResourceDictionary>

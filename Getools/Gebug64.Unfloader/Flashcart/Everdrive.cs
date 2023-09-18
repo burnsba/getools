@@ -3,6 +3,7 @@ using Gebug64.Unfloader.UsbPacket;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -172,8 +173,7 @@ namespace Gebug64.Unfloader.Flashcart
 
                     if (parseCtx.ParseResult == PacketParseResult.Success)
                     {
-
-                    //System.Diagnostics.Debug.WriteLine($"Everdrive.ProcessReadData parseResult: {parseCtx.ParseResult}: {string.Join(", ", parseCtx.Packet.GetOuterData())}");
+                        _sinceRomMessageReceived = Stopwatch.StartNew();
 
                         var msg = new PendingGebugMessage(parseCtx.Packet!);
                         MessagesFromConsole.Enqueue(msg);

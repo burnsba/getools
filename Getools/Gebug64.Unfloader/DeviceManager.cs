@@ -21,6 +21,7 @@ namespace Gebug64.Unfloader
         private bool _stop = true;
         private ConcurrentQueue<IGebugMessage> _sendToConsoleQueue = new ConcurrentQueue<IGebugMessage>();
         private ConcurrentQueue<IGebugMessage> _receiveFromConsoleQueue = new ConcurrentQueue<IGebugMessage>();
+        
 
         private List<RomAckMessage> _receiveFragments = new List<RomAckMessage>();
 
@@ -35,6 +36,10 @@ namespace Gebug64.Unfloader
         public ConcurrentQueue<IGebugMessage> SendToConsole => _sendToConsoleQueue;
 
         public bool IsShutdown => object.ReferenceEquals(null, _thread) || !_thread.IsAlive;
+
+        public TimeSpan SinceDataReceived => _flashcart?.SinceDataReceived ?? TimeSpan.MaxValue;
+
+        public TimeSpan SinceRomMessageReceived => _flashcart?.SinceRomMessageReceived ?? TimeSpan.MaxValue;
 
         public DeviceManager(IFlashcart flashcart)
         {

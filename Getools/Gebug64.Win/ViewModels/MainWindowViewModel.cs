@@ -92,7 +92,6 @@ namespace Gebug64.Win.ViewModels
         private bool _shutdown = false;
         private Thread _thread;
 
-        private Stopwatch? _lastMessageReceived = null;
         private Stopwatch? _lastMessageSent = null;
 
         private ConnectionLevel _connectionLevel = ConnectionLevel.NotConnected;
@@ -521,12 +520,6 @@ namespace Gebug64.Win.ViewModels
 
             _deviceManager = null;
             _connectionLevel = ConnectionLevel.NotConnected;
-
-            if (!object.ReferenceEquals(null, _lastMessageReceived))
-            {
-                _lastMessageReceived.Stop();
-                _lastMessageReceived = null;
-            }
 
             if (!object.ReferenceEquals(null, _lastMessageSent))
             {
@@ -971,13 +964,6 @@ namespace Gebug64.Win.ViewModels
         {
             _dispatcher.BeginInvoke(() =>
             {
-                if (!object.ReferenceEquals(null, _lastMessageReceived))
-                {
-                    _lastMessageReceived.Stop();
-                }
-
-                _lastMessageReceived = Stopwatch.StartNew();
-
                 // if the receieved message is RomMessage, then the connection level is now known.
                 if (msg is RomMessage romMessage)
                 {
@@ -1001,27 +987,6 @@ namespace Gebug64.Win.ViewModels
                                     RomVersion = version;
                                 }
                             }
-                        }
-                    }
-
-                    if (romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
-                    {
-                        var ackMessage = (RomAckMessage)romMessage;
-                        if (ackMessage?.Reply?.Category == Unfloader.Message.MessageType.GebugMessageCategory.Vi
-                            && ackMessage?.Reply?.RawCommand == (int)GebugCmdVi.GrabFramebuffer)
-                        {
-                            var viMessage = (RomViMessage)ackMessage.Reply;
-                            var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.FrameBuffer, viMessage.Width, viMessage.Height);
-                            string path = $"framegrab-{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.jpg";
-                            Image.Utility.SaveRawToFile(windowsFrameBuffer, viMessage.Width, viMessage.Height, path, System.Drawing.Imaging.ImageFormat.Jpeg);
-
-                            //var geImageData = ((Unfloader.Message.CommandParameter.S16Parameter)viMessage.Parameters[0]).Value;
-                            //var geImageData = ((Unfloader.Message.CommandParameter.S16Parameter)viMessage.Parameters[1]).Value;
-                            //var geImageData = ((Unfloader.Message.CommandParameter.U8ArrayParameter)viMessage.Parameters[2]).Value;
-
-                            //TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
-                            //int secondsSinceEpoch = (int)t.TotalSeconds;
-                            //System.IO.File.WriteAllBytes($"framegrab-{secondsSinceEpoch}.bin", p3.Value);
                         }
                     }
 
@@ -1057,8 +1022,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && !object.ReferenceEquals(null, _lastMessageReceived)
-                    && _lastMessageReceived.Elapsed.TotalSeconds > PingIntervalSec)
+                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > PingIntervalSec)
                 {
                     if (object.ReferenceEquals(null, _lastMessageSent))
                     {
@@ -1076,8 +1040,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && !object.ReferenceEquals(null, _lastMessageReceived)
-                    && _lastMessageReceived.Elapsed.TotalSeconds > TimeoutDisconnectSec)
+                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > TimeoutDisconnectSec)
                 {
                     _dispatcher.BeginInvoke(() => Task.Run(() => Disconnect()));
                 }

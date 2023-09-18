@@ -15,6 +15,8 @@ namespace Gebug64.Win.ViewModels.Config
 
         public ObservableCollection<string> RecentSendRom { get; set; } = new ObservableCollection<string>();
 
+        public string FramebufferGrabSavePath { get; set; }
+
         public AppConfigViewModel()
         {
             RecentSendRom.CollectionChanged += (a, b) => IsDirty = true;

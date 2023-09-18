@@ -20,6 +20,8 @@ namespace Gebug64.Win.Config
 
         public List<string> RecentSendRom { get; set; } = new List<string>();
 
+        public string FramebufferGrabSavePath { get; set; }
+
         public AppConfigSettings(IConfiguration config)
         {
             config.GetSection(nameof(AppConfigSettings)).Bind(this);

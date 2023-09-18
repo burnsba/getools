@@ -13,6 +13,10 @@ namespace Gebug64.Unfloader
     {
         IFlashcart? Flashcart { get; }
 
+        TimeSpan SinceDataReceived { get; }
+
+        TimeSpan SinceRomMessageReceived { get; }
+
         void EnqueueMessage(IGebugMessage message);
 
         bool IsShutdown { get; }

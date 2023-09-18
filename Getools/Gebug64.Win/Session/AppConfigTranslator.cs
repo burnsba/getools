@@ -44,6 +44,8 @@ namespace Gebug64.Win.Session
                 source.RecentSendRom.ForEach(x => dest.RecentSendRom.Add(x));
             }
 
+            dest.FramebufferGrabSavePath = source.FramebufferGrabSavePath;
+
             dest.ClearIsDirty();
 
             return dest;
@@ -71,6 +73,8 @@ namespace Gebug64.Win.Session
 
                 source.RecentSendRom.ToList().ForEach(x => dest.RecentSendRom.Add(x));
             }
+
+            dest.FramebufferGrabSavePath = source.FramebufferGrabSavePath;
 
             return dest;
         }

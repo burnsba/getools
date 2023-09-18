@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Gebug64.Win.Image
 {
@@ -44,10 +46,10 @@ namespace Gebug64.Win.Image
             return outData;
         }
 
-        public static void SaveRawToFile(byte[] data, int width, int height, string path, ImageFormat format)
+        public static Bitmap BitmapFromRaw(byte[] data, System.Drawing.Imaging.PixelFormat dataPixelFormat, int width, int height)
         {
             // Here create the Bitmap to the know height, width and format
-            Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format16bppArgb1555);
+            Bitmap bmp = new Bitmap(width, height, dataPixelFormat);
 
             // Create a BitmapData and Lock all pixels to be written 
             BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.WriteOnly, bmp.PixelFormat);
@@ -58,7 +60,30 @@ namespace Gebug64.Win.Image
             //Unlock the pixels
             bmp.UnlockBits(bmpData);
 
-            bmp.Save(path, format);
+            return bmp;
+        }
+
+        public static void SaveRawToFile(byte[] data, System.Drawing.Imaging.PixelFormat dataPixelFormat, int width, int height, string path, ImageFormat saveImageFormat)
+        {
+            var bmp = BitmapFromRaw(data, dataPixelFormat, width, height);
+
+            bmp.Save(path, saveImageFormat);
+        }
+
+        // https://stackoverflow.com/a/66957361/1462295
+        public static BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+                return bitmapimage;
+            }
         }
     }
 }

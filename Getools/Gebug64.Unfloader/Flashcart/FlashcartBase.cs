@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -20,7 +21,36 @@ namespace Gebug64.Unfloader.Flashcart
         protected SerialPort? _serialPort = null;
         protected List<byte> _readData = new List<byte>();
 
+        protected Stopwatch? _sinceDataReceived = null;
+        protected Stopwatch? _sinceRomMessageReceived = null;
+
         public ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; set; } = new ConcurrentQueue<IGebugMessage>();
+
+        public TimeSpan SinceDataReceived
+        {
+            get
+            {
+                if (_sinceDataReceived == null)
+                {
+                    return TimeSpan.MaxValue;
+                }
+
+                return _sinceDataReceived.Elapsed;
+            }
+        }
+
+        public TimeSpan SinceRomMessageReceived
+        {
+            get
+            {
+                if (_sinceRomMessageReceived == null)
+                {
+                    return TimeSpan.MaxValue;
+                }
+
+                return _sinceRomMessageReceived.Elapsed;
+            }
+        }
 
         //public bool HasReadData
         //{
@@ -71,6 +101,20 @@ namespace Gebug64.Unfloader.Flashcart
             _isInit = false;
             _serialPort = null;
 
+            if (_sinceDataReceived != null)
+            {
+                _sinceDataReceived.Stop();
+            }
+
+            _sinceDataReceived = null;
+
+            if (_sinceRomMessageReceived != null)
+            {
+                _sinceRomMessageReceived.Stop();
+            }
+
+            _sinceRomMessageReceived = null;
+
             _readData.Clear();
         }
 
@@ -84,31 +128,6 @@ namespace Gebug64.Unfloader.Flashcart
         internal abstract bool IsTestCommandResponse(IPacket packet);
 
         public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
-
-        //public byte[]? Read()
-        //{
-        //    if (!_isInit)
-        //    {
-        //        throw new InvalidOperationException($"Call {nameof(Init)} first");
-        //    }
-
-        //    var result = new List<byte>();
-
-        //    lock (_lock)
-        //    {
-        //        while (_readQueue.Count > 0)
-        //        {
-        //            result.Add(_readQueue.Dequeue());
-        //        }
-        //    }
-
-        //    if (!result.Any())
-        //    {
-        //        return null;
-        //    }
-
-        //    return result.ToArray();
-        //}
 
         protected void Write(byte[] data)
         {
@@ -171,6 +190,8 @@ namespace Gebug64.Unfloader.Flashcart
             {
                 _readData.AddRange(data);
             }
+
+            _sinceDataReceived = Stopwatch.StartNew();
 
             if (!_isInit)
             {

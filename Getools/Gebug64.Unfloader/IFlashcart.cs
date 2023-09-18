@@ -10,6 +10,12 @@ namespace Gebug64.Unfloader
 {
     public interface IFlashcart : IDisposable
     {
+        TimeSpan SinceDataReceived { get; }
+
+        TimeSpan SinceRomMessageReceived { get; }
+
+        ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
+
         void Init(string portName);
 
         void Send(IGebugMessage message);
@@ -17,7 +23,5 @@ namespace Gebug64.Unfloader
         void Disconnect();
 
         void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
-
-        ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
     }
 }
