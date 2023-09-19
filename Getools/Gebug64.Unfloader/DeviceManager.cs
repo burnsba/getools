@@ -12,31 +12,75 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader
 {
+    /// <inheritdoc />
     public class DeviceManager : IDeviceManager
     {
-        private object _lock = new object();
+        private const int TestCommandTimeoutMs = 1000;
+
+        private const int SafeShutdownTimeoutMs = 5000;
+
+        /// <summary>
+        /// Worker thread to manage communcation.
+        /// </summary>
         private Thread? _thread = null;
+
+        /// <summary>
+        /// Device.
+        /// </summary>
         private readonly IFlashcart? _flashcart = null;
+
+        /// <summary>
+        /// Worker thread quit flag.
+        /// </summary>
         private bool _stop = true;
-        private ConcurrentQueue<IGebugMessage> _sendToConsoleQueue = new ConcurrentQueue<IGebugMessage>();
-        private ConcurrentQueue<IGebugMessage> _receiveFromConsoleQueue = new ConcurrentQueue<IGebugMessage>();
 
-        private List<RomAckMessage> _receiveFragments = new List<RomAckMessage>();
+        /// <summary>
+        /// Messages to send to the console.
+        /// </summary>
+        private ConcurrentQueue<IGebugMessage> _sendToConsoleQueue = new();
 
-        private Mutex _priorityLock = new Mutex();
+        /// <summary>
+        /// Full and complete messages received from the console.
+        /// </summary>
+        private ConcurrentQueue<IGebugMessage> _receiveFromConsoleQueue = new();
 
-        private MessageBus<IGebugMessage> _messageBus = new MessageBus<IGebugMessage>();
+        /// <summary>
+        /// Multi part messages will be considered "fragments". Store incoming fragments
+        /// in this collection while the message is being received.
+        /// </summary>
+        private List<RomAckMessage> _receiveFragments = new();
 
+        /// <summary>
+        /// Certain operations should send a message and then immediately receive
+        /// a response, without the worker thread removing the message from <see cref="_receiveFromConsoleQueue"/>.
+        /// Use a "priority lock" to temporarily take control of <see cref="_receiveFromConsoleQueue"/>.
+        /// </summary>
+        private Mutex _priorityLock = new();
+
+        /// <summary>
+        /// Message bus to notify subscribers.
+        /// </summary>
+        private MessageBus<IGebugMessage> _messageBus = new();
+
+        /// <inheritdoc />
         public IFlashcart? Flashcart => _flashcart;
 
+        /// <inheritdoc />
         public ConcurrentQueue<IGebugMessage> SendToConsole => _sendToConsoleQueue;
 
+        /// <inheritdoc />
         public bool IsShutdown => object.ReferenceEquals(null, _thread) || !_thread.IsAlive;
 
+        /// <inheritdoc />
         public TimeSpan SinceDataReceived => _flashcart?.SinceDataReceived ?? TimeSpan.MaxValue;
 
+        /// <inheritdoc />
         public TimeSpan SinceRomMessageReceived => _flashcart?.SinceRomMessageReceived ?? TimeSpan.MaxValue;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeviceManager"/> class.
+        /// </summary>
+        /// <param name="flashcart">Device.</param>
         public DeviceManager(IFlashcart flashcart)
         {
             if (object.ReferenceEquals(null, flashcart))
@@ -47,12 +91,10 @@ namespace Gebug64.Unfloader
             _flashcart = flashcart;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
-            lock (_lock)
-            {
-                _stop = true;
-            }
+            _stop = true;
 
             if (!object.ReferenceEquals(null, _flashcart))
             {
@@ -61,20 +103,30 @@ namespace Gebug64.Unfloader
             }
         }
 
+        /// <inheritdoc />
         public void EnqueueMessage(IGebugMessage message)
         {
             _sendToConsoleQueue.Enqueue(message);
         }
 
+        /// <inheritdoc />
         public void Init(string portName)
         {
             _flashcart!.Init(portName);
         }
 
+        /// <inheritdoc />
         public bool TestRomConnected()
         {
-            if (!_priorityLock.WaitOne(1000))
+            // Try to take control of the receive message queue, otherwise fail.
+            if (!_priorityLock.WaitOne(TestCommandTimeoutMs))
             {
+                return false;
+            }
+
+            if (object.ReferenceEquals(null, _flashcart))
+            {
+                _priorityLock.ReleaseMutex();
                 return false;
             }
 
@@ -85,21 +137,28 @@ namespace Gebug64.Unfloader
             // Wait a short while for the device to respond.
             System.Threading.Thread.Sleep(100);
 
-            IGebugMessage msg;
+            IGebugMessage? msg;
 
             // If there's no response, the test failed.
-            if (_flashcart!.MessagesFromConsole.IsEmpty)
+            if (_flashcart.MessagesFromConsole.IsEmpty)
             {
                 _priorityLock.ReleaseMutex();
                 return false;
             }
 
+            var tryDequeueTimer = Stopwatch.StartNew();
+
             // Else, get the next message response.
             while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
             {
-                ;
+                if (tryDequeueTimer.ElapsedMilliseconds > TestCommandTimeoutMs)
+                {
+                    _priorityLock.ReleaseMutex();
+                    return false;
+                }
             }
 
+            // Expecting an Ack Meta Ping response.
             if (msg != null && msg is RomMessage romMessage)
             {
                 if (romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
@@ -120,15 +179,27 @@ namespace Gebug64.Unfloader
             }
 
             // Otherwise, put the message back on the queue for anyone else.
-            _flashcart!.MessagesFromConsole.Enqueue(msg);
+            if (msg != null)
+            {
+                _flashcart!.MessagesFromConsole.Enqueue(msg);
+            }
+
             _priorityLock.ReleaseMutex();
             return false;
         }
 
+        /// <inheritdoc />
         public bool TestFlashcartConnected()
         {
-            if (!_priorityLock.WaitOne(1000))
+            // Try to take control of the receive message queue, otherwise fail.
+            if (!_priorityLock.WaitOne(TestCommandTimeoutMs))
             {
+                return false;
+            }
+
+            if (object.ReferenceEquals(null, _flashcart))
+            {
+                _priorityLock.ReleaseMutex();
                 return false;
             }
 
@@ -138,19 +209,25 @@ namespace Gebug64.Unfloader
             // Wait a short while for the device to respond.
             System.Threading.Thread.Sleep(100);
 
-            IGebugMessage msg;
+            IGebugMessage? msg;
 
             // If there's no response, the test failed.
-            if (_flashcart!.MessagesFromConsole.IsEmpty)
+            if (_flashcart.MessagesFromConsole.IsEmpty)
             {
                 _priorityLock.ReleaseMutex();
                 return false;
             }
 
+            var tryDequeueTimer = Stopwatch.StartNew();
+
             // Else, get the next message response.
             while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
             {
-                ;
+                if (tryDequeueTimer.ElapsedMilliseconds > TestCommandTimeoutMs)
+                {
+                    _priorityLock.ReleaseMutex();
+                    return false;
+                }
             }
 
             // Check the device specific response format. If this is valid,
@@ -167,12 +244,10 @@ namespace Gebug64.Unfloader
             return false;
         }
 
+        /// <inheritdoc />
         public void Start()
         {
-            lock (_lock)
-            {
-                _stop = false;
-            }
+            _stop = false;
 
             if (object.ReferenceEquals(null, _thread))
             {
@@ -192,12 +267,10 @@ namespace Gebug64.Unfloader
             throw new InvalidOperationException("DeviceManager thread cannot be restarted.");
         }
 
+        /// <inheritdoc />
         public void Stop()
         {
-            lock (_lock)
-            {
-                _stop = true;
-            }
+            _stop = true;
 
             _flashcart!.Disconnect();
 
@@ -209,7 +282,7 @@ namespace Gebug64.Unfloader
                 {
                     System.Threading.Thread.Sleep(10);
 
-                    if (sw.Elapsed.TotalSeconds > 5)
+                    if (sw.ElapsedMilliseconds > SafeShutdownTimeoutMs)
                     {
                         throw new Exception("Could not safely terminate device manager thread.");
                     }
@@ -223,6 +296,7 @@ namespace Gebug64.Unfloader
             _receiveFragments.Clear();
         }
 
+        /// <inheritdoc />
         public void SendRom(string path, Nullable<CancellationToken> token = null)
         {
             if (!System.IO.File.Exists(path))
@@ -246,18 +320,29 @@ namespace Gebug64.Unfloader
             _flashcart!.SendRom(filedata, token);
         }
 
+        /// <inheritdoc />
         public Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)
         {
             return _messageBus.Subscribe(callback, listenCount, filter);
         }
 
+        /// <inheritdoc />
         public void Unsubscribe(Guid id)
         {
             _messageBus.Unsubscribe(id);
         }
 
+        /// <summary>
+        /// Core functionality. Background worker thread.
+        /// Executes in three phases.
+        /// Phase 1: Receive messages from console.
+        /// Phase 2: Publish messages to subscribers.
+        /// Phase 3: Send out going messages to console.
+        /// </summary>
+        /// <exception cref="NullReferenceException"></exception>
         private void ThreadMain()
         {
+            // Run forever until stop flag.
             while (true)
             {
                 if (_stop)
@@ -265,19 +350,21 @@ namespace Gebug64.Unfloader
                     break;
                 }
 
+                // Phase 1: Receive messages from console.
                 if (_flashcart!.MessagesFromConsole.Any() && _priorityLock.WaitOne(10))
                 {
+                    // Run until thread shutdown, or incoming queue is empty.
                     while (true)
                     {
-                        if (_stop || !_flashcart!.MessagesFromConsole.Any())
+                        if (_stop || !_flashcart.MessagesFromConsole.Any())
                         {
                             break;
                         }
 
-                        IGebugMessage msg;
+                        IGebugMessage? msg;
                         while (!_flashcart!.MessagesFromConsole.TryDequeue(out msg))
                         {
-                            if (_stop || !_flashcart!.MessagesFromConsole.Any())
+                            if (_stop || !_flashcart.MessagesFromConsole.Any())
                             {
                                 break;
                             }
@@ -287,8 +374,13 @@ namespace Gebug64.Unfloader
                         {
                             var pending = msg as PendingGebugMessage;
 
+                            if (object.ReferenceEquals(null, pending))
+                            {
+                                throw new NullReferenceException($"{nameof(IFlashcart.MessagesFromConsole)} should contain {nameof(PendingGebugMessage)}");
+                            }
+
                             // try to parse as gebug rom message.
-                            RomMessage romMessage = null;
+                            RomMessage? romMessage = null;
                             var romMessageParseResult = RomMessageParseResult.Error;
 
                             try
@@ -306,6 +398,8 @@ namespace Gebug64.Unfloader
 
                                 romMessage!.Source = CommunicationSource.N64;
 
+                                // This is a RomMessage. If this is a multi part Ack then save as a fragment.
+                                // Otherwise treat as complete message.
                                 if (romMessage.Category == Message.MessageType.GebugMessageCategory.Ack)
                                 {
                                     var ackMessage = (RomAckMessage)romMessage;
@@ -315,6 +409,7 @@ namespace Gebug64.Unfloader
                                         _receiveFragments.Add(ackMessage);
                                     }
 
+                                    // Once all fragments have arrived, assembly into a single message.
                                     if (_receiveFragments.Count >= ackMessage.TotalNumberPackets)
                                     {
                                         RomMultiAckMessage multiMessage = new RomMultiAckMessage()
@@ -364,6 +459,7 @@ namespace Gebug64.Unfloader
                                     }
                                 }
 
+                                // Anything else.
                                 if (!queueDone)
                                 {
                                     _receiveFromConsoleQueue.Enqueue(msg);
@@ -375,14 +471,15 @@ namespace Gebug64.Unfloader
                     _priorityLock.ReleaseMutex();
                 }
 
+                // Phase 2: Publish messages to subscribers.
                 if (_priorityLock.WaitOne(10))
                 {
                     while (!_receiveFromConsoleQueue.IsEmpty)
                     {
-                        IGebugMessage msg;
+                        IGebugMessage? msg;
                         while (!_receiveFromConsoleQueue.TryDequeue(out msg))
                         {
-                            if (_stop)
+                            if (_stop || _receiveFromConsoleQueue.IsEmpty)
                             {
                                 break;
                             }
@@ -402,23 +499,22 @@ namespace Gebug64.Unfloader
                     _priorityLock.ReleaseMutex();
                 }
 
+                // Phase 3: Send out going messages to console.
                 while (!_sendToConsoleQueue.IsEmpty)
                 {
-                    IGebugMessage msg;
+                    IGebugMessage? msg;
                     while (!_sendToConsoleQueue.TryDequeue(out msg))
                     {
-                        if (_stop)
+                        if (_stop || _sendToConsoleQueue.IsEmpty)
                         {
                             break;
                         }
                     }
 
-                    if (object.ReferenceEquals(null, msg))
+                    if (!object.ReferenceEquals(null, msg))
                     {
-                        throw new NullReferenceException();
+                        _flashcart.Send(msg);
                     }
-
-                    _flashcart.Send(msg);
 
                     if (_stop)
                     {

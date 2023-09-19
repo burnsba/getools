@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader
 {
+    /// <summary>
+    /// Describes where message originated.
+    /// </summary>
     public enum CommunicationSource
     {
         /// <summary>

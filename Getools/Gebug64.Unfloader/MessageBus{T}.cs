@@ -16,6 +16,9 @@ namespace Gebug64.Unfloader
 
         private Dictionary<Guid, BusSubscription> _subscribers = new Dictionary<Guid, BusSubscription>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessageBus"/> class.
+        /// </summary>
         public MessageBus()
         {
         }
@@ -74,6 +77,7 @@ namespace Gebug64.Unfloader
 
                 bool doCallback = false;
 
+                // If there is no filter, always perform callback.
                 if (object.ReferenceEquals(null, subscription.Filter))
                 {
                     doCallback = true;

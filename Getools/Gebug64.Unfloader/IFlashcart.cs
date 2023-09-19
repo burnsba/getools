@@ -27,7 +27,7 @@ namespace Gebug64.Unfloader
         TimeSpan SinceRomMessageReceived { get; }
 
         /// <summary>
-        /// Gets messages received from the device.
+        /// Gets messages received from the device. Messages from console are expected to be <see cref="PendingGebugMessage"/>.
         /// </summary>
         ConcurrentQueue<IGebugMessage> MessagesFromConsole { get; }
 
@@ -49,7 +49,7 @@ namespace Gebug64.Unfloader
         void Disconnect();
 
         /// <summary>
-        /// Send a ROM to the device.
+        /// Send a ROM to the device, boot and start running it.
         /// </summary>
         /// <param name="filedata">Byte array containing file data in the correct format.</param>
         /// <param name="token">Cancellation token.</param>

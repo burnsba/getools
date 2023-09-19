@@ -35,6 +35,12 @@ namespace Gebug64.Unfloader
         /// Queues a message to send to the device.
         /// </summary>
         /// <param name="message">Message to send.</param>
+        /// <example>
+        /// var value = new U8Parameter(LevelIdX.Dam);
+        /// var msg = new RomStageMessage(Unfloader.Message.MessageType.GebugCmdStage.SetStage) { Source = CommunicationSource.Pc };
+        /// msg.Parameters.Add(value);
+        /// deviceManager.EnqueueMessage(msg);
+        /// </example>
         void EnqueueMessage(IGebugMessage message);
 
         /// <summary>
@@ -59,9 +65,9 @@ namespace Gebug64.Unfloader
         void Stop();
 
         /// <summary>
-        /// Send a ROM to the device.
+        /// Send a ROM to the device, boot and start running it.
         /// </summary>
-        /// <param name="filedata">Byte array containing file data in the correct format.</param>
+        /// <param name="filedata">Path to file to send.</param>
         /// <param name="token">Cancellation token.</param>
         void SendRom(string path, Nullable<CancellationToken> token = null);
 
