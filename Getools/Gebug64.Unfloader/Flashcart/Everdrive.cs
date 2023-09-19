@@ -1,12 +1,13 @@
-﻿using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.UsbPacket;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.UsbPacket;
+using Getools.Lib;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Flashcart
 {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib;
 using Getools.Lib.Architecture;
 
 namespace Gebug64.Unfloader.Message.CommandParameter

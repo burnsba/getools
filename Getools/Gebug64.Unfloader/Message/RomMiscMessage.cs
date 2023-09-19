@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Gebug64.Unfloader.Message.CommandParameter;
 using Gebug64.Unfloader.Message.MessageType;
 using Gebug64.Unfloader.UsbPacket;
+using Getools.Lib;
 
 namespace Gebug64.Unfloader.Message
 {
