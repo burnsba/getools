@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Architecture;
 
 namespace Gebug64.Unfloader.Message.CommandParameter
 {
@@ -26,11 +27,11 @@ namespace Gebug64.Unfloader.Message.CommandParameter
             Value = value;
         }
 
-        public override byte[] GetBytes(Endianness endianness)
+        public override byte[] GetBytes(ByteOrder endienness)
         {
             var result = new byte[Size];
 
-            if (endianness == Endianness.LittleEndian)
+            if (endienness == ByteOrder.LittleEndien)
             {
                 BitUtility.Insert16Little(result, 0, Value);
             }

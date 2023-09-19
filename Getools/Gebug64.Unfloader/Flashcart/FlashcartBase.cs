@@ -52,16 +52,6 @@ namespace Gebug64.Unfloader.Flashcart
             }
         }
 
-        //public bool HasReadData
-        //{
-        //    get
-        //    {
-        //        return _readQueue.Count > 0;
-        //    }
-        //}
-
-        //public int PendingReadCount => _readQueue.Count;
-
         public abstract void Send(IGebugMessage message);
 
         public void Init(string portName)
@@ -131,8 +121,6 @@ namespace Gebug64.Unfloader.Flashcart
 
         protected void Write(byte[] data)
         {
-            // System.Diagnostics.Debug.WriteLine($"FlashcartBase Write: " + string.Join(", ", data));
-
             Write(data, 0, data.Length);
         }
 

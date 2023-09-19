@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Message.CommandParameter;
 using Gebug64.Unfloader.Message.MessageType;
+using Getools.Lib.Architecture;
 
 namespace Gebug64.Unfloader.Message
 {
@@ -37,7 +38,7 @@ namespace Gebug64.Unfloader.Message
 
             foreach (var p in Parameters)
             {
-                results.Add(p.GetBytes(Endianness.BigEndian));
+                results.Add(p.GetBytes(ByteOrder.BigEndien));
             }
 
             return results.SelectMany(x => x).ToArray();

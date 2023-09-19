@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Architecture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,7 +27,7 @@ namespace Gebug64.Unfloader.Message.CommandParameter
             Value = (byte)(value & 0xff);
         }
 
-        public override byte[] GetBytes(Endianness endianness)
+        public override byte[] GetBytes(ByteOrder endienness)
         {
             var result = new byte[Size];
 

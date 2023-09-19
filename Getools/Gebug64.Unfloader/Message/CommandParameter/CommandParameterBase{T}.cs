@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Architecture;
 
 namespace Gebug64.Unfloader.Message.CommandParameter
 {
@@ -13,7 +14,7 @@ namespace Gebug64.Unfloader.Message.CommandParameter
         public T Value { get; set; }
         public Type UnderlyingType { get; init; }
 
-        public abstract byte[] GetBytes(Endianness endianness);
+        public abstract byte[] GetBytes(ByteOrder endienness);
 
         public bool TryGetValue<TValue>(out TValue value)
         {

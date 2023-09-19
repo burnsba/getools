@@ -152,8 +152,6 @@ namespace Gebug64.Unfloader.Flashcart
 
                     if (_readData.Count >= 4 && _readData.Count <= 16)
                     {
-                        //System.Diagnostics.Debug.WriteLine($"Everdrive.ProcessReadData receieve 16: {string.Join(", ", _readData)}");
-
                         if (_readData[0] == 'c'
                             && _readData[1] == 'm'
                             && _readData[2] == 'd')

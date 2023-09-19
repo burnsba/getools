@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Architecture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,11 +27,11 @@ namespace Gebug64.Unfloader.Message.CommandParameter
             Value = (UInt32)value;
         }
 
-        public override byte[] GetBytes(Endianness endianness)
+        public override byte[] GetBytes(ByteOrder endienness)
         {
             var result = new byte[Size];
 
-            if (endianness == Endianness.LittleEndian)
+            if (endienness == ByteOrder.LittleEndien)
             {
                 BitUtility.Insert32Little(result, 0, Value);
             }
