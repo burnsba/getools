@@ -9,12 +9,12 @@ namespace Gebug64.Unfloader.SerialPort
 {
     public class SerialPortProvider
     {
-        private IServiceProvider _serviceProvider;
+        private SerialPortFactory _factory;
         private readonly Dictionary<string, ISerialPort> _serialPorts = new();
 
-        public SerialPortProvider(IServiceProvider serviceProvider)
+        public SerialPortProvider(SerialPortFactory factory)
         {
-            _serviceProvider = serviceProvider;
+            _factory = factory;
         }
 
         public ISerialPort CreatePort(string port)
@@ -24,8 +24,7 @@ namespace Gebug64.Unfloader.SerialPort
                 return _serialPorts[port];
             }
 
-            var factory = _serviceProvider.GetService<SerialPortFactory>();
-            var commPort = factory.Create(port);
+            var commPort = _factory.Create(port);
 
             _serialPorts.Add(port, commPort);
 

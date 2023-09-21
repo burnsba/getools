@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 using Gebug64.Test.Framework;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.SerialPort;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Gebug64.Test.Tests
 {
-    [Test]
     public class BasicCommunication
     {
-        public MockConsoleHost ConsoleHost { get; set; }
+        protected MockConsoleHost ConsoleHost { get; set; }
 
         public BasicCommunication(MockConsoleHost consoleHost)
         {
@@ -37,6 +38,18 @@ namespace Gebug64.Test.Tests
             System.Threading.Thread.Sleep(2000);
 
             Assert.NotEmpty(flashcart.ReadPackets);
+        }
+
+        public class Startup
+        {
+            public void ConfigureServices(IServiceCollection services)
+            {
+                var typeGetter = new SerialPortFactoryTypeGetter() { Type = typeof(VirtualSerialPort) };
+                services.AddSingleton<SerialPortFactoryTypeGetter>(typeGetter);
+
+                services.AddTransient<SerialPortFactory>();
+                services.AddTransient<MockConsoleHost>();
+            }
         }
     }
 }

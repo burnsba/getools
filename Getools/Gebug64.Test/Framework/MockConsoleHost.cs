@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.SerialPort;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Gebug64.Test.Framework
@@ -19,14 +17,11 @@ namespace Gebug64.Test.Framework
         private object _lock = new();
 
         public ISerialPort ConsoleSerialPort { get; set; }
-        public IServiceProvider ServiceProvider { get; set; }
         public SerialPortProvider SerialPortProvider { get; set; }
 
-        public MockConsoleHost(IServiceProvider serviceProvider)
+        public MockConsoleHost(SerialPortFactory factory)
         {
-            ServiceProvider = serviceProvider;
-
-            SerialPortProvider = new SerialPortProvider(ServiceProvider);
+            SerialPortProvider = new SerialPortProvider(factory);
 
             var consolePort = SerialPortProvider.CreatePort(ConsoleSerialPortName);
             var pcPort = SerialPortProvider.CreatePort(PcSerialPortName);

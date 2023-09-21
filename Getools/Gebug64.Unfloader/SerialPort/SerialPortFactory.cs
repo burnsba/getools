@@ -9,18 +9,16 @@ namespace Gebug64.Unfloader.SerialPort
 {
     public class SerialPortFactory
     {
-        IServiceProvider _serviceProvider;
         SerialPortFactoryTypeGetter _typeGetter;
 
-        public SerialPortFactory(IServiceProvider serviceProvider, SerialPortFactoryTypeGetter typeGetter)
+        public SerialPortFactory(SerialPortFactoryTypeGetter typeGetter)
         {
-            _serviceProvider = serviceProvider;
             _typeGetter = typeGetter;
         }
 
         public ISerialPort Create(string port)
         {
-            return (ISerialPort)ActivatorUtilities.CreateInstance(_serviceProvider, _typeGetter.Type, port);
+            return (ISerialPort)Activator.CreateInstance(_typeGetter.Type, port);
         }
     }
 }
