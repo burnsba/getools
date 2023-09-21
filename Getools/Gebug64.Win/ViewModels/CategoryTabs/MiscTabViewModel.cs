@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
 
@@ -49,7 +50,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 return;
             }
 
-            var msg = new RomMiscMessage(Unfloader.Message.MessageType.GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc };
+            var msg = new RomMiscMessage(GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc };
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             deviceManager.EnqueueMessage(msg);

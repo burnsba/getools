@@ -14,7 +14,7 @@ using System.Windows.Threading;
 using Antlr4.Runtime.Tree.Xpath;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Message.MessageType;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Dialogs;
@@ -81,20 +81,6 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             {
                 _framebufferGrabSavePath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
             }
-
-            //Task.Run(() =>
-            //{
-            //    System.Threading.Thread.Sleep(1000);
-
-            //    var bytes = System.IO.File.ReadAllBytes("C:\\Users\\benja\\code\\getools\\Getools\\Gebug64.Win\\bin\\Debug\\net6.0-windows\\framegrab-1694954030.bin");
-            //    var ack = new RomAckMessage();
-            //    var msg = new RomViMessage();
-            //    ack.Reply = msg;
-            //    msg.FrameBuffer = bytes;
-            //    msg.Width = 440;
-            //    msg.Height = 330;
-            //    PreviewGetFramebufferCallback(ack);
-            //});
         }
 
         public void GetFrameBufferCommandHandler()
@@ -108,7 +94,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             deviceManager.Subscribe(PreviewGetFramebufferCallback, 1, PreviewGetFramebufferCallbackFilter);
 
-            var msg = new RomViMessage(Unfloader.Message.MessageType.GebugCmdVi.GrabFramebuffer) { Source = CommunicationSource.Pc };
+            var msg = new RomViMessage(GebugCmdVi.GrabFramebuffer) { Source = CommunicationSource.Pc };
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             deviceManager.EnqueueMessage(msg);

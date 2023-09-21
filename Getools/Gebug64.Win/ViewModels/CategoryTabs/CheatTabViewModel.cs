@@ -8,6 +8,7 @@ using System.Windows.Input;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
 using Microsoft.Extensions.Logging;
@@ -140,7 +141,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             var v1 = new U8Parameter(1);
             var v2 = new U8Parameter(SelectedCheatStatusItem.Id);
 
-            var msg = new RomCheatMessage(Unfloader.Message.MessageType.GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
+            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(v1);
             msg.Parameters.Add(v2);
 
@@ -161,7 +162,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             var v1 = new U8Parameter(0);
             var v2 = new U8Parameter(SelectedCheatStatusItem.Id);
 
-            var msg = new RomCheatMessage(Unfloader.Message.MessageType.GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
+            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(v1);
             msg.Parameters.Add(v2);
 
@@ -182,7 +183,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             var v1 = new U8Parameter(1);
             var v2 = new U8Parameter(SelectedUnlockRuntimeCheat.Id);
 
-            var msg = new RomCheatMessage(Unfloader.Message.MessageType.GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
+            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(v1);
             msg.Parameters.Add(v2);
 
@@ -203,7 +204,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             var v1 = new U8Parameter(1);
             var v2 = new U8Parameter(SelectedUnlockStageCheat.Id);
 
-            var msg = new RomCheatMessage(Unfloader.Message.MessageType.GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
+            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(v1);
             msg.Parameters.Add(v2);
 
@@ -221,7 +222,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 return;
             }
 
-            var msg = new RomCheatMessage(Unfloader.Message.MessageType.GebugCmdCheat.DisableAll) { Source = CommunicationSource.Pc };
+            var msg = new RomCheatMessage(GebugCmdCheat.DisableAll) { Source = CommunicationSource.Pc };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 

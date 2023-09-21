@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
 
@@ -65,7 +66,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 return;
             }
 
-            var msg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
+            var msg = new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             deviceManager.EnqueueMessage(msg);
@@ -80,7 +81,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 return;
             }
 
-            var msg = new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc };
+            var msg = new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc };
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             deviceManager.EnqueueMessage(msg);

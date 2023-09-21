@@ -22,7 +22,7 @@ using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
 using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Message.MessageType;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.Session;
@@ -620,10 +620,10 @@ namespace Gebug64.Win.ViewModels
                         _connectionLevel = ConnectionLevel.Rom;
 
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
 
                         _logger.Log(LogLevel.Information, $"Send version request");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
                     }
 
                     if (testResult == false)
@@ -868,10 +868,10 @@ namespace Gebug64.Win.ViewModels
                         if (!object.ReferenceEquals(null, _deviceManager))
                         {
                             _logger.Log(LogLevel.Information, $"Send ping");
-                            _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
 
                             _logger.Log(LogLevel.Information, $"Send version request");
-                            _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
                         }
                     });
 
@@ -973,13 +973,13 @@ namespace Gebug64.Win.ViewModels
 
                     // If the message is a version message, then the connected rom version is now known.
                     if (object.ReferenceEquals(null, RomVersion)
-                        && romMessage.Category == Unfloader.Message.MessageType.GebugMessageCategory.Ack)
+                        && romMessage.Category == GebugMessageCategory.Ack)
                     {
                         var ackMessage = (RomAckMessage)romMessage;
-                        if (ackMessage?.Reply?.Category == Unfloader.Message.MessageType.GebugMessageCategory.Meta)
+                        if (ackMessage?.Reply?.Category == GebugMessageCategory.Meta)
                         {
                             var metaMessage = (RomMetaMessage)ackMessage.Reply;
-                            if (metaMessage.Command == Unfloader.Message.MessageType.GebugCmdMeta.Version)
+                            if (metaMessage.Command == GebugCmdMeta.Version)
                             {
                                 var version = metaMessage.GetVersion();
                                 if (version != null)
@@ -1032,7 +1032,7 @@ namespace Gebug64.Win.ViewModels
                     if (_lastMessageSent.Elapsed.TotalSeconds > PingIntervalSec)
                     {
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
 
                         _lastMessageSent.Stop();
                         _lastMessageSent = Stopwatch.StartNew();
