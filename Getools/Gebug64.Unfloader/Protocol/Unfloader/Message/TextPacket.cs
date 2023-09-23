@@ -10,7 +10,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader.Message
 {
-    internal class TextPacket : UnfloaderPacket
+    public class TextPacket : UnfloaderPacket
     {
         public string? Content
         {

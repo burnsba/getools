@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Protocol.Flashcart.Message;
 using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
@@ -13,6 +14,13 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 {
     public class Everdrive : Flashcart
     {
+        private const int WriteRomTargetAddress = 0x10000000;
+
+        private const string Command_Test_Send = "cmdt";
+        private const string Command_Test_Response = "cmdr";
+        private const string Command_WriteRom = "cmdW";
+        private const string Command_PifBoot_Send = "cmds";
+
         public const int ProtocolHeaderSize = 4;
         public const int ProtocolTailSize = 4;
 
@@ -38,6 +46,38 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 throw new NullReferenceException();
             }
 
+            if (data.Count < ProtocolHeaderSize)
+            {
+                result.ParseStatus = PacketParseStatus.Error;
+                result.ErrorReason = PacketParseReason.DataTooShort;
+                return result;
+            }
+
+            // check for everdrive specific system messages first.
+            EverdriveCmd? systemCmd = null;
+            if (data.Count <= 16)
+            {
+                systemCmd = EverdriveCmd.ParseSystemCommand(data.ToArray());
+            }
+
+            // If the everdrive system parse command succeeded above, it will have used at most 16 bytes.
+            // Take that and return as the result.
+            if (systemCmd != null)
+            {
+                var systemBytesRead = data.Count;
+                if (systemBytesRead > 16)
+                {
+                    systemBytesRead = 16;
+                }
+
+                result.TotalBytesRead = systemBytesRead;
+                result.Packet = systemCmd;
+                result.ParseStatus = PacketParseStatus.Success;
+
+                return result;
+            }
+
+            // Not a system command, so it should have the tail.
             if (data.Count < ProtocolByteLength)
             {
                 result.ParseStatus = PacketParseStatus.Error;
@@ -122,6 +162,10 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 return result;
             }
 
+            // normally the everdrive shouldn't care about the inner UNFLoader packet,
+            // except that we need to know how many bytes to read to check for the tail
+            // of the everdrive packet.
+
             var remain = data.Skip(readOffset).ToList();
             UnfloaderPacketParseResult unfloaderParse = UnfloaderPacket.TryParse(remain);
 
@@ -147,7 +191,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 return result;
             }
 
-            result.Packet = new EverdrivePacket(unfloaderParse.Packet!.GetInnerPacket());
+            result.Packet = new EverdrivePacket(unfloaderParse.Packet!.GetOuterPacket())
+            {
+                InnerData = unfloaderParse.Packet!,
+                InnerType = unfloaderParse.Packet.GetType(),
+            };
 
             result.ParseStatus = PacketParseStatus.Success;
 

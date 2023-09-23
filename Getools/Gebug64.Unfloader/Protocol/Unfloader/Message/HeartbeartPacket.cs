@@ -10,7 +10,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader.Message
 {
-    internal class HeartbeartPacket : UnfloaderPacket
+    public class HeartbeartPacket : UnfloaderPacket
     {
         public int UsbProtocolVersion
         {

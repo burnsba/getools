@@ -7,7 +7,8 @@ using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
-    public class GebugMetaPingMessage : GebugMessage
+    [ProtocolCommand(Category = GebugMessageCategory.Meta, Command = (byte)GebugCmdMeta.Ping)]
+    public class GebugMetaPingMessage : GebugMessage, IActivatorGebugMessage
     {
         public GebugMetaPingMessage()
           : base(GebugMessageCategory.Meta)

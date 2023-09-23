@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
-    public interface IFlashcartPacket
+    public interface IFlashcartPacket : IEncapsulate
     {
         void SetContent(byte[] body);
 

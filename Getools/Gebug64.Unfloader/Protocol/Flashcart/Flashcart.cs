@@ -71,7 +71,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             }
 
             var data = packet.GetOuterPacket();
-            _serialPort.Write(data, 0, data.Length);
+            _serialPort!.Write(data, 0, data.Length);
         }
 
         public bool TestInMenu() { return false; }

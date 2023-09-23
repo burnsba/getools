@@ -20,6 +20,8 @@ namespace Gebug64.Unfloader.Protocol.Unfloader
 
         public UnfloaderMessageType MessageType { get; set; }
         public int Size { get; set; }
+        public Type InnerType { get; set; }
+        public object InnerData { get; set; }
 
         public UnfloaderPacket(UnfloaderMessageType dataType, byte[] data)
         {

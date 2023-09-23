@@ -7,7 +7,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader
 {
-    public interface IUnfloaderPacket
+    public interface IUnfloaderPacket : IEncapsulate
     {
         UnfloaderMessageType MessageType { get; }
         int Size { get; }

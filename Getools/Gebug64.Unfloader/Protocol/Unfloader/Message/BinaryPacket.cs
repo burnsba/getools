@@ -10,7 +10,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader.Message
 {
-    internal class BinaryPacket : UnfloaderPacket
+    public class BinaryPacket : UnfloaderPacket
     {
         public BinaryPacket(byte[] data)
             : base(UnfloaderMessageType.Binary, data)

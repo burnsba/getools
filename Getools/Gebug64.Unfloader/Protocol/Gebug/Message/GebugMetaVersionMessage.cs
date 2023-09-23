@@ -8,7 +8,8 @@ using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
-    public class GebugMetaVersionMessage : GebugMessage
+    [ProtocolCommand(Category = GebugMessageCategory.Meta, Command = (byte)GebugCmdMeta.Version)]
+    public class GebugMetaVersionMessage : GebugMessage, IActivatorGebugMessage
     {
         [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public int VersionA { get; set; }

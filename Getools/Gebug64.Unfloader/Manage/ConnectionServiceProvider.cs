@@ -30,6 +30,8 @@ namespace Gebug64.Unfloader.Manage
         private MessageBus<IGebugMessage> _messageBusGebug = new();
         private MessageBus<IUnfloaderPacket> _messageBusUnfloader = new();
 
+        public bool ManagerActive { get; set; } = true;
+
         public ConnectionServiceProvider(IFlashcart device)
         {
             _flashcart = device;
@@ -91,12 +93,12 @@ namespace Gebug64.Unfloader.Manage
             _sendQueue.Enqueue(packet);
         }
 
-        Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)
+        public Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)
         {
             return _messageBusGebug.Subscribe(callback, listenCount, filter);
         }
 
-        Guid Subscribe(Action<IUnfloaderPacket> callback, int listenCount = 0, Func<IUnfloaderPacket, bool>? filter = null)
+        public Guid Subscribe(Action<IUnfloaderPacket> callback, int listenCount = 0, Func<IUnfloaderPacket, bool>? filter = null)
         {
             return _messageBusUnfloader.Subscribe(callback, listenCount, filter);
         }
@@ -105,14 +107,18 @@ namespace Gebug64.Unfloader.Manage
         {
             while (true)
             {
+                bool anyWork = false;
+
                 if (_stop)
                 {
                     break;
                 }
 
-                while (false && !_sendQueue.IsEmpty)
+                while (ManagerActive && !_sendQueue.IsEmpty)
                 {
                     IUnfloaderPacket sendPacket;
+
+                    anyWork = true;
 
                     while (!_sendQueue.TryDequeue(out sendPacket))
                     {
@@ -135,9 +141,11 @@ namespace Gebug64.Unfloader.Manage
                     break;
                 }
 
-                while (false && !_flashcart.ReadPackets.IsEmpty)
+                while (ManagerActive && !_flashcart.ReadPackets.IsEmpty)
                 {
-                    IFlashcartPacket receivePacket;
+                    IFlashcartPacket? receivePacket = null;
+
+                    anyWork = true;
 
                     while (!_flashcart.ReadPackets.TryDequeue(out receivePacket))
                     {
@@ -147,34 +155,45 @@ namespace Gebug64.Unfloader.Manage
                         }
                     }
 
-                    if (_stop || _flashcart.ReadPackets.IsEmpty)
+                    if (_stop || object.ReferenceEquals(null, receivePacket))
                     {
                         break;
                     }
 
-                    // don't care about flashcart wrapper any more
-                    var flashcartInnerData = receivePacket.GetInnerPacket();
-                    var unfParse = UnfloaderPacket.TryParse(flashcartInnerData.ToList());
-
-                    if (unfParse.ParseStatus == PacketParseStatus.Success)
+                    if (typeof(IUnfloaderPacket).IsAssignableFrom(receivePacket.InnerType))
                     {
-                        // if this is rom message, don't care about UNFLoader wrapper any more
-                        var unfInnerData = unfParse.Packet!.GetInnerPacket();
+                        IUnfloaderPacket unfPacket = (IUnfloaderPacket)receivePacket.InnerData!;
+
+                        // if this is gebug ROM message, don't care about UNFLoader wrapper any more
+                        var unfInnerData = unfPacket.GetInnerPacket();
                         var gebugParse = GebugPacket.TryParse(unfInnerData.ToList());
 
                         if (gebugParse.ParseStatus == PacketParseStatus.Success)
                         {
                             var packet = gebugParse.Packet;
-                            if (packet.TotalNumberPackets > 1)
+                            if (packet!.TotalNumberPackets > 1)
                             {
                                 _receiveMessageFragments.Add(packet);
 
                                 if (_receiveMessageFragments.Count >= packet.TotalNumberPackets)
                                 {
-                                    var gebugMessage = GebugMessage.FromPackets(_receiveMessageFragments);
-                                    _receiveMessages.Add(gebugMessage);
+                                    var fragments = _receiveMessageFragments.Where(x =>
+                                        x.Category == packet.Category
+                                        && x.Command == packet.Command
+                                        && x.TotalNumberPackets == packet.TotalNumberPackets)
+                                    .OrderBy(x => x.PacketNumber)
+                                    .ToList();
 
-                                    _receiveMessageFragments.Clear();
+                                    if (fragments.Count == packet.TotalNumberPackets)
+                                    {
+                                        var gebugMessage = GebugMessage.FromPackets(fragments);
+                                        _receiveMessages.Add(gebugMessage);
+
+                                        foreach (var f in fragments)
+                                        {
+                                            _receiveMessageFragments.Remove(f);
+                                        }
+                                    }
                                 }
                             }
                             else
@@ -185,7 +204,7 @@ namespace Gebug64.Unfloader.Manage
                         }
                         else
                         {
-                            _receiveUnfPackets.Add(unfParse.Packet!);
+                            _receiveUnfPackets.Add(unfPacket);
                         }
                     }
                     else
@@ -199,29 +218,42 @@ namespace Gebug64.Unfloader.Manage
                     break;
                 }
 
-                foreach (var message in _receiveUnfPackets)
-                {
-                    _messageBusUnfloader.Publish(message);
+                int removeCounter;
 
-                    if (_stop)
-                    {
-                        break;
-                    }
+                // Read the number of receive packets.
+                // Dequeue this number of packets and publish them, unles it's time to stop or disable.
+                removeCounter = _receiveUnfPackets.Count;
+
+                while (ManagerActive && !_stop && removeCounter > 0)
+                {
+                    anyWork = true;
+                    _messageBusUnfloader.Publish(_receiveUnfPackets[0]);
+                    _receiveUnfPackets.RemoveAt(0);
+                    removeCounter--;
                 }
 
-                _receiveUnfPackets.Clear();
+                // Read the number of receive packets.
+                // Dequeue this number of packets and publish them, unles it's time to stop or disable.
+                removeCounter = _receiveMessages.Count;
 
-                foreach (var message in _receiveMessages)
+                while (ManagerActive && !_stop && removeCounter > 0)
                 {
-                    _messageBusGebug.Publish(message);
-
-                    if (_stop)
-                    {
-                        break;
-                    }
+                    anyWork = true;
+                    _messageBusGebug.Publish(_receiveMessages[0]);
+                    _receiveMessages.RemoveAt(0);
+                    removeCounter--;
                 }
 
-                _receiveMessages.Clear();
+                // if the service provider is disabled, sleep for a bit.
+                if (!ManagerActive && !_stop)
+                {
+                    Thread.Sleep(100);
+                }
+                else if (anyWork == false && !_stop)
+                {
+                    // else, if nothing happened this loop iteration, sleep for a bit.
+                    Thread.Sleep(1);
+                }
             }
         }
     }

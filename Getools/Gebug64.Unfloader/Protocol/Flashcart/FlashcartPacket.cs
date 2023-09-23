@@ -8,7 +8,10 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 {
     public abstract class FlashcartPacket : IFlashcartPacket
     {
-        protected byte[] _data;
+        protected byte[]? _data;
+
+        public Type InnerType { get; set; }
+        public object InnerData { get; set; }
 
         public FlashcartPacket()
         { }
@@ -38,7 +41,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             return _data;
         }
 
-        public void SetContent(byte[] body)
+        public virtual void SetContent(byte[] body)
         {
             _data = body;
         }

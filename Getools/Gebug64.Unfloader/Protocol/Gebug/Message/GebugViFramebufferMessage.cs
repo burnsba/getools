@@ -8,7 +8,8 @@ using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
-    public class GebugViFramebufferMessage : GebugMessage
+    [ProtocolCommand(Category = GebugMessageCategory.Vi, Command = (byte)GebugCmdVi.GrabFramebuffer)]
+    public class GebugViFramebufferMessage : GebugMessage, IActivatorGebugMessage
     {
         [GebugParameter(ParameterIndex = 0, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public int Width { get; set; }
