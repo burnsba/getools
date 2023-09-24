@@ -235,7 +235,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                     messageId,
                     ackId,
                     packetNumberParameter,
-                    packetNumberParameter,
+                    totalPacketsParameter,
                     bodyBytes.Skip(bodySkip).Take(packetSize).ToArray()
                     );
                 results.Add(splitPacket);

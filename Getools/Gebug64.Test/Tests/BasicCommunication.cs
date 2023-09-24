@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -234,6 +235,150 @@ namespace Gebug64.Test.Tests
             csp.SendMessage(sendMesssage);
 
             TimeoutAssert.True(ref messageReceived, TimeSpan.FromSeconds(1), "Did not receive packet matching filter");
+        }
+
+        /// <summary>
+        /// Tests variable length property.
+        /// Tests multi-packet message.
+        /// No send/receieve.
+        /// </summary>
+        [Theory]
+        [InlineData(2, 42)] // variable length 0xff
+        [InlineData(36, 42)] // variable length 0xfe
+        [InlineData(320, 240)] // variable length 0xfd
+        public void Gebug_VariableLengthParameter(int expectedWidth, int expectedHeight)
+        {
+            var sendMesssage = new GebugViFramebufferMessage();
+
+            // Console data will be in big endien format, but PC native format is little endien.
+            sendMesssage.Width = BinaryPrimitives.ReverseEndianness((ushort)expectedWidth);
+            sendMesssage.Height = BinaryPrimitives.ReverseEndianness((ushort)expectedHeight);
+
+            int size = expectedWidth * expectedHeight;
+            var data = new byte[size];
+            for (int i = 0; i < size; i++)
+            {
+                // arbitrary values, just something non zero.
+                data[i] = (byte)(i % 255);
+            }
+
+            sendMesssage.Data = data;
+
+            var bodyLength = sendMesssage.Data.Length + 4;
+            int variableSizeByte = 0;
+
+            // `data` is IsVariableSize, so figure out additional protocol overhead.
+            if (sendMesssage.Data.Length > ushort.MaxValue)
+            {
+                variableSizeByte = 0xfd;
+                bodyLength += 4;
+            }
+            else if (sendMesssage.Data.Length > byte.MaxValue)
+            {
+                variableSizeByte = 0xfe;
+                bodyLength += 2;
+            }
+            else
+            {
+                variableSizeByte = 0xff;
+                bodyLength += 1;
+            }
+
+            var dividePacketSize = GebugPacket.ProtocolMaxBodySizeMulti;
+
+            int totalNumPackets = (bodyLength / (dividePacketSize)) + 1;
+
+            // An even multiple of the buffer size will be off by one due to the addition above.
+            if ((bodyLength % (dividePacketSize)) == 0)
+            {
+                totalNumPackets--;
+            }
+
+            // However, want to count a size of zero as exactly one packet.
+            if (totalNumPackets == 0)
+            {
+                totalNumPackets = 1;
+            }
+
+            var packets = sendMesssage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
+
+            // Test
+
+            Assert.NotNull(packets);
+            Assert.NotEmpty(packets);
+
+            var firstPacket = packets.First();
+            var msgId = firstPacket.MessageId;
+
+            ushort packetNumber = 1;
+            int bodyOffset = 0;
+
+            ushort width = (ushort)(firstPacket.Body[bodyOffset++] << 8);
+            width |= (ushort)(firstPacket.Body[bodyOffset++] << 0);
+
+            Assert.Equal(expectedWidth, width);
+
+            ushort height = (ushort)(firstPacket.Body[bodyOffset++] << 8);
+            height |= (ushort)(firstPacket.Body[bodyOffset++] << 0);
+
+            Assert.Equal(expectedHeight, height);
+
+            Assert.Equal(variableSizeByte, firstPacket.Body[bodyOffset++]);
+
+            if (variableSizeByte == 0xfd)
+            {
+                uint packetDataSize = (uint)(firstPacket.Body[bodyOffset++] << 24);
+                packetDataSize |= (uint)(firstPacket.Body[bodyOffset++] << 16);
+                packetDataSize |= (uint)(firstPacket.Body[bodyOffset++] << 8);
+                packetDataSize |= (uint)(firstPacket.Body[bodyOffset++] << 0);
+                Assert.Equal((uint)size, packetDataSize);
+            }
+            else if (variableSizeByte == 0xfe)
+            {
+                ushort packetDataSize = (ushort)(firstPacket.Body[bodyOffset++] << 8);
+                packetDataSize |= (ushort)(firstPacket.Body[bodyOffset++] << 0);
+                Assert.Equal(size, packetDataSize);
+            }
+            else
+            {
+                byte packetDataSize = firstPacket.Body[bodyOffset++];
+                Assert.Equal(size, packetDataSize);
+            }
+
+            int dataIndex = 0;
+
+            foreach (var packet in packets)
+            {
+                Assert.Equal(GebugMessageCategory.Vi, packet.Category);
+                Assert.Equal((int)GebugCmdVi.GrabFramebuffer, packet.Command);
+
+                if ((packet.Flags & (ushort)GebugMessageFlags.IsMultiMessage) > 0)
+                {
+                    Assert.Equal(packetNumber, packet.PacketNumber);
+                    Assert.Equal((ushort)totalNumPackets, packet.TotalNumberPackets);
+                }
+                else
+                {
+                    Assert.Null(packet.PacketNumber);
+                    Assert.Null(packet.TotalNumberPackets);
+                }
+
+                Assert.Equal(3, packet.NumberParameters);
+                Assert.Equal(msgId, packet.MessageId);
+
+                if (packet.PacketNumber > 1)
+                {
+                    bodyOffset = 0;
+                }
+
+                for (; bodyOffset < packet.Body.Length; bodyOffset++)
+                {
+                    Assert.Equal(dataIndex % 255, packet.Body[bodyOffset]);
+                    dataIndex++;
+                }
+                
+                packetNumber++;
+            }
         }
 
         private IFlashcartPacket ReadFlascartPacket<T>(IFlashcart flashcart)

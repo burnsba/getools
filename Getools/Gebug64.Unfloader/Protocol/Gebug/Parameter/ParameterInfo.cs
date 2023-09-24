@@ -8,6 +8,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
 {
     public class ParameterInfo
     {
+        public const byte Protocol_VariableParameterLength_U8Prefix = 0xff;
         public const byte Protocol_VariableParameterLength_U16Prefix = 0xfe;
         public const byte Protocol_VariableParameterLength_U32Prefix = 0xfd;
 
@@ -17,7 +18,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
 
             if (length <= byte.MaxValue)
             {
-                return new byte[] { (byte)length };
+                return new byte[]
+                {
+                    Protocol_VariableParameterLength_U8Prefix,
+                    (byte)length
+                };
             }
             else if (length <= ushort.MaxValue)
             {

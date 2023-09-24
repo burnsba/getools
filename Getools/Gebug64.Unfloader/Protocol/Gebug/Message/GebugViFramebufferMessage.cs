@@ -12,10 +12,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
     public class GebugViFramebufferMessage : GebugMessage, IActivatorGebugMessage
     {
         [GebugParameter(ParameterIndex = 0, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
-        public int Width { get; set; }
+        public ushort Width { get; set; }
 
         [GebugParameter(ParameterIndex = 1, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
-        public int Height { get; set; }
+        public ushort Height { get; set; }
 
         [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[] Data { get; set; }

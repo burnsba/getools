@@ -223,6 +223,54 @@ namespace Gebug64.Test.Framework
                             break;
                     }
                     break;
+
+                case GebugMessageCategory.Vi:
+                    {
+                        switch (packet.Command)
+                        {
+                            case (int)GebugCmdVi.GrabFramebuffer:
+                                {
+                                    var messageId = GebugPacket.GetRandomMessageId();
+
+                                    ushort flags = (ushort)(packet.Flags | (ushort)GebugMessageFlags.IsAck);
+
+                                    var replyPacketBase = packet with
+                                    {
+                                        Flags = flags,
+                                        PacketNumber = 1,
+                                        TotalNumberPackets = 1,
+                                        MessageId = messageId,
+                                        AckId = packet.MessageId,
+                                    };
+
+                                    var replyMessage = (GebugViFramebufferMessage)GebugMessage.FromPacket(
+                                        replyPacketBase,
+                                        // PcToConsole: Load header contents, but skip reading property values from body byte array.
+                                        Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
+
+                                    // Console data will be in big endien format, but PC native format is little endien.
+                                    // Arbitrary values, just want a multi-packet message (larger than single packet size)
+                                    replyMessage.Width = BinaryPrimitives.ReverseEndianness((ushort)36);
+                                    replyMessage.Height = BinaryPrimitives.ReverseEndianness((ushort)42);
+
+                                    int size = replyMessage.Width * replyMessage.Height;
+                                    var data = new byte[size];
+                                    for (int i = 0; i < size; i++)
+                                    {
+                                        data[i] = (byte)(i % 255);
+                                    }
+
+                                    replyMessage.Data = data;
+
+                                    // Need to specify ConsoleToPc to load correct properties.
+                                    // Make sure data is in big endien format.
+                                    var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc).FirstOrDefault();
+                                    return reply!;
+                                }
+                                break;
+                        }
+                    }
+                    break;
             }
 
             throw new NotImplementedException();
