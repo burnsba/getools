@@ -1,11 +1,18 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.Protocol.Flashcart.Message;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Unfloader.Protocol.Parse;
+using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.SerialPort;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -132,29 +139,24 @@ namespace Gebug64.Test.Framework
             }
             else // "in ROM"
             {
-                if (readData.Length > 4)
+                var parse = EverdrivePacket.TryParse(readData.ToList());
+                if (parse.ParseStatus == Unfloader.Protocol.Parse.PacketParseStatus.Success)
                 {
-                    if (readData[0] == 'D'
-                        && readData[1] == 'M'
-                        && readData[2] == 'A'
-                        && readData[3] == '@'
-                        // UNFLoader packet type Binary
-                        && readData[4] == 2)
+                    var receivePacket = parse.Packet;
+
+                    if (typeof(IUnfloaderPacket).IsAssignableFrom(receivePacket!.InnerType))
                     {
-                        if (readData.Length > 8)
+                        IUnfloaderPacket unfPacket = (IUnfloaderPacket)receivePacket.InnerData!;
+
+                        // if this is gebug ROM message, don't care about UNFLoader wrapper any more
+                        var unfInnerData = unfPacket.GetInnerPacket();
+                        var gebugParse = GebugPacket.TryParse(unfInnerData.ToList());
+
+                        if (gebugParse.ParseStatus == PacketParseStatus.Success)
                         {
-                            switch (readData[8])
-                            {
-                                case (byte)GebugMessageCategory.Meta:
-                                    if (readData.Length > 9)
-                                    {
-                                        if (readData[9] == (byte)GebugCmdMeta.Ping)
-                                        {
-                                            return MakeBinaryPacket(new byte[] { (byte)GebugMessageCategory.Ack });
-                                        }
-                                    }
-                                break;
-                            }
+                            var replyPacket = MakeReplyPacket(gebugParse.Packet!);
+
+                            return MakeEverdriveUnfloaderBinaryPacket(replyPacket.ToByteArray());
                         }
                     }
                 }
@@ -163,7 +165,70 @@ namespace Gebug64.Test.Framework
             return null;
         }
 
-        private byte[] MakeBinaryPacket(byte[] data)
+        private GebugPacket MakeReplyPacket(GebugPacket packet)
+        {
+            switch (packet!.Category)
+            {
+                case GebugMessageCategory.Meta:
+                    switch (packet.Command)
+                    {
+                        case (int)GebugCmdMeta.Ping:
+                            {
+                                var messageId = GebugPacket.GetRandomMessageId();
+
+                                ushort flags = (ushort)(packet.Flags | (ushort)GebugMessageFlags.IsAck);
+
+                                var reply = packet with
+                                {
+                                    Flags = flags,
+                                    PacketNumber = 1,
+                                    TotalNumberPackets = 1,
+                                    MessageId = messageId,
+                                    AckId = packet.MessageId,
+                                };
+
+                                return reply;
+                            }
+                        case (int)GebugCmdMeta.Version:
+                            {
+                                var messageId = GebugPacket.GetRandomMessageId();
+
+                                ushort flags = (ushort)(packet.Flags | (ushort)GebugMessageFlags.IsAck);
+
+                                var replyPacketBase = packet with
+                                {
+                                    Flags = flags,
+                                    PacketNumber = 1,
+                                    TotalNumberPackets = 1,
+                                    MessageId = messageId,
+                                    AckId = packet.MessageId,
+                                };
+
+                                var replyMessage = (GebugMetaVersionMessage)GebugMessage.FromPacket(
+                                    replyPacketBase,
+                                    // PcToConsole: Load header contents, but skip reading property values from body byte array.
+                                    Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
+                                    
+                                // Console data will be in big endien format, but PC native format is little endien.
+                                replyMessage.VersionA = BinaryPrimitives.ReverseEndianness(0x11223344);
+                                replyMessage.VersionB = BinaryPrimitives.ReverseEndianness(0x22222222);
+                                replyMessage.VersionC = BinaryPrimitives.ReverseEndianness(0x44444444);
+                                replyMessage.VersionD = BinaryPrimitives.ReverseEndianness(0x00888888);
+
+                                // Need to specify ConsoleToPc to load correct properties.
+                                // Make sure data is in big endien format.
+                                var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc).FirstOrDefault();
+                                return reply!;
+                            }
+                            break;
+                    }
+                    break;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private byte[] MakeEverdriveUnfloaderBinaryPacket(byte[] data)
         {
             var datas = new List<byte[]>();
 

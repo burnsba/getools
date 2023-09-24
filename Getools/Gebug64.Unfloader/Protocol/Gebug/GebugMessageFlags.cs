@@ -10,5 +10,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
     public enum GebugMessageFlags
     {
         IsMultiMessage = 0x1,
+
+        IsAck = 0x2,
     }
 }

@@ -8,6 +8,9 @@ using Gebug64.Test.Framework;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.Protocol.Flashcart.Message;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
@@ -157,26 +160,80 @@ namespace Gebug64.Test.Tests
 
             Assert.Empty(flashcart.ReadPackets);
 
-            Assert.True(false, "to be implemented");
+            GebugMessage sendMesssage = new GebugMetaPingMessage();
 
-            //bool unfloaderTextReceived = false;
+            ushort sendMessageId = sendMesssage.MessageId;
+            bool messageReceived = false;
 
-            //Action<IUnfloaderPacket> callback = packet =>
-            //{
-            //    unfloaderTextReceived = true;
-            //};
+            Action<IGebugMessage> callback = packet =>
+            {
+                messageReceived = true;
+            };
 
-            //Func<IUnfloaderPacket, bool> filter = packet =>
-            //{
-            //    return packet.MessageType == UnfloaderMessageType.Text;
-            //};
+            Func<IGebugMessage, bool> filter = message =>
+            {
+                var firstPacket = message.FirstPacket!;
 
-            //csp.Subscribe(callback, 1, filter);
+                return message.Category == GebugMessageCategory.Meta
+                    && message.Command == (int)GebugCmdMeta.Ping
+                    && (firstPacket.Flags & (ushort)GebugMessageFlags.IsAck) > 0
+                    && message.AckId == sendMessageId
+                    ;
+            };
 
-            //string msg = "bossEntry done.\n";
-            //ConsoleHost.SyncPrint(msg);
+            csp.Subscribe(callback, 1, filter);
 
-            //TimeoutAssert.True(ref unfloaderTextReceived, TimeSpan.FromSeconds(1));
+            csp.SendMessage(sendMesssage);
+
+            TimeoutAssert.True(ref messageReceived, TimeSpan.FromSeconds(1), "Did not receive packet matching filter");
+        }
+
+        /// <summary>
+        /// Using service provider manage thread.
+        /// Send gebug message version request and receive response (service provider subscription).
+        /// </summary>
+        [Fact]
+        public void EverdriveTest_Gebug_Version()
+        {
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var csp = new ConnectionServiceProvider(flashcart);
+            csp.Start(MockConsoleHost.PcSerialPortName);
+
+            Assert.Empty(flashcart.ReadPackets);
+
+            GebugMessage sendMesssage = new GebugMetaVersionMessage();
+
+            ushort sendMessageId = sendMesssage.MessageId;
+            bool messageReceived = false;
+
+            Action<IGebugMessage> callback = packet =>
+            {
+                messageReceived = true;
+            };
+
+            Func<IGebugMessage, bool> filter = message =>
+            {
+                var firstPacket = message.FirstPacket!;
+                var versionMessage = (GebugMetaVersionMessage)message;
+
+                return message.Category == GebugMessageCategory.Meta
+                    && message.Command == (int)GebugCmdMeta.Version
+                    && (firstPacket.Flags & (ushort)GebugMessageFlags.IsAck) > 0
+                    && message.AckId == sendMessageId
+                    && versionMessage != null
+                    // just some arbitrary numbers used in the send host
+                    && versionMessage.VersionA == 0x11223344
+                    && versionMessage.VersionB == 0x22222222
+                    && versionMessage.VersionC == 0x44444444
+                    && versionMessage.VersionD == 0x00888888
+                    ;
+            };
+
+            csp.Subscribe(callback, 1, filter);
+
+            csp.SendMessage(sendMesssage);
+
+            TimeoutAssert.True(ref messageReceived, TimeSpan.FromSeconds(1), "Did not receive packet matching filter");
         }
 
         private IFlashcartPacket ReadFlascartPacket<T>(IFlashcart flashcart)

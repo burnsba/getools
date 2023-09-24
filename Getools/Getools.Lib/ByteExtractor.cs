@@ -68,7 +68,7 @@ namespace Getools.Lib
                     return GetBytesExplicitLittle((sbyte)source, getByteCount);
                 }
             }
-            else if (order == ByteOrder.LittleEndien)
+            else if (order == ByteOrder.BigEndien)
             {
                 if (type == typeof(int)
                   || type == typeof(Int32))
@@ -100,7 +100,7 @@ namespace Getools.Lib
                 }
             }
 
-            throw new NotSupportedException();
+            throw new NotSupportedException($"Can't convert object type \"{source.GetType().FullName}\" to byte array.");
         }
 
         private static byte[] GetBytesExplicitLittle(byte source, int getByteCount)

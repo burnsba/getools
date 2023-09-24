@@ -20,7 +20,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         /// <summary>
         /// Number of bytes used by protocol header, for a single packet message.
         /// </summary>
-        public const int ProtocolOverheadSingle = 8;
+        public const int ProtocolOverheadSingle = 12;
 
         public const int ProtocolMaxBodySizeSingle = HardMaxPacketSize - ProtocolOverheadSingle;
 
@@ -28,11 +28,16 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         /// Number of bytes used by protocol header, for a multi packet message.
         /// This includes bytes counted by <see cref="ProtocolOverheadSingle"/>.
         /// </summary>
-        public const int ProtocolOverheadMulti = 12;
+        public const int ProtocolOverheadMulti = 16;
 
         public const int ProtocolMaxBodySizeMulti = HardMaxPacketSize - ProtocolOverheadMulti;
 
         private const int BytesBeforeSizeOffset = 6;
+
+        // NumberParameters = 2
+        // MessageId = 2
+        // AckId = 2
+        private const int HeaderBytesAlwaysAfterSizeBeforeBody = 6;
 
         /// <summary>
         /// Gets or sets message category.
@@ -69,6 +74,19 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         public ushort NumberParameters { get; init; }
 
         /// <summary>
+        /// Each packet in the message should share the same message id.
+        /// This should be unique enough to avoid ambiguous replies.
+        /// </summary>
+        public ushort MessageId { get; init; }
+
+        /// <summary>
+        /// When <see cref="GebugMessageFlags.IsAck"/> is set, this will contain
+        /// the <see cref="MessageId"/> of the message being responded to.
+        /// Otherwise the value in this field doesn't matter.
+        /// </summary>
+        public ushort AckId { get; init; }
+
+        /// <summary>
         /// If this is a multi-packet message, this is the current packet number.
         /// </summary>
         public ushort? PacketNumber { get; init; }
@@ -89,6 +107,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             byte command,
             ushort flags,
             ushort numberParameters,
+            ushort messageId,
+            ushort ackId,
             ushort? packetNumber,
             ushort? totalNumberPackets,
             byte[] body)
@@ -106,14 +126,18 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             Category = category;
             Command = command;
             Flags = flags;
+            MessageId = messageId;
+            AckId = ackId;
             NumberParameters = numberParameters;
             PacketNumber = packetNumber;
             TotalNumberPackets = totalNumberPackets;
             Body = body;
 
-            Size = 2; // NumberParameters
+            Size = HeaderBytesAlwaysAfterSizeBeforeBody;
+
             Size += (ushort)(PacketNumber.HasValue ? 2 : 0);
             Size += (ushort)(TotalNumberPackets.HasValue ? 2 : 0);
+
             Size += (ushort)Body.Length;
 
             // Validation
@@ -147,6 +171,12 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             offset += 2;
 
             BitUtility.InsertShortBig(result, offset, NumberParameters);
+            offset += 2;
+
+            BitUtility.InsertShortBig(result, offset, MessageId);
+            offset += 2;
+
+            BitUtility.InsertShortBig(result, offset, AckId);
             offset += 2;
 
             if ((Flags & (ushort)GebugMessageFlags.IsMultiMessage) > 0)
@@ -194,7 +224,13 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             ushort numberParameters = (ushort)BitUtility.Read16Big(dataArr, offset);
             offset += 2;
 
-            int sizeAdjust = 2;
+            ushort messageId = (ushort)BitUtility.Read16Big(dataArr, offset);
+            offset += 2;
+
+            ushort ackId = (ushort)BitUtility.Read16Big(dataArr, offset);
+            offset += 2;
+
+            int sizeAdjust = HeaderBytesAlwaysAfterSizeBeforeBody;
 
             ushort? packetNumber = null;
             ushort? totalPackets = null;
@@ -232,7 +268,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             result.Packet = new GebugPacket(
                 category,
                 command,
-                flags, numberParameters,
+                flags,
+                numberParameters,
+                messageId,
+                ackId,
                 packetNumber,
                 totalPackets,
                 body);
@@ -240,6 +279,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             result.ParseStatus = Parse.PacketParseStatus.Success;
 
             return result;
+        }
+
+        public static ushort GetRandomMessageId()
+        {
+            var messageIdBytes = Guid.NewGuid().ToByteArray();
+            ushort messageId = (ushort)(messageIdBytes[0] << 8);
+            messageId |= (ushort)(messageIdBytes[1]);
+
+            return messageId;
         }
     }
 }

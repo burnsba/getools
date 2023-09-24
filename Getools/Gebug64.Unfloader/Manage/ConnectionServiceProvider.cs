@@ -80,7 +80,7 @@ namespace Gebug64.Unfloader.Manage
 
         public void SendMessage(IGebugMessage msg)
         {
-            var multiPackets = msg.ToSendPackets();
+            var multiPackets = msg.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
             foreach (var p in multiPackets)
             {
                 IUnfloaderPacket unfpacket = new BinaryPacket(p.ToByteArray());
@@ -116,7 +116,7 @@ namespace Gebug64.Unfloader.Manage
 
                 while (ManagerActive && !_sendQueue.IsEmpty)
                 {
-                    IUnfloaderPacket sendPacket;
+                    IUnfloaderPacket? sendPacket;
 
                     anyWork = true;
 
@@ -128,12 +128,12 @@ namespace Gebug64.Unfloader.Manage
                         }
                     }
 
-                    if (_stop || _sendQueue.IsEmpty)
+                    if (_stop)
                     {
                         break;
                     }
 
-                    _flashcart.Send(sendPacket.GetOuterPacket());
+                    _flashcart.Send(sendPacket!.GetOuterPacket());
                 }
 
                 if (_stop)
@@ -186,7 +186,7 @@ namespace Gebug64.Unfloader.Manage
 
                                     if (fragments.Count == packet.TotalNumberPackets)
                                     {
-                                        var gebugMessage = GebugMessage.FromPackets(fragments);
+                                        var gebugMessage = GebugMessage.FromPackets(fragments, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                         _receiveMessages.Add(gebugMessage);
 
                                         foreach (var f in fragments)
@@ -198,7 +198,7 @@ namespace Gebug64.Unfloader.Manage
                             }
                             else
                             {
-                                var gebugMessage = GebugMessage.FromPacket(packet);
+                                var gebugMessage = GebugMessage.FromPacket(packet, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                 _receiveMessages.Add(gebugMessage);
                             }
                         }

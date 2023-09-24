@@ -14,20 +14,74 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 {
     public abstract class GebugMessage : IGebugMessage
     {
+        private ushort _messageId;
+        private ushort _ackId;
+
         private static Dictionary<ushort, Type> _messageTypes = null;
 
         public GebugMessageCategory Category { get; init; }
 
+        public ushort MessageId
+        {
+            get
+            {
+                if (object.ReferenceEquals(null, FirstPacket))
+                {
+                    return _messageId;
+                }
+
+                return FirstPacket.MessageId;
+            }
+
+            private set
+            {
+                _messageId = value;
+            }
+        }
+
+        public ushort AckId
+        {
+            get
+            {
+                if (object.ReferenceEquals(null, FirstPacket))
+                {
+                    return _ackId;
+                }
+
+                return FirstPacket.AckId;
+            }
+
+            private set
+            {
+                _ackId = value;
+            }
+        }
+
+        public ushort Flags
+        {
+            get
+            {
+                if (object.ReferenceEquals(null, FirstPacket))
+                {
+                    return 0;
+                }
+
+                return FirstPacket.Flags;
+            }
+        }
+
         public int Command { get; set; }
 
-        protected GebugPacket? FirstPacket { get; set; }
+        public GebugPacket? FirstPacket { get; set; }
 
         protected GebugMessage(GebugMessageCategory category)
         {
             Category = category;
+
+            MessageId = GebugPacket.GetRandomMessageId();
         }
 
-        public static GebugMessage FromPacket(GebugPacket packet)
+        public static GebugMessage FromPacket(GebugPacket packet, ParameterUseDirection packetFromDirection)
         {
             PopulateTypeResolver();
 
@@ -42,13 +96,18 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 
             GebugMessage message = (GebugMessage)Activator.CreateInstance(type)!;
             message.FirstPacket = packet;
+            message.MessageId = packet.MessageId;
+            message.AckId = packet.AckId;
 
-            SetProperties(message, type, packet, packet.Body);
+            if (packetFromDirection == ParameterUseDirection.ConsoleToPc)
+            {
+                SetProperties(message, type, packet, packet.Body);
+            }
 
             return message;
         }
 
-        public static GebugMessage FromPackets(IEnumerable<GebugPacket> packets)
+        public static GebugMessage FromPackets(IEnumerable<GebugPacket> packets, ParameterUseDirection packetFromDirection)
         {
             PopulateTypeResolver();
 
@@ -63,13 +122,18 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 
             GebugMessage message = (GebugMessage)Activator.CreateInstance(type)!;
             message.FirstPacket = packets.First();
+            message.MessageId = message.FirstPacket.MessageId;
+            message.AckId = message.FirstPacket.AckId;
 
-            SetProperties(message, type, packets.First(), packets.SelectMany(x => x.Body).ToArray());
+            if (packetFromDirection == ParameterUseDirection.ConsoleToPc)
+            {
+                SetProperties(message, type, packets.First(), packets.SelectMany(x => x.Body).ToArray());
+            }
 
             return message;
         }
 
-        public List<GebugPacket> ToSendPackets()
+        public List<GebugPacket> ToSendPackets(ParameterUseDirection sendDirection)
         {
             var results = new List<GebugPacket>();
 
@@ -80,7 +144,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             var props = GetType().GetProperties().Where(prop => Attribute.IsDefined(prop, typeof(GebugParameter)));
             foreach (var prop in props)
             {
-                var customAttributes = (GebugParameter[])GetType().GetCustomAttributes(typeof(GebugParameter), true);
+                var customAttributes = (GebugParameter[])prop.GetCustomAttributes(typeof(GebugParameter), true);
                 if (customAttributes.Length > 0)
                 {
                     var attr = customAttributes[0];
@@ -95,7 +159,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 
             foreach (var pa in propAttributes.OrderBy(x => x.Attribute.ParameterIndex))
             {
-                bodyBytesMany.Add(GetPropertySendBytes(pa));
+                bodyBytesMany.Add(GetPropertySendBytes(pa, sendDirection));
             }
 
             var bodyBytes = bodyBytesMany.SelectMany(x => x).ToArray();
@@ -125,7 +189,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             int bodySize = bodyBytes.Length;
             int bodySkip = 0;
 
-            ushort flags = 0;
+            ushort messageId = MessageId;
+            if (messageId == 0)
+            {
+                messageId = GebugPacket.GetRandomMessageId();
+            }
+
+            ushort ackId = AckId;
+
+            ushort flags = Flags;
 
             if (totalNumPackets > ushort.MaxValue)
             {
@@ -160,6 +232,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                     (byte)Command,
                     flags,
                     numberParameters,
+                    messageId,
+                    ackId,
                     packetNumberParameter,
                     packetNumberParameter,
                     bodyBytes.Skip(bodySkip).Take(packetSize).ToArray()
@@ -178,6 +252,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                     (byte)Command,
                     flags,
                     numberParameters,
+                    messageId,
+                    ackId,
                     null,
                     null,
                     new byte[0]
@@ -188,11 +264,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             return results;
         }
 
-        private byte[] GetPropertySendBytes(PropAttribute pa)
+        private byte[] GetPropertySendBytes(PropAttribute pa, ParameterUseDirection sendDirection)
         {
             var result = new List<byte>();
 
-            if (pa.Attribute.UseDirection == ParameterUseDirection.PcToConsole
+            if (pa.Attribute.UseDirection == sendDirection
               || pa.Attribute.UseDirection == ParameterUseDirection.Both)
             {
                 var value = pa.Property.GetValue(this);
@@ -210,7 +286,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 else
                 {
                     var size = pa.Attribute.Size;
-                    result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.BigEndien));
+                    if (sendDirection == ParameterUseDirection.PcToConsole)
+                    {
+                        // If this is on the PC, any existing values will be in little endien format.
+                        result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.LittleEndien));
+                    }
+                    else
+                    {
+                        result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.BigEndien));
+                    }
                 }
             }
 
@@ -277,7 +361,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             var props = messageType.GetProperties().Where(prop => Attribute.IsDefined(prop, typeof(GebugParameter)));
             foreach (var prop in props)
             {
-                var customAttributes = (GebugParameter[])messageType.GetCustomAttributes(typeof(GebugParameter), true);
+                var customAttributes = (GebugParameter[])prop.GetCustomAttributes(typeof(GebugParameter), true);
                 if (customAttributes.Length > 0)
                 {
                     var attr = customAttributes[0];
@@ -301,28 +385,20 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             int bodyOffset = 0;
             foreach (var pa in propAttributes.OrderBy(x => x.Attribute.ParameterIndex))
             {
-                byte size = fullBody[bodyOffset++];
-
                 if (pa.Attribute.IsVariableSize == false)
                 {
-                    // sanity check
-                    if (size != pa.Attribute.Size)
-                    {
-                        throw new InvalidOperationException($"Error setting property \"{pa.Property.Name}\" value. Expected size of {pa.Attribute.Size}, got {size}");
-                    }
-
-                    if (size == 1)
+                    if (pa.Attribute.Size == 1)
                     {
                         byte val = fullBody[bodyOffset++];
                         pa.Property.SetValue(instance, val);
                     }
-                    else if (size == 2)
+                    else if (pa.Attribute.Size == 2)
                     {
                         short val16 = BitUtility.Read16Big(fullBody, bodyOffset);
                         bodyOffset += 2;
                         pa.Property.SetValue(instance, val16);
                     }
-                    else if (size == 4)
+                    else if (pa.Attribute.Size == 4)
                     {
                         int val32 = BitUtility.Read32Big(fullBody, bodyOffset);
                         bodyOffset += 4;
@@ -330,11 +406,12 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                     }
                     else
                     {
-                        throw new InvalidOperationException($"Error setting property \"{pa.Property.Name}\" value. Size not supported: {size}");
+                        throw new InvalidOperationException($"Error setting property \"{pa.Property.Name}\" value. Size not supported: {pa.Attribute.Size}");
                     }
                 }
                 else
                 {
+                    byte size = fullBody[bodyOffset++];
                     int parameterLength = 0;
 
                     if (size == 0xfe)

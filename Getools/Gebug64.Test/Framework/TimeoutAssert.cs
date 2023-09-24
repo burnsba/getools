@@ -5,19 +5,23 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Gebug64.Test.Framework
 {
     public class TimeoutAssert
     {
-        public static void True(ref bool val, TimeSpan timeout)
+        private const int SpinSleepMs = 1;
+
+        public static void True(ref bool val, TimeSpan timeout, string? errorMessage = null)
         {
             bool fail = false;
             var sw = Stopwatch.StartNew();
 
             while (val != true)
             {
-                System.Threading.Thread.Sleep(1);
+                System.Threading.Thread.Sleep(SpinSleepMs);
                 if (sw.Elapsed > timeout)
                 {
                     fail = true;
@@ -27,18 +31,18 @@ namespace Gebug64.Test.Framework
 
             if (fail)
             {
-                Assert.True(val);
+                Assert.True(val, errorMessage);
             }
         }
 
-        public static void False(ref bool val, TimeSpan timeout)
+        public static void False(ref bool val, TimeSpan timeout, string? errorMessage = null)
         {
             bool fail = false;
             var sw = Stopwatch.StartNew();
 
             while (val != false)
             {
-                System.Threading.Thread.Sleep(1);
+                System.Threading.Thread.Sleep(SpinSleepMs);
                 if (sw.Elapsed > timeout)
                 {
                     fail = true;
@@ -48,36 +52,50 @@ namespace Gebug64.Test.Framework
 
             if (fail)
             {
-                Assert.False(val);
+                Assert.False(val, errorMessage);
             }
         }
 
-        public static void NotEmpty(System.Collections.IEnumerable collection, TimeSpan timeout)
+        public static void NotEmpty(System.Collections.IEnumerable collection, TimeSpan timeout, string? errorMessage = null)
         {
-            bool fail = false;
-            var enumerator = collection.GetEnumerator();
-
-            var sw = Stopwatch.StartNew();
-            try
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                while (!enumerator.MoveNext())
+                errorMessage = "Expected non empty collection";
+            }
+
+            bool fail = false;
+            var sw = Stopwatch.StartNew();
+
+            while (true)
+            {
+                // I don't know if it's a threading issue or what, but the enumerator
+                // reference needs to be updated every loop iteration.
+                var enumerator = collection.GetEnumerator();
+
+                try
                 {
-                    System.Threading.Thread.Sleep(1);
-                    if (sw.Elapsed > timeout)
+                    if (enumerator.MoveNext())
                     {
-                        fail = true;
                         break;
                     }
                 }
+                finally
+                {
+                    (enumerator as IDisposable)?.Dispose();
+                }
+
+                System.Threading.Thread.Sleep(SpinSleepMs);
+                if (sw.Elapsed > timeout)
+                {
+                    fail = true;
+                    break;
+                }
             }
-            finally
-            {
-                (enumerator as IDisposable)?.Dispose();
-            }
+
             
             if (fail)
             {
-                Assert.NotEmpty(collection);
+                Assert.True(false, errorMessage);
             }
         }
     }

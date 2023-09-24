@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 
 namespace Gebug64.Unfloader.Protocol.Gebug
 {
@@ -12,6 +13,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         GebugMessageCategory Category { get; }
         int Command { get; }
 
-        List<GebugPacket> ToSendPackets();
+        ushort MessageId { get; }
+        ushort AckId { get; }
+
+        GebugPacket? FirstPacket { get; }
+
+        List<GebugPacket> ToSendPackets(ParameterUseDirection sendDirection);
     }
 }
