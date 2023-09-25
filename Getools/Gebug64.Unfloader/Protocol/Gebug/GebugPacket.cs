@@ -15,7 +15,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         /// Max size of send packet, with all protocol overhead.
         /// This should equate to the buffer on console.
         /// </summary>
-        public const int HardMaxPacketSize = 508;
+        /// <remarks>
+        /// 508 = margin
+        /// does the console buffer need to include overhead for everdrive + unfloader? => 508 - 12 = 496.
+        /// </remarks>
+        public const int HardMaxPacketSize = 496;
 
         /// <summary>
         /// Number of bytes used by protocol header, for a single packet message.

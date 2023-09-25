@@ -15,7 +15,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         private readonly SerialPortProvider _portProvider;
         private ISerialPort? _serialPort;
         private List<byte> _readData = new List<byte>();
-        private object _readLock = new object();
+        private Mutex _readLock = new();
         private ConcurrentQueue<IFlashcartPacket> _readPackets = new ConcurrentQueue<IFlashcartPacket>();
 
         public bool IsConnected => _serialPort?.IsOpen ?? false;
@@ -80,9 +80,16 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         {
             byte[] data = new byte[_serialPort!.BytesToRead];
             _serialPort.Read(data, 0, data.Length);
-            lock (_readLock)
+
+            _readLock.WaitOne();
+
+            try
             {
                 _readData.AddRange(data);
+            }
+            finally
+            {
+                _readLock.ReleaseMutex();
             }
 
             Task.Run(() => TryReadPacket());
@@ -93,33 +100,56 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             List<byte> readCopy;
             List<IFlashcartPacket> toQueue = new();
 
-            lock (_readLock)
+            // I was previously locking the buffer, copying the data, unlock, then parsing,
+            // then relock, and remove data in range.
+            // But there are occasionally race condition errors if two (or more) packets
+            // show up but the first takes longer to parse than the second.
+            // So just lock the whole thing while parsing.
+            while (true)
             {
-                readCopy = _readData.ToArray().ToList();
-            }
-
-            int removeSize = 0;
-
-            while (readCopy.Count > 0)
-            {
-                var parse = TryParse(readCopy);
-                if (parse.ParseStatus == PacketParseStatus.Success)
+                if (!_readLock.WaitOne(10))
                 {
-                    readCopy.RemoveRange(0, parse.TotalBytesRead);
-                    removeSize += parse.TotalBytesRead;
-
-                    toQueue.Add(parse.Packet!);
+                    // If another thread clears the read buffer while this one is waiting
+                    // then there's nothing to do.
+                    if (!_readData.Any())
+                    {
+                        return;
+                    }
                 }
                 else
                 {
-                    // not a flashcart packet, or haven't received enough data.
-                    break;
+                    break;
                 }
             }
 
-            lock (_readLock)
+            try
             {
+                readCopy = _readData.ToArray().ToList();
+
+                int removeSize = 0;
+
+                while (readCopy.Count > 0)
+                {
+                    var parse = TryParse(readCopy);
+                    if (parse.ParseStatus == PacketParseStatus.Success)
+                    {
+                        readCopy.RemoveRange(0, parse.TotalBytesRead);
+                        removeSize += parse.TotalBytesRead;
+
+                        toQueue.Add(parse.Packet!);
+                    }
+                    else
+                    {
+                        // not a flashcart packet, or haven't received enough data.
+                        break;
+                    }
+                }
+
                 _readData.RemoveRange(0, removeSize);
+            }
+            finally
+            {
+                _readLock.ReleaseMutex();
             }
 
             foreach (var packet in toQueue)

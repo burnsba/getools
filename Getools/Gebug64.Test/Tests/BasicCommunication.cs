@@ -381,6 +381,63 @@ namespace Gebug64.Test.Tests
             }
         }
 
+        /// <summary>
+        /// Tests variable length property.
+        /// Tests multi-packet message.
+        /// Send gebug message vi GrabFramebuffer request and receive response (service provider subscription).
+        /// </summary>
+        [Fact]
+        public void EverdriveTest_Gebug_GetFramebuffer()
+        {
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var csp = new ConnectionServiceProvider(flashcart);
+            csp.Start(MockConsoleHost.PcSerialPortName);
+
+            Assert.Empty(flashcart.ReadPackets);
+
+            GebugMessage sendMesssage = new GebugViFramebufferMessage();
+
+            ushort sendMessageId = sendMesssage.MessageId;
+            bool messageReceived = false;
+
+            GebugViFramebufferMessage? receiveMessage = null;
+
+            Action<IGebugMessage> callback = packet =>
+            {
+                messageReceived = true;
+
+                receiveMessage = (GebugViFramebufferMessage)packet;
+            };
+
+            Func<IGebugMessage, bool> filter = message =>
+            {
+                var firstPacket = message.FirstPacket!;
+                var versionMessage = (GebugViFramebufferMessage)message;
+
+                return message.Category == GebugMessageCategory.Vi
+                    && message.Command == (int)GebugCmdVi.GrabFramebuffer
+                    && (firstPacket.Flags & (ushort)GebugMessageFlags.IsAck) > 0
+                    && message.AckId == sendMessageId
+                    && versionMessage != null
+                    // just some arbitrary numbers used in the send host
+                    && versionMessage.Width == 36
+                    && versionMessage.Height == 42
+                    ;
+            };
+
+            csp.Subscribe(callback, 1, filter);
+
+            csp.SendMessage(sendMesssage);
+
+            TimeoutAssert.True(ref messageReceived, TimeSpan.FromSeconds(3), "Did not receive packet matching filter");
+
+            int size = receiveMessage!.Width * receiveMessage.Height;
+            for (int i = 0; i < size; i++)
+            {
+                Assert.Equal(i % 255, receiveMessage.Data[i]);
+            }
+        }
+
         private IFlashcartPacket ReadFlascartPacket<T>(IFlashcart flashcart)
         {
             var sw = Stopwatch.StartNew();

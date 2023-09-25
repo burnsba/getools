@@ -114,15 +114,21 @@ namespace Gebug64.Test.Framework
                 return;
             }
 
-            var writeResponse = GenerateResponse(data);
-
-            if (writeResponse != null)
-            {
-                ConsoleSerialPort.Write(writeResponse, 0, writeResponse.Length);
-            }
+            GenerateSendResponse(data);
         }
 
-        private byte[]? GenerateResponse(byte[] readData)
+        private void SendPacket(GebugPacket packet)
+        {
+            var data = MakeEverdriveUnfloaderBinaryPacket(packet.ToByteArray());
+            ConsoleSerialPort.Write(data, 0, data.Length);
+        }
+
+        private void SendBytes(byte[] data)
+        {
+            ConsoleSerialPort.Write(data, 0, data.Length);
+        }
+
+        private void GenerateSendResponse(byte[] readData)
         {
             if (InEverdriveMenu)
             {
@@ -133,7 +139,8 @@ namespace Gebug64.Test.Framework
                         && readData[2] == 'd'
                         && readData[3] == 't')
                     {
-                        return (byte[])EverdriveCmdTestResponse.CommandBytes.Clone();
+                        SendBytes((byte[])EverdriveCmdTestResponse.CommandBytes.Clone());
+                        return;
                     }
                 }
             }
@@ -154,18 +161,26 @@ namespace Gebug64.Test.Framework
 
                         if (gebugParse.ParseStatus == PacketParseStatus.Success)
                         {
-                            var replyPacket = MakeReplyPacket(gebugParse.Packet!);
+                            var replyPackets = MakeReplyPackets(gebugParse.Packet!);
 
-                            return MakeEverdriveUnfloaderBinaryPacket(replyPacket.ToByteArray());
+                            foreach (var packet in replyPackets)
+                            {
+                                SendPacket(packet);
+
+                                // simulate  delay ...
+                                System.Threading.Thread.Sleep(10);
+                            }
+
+                            return;
                         }
                     }
                 }
             }
 
-            return null;
+            throw new NotSupportedException("Add logic in test case to send response or do nothing.");
         }
 
-        private GebugPacket MakeReplyPacket(GebugPacket packet)
+        private List<GebugPacket> MakeReplyPackets(GebugPacket packet)
         {
             switch (packet!.Category)
             {
@@ -187,7 +202,7 @@ namespace Gebug64.Test.Framework
                                     AckId = packet.MessageId,
                                 };
 
-                                return reply;
+                                return new List<GebugPacket>() { reply };
                             }
                         case (int)GebugCmdMeta.Version:
                             {
@@ -217,7 +232,7 @@ namespace Gebug64.Test.Framework
 
                                 // Need to specify ConsoleToPc to load correct properties.
                                 // Make sure data is in big endien format.
-                                var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc).FirstOrDefault();
+                                var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                 return reply!;
                             }
                             break;
@@ -253,7 +268,7 @@ namespace Gebug64.Test.Framework
                                     replyMessage.Width = BinaryPrimitives.ReverseEndianness((ushort)36);
                                     replyMessage.Height = BinaryPrimitives.ReverseEndianness((ushort)42);
 
-                                    int size = replyMessage.Width * replyMessage.Height;
+                                    int size = 36 * 42;
                                     var data = new byte[size];
                                     for (int i = 0; i < size; i++)
                                     {
@@ -264,7 +279,7 @@ namespace Gebug64.Test.Framework
 
                                     // Need to specify ConsoleToPc to load correct properties.
                                     // Make sure data is in big endien format.
-                                    var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc).FirstOrDefault();
+                                    var reply = replyMessage.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                     return reply!;
                                 }
                                 break;
@@ -283,13 +298,14 @@ namespace Gebug64.Test.Framework
             // everdrive packet header
             datas.Add(new byte[] { (byte)'D', (byte)'M', (byte)'A', (byte)'@' });
 
-            if (data.Length > 255)
-            {
-                throw new Exception("Fix test, packet length is wrong");
-            }
-
             // UNFLoader packet, type: binary, length
-            datas.Add(new byte[] { 2, 0, 0, (byte)data.Length });
+            datas.Add(new byte[]
+                {
+                    2,
+                    (byte)(data.Length >> 16),
+                    (byte)(data.Length >> 8),
+                    (byte)(data.Length >> 0)
+                });
 
             // actual data to send
             datas.Add(data);

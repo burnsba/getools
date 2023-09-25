@@ -1,12 +1,12 @@
-﻿using Gebug64.Unfloader.Protocol.Flashcart.Message;
-using Gebug64.Unfloader.Protocol.Parse;
-using Gebug64.Unfloader.Protocol.Unfloader;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Protocol.Flashcart.Message;
+using Gebug64.Unfloader.Protocol.Parse;
+using Gebug64.Unfloader.Protocol.Unfloader;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {

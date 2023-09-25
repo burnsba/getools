@@ -394,15 +394,33 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                     }
                     else if (pa.Attribute.Size == 2)
                     {
-                        short val16 = BitUtility.Read16Big(fullBody, bodyOffset);
-                        bodyOffset += 2;
-                        pa.Property.SetValue(instance, val16);
+                        if (pa.Property.PropertyType == typeof(short))
+                        {
+                            short val16 = (short)BitUtility.Read16Big(fullBody, bodyOffset);
+                            bodyOffset += 2;
+                            pa.Property.SetValue(instance, val16);
+                        }
+                        else
+                        {
+                            ushort val16 = (ushort)BitUtility.Read16Big(fullBody, bodyOffset);
+                            bodyOffset += 2;
+                            pa.Property.SetValue(instance, val16);
+                        }
                     }
                     else if (pa.Attribute.Size == 4)
                     {
-                        int val32 = BitUtility.Read32Big(fullBody, bodyOffset);
-                        bodyOffset += 4;
-                        pa.Property.SetValue(instance, val32);
+                        if (pa.Property.PropertyType == typeof(int))
+                        {
+                            int val32 = (int)BitUtility.Read32Big(fullBody, bodyOffset);
+                            bodyOffset += 4;
+                            pa.Property.SetValue(instance, val32);
+                        }
+                        else
+                        {
+                            uint val32 = (uint)BitUtility.Read32Big(fullBody, bodyOffset);
+                            bodyOffset += 4;
+                            pa.Property.SetValue(instance, val32);
+                        }
                     }
                     else
                     {
