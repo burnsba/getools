@@ -14,7 +14,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
         void Connect(string port);
         void Disconnect();
-        void SendRom();
+        void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
         void Send(byte[] data);
         void Send(IFlashcartPacket packet);
         bool TestInMenu();

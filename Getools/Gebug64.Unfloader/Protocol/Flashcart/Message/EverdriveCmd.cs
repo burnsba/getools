@@ -15,6 +15,9 @@ namespace Gebug64.Unfloader.Protocol.Flashcart.Message
         {
         }
 
+        protected EverdriveCmd()
+        { }
+
         public static bool IsSystemCommand(byte[] data)
         {
             if (object.ReferenceEquals(null, data))
@@ -62,9 +65,12 @@ namespace Gebug64.Unfloader.Protocol.Flashcart.Message
                 }
                 else if (data[3] == EverdriveCmdWriteRom.CommandBytes[3])
                 {
-                    var result = new EverdriveCmdWriteRom();
-                    result._data = data;
-                    return result;
+                    // Need to read the `chunks` parameter from the input bytes ...
+                    throw new NotSupportedException();
+
+                    //var result = new EverdriveCmdWriteRom();
+                    //result._data = data;
+                    //return result;
                 }
                 else if (data[3] == EverdriveCmdPifboot.CommandBytes[3])
                 {

@@ -56,7 +56,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             }
         }
 
-        public void SendRom() { }
+        public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
         public void Send(byte[] data)
         {
@@ -74,7 +74,17 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             _serialPort!.Write(data, 0, data.Length);
         }
 
-        public bool TestInMenu() { return false; }
+        public virtual bool TestInMenu() { return false; }
+
+        protected void WriteRaw(byte[] data)
+        {
+            if (!IsConnected)
+            {
+                throw new InvalidOperationException($"Call {nameof(Connect)} first");
+            }
+
+            _serialPort!.Write(data, 0, data.Length);
+        }
 
         private void DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
