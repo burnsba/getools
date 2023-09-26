@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
@@ -105,6 +106,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         /// If there are no parameters, this will be empty.
         /// </summary>
         public byte[] Body { get; init; }
+
+        private string DebugCommand => Gebug64.Unfloader.Protocol.Gebug.Message.MessageType.CommandResolver.ResolveCommand(Category, Command);
+
+        private string DebugFlags => ((GebugMessageFlags)Flags).ToString();
 
         public GebugPacket(
             GebugMessageCategory category,

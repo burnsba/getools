@@ -1,20 +1,89 @@
-# Gebug Protocol
+# Gebug Communication
 
-The gebug protocol expects a header, followed by relevant data, without any closing signifier.
+Gebug communication between PC and console is done using a custom protocol. The protocol is designed to efficiently communicate commands from PC to console, and to efficiently communicate a response back to the PC.
 
-The header always consists of at least one byte, which is the message category.
-
-The category determines how to parse the rest of the header. If there is a command, then the category+command determine how to parse the rest of the header. The size of the command and the number and size of parameters passed are determined in advance. The source code contains the most accurate explanation of the protocol being referenced here.
+A single message from PC to console (or back) is built up in layers. At the lowest layer is the device protocol (e.g. Everdrive). When testing if "In Device Menu", this is the only layer of protocol used. On top of the device layer, is the UNFLoader layer, provided by the UNFLoader `usb.c` source. Finally, on top of the UNFLoader layer is the Gebug layer (UNFLoader + Gebug layer are implemented in custom romhack).  These three layers will compose a single *packet* sent from PC to console (or back). If there is more data than can fit in the single USB buffer (on console) that needs to be transmitted then the *message* will be split into multiple packets.
 
 When a message is received, the PC or console will perform the action described by the command. If required, an `ACK` message will be created to reply. Not all commands will generate an `ACK` response.
 
+Protocol layers:
+
+![image](protocol_wrap.svg)
+
+# Gebug Protocol
+
+All Gebug *packets* begin with a 12 byte header, followed by optional header data, followed by the body/parameter value(s). All *packets* within a *message* share the same 12 byte header. A *message* consists of one or more packets.
+
+Required header data:
+
+| Byte(s) | Title | Description |
+| -------- | ------- | ------- |
+| 0 | Category | Message category, what kind of command will be executed. |
+| 1 | Command | The specific command to be executed within the category. |
+| 2-3 | Flags | (see below) |
+| 4-5 | Remaining packet size | Count of the number of bytes from offset 6 to the end of the packet inclusive. |
+| 6-7 | Number parameters | The number of parameters specified in the body of the packet/message. |
+| 8-9 | Message Id | Id for this message. Should be pseudo-unique or sequential. |
+| 10-11 | ACK Id | If this is a response packet, this field will contain the `Message Id` of the message being responded to. Otherwise the contents of this field are ignored. |
+
+Flags:
+
+* `0x1`: Indicates a multi-packet message. The optional header values for `Packet Number` and `Total Packets` must be included (see below).
+* `0x2`: Reply message. `ACK Id` value must be set.
+* `0x4` - `0x8000`: reserved.
+
+Optional header data:
+
+| Byte(s) | Title | Description |
+| -------- | ------- | ------- |
+| 12-13 | Packet Number | Indicates the packet number in a multi-packet message. Count starts at 1. Included when flag mutli-packet is set. |
+| 14-15 | Total Packets | The total number of packets in a multi-packet message. Minimum value is 1. Included when flag mutli-packet is set. |
+
+
+## Parameter Values
+
+After the header data, the remaining packet content will consist of the parameter values, if any. Some messages do not contain parameters (e.g., ping reply), so the body will be empty.
+
+Each Category+Command will define relevant parameters; this is not communicated by the protocol, but defined below. See the `Category` section.
+
+For 1, 2, and 4 byte values, this will be included in the packet in sequential order. For parameters consisting of more than 4 bytes a "length" prefix is included before the byte data.
+
+The length prefix consists of an "escape" value, followed by the number of bytes in the parameter.
+
+| Escape | Length | Length Size |
+| -------- | ------- | ------- |
+| `0xff` | less than 2^8 | 1 byte |
+| `0xfe` | less than 2^16 | 2 byte |
+| `0xfd` | less than 2^32 | 4 byte |
+
+When building a message, the body (parameter values) of a message are computed first. If the length is longer than can fit in a single packet, then the message will be a multi-packet message. The body content is simply split across packets according to the max allowed packet size (the length prefix is only included once).
+
+Properties of size 1, 2, and 4 byte values are considered "native" and endieness considerations should apply. Otherwise the property will be considered a byte array as above.
+
+
+## Endieness
+
+All `short`/`ushort` (16 bit) and `int`/`uint` (32 bit) values in a Gebug *packet* are in Big Endien format.
+
+## Performance Note
+
+In reality, the protocol has a bit of room to improve efficiency. However, much of the communication "cost" comes from the slow USB connection speed (on Everdrive). Increasing the USB buffer to, say, 2048 bytes would decrease transfer speed of 3MB by 1-2 sec (this would use fewer packets, therefore fewer packet header bytes). But the transfer would still take just over 10 seconds due to slow throughput. Therefore I decided it's worth the cost of a slightly more verbose protocol.
+
 -----
 
-It is expected the ROM will have a relatively small message buffer, and that large messages will be split into multiple packets. Generally messages will only require 1 packet, so a packet count is not needed, but for large data transfer a packet number and total packet count will be required in the header.
+# Category, Command, and Parameters
 
------
+Following is a listing of the defined *categories*, and the *commands* in each *category*. Associated with each *command* are the *parameters*. These will be listed in the sequential order they are expected within the packet.
 
-# Category
+Each *parameter* will have a `UseDirection` associated with it.
+
+`UseDirection`:
+
+* `PcToConsole`: Parameter is only used when sending a command from PC to console (i.e., "source").  
+* `ConsoleToPc`: Parameter is only used when sending a command from console to PC (i.e., "reply").  
+* `Both`: Parameter is used in both directions.  
+
+## Categories
 
 The message categories are defined as follows
 
@@ -23,7 +92,6 @@ public enum GebugMessageCategory
 {
     DefaultUnknown = 0,
 
-    Ack = 1,
     Ramrom = 10,
     Replay = 15,
     SaveState = 20,
@@ -43,29 +111,6 @@ public enum GebugMessageCategory
     Misc = 95,
 }
 ```
-
-## `ACK` Category
-
-The `ACK` category is special, in that it encapsulates another message. The first 6 bytes of the header should be treated as specific to the `ACK` category, but beginning at byte offset 6 the message can be parsed as a complete message.
-
-The `ACK` message is used to echo back a category+command that was just received and supply values.
-
-### Header
-
-The header consists of 8 bytes
-
-* 0: unsigned byte. The current message category.
-* 1-2: unsigned 16 bit int. Current packet count in this message, at least 1.
-* 3-4: unsigned 16 bit int. Total number of packets in this message, at least 1.
-* 5: unused. Set to the value of `0xaa`.
-* 6: unsigned byte. The replied to message category.
-* 7: unsigned byte. The replied to message command.
-
-### Body
-
-Message body depends on the replied to message category + replied to message command.
-
-* 8+: optional. Contains the "ack parameter" response data.
 
 ## `Debug` Category
 
@@ -87,17 +132,22 @@ public enum GebugCmdDebug
 
 Sets `g_BossIsDebugMenuOpen` to the value of the parameter. Note that in order for the debug menu to be interactive, you must be holding C UP and C DOWN when the value is changed.
 
-**Parameters**: 1 byte value.  
-**Console reply**: no.  
-**`ACK` Parameters**: N/A.
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  1           | `PcToConsole` | Set `g_BossIsDebugMenuOpen` to value. |
+
 
 ### `Debug DebugMenuProcessor` Command
 
 Calls `debug_menu_case_processer` with the supplied value. Note: This method was added to the gebug ROM. This is the switch statement found in `debug_menu_processor`, but extracted to its own method. The parameter supplied is the value passed to the switch statement.
 
-**Parameters**: 1 byte value.  
-**Console reply**: no.  
-**`ACK` Parameters**: N/A.
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  1           | `PcToConsole` | Debug switch value. |
 
 ## `Cheat` Category
 
@@ -119,18 +169,23 @@ public enum GebugCmdCheat
 
 Turns a cheat on or off. Note that turning off an "unlock" cheat does nothing.
 
-**Parameter 0**: 1 byte boolean, 0 "turns off" cheat, a non zero value enables the cheat.  
-**Parameter 1**: 1 byte cheat id. ROM enum type is `CHEAT_ID`, the C# equivalent is `CheatIdX` .  
-**Console reply**: no.  
-**`ACK` Parameters**: N/A.  
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  1           | `PcToConsole` | 0 "turns off" cheat, a non zero value enables the cheat. |
+|  2            | ~~TODO~~      |  1           | `PcToConsole` | cheat id. ROM enum type is `CHEAT_ID`, the C# equivalent is `CheatIdX` |
+
 
 ### `Cheat DisableAll` Command
 
 Disables all runtime cheats. This is a meta method, added to the rom to disable all cheats.
 
-**Parameters**: no.  
-**Console reply**: no.  
-**`ACK` Parameters**: N/A.
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  N/A          | N/A           |  N/A         | N/A           | N/A           |
 
 ## `Stage` Category
 
@@ -149,15 +204,17 @@ public enum GebugCmdStage
 
 ### `Stage SetStage` Command
 
-Sets `g_MainStageNum` to the supplied value. ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`.
+Sets `g_MainStageNum` to the supplied value.
 
-**Parameters**: 1 byte describing level.  
-**Console reply**: no.  
-**`ACK` Parameters**: N/A
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
 
 ## `Vi` Category
 
-The `Vi` category handles methods video related methods such as found in `fr.c`, `vi.c`, `viewport.c`, etc.
+The `Vi` category handles video related methods such as found in `fr.c`, `vi.c`, `viewport.c`, etc.
 
 `Vi` commands are as follows
 
@@ -179,11 +236,14 @@ public enum GebugCmdVi
 
 Dumps the framebuffer back to PC. There are a couple different ways to go about this, the native indy command accessed `g_ViBackData->framebuf` and `cfb_16`, but I couldn't achieve good results with that. The gebug ROM instead reads from `g_ViFrontData->framebuf` which still occasionally has tearing/artifacts.
 
-**Parameters**: None.  
-**Console reply**: yes.  
-**`ACK` Parameters 0**: Signed 16 bit integer, containing result from `viGetX()` .  
-**`ACK` Parameters 1**: Signed 16 bit integer, containing result from `viGetY()` .  
-**`ACK` Parameters 2**: Contains `2 * viGetX() * viGetY()` bytes, as read from `g_ViFrontData->framebuf`. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format.
+**Reply**: Yes.
+
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Width         |  2           | `PcToConsole` | result from `viGetX()` |
+|  2            | Height        |  2           | `PcToConsole` | result from `viGetY()` |
+|  3            | Data          |  variable    | `PcToConsole` | Contains `2 * viGetX() * viGetY()` bytes, as read from `g_ViFrontData->framebuf`. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format. |
 
 ## `Meta` Category
 
@@ -206,17 +266,25 @@ public enum GebugCmdMeta
 
 Sends a simple ping command.
 
-**Parameters**: None.  
-**Console reply**: yes.  
-**`ACK` Parameters**: None.
+**Reply**: Yes.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  N/A          | N/A           |  N/A         | N/A           | N/A           |
 
 ### `Meta Version` Command
 
-Version information about the ROM running on console.
+Version information about the ROM running on console. This is 4 words describing the version as `1.2.3.4`.
 
-**Parameters**: None.  
-**Console reply**: yes.  
-**`ACK` Parameters**: Returns 4 words describing the version as `1.2.3.4`.
+**Reply**: Yes.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  4           | `PcToConsole` | Version word 1 |
+|  2            | ~~TODO~~      |  4           | `PcToConsole` | Version word 2 |
+|  3            | ~~TODO~~      |  4           | `PcToConsole` | Version word 3 |
+|  4            | ~~TODO~~      |  4           | `PcToConsole` | Version word 4 |
+
 
 ## `Misc` Category
 
@@ -235,8 +303,10 @@ public enum GebugCmdMisc
 
 ### `Misc OsTime` Command
 
-Requests current ROM OS time, i.e., `osGetCount()`.
+Requests current ROM OS time.
 
-**Parameters**: None.  
-**Console reply**: yes.  
-**`ACK` Parameters**: Returns 1 word value of OS time.
+**Reply**: Yes.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ~~TODO~~      |  4           | `PcToConsole` | `osGetCount()` |

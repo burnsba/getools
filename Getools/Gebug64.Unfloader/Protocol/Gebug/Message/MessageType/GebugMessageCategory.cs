@@ -10,7 +10,6 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
     {
         DefaultUnknown = 0,
 
-        Ack = 1,
         Ramrom = 10,
         Replay = 15,
         SaveState = 20,

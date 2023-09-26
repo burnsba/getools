@@ -286,15 +286,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 else
                 {
                     var size = pa.Attribute.Size;
-                    if (sendDirection == ParameterUseDirection.PcToConsole)
-                    {
-                        // If this is on the PC, any existing values will be in little endien format.
-                        result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.LittleEndien));
-                    }
-                    else
-                    {
-                        result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.BigEndien));
-                    }
+                    result.AddRange(ByteExtractor.GetBytes(value, size, Getools.Lib.Architecture.ByteOrder.BigEndien));
                 }
             }
 
