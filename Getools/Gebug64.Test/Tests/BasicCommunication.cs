@@ -438,6 +438,52 @@ namespace Gebug64.Test.Tests
             }
         }
 
+        /// <summary>
+        /// Using service provider manage thread.
+        /// </summary>
+        [Fact]
+        public void EverdriveTest_TestInMenu()
+        {
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var csp = new ConnectionServiceProvider(flashcart);
+            csp.Start(MockConsoleHost.PcSerialPortName);
+
+            bool actualReply;
+
+            ConsoleHost.InEverdriveMenu = true;
+            actualReply = csp.TestInMenu();
+
+            Assert.True(actualReply);
+
+            ConsoleHost.InEverdriveMenu = false;
+            actualReply = csp.TestInMenu();
+
+            Assert.False(actualReply);
+        }
+
+        /// <summary>
+        /// Using service provider manage thread.
+        /// </summary>
+        [Fact]
+        public void EverdriveTest_TestInRom()
+        {
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var csp = new ConnectionServiceProvider(flashcart);
+            csp.Start(MockConsoleHost.PcSerialPortName);
+
+            bool actualReply;
+
+            ConsoleHost.InEverdriveMenu = true;
+            actualReply = csp.TestInRom();
+
+            Assert.False(actualReply);
+
+            ConsoleHost.InEverdriveMenu = false;
+            actualReply = csp.TestInRom();
+
+            Assert.True(actualReply);
+        }
+
         private IFlashcartPacket ReadFlascartPacket<T>(IFlashcart flashcart)
         {
             var sw = Stopwatch.StartNew();

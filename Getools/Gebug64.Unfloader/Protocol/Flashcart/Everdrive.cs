@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart.Message;
 using Gebug64.Unfloader.Protocol.Parse;
@@ -77,6 +79,44 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             System.Threading.Thread.Sleep(3000);
 
             Send(new EverdriveCmdPifboot());
+        }
+
+        public override bool TestInMenu()
+        {
+            bool receivedTestResponse = false;
+
+            Action<IFlashcartPacket> callback = packet =>
+            {
+                receivedTestResponse = true;
+            };
+
+            Func<IFlashcartPacket, bool> filter = packet =>
+            {
+                if (packet is EverdriveCmdTestResponse)
+                {
+                    return true;
+                }
+
+                return false;
+            };
+
+            _flashcartPacketBus.Subscribe(callback, 1, filter);
+
+            WriteRaw(new EverdriveCmdTestSend().GetInnerPacket());
+
+            int timeoutMs = 1000;
+            var sw = Stopwatch.StartNew();
+
+            while (receivedTestResponse != true)
+            {
+                System.Threading.Thread.Sleep(10);
+                if (sw.Elapsed.TotalMilliseconds > timeoutMs)
+                {
+                    return false;
+                }
+            }
+
+            return receivedTestResponse;
         }
 
         protected override FlashcartPacketParseResult TryParse(List<byte> data)

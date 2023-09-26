@@ -3,8 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Protocol.Gebug;
 using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.SerialPort;
 
@@ -20,6 +22,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
         public bool IsConnected => _serialPort?.IsOpen ?? false;
 
+        protected MessageBus<IFlashcartPacket> _flashcartPacketBus = new();
+
         protected abstract FlashcartPacketParseResult TryParse(List<byte> data);
         protected abstract IFlashcartPacket MakePacket(byte[] data);
 
@@ -28,6 +32,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         public Flashcart(SerialPortProvider portProvider)
         {
             _portProvider = portProvider;
+
+            _flashcartPacketBus.Subscribe(SubscriptionEnqueuePacket);
         }
 
         public void Connect(string port)
@@ -58,6 +64,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
         public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
 
+        // deprecated this ?
         public void Send(byte[] data)
         {
             Send(MakePacket(data));
@@ -164,13 +171,18 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
             foreach (var packet in toQueue)
             {
-                _readPackets.Enqueue(packet);
+                _flashcartPacketBus.Publish(packet);
             }
         }
 
         public void Dispose()
         {
             Disconnect();
+        }
+
+        private void SubscriptionEnqueuePacket(IFlashcartPacket packet)
+        {
+            _readPackets.Enqueue(packet);
         }
     }
 }

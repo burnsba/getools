@@ -6,7 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.Protocol.Flashcart.Message;
 using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
@@ -76,7 +79,46 @@ namespace Gebug64.Unfloader.Manage
 
         public bool TestInMenu() { return _flashcart.TestInMenu(); }
 
-        public bool TestInRom() { return false; }
+        public bool TestInRom()
+        {
+            GebugMessage sendMesssage = new GebugMetaPingMessage();
+            ushort sendMessageId = sendMesssage.MessageId;
+            bool receivedPingResponse = false;
+
+            Action<IGebugMessage> callback = message =>
+            {
+                receivedPingResponse = true;
+            };
+
+            Func<IGebugMessage, bool> filter = message =>
+            {
+                var firstPacket = message.FirstPacket!;
+
+                return message.Category == GebugMessageCategory.Meta
+                    && message.Command == (int)GebugCmdMeta.Ping
+                    && (firstPacket.Flags & (ushort)GebugMessageFlags.IsAck) > 0
+                    && message.AckId == sendMessageId
+                    ;
+            };
+
+            _messageBusGebug.Subscribe(callback, 1, filter);
+
+            SendMessage(sendMesssage);
+
+            int timeoutMs = 1000;
+            var sw = Stopwatch.StartNew();
+
+            while (receivedPingResponse != true)
+            {
+                System.Threading.Thread.Sleep(10);
+                if (sw.Elapsed.TotalMilliseconds > timeoutMs)
+                {
+                    return false;
+                }
+            }
+
+            return receivedPingResponse;
+        }
 
         public void SendMessage(IGebugMessage msg)
         {
