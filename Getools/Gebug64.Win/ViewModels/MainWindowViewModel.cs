@@ -18,12 +18,17 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.Session;
 using Gebug64.Win.Ui;
 using Gebug64.Win.ViewModels.CategoryTabs;
+using Gebug64.Win.ViewModels.Config;
 using Getools.Lib.Game.Asset.SetupObject;
 using Microsoft.Extensions.Logging;
 
@@ -49,17 +54,18 @@ namespace Gebug64.Win.ViewModels
 
         private const int MaxRecentlySentFiles = 10;
 
+        private bool _ignoreAppSettingsChange = false;
+
+        private Version? _romVersion = null;
+
         private bool _isConnected = false;
         private bool _isConnecting = false;
         private bool _isRefreshing = false;
         private bool _connectionError = false;
         private IFlashcart _currentFlashCart;
-        private string _currentSerialPort;
         private string _selectedRomPath;
 
-        private bool _serialPortIsValid = false;
         private bool _flashcartIsValid = false;
-        private bool _selectedRomPathIsValid = false;
         private bool _currentlySendingRom = false;
 
         private bool _setAvailableFlashcarts = false;
@@ -76,7 +82,6 @@ namespace Gebug64.Win.ViewModels
         private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
 
         private readonly object _recentlySentFilesLock = new object();
-        private ObservableCollection<string> _recentlySentFiles = new ObservableCollection<string>();
 
         private readonly ILogger _logger;
 
@@ -87,20 +92,31 @@ namespace Gebug64.Win.ViewModels
         private bool _shutdown = false;
         private Thread _thread;
 
-        private Stopwatch? _lastMessageReceived = null;
         private Stopwatch? _lastMessageSent = null;
 
         private ConnectionLevel _connectionLevel = ConnectionLevel.NotConnected;
 
+        private CancellationTokenSource? _sendRomCancellation = null;
+
         public string? CurrentSerialPort
         {
-            get { return _currentSerialPort; }
+            get
+            {
+                return AppConfig?.Connection?.SerialPort ?? string.Empty;
+            }
+
             set
             {
-                _currentSerialPort = value;
-                _serialPortIsValid = !string.IsNullOrEmpty(value);
+                if ((AppConfig?.Connection?.SerialPort ?? string.Empty) == value)
+                {
+                    return;
+                }
+
+                AppConfig.Connection.SerialPort = value ?? string.Empty;
                 OnPropertyChanged(nameof(CurrentSerialPort));
                 OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
             }
         }
 
@@ -123,10 +139,27 @@ namespace Gebug64.Win.ViewModels
             get { return _currentFlashCart; }
             set
             {
+                if (object.ReferenceEquals(_currentFlashCart, value))
+                {
+                    return;
+                }
+
                 _currentFlashCart = value;
+
+                if (!object.ReferenceEquals(value, null))
+                {
+                    AppConfig.Device.Flashcart = value.GetType().Name;
+                }
+                else
+                {
+                    AppConfig.Device.Flashcart = string.Empty;
+                }
+
                 _flashcartIsValid = !object.ReferenceEquals(null, value);
                 OnPropertyChanged(nameof(CurrentFlashcart));
                 OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
             }
         }
 
@@ -146,7 +179,7 @@ namespace Gebug64.Win.ViewModels
             set { _isConnected = value; OnPropertyChanged(nameof(IsConnected)); }
         }
 
-        public bool CanConnect => !_isConnecting && _serialPortIsValid && _flashcartIsValid && _connectionError == false;
+        public bool CanConnect => !_isConnecting && !string.IsNullOrEmpty(CurrentSerialPort) && _flashcartIsValid && _connectionError == false;
 
         public string ConnectCommandText { get; set; }
 
@@ -162,7 +195,6 @@ namespace Gebug64.Win.ViewModels
             set
             {
                 _selectedRomPath = value;
-                _selectedRomPathIsValid = !string.IsNullOrEmpty(value) && File.Exists(_selectedRomPath);
                 OnPropertyChanged(nameof(SelectedRom));
                 OnPropertyChanged(nameof(CanSendRom));
             }
@@ -257,19 +289,38 @@ namespace Gebug64.Win.ViewModels
 
         public ObservableCollection<string> RecentlySentFiles
         {
-            get { return _recentlySentFiles; }
+            get { return AppConfig.RecentSendRom; }
             set
             {
-                _recentlySentFiles = value;
-                BindingOperations.EnableCollectionSynchronization(_recentlySentFiles, _recentlySentFilesLock);
+                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentSendRom, _recentlySentFilesLock);
             }
         }
 
-        public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
+        public AppConfigViewModel AppConfig { get; set; }
+
+        public Version? RomVersion
         {
+            get => _romVersion;
+            set
+            {
+                _romVersion = value;
+                OnPropertyChanged(nameof(RomVersion));
+                OnPropertyChanged(nameof(RomVersionString));
+            }
+        }
+
+        public string RomVersionString => _romVersion?.ToString() ?? "unk";
+
+        public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver, AppConfigViewModel appConfig)
+        {
+            _ignoreAppSettingsChange = true;
+
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
             _deviceManagerResolver = deviceManagerResolver;
+
+            // Need to supply AppConfig early because some properties reference this.
+            AppConfig = appConfig;
 
             // MainWindowViewModel is singleton, so don't need to worry about attaching multiple callbacks.
             ((Logger)_logger).AddCallback((level, msg) =>
@@ -308,6 +359,8 @@ namespace Gebug64.Win.ViewModels
             }
 
             StartThread();
+
+            _ignoreAppSettingsChange = false;
         }
 
         private enum ConnectionLevel
@@ -362,6 +415,10 @@ namespace Gebug64.Win.ViewModels
 
             _dispatcher.BeginInvoke(() =>
             {
+                string loadPort = AppConfig?.Connection?.SerialPort ?? string.Empty;
+                MenuItemViewModel? loadInstance = null;
+                MenuItemViewModel? last = null;
+
                 foreach (var x in MenuSerialPorts)
                 {
                     _menuSerialPortGroup.RemoveItem(x.Id);
@@ -376,11 +433,14 @@ namespace Gebug64.Win.ViewModels
                 mivm = new MenuItemViewModel() { Header = "-----", IsEnabled = false };
                 MenuSerialPorts.Add(mivm);
 
+                // Don't write empty serial port to appsettings.
+                // CurrentSerialPort = ...
                 IsRefreshing = true;
-                CurrentSerialPort = null;
+
+                // Clearing the list sometimes clears AppConfig.Connection.SerialPort ?
                 AvailableSerialPorts.Clear();
 
-                MenuItemViewModel? last = null;
+                List<string> foundPorts = new List<string>();
 
                 var ports = SerialPort.GetPortNames();
                 foreach (var port in ports)
@@ -393,17 +453,32 @@ namespace Gebug64.Win.ViewModels
                     mivm.Command = new CommandHandler(dddd);
                     mivm.Value = port;
 
+                    // check each instance if this is what was saved in the config.
+                    if (loadPort == port)
+                    {
+                        loadInstance = mivm;
+                    }
+
                     _menuSerialPortGroup.AddItem(mivm, mivm.Id);
                     MenuSerialPorts.Add(mivm);
                     
                     last = mivm;
+
+                    foundPorts.Add(port);
                 }
+
+                _logger.Log(LogLevel.Information, "Found ports: " + String.Join(", ", foundPorts));
 
                 IsRefreshing = false;
 
-                if (string.IsNullOrEmpty(CurrentSerialPort) && !object.ReferenceEquals(null, last))
+                if (object.ReferenceEquals(null, loadInstance))
                 {
-                    MenuSerialPortClick(last);
+                    loadInstance = last;
+                }
+
+                if (!object.ReferenceEquals(null, loadInstance))
+                {
+                    MenuSerialPortClick(loadInstance);
                 }
             });
         }
@@ -419,6 +494,13 @@ namespace Gebug64.Win.ViewModels
             if (object.ReferenceEquals(null, _deviceManager))
             {
                 return;
+            }
+
+            if (!object.ReferenceEquals(null, _sendRomCancellation))
+            {
+                _sendRomCancellation.Cancel();
+
+                System.Threading.Thread.Sleep(1000);
             }
 
             _deviceManager.Unsubscribe(_messageBusLogSubscription);
@@ -439,17 +521,13 @@ namespace Gebug64.Win.ViewModels
             _deviceManager = null;
             _connectionLevel = ConnectionLevel.NotConnected;
 
-            if (!object.ReferenceEquals(null, _lastMessageReceived))
-            {
-                _lastMessageReceived.Stop();
-                _lastMessageReceived = null;
-            }
-
             if (!object.ReferenceEquals(null, _lastMessageSent))
             {
                 _lastMessageSent.Stop();
                 _lastMessageSent = null;
             }
+
+            RomVersion = null;
 
             _isConnected = false;
             OnPropertyChanged(nameof(IsConnected));
@@ -462,6 +540,8 @@ namespace Gebug64.Win.ViewModels
             SetConnectCommandText();
 
             _logger.Log(LogLevel.Information, $"Disconnected");
+            
+            _sendRomCancellation = null;
         }
 
         private void SetConnectCommandText()
@@ -540,7 +620,10 @@ namespace Gebug64.Win.ViewModels
                         _connectionLevel = ConnectionLevel.Rom;
 
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                        _logger.Log(LogLevel.Information, $"Send version request");
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
                     }
 
                     if (testResult == false)
@@ -610,6 +693,8 @@ namespace Gebug64.Win.ViewModels
 
             _connectionError = false;
             OnPropertyChanged(nameof(CanResetConnection));
+
+            SetConnectCommandText();
         }
 
         private void SetAvailableFlashcarts()
@@ -621,23 +706,34 @@ namespace Gebug64.Win.ViewModels
 
             _setAvailableFlashcarts = true;
 
+            string loadTypeName = AppConfig?.Device?.Flashcart ?? string.Empty;
+            MenuItemViewModel? loadInstance = null;
+
             MenuDevice.Clear();
 
-            MenuItemViewModel? last = null;
             var mivm = new MenuItemViewModel() { Header = "Everdrive", IsCheckable = true, IsChecked = true };
             mivm.Command = new CommandHandler(() => MenuFlashcartClick(mivm));
             mivm.Value = (Everdrive)Workspace.Instance.ServiceProvider.GetService(typeof(Everdrive))!;
+
+            // If this were iterating a loop, check each instance if this is what was saved in the config.
+            if (loadTypeName == typeof(Everdrive).Name)
+            {
+                loadInstance = mivm;
+            }
 
             _menuDeviceGroup.AddItem(mivm, mivm.Id);
             MenuDevice.Add(mivm);
 
             AvailableFlashcarts.Add((Everdrive)mivm.Value);
 
-            last = mivm;
-
-            if (object.ReferenceEquals(null, CurrentFlashcart) && !object.ReferenceEquals(null, last))
+            if (object.ReferenceEquals(null, loadInstance))
             {
-                MenuFlashcartClick(last);
+                loadInstance = mivm;
+            }
+
+            if (object.ReferenceEquals(null, CurrentFlashcart) && !object.ReferenceEquals(null, loadInstance))
+            {
+                MenuFlashcartClick(loadInstance);
             }
         }
 
@@ -655,6 +751,8 @@ namespace Gebug64.Win.ViewModels
             {
                 MenuSendRom.RemoveAt(3);
             }
+
+            SaveAppSettings();
         }
 
         private void ChooseAndSendRom()
@@ -705,6 +803,8 @@ namespace Gebug64.Win.ViewModels
                 RecentlySentFiles.RemoveAt(MaxRecentlySentFiles);
             }
 
+            SaveAppSettings();
+
             int i;
             bool found = false;
             for (i = 0; i < MenuSendRom.Count; i++)
@@ -749,14 +849,30 @@ namespace Gebug64.Win.ViewModels
                     });
 
                     _logger.Log(LogLevel.Information, $"Send file: {SelectedRom}");
-                    _deviceManager!.SendRom(SelectedRom);
 
-                    // need to delay after loading rom or everdrive gets cranky
+                    if (object.ReferenceEquals(null, _sendRomCancellation))
+                    {
+                        _sendRomCancellation = new CancellationTokenSource();
+                    }
+
+                    _deviceManager!.SendRom(SelectedRom, _sendRomCancellation.Token);
+
+                    _sendRomCancellation = null;
+
                     Task.Run(() =>
                     {
+                        // need to delay after loading rom or everdrive gets cranky
                         System.Threading.Thread.Sleep(5000);
-                        _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                        // if disconnected during above sleep, don't send ping.
+                        if (!object.ReferenceEquals(null, _deviceManager))
+                        {
+                            _logger.Log(LogLevel.Information, $"Send ping");
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+
+                            _logger.Log(LogLevel.Information, $"Send version request");
+                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
+                        }
                     });
 
                     _dispatcher.BeginInvoke(() =>
@@ -764,8 +880,13 @@ namespace Gebug64.Win.ViewModels
                         _currentlySendingRom = false;
                         OnPropertyChanged(nameof(CanSendRom));
                     });
+                }).ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        _logger.Log(LogLevel.Information, $"SendRom failed");
+                    }
                 });
-
             });
         }
 
@@ -843,18 +964,31 @@ namespace Gebug64.Win.ViewModels
         {
             _dispatcher.BeginInvoke(() =>
             {
-                if (!object.ReferenceEquals(null, _lastMessageReceived))
-                {
-                    _lastMessageReceived.Stop();
-                }
-
-                _lastMessageReceived = Stopwatch.StartNew();
-
-                if (msg is RomMessage)
+                // if the receieved message is RomMessage, then the connection level is now known.
+                if (msg is RomMessage romMessage)
                 {
                     _connectionLevel = ConnectionLevel.Rom;
                     OnPropertyChanged(nameof(CanSendRom));
                     OnPropertyChanged(nameof(StatusConnectionLevelText));
+
+                    // If the message is a version message, then the connected rom version is now known.
+                    if (object.ReferenceEquals(null, RomVersion)
+                        && romMessage.Category == GebugMessageCategory.Ack)
+                    {
+                        var ackMessage = (RomAckMessage)romMessage;
+                        if (ackMessage?.Reply?.Category == GebugMessageCategory.Meta)
+                        {
+                            var metaMessage = (RomMetaMessage)ackMessage.Reply;
+                            if (metaMessage.Command == GebugCmdMeta.Version)
+                            {
+                                var version = metaMessage.GetVersion();
+                                if (version != null)
+                                {
+                                    RomVersion = version;
+                                }
+                            }
+                        }
+                    }
 
                     _logger.Log(LogLevel.Information, ((RomMessage)msg).ToString());
                 }
@@ -863,6 +997,18 @@ namespace Gebug64.Win.ViewModels
                     _logger.Log(LogLevel.Information, msg.GetUsbPacket().ToString());
                 }
             });
+        }
+
+        private void SaveAppSettings()
+        {
+            if (_ignoreAppSettingsChange)
+            {
+                return;
+            }
+
+            Workspace.Instance.SaveAppSettings();
+
+            AppConfig.ClearIsDirty();
         }
 
         private void ThreadMain()
@@ -876,8 +1022,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && !object.ReferenceEquals(null, _lastMessageReceived)
-                    && _lastMessageReceived.Elapsed.TotalSeconds > PingIntervalSec)
+                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > PingIntervalSec)
                 {
                     if (object.ReferenceEquals(null, _lastMessageSent))
                     {
@@ -887,7 +1032,7 @@ namespace Gebug64.Win.ViewModels
                     if (_lastMessageSent.Elapsed.TotalSeconds > PingIntervalSec)
                     {
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
 
                         _lastMessageSent.Stop();
                         _lastMessageSent = Stopwatch.StartNew();
@@ -895,8 +1040,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && !object.ReferenceEquals(null, _lastMessageReceived)
-                    && _lastMessageReceived.Elapsed.TotalSeconds > TimeoutDisconnectSec)
+                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > TimeoutDisconnectSec)
                 {
                     _dispatcher.BeginInvoke(() => Task.Run(() => Disconnect()));
                 }

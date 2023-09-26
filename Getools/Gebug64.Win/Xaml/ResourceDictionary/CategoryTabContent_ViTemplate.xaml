@@ -1,0 +1,49 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                    xmlns:root="clr-namespace:Gebug64.Win"
+                    xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
+                    xmlns:ctvm="clr-namespace:Gebug64.Win.ViewModels.CategoryTabs"
+                    mc:Ignorable="d"
+                    >
+    <DataTemplate
+        x:Key="CategoryTabContentViTemplate"
+        DataType="{x:Type ctvm:StageTabViewModel}"
+        >
+        <DataTemplate.Resources>
+        </DataTemplate.Resources>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Vertical" Grid.Row="0">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GetFrameBufferCommand}" HorizontalAlignment="Left">Get framebuffer</Button>
+                    
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                        <TextBlock VerticalAlignment="Center">Save path:</TextBlock>
+                        <TextBox Text="{Binding FramebufferGrabSavePath}" MinWidth="200" MaxWidth="400" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"/>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=SetSaveFrameBufferPathCommand}" HorizontalAlignment="Left">...</Button>
+
+                    </StackPanel>
+
+                    <TextBlock>Frame buffer grab preview:</TextBlock>
+                    <Border BorderThickness="2" BorderBrush="Blue" HorizontalAlignment="Center">
+                        <Image Source="{Binding FrameBufferGrab}" MaxWidth="440" MaxHeight="330" MinHeight="16" MinWidth="16"/>
+                    </Border>
+
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </DataTemplate>
+    
+</ResourceDictionary>

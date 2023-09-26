@@ -8,6 +8,7 @@ using System.Windows.Input;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
 using Microsoft.Extensions.Logging;
@@ -93,7 +94,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             var value = new U8Parameter(1);
 
-            var msg = new RomDebugMessage(Unfloader.Message.MessageType.GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
+            var msg = new RomDebugMessage(GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(value);
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
@@ -112,7 +113,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             var value = new U8Parameter(0);
 
-            var msg = new RomDebugMessage(Unfloader.Message.MessageType.GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
+            var msg = new RomDebugMessage(GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(value);
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
@@ -131,7 +132,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             var value = new U8Parameter((int)SelectedMenuItem.Id);
 
-            var msg = new RomDebugMessage(Unfloader.Message.MessageType.GebugCmdDebug.DebugMenuProcessor) { Source = CommunicationSource.Pc };
+            var msg = new RomDebugMessage(GebugCmdDebug.DebugMenuProcessor) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(value);
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());

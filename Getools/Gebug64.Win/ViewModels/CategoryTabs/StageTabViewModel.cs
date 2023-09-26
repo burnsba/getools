@@ -8,6 +8,7 @@ using System.Windows.Input;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
 using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
 using Microsoft.Extensions.Logging;
@@ -59,7 +60,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             var value = new U8Parameter(SelectedStage.Id);
 
-            var msg = new RomStageMessage(Unfloader.Message.MessageType.GebugCmdStage.SetStage) { Source = CommunicationSource.Pc };
+            var msg = new RomStageMessage(GebugCmdStage.SetStage) { Source = CommunicationSource.Pc };
             msg.Parameters.Add(value);
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());

@@ -17,7 +17,6 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition></RowDefinition>
-                <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Vertical" Grid.Row="0">

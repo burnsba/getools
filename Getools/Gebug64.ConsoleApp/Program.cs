@@ -1,5 +1,6 @@
 ﻿using Gebug64.Unfloader;
 using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using System.IO.Ports;
 using System.Text;
 
@@ -78,11 +79,11 @@ namespace Gebug64.ConsoleApp
                     Console.WriteLine("enqueue message ...");
                     if (toggle)
                     {
-                        dm.EnqueueMessage(new RomMetaMessage(Unfloader.Message.MessageType.GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        dm.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
                     }
                     else
                     {
-                        dm.EnqueueMessage(new RomMiscMessage(Unfloader.Message.MessageType.GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc });
+                        dm.EnqueueMessage(new RomMiscMessage(GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc });
                     }
 
                     toggle = !toggle;

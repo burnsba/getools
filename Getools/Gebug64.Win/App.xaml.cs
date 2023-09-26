@@ -6,10 +6,14 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Flashcart;
+using Gebug64.Win.Config;
+using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.CategoryTabs;
+using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +41,7 @@ namespace Gebug64.Win
             {
                 var builder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
+                    .AddJsonFile(AppConfigSettings.DefaultFilename, optional: true, reloadOnChange: false);
 
                 configuration = builder.Build();
 
@@ -77,8 +81,20 @@ namespace Gebug64.Win
 
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton(typeof(IConfiguration), configuration);
+
+            // load and register session service type translators.
+            var translateService = new TranslateService();
+
+            services.AddSingleton(typeof(TranslateService), translateService);
+
+            var appSettings = new AppConfigStartupResolver(configuration).GetAppConfigSettings();
+            var mainConfig = translateService.Translate<AppConfigSettings, AppConfigViewModel>(appSettings);
+
+            services.AddSingleton<AppConfigViewModel>(mainConfig);
+
             services.AddSingleton<ILogger>(_theLogger);
+            services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<IDeviceManagerResolver>(new DeviceManagerResolver());
 
             services.AddTransient<MainWindow>();

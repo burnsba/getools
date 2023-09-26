@@ -10,12 +10,13 @@ namespace Gebug64.Win.Xaml.Selectors
 {
     public class CategoryTabContentTemplateSelector : DataTemplateSelector
     {
-        public DataTemplate NothingTemplate { get; set; }
+        public DataTemplate CheatTemplate { get; set; }
+        public DataTemplate DebugTemplate { get; set; }
         public DataTemplate MetaTemplate { get; set; }
         public DataTemplate MiscTemplate { get; set; }
+        public DataTemplate NothingTemplate { get; set; }
         public DataTemplate StageTemplate { get; set; }
-        public DataTemplate DebugTemplate { get; set; }
-        public DataTemplate CheatTemplate { get; set; }
+        public DataTemplate ViTemplate { get; set; }
 
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
@@ -27,11 +28,12 @@ namespace Gebug64.Win.Xaml.Selectors
 
             switch (item)
             {
+                case CheatTabViewModel cheatTabViewModel: return CheatTemplate;
+                case DebugTabViewModel debugTabViewModel: return DebugTemplate;
                 case MetaTabViewModel metaTabViewModel: return MetaTemplate;
                 case MiscTabViewModel miscTabViewModel: return MiscTemplate;
                 case StageTabViewModel stageTabViewModel: return StageTemplate;
-                case DebugTabViewModel debugTabViewModel: return DebugTemplate;
-                case CheatTabViewModel cheatTabViewModel: return CheatTemplate;
+                case ViTabViewModel viTabViewModel: return ViTemplate;
                 default: return NothingTemplate;
             }
         }

@@ -48,13 +48,6 @@ namespace Gebug64.Win.Windows
                     scrollViewer.ScrollToBottom();
                 }
             };
-
-            SelectedRomTextBox.TextChanged += (sender, e) =>
-            {
-                SelectedRomTextBox.CaretIndex = SelectedRomTextBox.Text.Length;
-                var rect = SelectedRomTextBox.GetRectFromCharacterIndex(SelectedRomTextBox.CaretIndex);
-                SelectedRomTextBox.ScrollToHorizontalOffset(rect.Right);
-            };
         }
 
         /// <summary>

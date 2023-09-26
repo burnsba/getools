@@ -17,12 +17,13 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition></RowDefinition>
-                <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Vertical" Grid.Row="0">
 
                 <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=PingCommand}" HorizontalAlignment="Left">Ping</Button>
+
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=VersionCommand}" HorizontalAlignment="Left">Version</Button>
                 
             </StackPanel>
         </Grid>
