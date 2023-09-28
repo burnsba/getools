@@ -997,7 +997,7 @@ namespace Gebug64.Win.ViewModels
                     }
                 }
 
-                _logger.Log(LogLevel.Information, msg.ToString());
+                _logger.Log(LogLevel.Information, "Receive " + msg.ToString());
             });
         }
 
@@ -1027,7 +1027,7 @@ namespace Gebug64.Win.ViewModels
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Information, packet.ToString());
+                    _logger.Log(LogLevel.Information, "Receive " + packet.ToString());
                 }
             });
         }

@@ -44,6 +44,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
             Send(new EverdriveCmdWriteRom(bytesLeft));
 
+            var startSend = Stopwatch.StartNew();
+
             while (true)
             {
                 if (bytesLeft >= 0x8000)
@@ -69,6 +71,10 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 bytesDone += bytesDo;
 
                 double percentDone = 100.0 * (double)bytesDone / (double)((int)padSize);
+                if (percentDone > 99.99)
+                {
+                    percentDone = 100.0;
+                }
 
                 _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
 
@@ -79,6 +85,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                     return;
                 }
             }
+
+            startSend.Stop();
+
+            int byteRate = (int)((double)bytesDone / startSend.Elapsed.TotalSeconds);
+            _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: {bytesDone} bytes / {startSend.Elapsed.TotalSeconds:0.00} sec = {byteRate} bytes/sec");
 
             // Delay is needed or it won't boot properly
             System.Threading.Thread.Sleep(3000);

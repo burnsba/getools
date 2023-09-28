@@ -280,6 +280,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             return results;
         }
 
+        public override string ToString()
+        {
+            return $"{Category} {DebugCommand}";
+        }
+
         private byte[] GetPropertySendBytes(PropAttribute pa, ParameterUseDirection sendDirection)
         {
             var result = new List<byte>();
