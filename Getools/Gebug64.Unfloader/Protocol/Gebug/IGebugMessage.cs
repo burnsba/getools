@@ -16,6 +16,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         ushort MessageId { get; }
         ushort AckId { get; }
 
+        DateTime InstantiateTime { get; }
+
+        CommunicationSource Source { get; }
+
         GebugPacket? FirstPacket { get; }
 
         List<GebugPacket> ToSendPackets(ParameterUseDirection sendDirection);

@@ -11,6 +11,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
     {
         bool IsConnected { get; }
         ConcurrentQueue<IFlashcartPacket> ReadPackets { get; }
+        TimeSpan SinceDataReceived { get; }
+        TimeSpan SinceRomMessageReceived { get; }
 
         void Connect(string port);
         void Disconnect();

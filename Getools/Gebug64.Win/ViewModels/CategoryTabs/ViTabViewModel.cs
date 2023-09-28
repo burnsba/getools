@@ -13,7 +13,9 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using Antlr4.Runtime.Tree.Xpath;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
@@ -37,13 +39,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -68,8 +70,8 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
-        public ViTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public ViTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
             SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
@@ -85,31 +87,31 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public void GetFrameBufferCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            deviceManager.Subscribe(PreviewGetFramebufferCallback, 1, PreviewGetFramebufferCallbackFilter);
+            connectionServiceProvider.Subscribe(PreviewGetFramebufferCallback, 1, PreviewGetFramebufferCallbackFilter);
 
-            var msg = new RomViMessage(GebugCmdVi.GrabFramebuffer) { Source = CommunicationSource.Pc };
+            var msg = new GebugViFramebufferMessage();
+
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         private void PreviewGetFramebufferCallback(IGebugMessage msg)
         {
             // this is not null because this method should only be called after
             // PreviewGetFramebufferCallbackFilter succeeds.
-            var ram = (RomAckMessage)msg!;
-            var viMessage = (RomViMessage)ram.Reply;
+            var viMessage = (GebugViFramebufferMessage)msg!;
 
             _dispatcher.BeginInvoke(() =>
             {
-                var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.FrameBuffer, viMessage.Width, viMessage.Height);
+                var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.Data, viMessage.Width, viMessage.Height);
 
                 var bmp = Image.Utility.BitmapFromRaw(windowsFrameBuffer, System.Drawing.Imaging.PixelFormat.Format16bppArgb1555, viMessage.Width, viMessage.Height);
 
@@ -128,11 +130,12 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         private bool PreviewGetFramebufferCallbackFilter(IGebugMessage msg)
         {
-            if (typeof(RomAckMessage).IsAssignableFrom(msg.GetType()))
+            if (msg.Category == GebugMessageCategory.Vi
+                && msg.Command == (int)GebugCmdVi.GrabFramebuffer)
             {
-                var ram = (RomAckMessage)msg;
-                return ram?.Reply?.Category == GebugMessageCategory.Vi
-                        && ram?.Reply?.RawCommand == (int)GebugCmdVi.GrabFramebuffer;
+                // Could also check the AckId matches the original request Id, but
+                // probably safe to ignore that.
+                return true;
             }
 
             return false;
@@ -140,6 +143,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         private void SetSaveFrameBufferPathCommandHandler()
         {
+            // TODO: Use the new folder open dialog in .net 8.
             CommonOpenFileDialog dialog = new CommonOpenFileDialog();
 
             string startDir = FramebufferGrabSavePath;

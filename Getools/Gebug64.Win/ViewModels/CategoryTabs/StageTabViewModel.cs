@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
@@ -29,18 +29,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
-        public StageTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public StageTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             SetStageCommand = new CommandHandler(SetStageCommandHandler, () => CanSetStage);
 
@@ -51,21 +51,21 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public void SetStageCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var value = new U8Parameter(SelectedStage.Id);
-
-            var msg = new RomStageMessage(GebugCmdStage.SetStage) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(value);
+            var msg = new GebugStageSetStageMessage()
+            {
+                LevelId = (byte)SelectedStage.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

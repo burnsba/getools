@@ -17,7 +17,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Manage
 {
-    public class ConnectionServiceProvider
+    public class ConnectionServiceProvider : IConnectionServiceProvider
     {
         private readonly IFlashcart _flashcart;
         private bool _stop = false;
@@ -34,6 +34,13 @@ namespace Gebug64.Unfloader.Manage
         private MessageBus<IUnfloaderPacket> _messageBusUnfloader = new();
 
         public bool ManagerActive { get; set; } = true;
+
+        public bool IsShutdown => object.ReferenceEquals(null, _thread) || !_thread.IsAlive;
+
+        public TimeSpan SinceDataReceived => _flashcart?.SinceDataReceived ?? TimeSpan.MaxValue;
+
+        /// <inheritdoc />
+        public TimeSpan SinceRomMessageReceived => _flashcart?.SinceRomMessageReceived ?? TimeSpan.MaxValue;
 
         public ConnectionServiceProvider(IFlashcart device)
         {
@@ -75,6 +82,12 @@ namespace Gebug64.Unfloader.Manage
 
                 _thread = null;
             }
+
+            _receiveFlashcardPackets.Clear();
+            _receiveUnfPackets.Clear();
+            _receiveMessageFragments.Clear();
+            _receiveMessages.Clear();
+            _sendQueue.Clear();
         }
 
         public bool TestInMenu() { return _flashcart.TestInMenu(); }
@@ -135,6 +148,29 @@ namespace Gebug64.Unfloader.Manage
             _sendQueue.Enqueue(packet);
         }
 
+        public void SendRom(string path, Nullable<CancellationToken> token = null)
+        {
+            if (!System.IO.File.Exists(path))
+            {
+                throw new FileNotFoundException($"Could not find file: {path}");
+            }
+
+            var filedata = System.IO.File.ReadAllBytes(path);
+
+            // Read the ROM header to check if its byteswapped
+            if (!(filedata[0] == 0x80 && filedata[1] == 0x37 && filedata[2] == 0x12 && filedata[3] == 0x40))
+            {
+                for (var j = 0; j < filedata.Length; j += 2)
+                {
+                    filedata[j] ^= filedata[j + 1];
+                    filedata[j + 1] ^= filedata[j];
+                    filedata[j] ^= filedata[j + 1];
+                }
+            }
+
+            _flashcart!.SendRom(filedata, token);
+        }
+
         public Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)
         {
             return _messageBusGebug.Subscribe(callback, listenCount, filter);
@@ -143,6 +179,16 @@ namespace Gebug64.Unfloader.Manage
         public Guid Subscribe(Action<IUnfloaderPacket> callback, int listenCount = 0, Func<IUnfloaderPacket, bool>? filter = null)
         {
             return _messageBusUnfloader.Subscribe(callback, listenCount, filter);
+        }
+
+        public void GebugUnsubscribe(Guid id)
+        {
+            _messageBusGebug.Unsubscribe(id);
+        }
+
+        public void UnfloaderUnsubscribe(Guid id)
+        {
+            _messageBusUnfloader.Unsubscribe(id);
         }
 
         private void ThreadMain()

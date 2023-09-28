@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
@@ -31,13 +31,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -45,13 +45,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -66,13 +66,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -87,13 +87,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -103,18 +103,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
-        public CheatTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public CheatTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             SetCheatStatusOnCommand = new CommandHandler(SetCheatStatusOnCommandHandler, () => CanSetCheatStatusOn);
             SetCheatStatusOffCommand = new CommandHandler(SetCheatStatusOffCommandHandler, () => CanSetCheatStatusOff);
@@ -131,102 +131,98 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         private void SetCheatStatusOnCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var v1 = new U8Parameter(1);
-            var v2 = new U8Parameter(SelectedCheatStatusItem.Id);
-
-            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(v1);
-            msg.Parameters.Add(v2);
+            var msg = new GebugCheatSetCheatStatusMessage()
+            {
+                Enable = 1,
+                CheatId = (byte)SelectedCheatStatusItem.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         private void SetCheatStatusOffCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var v1 = new U8Parameter(0);
-            var v2 = new U8Parameter(SelectedCheatStatusItem.Id);
-
-            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(v1);
-            msg.Parameters.Add(v2);
+            var msg = new GebugCheatSetCheatStatusMessage()
+            {
+                Enable = 0,
+                CheatId = (byte)SelectedCheatStatusItem.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         private void UnlockRuntimeCheatCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var v1 = new U8Parameter(1);
-            var v2 = new U8Parameter(SelectedUnlockRuntimeCheat.Id);
-
-            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(v1);
-            msg.Parameters.Add(v2);
+            var msg = new GebugCheatSetCheatStatusMessage()
+            {
+                Enable = 1,
+                CheatId = (byte)SelectedUnlockRuntimeCheat.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         private void UnlockStageCheatCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var v1 = new U8Parameter(1);
-            var v2 = new U8Parameter(SelectedUnlockStageCheat.Id);
-
-            var msg = new RomCheatMessage(GebugCmdCheat.SetCheatStatus) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(v1);
-            msg.Parameters.Add(v2);
+            var msg = new GebugCheatSetCheatStatusMessage()
+            {
+                Enable = 1,
+                CheatId = (byte)SelectedUnlockStageCheat.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
         
         private void DisableAllCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var msg = new RomCheatMessage(GebugCmdCheat.DisableAll) { Source = CommunicationSource.Pc };
+            var msg = new GebugCheatDisableAllMessage();
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

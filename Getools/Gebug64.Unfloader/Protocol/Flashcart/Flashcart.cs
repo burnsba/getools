@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Net.Sockets;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Gebug;
 using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.SerialPort;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
@@ -19,19 +21,50 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         private List<byte> _readData = new List<byte>();
         private Mutex _readLock = new();
         private ConcurrentQueue<IFlashcartPacket> _readPackets = new ConcurrentQueue<IFlashcartPacket>();
-
-        public bool IsConnected => _serialPort?.IsOpen ?? false;
+        private Stopwatch? _sinceDataReceived = null;
+        private Stopwatch? _sinceRomMessageReceived = null;
 
         protected MessageBus<IFlashcartPacket> _flashcartPacketBus = new();
+        protected readonly ILogger _logger;
+        protected bool _disableProcessIncoming = false;
+
+        public bool IsConnected => _serialPort?.IsOpen ?? false;
 
         protected abstract FlashcartPacketParseResult TryParse(List<byte> data);
         protected abstract IFlashcartPacket MakePacket(byte[] data);
 
         public ConcurrentQueue<IFlashcartPacket> ReadPackets => _readPackets;
 
-        public Flashcart(SerialPortProvider portProvider)
+        public TimeSpan SinceDataReceived
+        {
+            get
+            {
+                if (_sinceDataReceived == null)
+                {
+                    return TimeSpan.MaxValue;
+                }
+
+                return _sinceDataReceived.Elapsed;
+            }
+        }
+
+        public TimeSpan SinceRomMessageReceived
+        {
+            get
+            {
+                if (_sinceRomMessageReceived == null)
+                {
+                    return TimeSpan.MaxValue;
+                }
+
+                return _sinceRomMessageReceived.Elapsed;
+            }
+        }
+
+        public Flashcart(SerialPortProvider portProvider, ILogger logger)
         {
             _portProvider = portProvider;
+            _logger = logger;
 
             _flashcartPacketBus.Subscribe(SubscriptionEnqueuePacket);
         }
@@ -45,6 +78,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
             _serialPort = _portProvider.CreatePort(port);
             _serialPort.DataReceived += DataReceived;
+            _serialPort.ReadTimeout = 1000;
+            _serialPort.WriteTimeout = 1000;
             _serialPort.Open();
         }
 
@@ -54,12 +89,33 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             {
                 _serialPort.DataReceived -= DataReceived;
 
-                _serialPort.Close();
+                _serialPort.DtrEnable = false;
+                _serialPort.RtsEnable = false;
                 _serialPort.DiscardInBuffer();
                 _serialPort.DiscardOutBuffer();
 
+                // have to call close last
+                _serialPort.Close();
+
                 _serialPort = null;
             }
+
+            if (_sinceDataReceived != null)
+            {
+                _sinceDataReceived.Stop();
+            }
+
+            _sinceDataReceived = null;
+
+            if (_sinceRomMessageReceived != null)
+            {
+                _sinceRomMessageReceived.Stop();
+            }
+
+            _sinceRomMessageReceived = null;
+
+            _readData.Clear();
+            _readPackets.Clear();
         }
 
         public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
@@ -109,10 +165,20 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 _readLock.ReleaseMutex();
             }
 
-            Task.Run(() => TryReadPacket());
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            _sinceDataReceived = Stopwatch.StartNew();
+
+            if (!_disableProcessIncoming)
+            {
+                Task.Run(() => TryReadPacket());
+            }
         }
 
-        private void TryReadPacket()
+        protected void TryReadPacket()
         {
             List<byte> readCopy;
             List<IFlashcartPacket> toQueue = new();
@@ -124,6 +190,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             // So just lock the whole thing while parsing.
             while (true)
             {
+                if (!IsConnected)
+                {
+                    return;
+                }
+
                 if (!_readLock.WaitOne(10))
                 {
                     // If another thread clears the read buffer while this one is waiting
@@ -147,9 +218,16 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
                 while (readCopy.Count > 0)
                 {
+                    if (!IsConnected)
+                    {
+                        return;
+                    }
+
                     var parse = TryParse(readCopy);
                     if (parse.ParseStatus == PacketParseStatus.Success)
                     {
+                        _sinceRomMessageReceived = Stopwatch.StartNew();
+
                         readCopy.RemoveRange(0, parse.TotalBytesRead);
                         removeSize += parse.TotalBytesRead;
 
@@ -167,6 +245,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             finally
             {
                 _readLock.ReleaseMutex();
+            }
+
+            if (!IsConnected)
+            {
+                return;
             }
 
             foreach (var packet in toQueue)

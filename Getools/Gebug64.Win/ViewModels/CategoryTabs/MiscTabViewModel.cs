@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Interop;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
@@ -23,18 +24,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
-        public MiscTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public MiscTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             OsTimeCommand = new CommandHandler(OsTimeCommandHandler, () => CanSendOsTimeCommand);
 
@@ -43,17 +44,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public void OsTimeCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var msg = new RomMiscMessage(GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc };
+            var msg = new GebugMiscOsTimeMessage();
+
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

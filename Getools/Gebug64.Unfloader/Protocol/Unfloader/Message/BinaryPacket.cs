@@ -15,5 +15,10 @@ namespace Gebug64.Unfloader.Protocol.Unfloader.Message
         public BinaryPacket(byte[] data)
             : base(UnfloaderMessageType.Binary, data)
         { }
+
+        public override string ToString()
+        {
+            return $"size={Size}, type={MessageType}";
+        }
     }
 }

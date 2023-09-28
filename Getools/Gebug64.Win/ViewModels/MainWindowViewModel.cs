@@ -15,14 +15,20 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Flashcart;
-using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Unfloader.Protocol.Unfloader;
+using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.Session;
@@ -70,7 +76,8 @@ namespace Gebug64.Win.ViewModels
 
         private bool _setAvailableFlashcarts = false;
 
-        private Guid _messageBusLogSubscription = Guid.Empty;
+        private Guid _messageBusGebugLogSubscription = Guid.Empty;
+        private Guid _messageBusUnfloaderLogSubscription = Guid.Empty;
 
         private readonly object _availableSerialPortsLock = new object();
         private ObservableCollection<string> _availableSerialPorts = new ObservableCollection<string>();
@@ -85,8 +92,8 @@ namespace Gebug64.Win.ViewModels
 
         private readonly ILogger _logger;
 
-        private IDeviceManager? _deviceManager;
-        private readonly IDeviceManagerResolver _deviceManagerResolver;
+        private IConnectionServiceProvider? _connectionServiceManager;
+        private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
 
         private readonly Dispatcher _dispatcher;
         private bool _shutdown = false;
@@ -311,13 +318,13 @@ namespace Gebug64.Win.ViewModels
 
         public string RomVersionString => _romVersion?.ToString() ?? "unk";
 
-        public MainWindowViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver, AppConfigViewModel appConfig)
+        public MainWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
         {
             _ignoreAppSettingsChange = true;
 
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
-            _deviceManagerResolver = deviceManagerResolver;
+            _connectionServiceResolver = deviceManagerResolver;
 
             // Need to supply AppConfig early because some properties reference this.
             AppConfig = appConfig;
@@ -491,7 +498,7 @@ namespace Gebug64.Win.ViewModels
 
         private void Disconnect()
         {
-            if (object.ReferenceEquals(null, _deviceManager))
+            if (object.ReferenceEquals(null, _connectionServiceManager))
             {
                 return;
             }
@@ -503,12 +510,13 @@ namespace Gebug64.Win.ViewModels
                 System.Threading.Thread.Sleep(1000);
             }
 
-            _deviceManager.Unsubscribe(_messageBusLogSubscription);
-            _deviceManager.Stop();
+            _connectionServiceManager.GebugUnsubscribe(_messageBusGebugLogSubscription);
+            _connectionServiceManager.UnfloaderUnsubscribe(_messageBusUnfloaderLogSubscription);
+            _connectionServiceManager.Stop();
 
             var sw = Stopwatch.StartNew();
 
-            while (!_deviceManager.IsShutdown)
+            while (!_connectionServiceManager.IsShutdown)
             {
                 System.Threading.Thread.Sleep(10);
 
@@ -518,7 +526,7 @@ namespace Gebug64.Win.ViewModels
                 }
             }
 
-            _deviceManager = null;
+            _connectionServiceManager = null;
             _connectionLevel = ConnectionLevel.NotConnected;
 
             if (!object.ReferenceEquals(null, _lastMessageSent))
@@ -593,15 +601,15 @@ namespace Gebug64.Win.ViewModels
                 OnPropertyChanged(nameof(ConnectCommandText));
                 OnPropertyChanged(nameof(CanSendRom));
 
-                _deviceManagerResolver.CreateOnceDeviceManager(CurrentFlashcart);
-                _deviceManager = _deviceManagerResolver.GetDeviceManager();
+                _connectionServiceResolver.CreateOnceDeviceManager(CurrentFlashcart);
+                _connectionServiceManager = _connectionServiceResolver.GetDeviceManager();
 
-                _messageBusLogSubscription = _deviceManager!.Subscribe(MessageBusLogCallback);
+                _messageBusGebugLogSubscription = _connectionServiceManager!.Subscribe(MessageBusLogGebugCallback);
+                _messageBusUnfloaderLogSubscription = _connectionServiceManager!.Subscribe(MessageBusLogUnfloaderCallback);
 
-                _deviceManager!.Init(CurrentSerialPort!);
-                _deviceManager.Start();
+                _connectionServiceManager.Start(CurrentSerialPort!);
 
-                var testResult = _deviceManager.TestFlashcartConnected();
+                var testResult = _connectionServiceManager.TestInMenu();
 
                 _logger.Log(LogLevel.Information, $"Connection level test, checking if in flashcart menu: {testResult}");
 
@@ -610,9 +618,9 @@ namespace Gebug64.Win.ViewModels
                     _connectionLevel = ConnectionLevel.Everdrive;
                 }
 
-                if (!testResult)
+                if (false && !testResult)
                 {
-                    testResult = _deviceManager.TestRomConnected();
+                    testResult = _connectionServiceManager.TestInRom();
                     _logger.Log(LogLevel.Information, $"Connection level test, checking if in rom: {testResult}");
 
                     if (testResult)
@@ -620,15 +628,15 @@ namespace Gebug64.Win.ViewModels
                         _connectionLevel = ConnectionLevel.Rom;
 
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _connectionServiceManager.SendMessage(new GebugMetaPingMessage());
 
                         _logger.Log(LogLevel.Information, $"Send version request");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
+                        _connectionServiceManager.SendMessage(new GebugMetaVersionMessage());
                     }
 
                     if (testResult == false)
                     {
-                        _deviceManager.Stop();
+                        _connectionServiceManager.Stop();
                         _logger.Log(LogLevel.Error, $"Connection level test: test command failed");
 
                         _connectionError = true;
@@ -855,7 +863,7 @@ namespace Gebug64.Win.ViewModels
                         _sendRomCancellation = new CancellationTokenSource();
                     }
 
-                    _deviceManager!.SendRom(SelectedRom, _sendRomCancellation.Token);
+                    _connectionServiceManager!.SendRom(SelectedRom, _sendRomCancellation.Token);
 
                     _sendRomCancellation = null;
 
@@ -865,13 +873,13 @@ namespace Gebug64.Win.ViewModels
                         System.Threading.Thread.Sleep(5000);
 
                         // if disconnected during above sleep, don't send ping.
-                        if (!object.ReferenceEquals(null, _deviceManager))
+                        if (!object.ReferenceEquals(null, _connectionServiceManager))
                         {
                             _logger.Log(LogLevel.Information, $"Send ping");
-                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                            _connectionServiceManager.SendMessage(new GebugMetaPingMessage());
 
                             _logger.Log(LogLevel.Information, $"Send version request");
-                            _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc });
+                            _connectionServiceManager.SendMessage(new GebugMetaVersionMessage());
                         }
                     });
 
@@ -960,41 +968,66 @@ namespace Gebug64.Win.ViewModels
             throw new InvalidOperationException("DeviceManager thread cannot be restarted.");
         }
 
-        private void MessageBusLogCallback(IGebugMessage msg)
+        private void MessageBusLogGebugCallback(IGebugMessage msg)
         {
             _dispatcher.BeginInvoke(() =>
             {
-                // if the receieved message is RomMessage, then the connection level is now known.
-                if (msg is RomMessage romMessage)
+                if (_connectionLevel != ConnectionLevel.Rom)
                 {
                     _connectionLevel = ConnectionLevel.Rom;
+
                     OnPropertyChanged(nameof(CanSendRom));
                     OnPropertyChanged(nameof(StatusConnectionLevelText));
+                }
 
-                    // If the message is a version message, then the connected rom version is now known.
-                    if (object.ReferenceEquals(null, RomVersion)
-                        && romMessage.Category == GebugMessageCategory.Ack)
+                // If the message is a version message, then the connected rom version is now known.
+                if (object.ReferenceEquals(null, RomVersion)
+                    && msg.Category == GebugMessageCategory.Meta
+                    && msg.Command == (int)GebugCmdMeta.Version)
+                {
+                    var versionMessage = (GebugMetaVersionMessage)msg;
+                    if (!object.ReferenceEquals(null, versionMessage))
                     {
-                        var ackMessage = (RomAckMessage)romMessage;
-                        if (ackMessage?.Reply?.Category == GebugMessageCategory.Meta)
-                        {
-                            var metaMessage = (RomMetaMessage)ackMessage.Reply;
-                            if (metaMessage.Command == GebugCmdMeta.Version)
-                            {
-                                var version = metaMessage.GetVersion();
-                                if (version != null)
-                                {
-                                    RomVersion = version;
-                                }
-                            }
-                        }
-                    }
+                        RomVersion = new Version(
+                            versionMessage.VersionA,
+                            versionMessage.VersionB,
+                            versionMessage.VersionC,
+                            versionMessage.VersionD);
 
-                    _logger.Log(LogLevel.Information, ((RomMessage)msg).ToString());
+                    }
+                }
+
+                _logger.Log(LogLevel.Information, msg.ToString());
+            });
+        }
+
+        private void MessageBusLogUnfloaderCallback(IUnfloaderPacket packet)
+        {
+            _dispatcher.BeginInvoke(() =>
+            {
+                if (_connectionLevel == ConnectionLevel.NotConnected)
+                {
+                    _connectionLevel = ConnectionLevel.Everdrive;
+
+                    OnPropertyChanged(nameof(CanSendRom));
+                    OnPropertyChanged(nameof(StatusConnectionLevelText));
+                }
+
+                if (packet.MessageType == Unfloader.Protocol.Unfloader.Message.MessageType.UnfloaderMessageType.Text)
+                {
+                    var textMessage = (TextPacket)packet;
+                    if (!object.ReferenceEquals(null, textMessage) && !string.IsNullOrEmpty(textMessage.Content))
+                    {
+                        _logger.Log(LogLevel.Information, textMessage.Content);
+                    }
+                    else
+                    {
+                        _logger.Log(LogLevel.Information, "Received empty UNFLoader text packet");
+                    }
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Information, msg.GetUsbPacket().ToString());
+                    _logger.Log(LogLevel.Information, packet.ToString());
                 }
             });
         }
@@ -1015,14 +1048,14 @@ namespace Gebug64.Win.ViewModels
         {
             while (_shutdown == false)
             {
-                if (object.ReferenceEquals(null, _deviceManager))
+                if (object.ReferenceEquals(null, _connectionServiceManager))
                 {
                     System.Threading.Thread.Sleep(500);
                     continue;
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > PingIntervalSec)
+                    && _connectionServiceManager.SinceRomMessageReceived.TotalSeconds > PingIntervalSec)
                 {
                     if (object.ReferenceEquals(null, _lastMessageSent))
                     {
@@ -1032,7 +1065,7 @@ namespace Gebug64.Win.ViewModels
                     if (_lastMessageSent.Elapsed.TotalSeconds > PingIntervalSec)
                     {
                         _logger.Log(LogLevel.Information, $"Send ping");
-                        _deviceManager.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        _connectionServiceManager.SendMessage(new GebugMetaPingMessage());
 
                         _lastMessageSent.Stop();
                         _lastMessageSent = Stopwatch.StartNew();
@@ -1040,18 +1073,18 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 if (_connectionLevel == ConnectionLevel.Rom
-                    && _deviceManager.SinceRomMessageReceived.TotalSeconds > TimeoutDisconnectSec)
+                    && _connectionServiceManager.SinceRomMessageReceived.TotalSeconds > TimeoutDisconnectSec)
                 {
                     _dispatcher.BeginInvoke(() => Task.Run(() => Disconnect()));
                 }
 
-                System.Threading.Thread.Sleep(5);
+                System.Threading.Thread.Sleep(100);
             }
 
             // shutdown notification received.
-            if (!object.ReferenceEquals(null, _deviceManager))
+            if (!object.ReferenceEquals(null, _connectionServiceManager))
             {
-                _deviceManager.Stop();
+                _connectionServiceManager.Stop();
             }
         }
     }

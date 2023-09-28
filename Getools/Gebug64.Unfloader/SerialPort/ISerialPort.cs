@@ -14,6 +14,9 @@ namespace Gebug64.Unfloader.SerialPort
         int ReadTimeout { get; set; }
         int WriteTimeout { get; set; }
         string PortName { get; }
+        System.IO.Stream BaseStream { get; }
+        bool DtrEnable { get; set; }
+        bool RtsEnable { get; set; }
 
         event System.IO.Ports.SerialDataReceivedEventHandler DataReceived;
         event System.IO.Ports.SerialErrorReceivedEventHandler ErrorReceived;

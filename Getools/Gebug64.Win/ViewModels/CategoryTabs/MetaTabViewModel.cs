@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Microsoft.Extensions.Logging;
@@ -24,13 +25,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -38,18 +39,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
-        public MetaTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public MetaTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             PingCommand = new CommandHandler(PingCommandHandler, () => CanSendPingCommand);
             VersionCommand = new CommandHandler(VersionCommandHandler, () => CanSendVersionCommand);
@@ -59,32 +60,34 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public void PingCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var msg = new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc };
+            var msg = new GebugMetaPingMessage();
+
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         public void VersionCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var msg = new RomMetaMessage(GebugCmdMeta.Version) { Source = CommunicationSource.Pc };
+            var msg = new GebugMetaVersionMessage();
+
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

@@ -22,7 +22,7 @@ Required header data:
 | 1 | Command | The specific command to be executed within the category. |
 | 2-3 | Flags | (see below) |
 | 4-5 | Remaining packet size | Count of the number of bytes from offset 6 to the end of the packet inclusive. |
-| 6-7 | Number parameters | The number of parameters specified in the body of the packet/message. |
+| 6-7 | Number parameters | The number of parameters specified in the body/bodies of the message. |
 | 8-9 | Message Id | Id for this message. Should be pseudo-unique or sequential. |
 | 10-11 | ACK Id | If this is a response packet, this field will contain the `Message Id` of the message being responded to. Otherwise the contents of this field are ignored. |
 
@@ -136,7 +136,7 @@ Sets `g_BossIsDebugMenuOpen` to the value of the parameter. Note that in order f
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  1           | `PcToConsole` | Set `g_BossIsDebugMenuOpen` to value. |
+|  1            | Open      |  1           | `PcToConsole` | Set `g_BossIsDebugMenuOpen` to value. |
 
 
 ### `Debug DebugMenuProcessor` Command
@@ -147,7 +147,7 @@ Calls `debug_menu_case_processer` with the supplied value. Note: This method was
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  1           | `PcToConsole` | Debug switch value. |
+|  1            | MenuCommand   |  1           | `PcToConsole` | Debug switch value. |
 
 ## `Cheat` Category
 
@@ -173,8 +173,8 @@ Turns a cheat on or off. Note that turning off an "unlock" cheat does nothing.
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  1           | `PcToConsole` | 0 "turns off" cheat, a non zero value enables the cheat. |
-|  2            | ~~TODO~~      |  1           | `PcToConsole` | cheat id. ROM enum type is `CHEAT_ID`, the C# equivalent is `CheatIdX` |
+|  1            | Enable      |  1           | `PcToConsole` | 0 "turns off" cheat, a non zero value enables the cheat. |
+|  2            | CheatId      |  1           | `PcToConsole` | cheat id. ROM enum type is `CHEAT_ID`, the C# equivalent is `CheatIdX` |
 
 
 ### `Cheat DisableAll` Command
@@ -210,7 +210,7 @@ Sets `g_MainStageNum` to the supplied value.
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
+|  1            | LevelId      |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
 
 ## `Vi` Category
 
@@ -241,9 +241,9 @@ Dumps the framebuffer back to PC. There are a couple different ways to go about 
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | Width         |  2           | `PcToConsole` | result from `viGetX()` |
-|  2            | Height        |  2           | `PcToConsole` | result from `viGetY()` |
-|  3            | Data          |  variable    | `PcToConsole` | Contains `2 * viGetX() * viGetY()` bytes, as read from `g_ViFrontData->framebuf`. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format. |
+|  1            | Width         |  2           | `ConsoleToPc` | result from `viGetX()` |
+|  2            | Height        |  2           | `ConsoleToPc` | result from `viGetY()` |
+|  3            | Data          |  variable    | `ConsoleToPc` | Contains `2 * viGetX() * viGetY()` bytes, as read from `g_ViFrontData->framebuf`. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format. |
 
 ## `Meta` Category
 
@@ -280,10 +280,10 @@ Version information about the ROM running on console. This is 4 words describing
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  4           | `PcToConsole` | Version word 1 |
-|  2            | ~~TODO~~      |  4           | `PcToConsole` | Version word 2 |
-|  3            | ~~TODO~~      |  4           | `PcToConsole` | Version word 3 |
-|  4            | ~~TODO~~      |  4           | `PcToConsole` | Version word 4 |
+|  1            | VersionA      |  4           | `ConsoleToPc` | Version word 1 |
+|  2            | VersionB      |  4           | `ConsoleToPc` | Version word 2 |
+|  3            | VersionC      |  4           | `ConsoleToPc` | Version word 3 |
+|  4            | VersionD      |  4           | `ConsoleToPc` | Version word 4 |
 
 
 ## `Misc` Category
@@ -309,4 +309,4 @@ Requests current ROM OS time.
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | ~~TODO~~      |  4           | `PcToConsole` | `osGetCount()` |
+|  1            | Count      |  4           | `ConsoleToPc` | `osGetCount()` |

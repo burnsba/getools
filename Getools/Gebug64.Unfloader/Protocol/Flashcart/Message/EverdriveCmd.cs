@@ -88,5 +88,12 @@ namespace Gebug64.Unfloader.Protocol.Flashcart.Message
             // don't allow public set content calls
             throw new NotSupportedException("System commands should not explicitly set body content");
         }
+
+        public override byte[] GetOuterPacket()
+        {
+            // don't include header+tail for system commands.
+
+            return _data!;
+        }
     }
 }

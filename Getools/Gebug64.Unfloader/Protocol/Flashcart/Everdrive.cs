@@ -12,14 +12,15 @@ using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.SerialPort;
 using Getools.Lib;
+using GzipSharpLib.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
     public class Everdrive : Flashcart
     {
-        public Everdrive(SerialPortProvider portProvider)
-          : base(portProvider)
+        public Everdrive(SerialPortProvider portProvider, ILogger logger)
+          : base(portProvider, logger)
         {
         }
 
@@ -38,6 +39,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 Array.Copy(filedata, newFileData, size);
                 filedata = newFileData;
             }
+
+            _disableProcessIncoming = true;
 
             Send(new EverdriveCmdWriteRom(bytesLeft));
 
@@ -67,10 +70,12 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
                 double percentDone = 100.0 * (double)bytesDone / (double)((int)padSize);
 
-                //_logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
+                _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: sent {bytesDone} out of {(int)padSize} = {percentDone:0.00}%, {bytesLeft} remain");
 
                 if (token.HasValue && token.Value.IsCancellationRequested)
                 {
+                    _logger.Log(LogLevel.Debug, $"{nameof(SendRom)}: cancelled");
+                    _disableProcessIncoming = false;
                     return;
                 }
             }
@@ -79,6 +84,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             System.Threading.Thread.Sleep(3000);
 
             Send(new EverdriveCmdPifboot());
+
+            _disableProcessIncoming = false;
+            
+            // Process any waiting data that was disabled for SendRom.
+            Task.Run(() => TryReadPacket());
         }
 
         public override bool TestInMenu()

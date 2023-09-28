@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
+using Gebug64.Unfloader.Manage;
 using Gebug64.Win.Config;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
@@ -18,8 +19,8 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         private readonly string _tabName;
 
         protected readonly ILogger _logger;
-        protected IDeviceManager? _deviceManager;
-        protected readonly IDeviceManagerResolver _deviceManagerResolver;
+        protected IConnectionServiceProvider? _connectionServiceProvider;
+        protected readonly IConnectionServiceProviderResolver _connectionServiceProviderResolver;
         protected readonly Dispatcher _dispatcher;
         protected bool _ignoreAppSettingsChange = false;
         protected AppConfigViewModel _appConfig;
@@ -28,13 +29,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public int DisplayOrder { get; set; }
 
-        public TabViewModelBase(string tabName, ILogger logger, IDeviceManagerResolver deviceManagerResolver)
+        public TabViewModelBase(string tabName, ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
         {
             _tabName = tabName;
 
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
-            _deviceManagerResolver = deviceManagerResolver;
+            _connectionServiceProviderResolver = connectionServiceProviderResolver;
 
             _appConfig = (AppConfigViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(AppConfigViewModel));
         }

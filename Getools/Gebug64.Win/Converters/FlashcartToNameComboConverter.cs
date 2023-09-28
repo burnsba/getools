@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Flashcart;
+using Gebug64.Unfloader.Protocol.Flashcart;
 
 namespace Gebug64.Win.Converters
 {

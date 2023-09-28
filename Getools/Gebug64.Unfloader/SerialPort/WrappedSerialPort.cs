@@ -30,6 +30,17 @@ namespace Gebug64.Unfloader.SerialPort
             get { return _serialPort.PortName; }
             set { _serialPort.PortName = value; }
         }
+        public System.IO.Stream BaseStream => _serialPort.BaseStream;
+        public bool DtrEnable
+        {
+            get { return _serialPort.DtrEnable; }
+            set { _serialPort.DtrEnable = value; }
+        }
+        public bool RtsEnable
+        {
+            get { return _serialPort.RtsEnable; }
+            set { _serialPort.RtsEnable = value; }
+        }
 
         public event System.IO.Ports.SerialDataReceivedEventHandler DataReceived;
         public event System.IO.Ports.SerialErrorReceivedEventHandler ErrorReceived;
@@ -38,8 +49,18 @@ namespace Gebug64.Unfloader.SerialPort
         {
             _serialPort = new OsSerialPort(port);
 
-            _serialPort.DataReceived += DataReceived;
-            _serialPort.ErrorReceived += ErrorReceived;
+            _serialPort.DataReceived += _serialPort_DataReceived;
+            _serialPort.ErrorReceived += _serialPort_ErrorReceived;
+        }
+
+        private void _serialPort_ErrorReceived(object sender, System.IO.Ports.SerialErrorReceivedEventArgs e)
+        {
+            ErrorReceived?.Invoke(sender, e);
+        }
+
+        private void _serialPort_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
+        {
+            DataReceived?.Invoke(sender, e);
         }
 
         public void Connect(ISerialPort other)

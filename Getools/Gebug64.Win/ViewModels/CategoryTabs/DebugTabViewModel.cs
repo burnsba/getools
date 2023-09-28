@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Message.CommandParameter;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.EnumModel;
@@ -33,13 +34,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -47,13 +48,13 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
@@ -61,18 +62,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
-                if (object.ReferenceEquals(null, deviceManager))
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
                     return false;
                 }
 
-                return !deviceManager.IsShutdown;
+                return !connectionServiceProvider.IsShutdown;
             }
         }
 
-        public DebugTabViewModel(ILogger logger, IDeviceManagerResolver deviceManagerResolver)
-            : base(_tabName, logger, deviceManagerResolver)
+        public DebugTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
         {
             SetDebugMenuOpenOnCommand = new CommandHandler(SetDebugMenuOpenOnCommandHandler, () => CanSetDebugMenuOpenOnCommand);
             SetDebugMenuOpenOffCommand = new CommandHandler(SetDebugMenuOpenOffCommandHandler, () => CanSetDebugMenuOpenOffCommand);
@@ -85,59 +86,59 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public void SetDebugMenuOpenOnCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var value = new U8Parameter(1);
-
-            var msg = new RomDebugMessage(GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(value);
+            var msg = new GebugDebugMenuOpenMessage()
+            {
+                Open = 1,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         public void SetDebugMenuOpenOffCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var value = new U8Parameter(0);
-
-            var msg = new RomDebugMessage(GebugCmdDebug.ShowDebugMenu) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(value);
+            var msg = new GebugDebugMenuOpenMessage()
+            {
+                Open = 0,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
 
         public void DebugMenuCommandHandler()
         {
-            IDeviceManager? deviceManager = _deviceManagerResolver.GetDeviceManager();
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
-            if (object.ReferenceEquals(null, deviceManager))
+            if (object.ReferenceEquals(null, connectionServiceProvider))
             {
                 return;
             }
 
-            var value = new U8Parameter((int)SelectedMenuItem.Id);
-
-            var msg = new RomDebugMessage(GebugCmdDebug.DebugMenuProcessor) { Source = CommunicationSource.Pc };
-            msg.Parameters.Add(value);
+            var msg = new GebugDebugMenuCommandMessage()
+            {
+                MenuCommand = (byte)SelectedMenuItem.Id,
+            };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
-            deviceManager.EnqueueMessage(msg);
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

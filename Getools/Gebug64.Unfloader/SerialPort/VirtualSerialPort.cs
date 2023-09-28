@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,9 @@ namespace Gebug64.Unfloader.SerialPort
         public int ReadTimeout { get; set; }
         public int WriteTimeout { get; set; }
         public string PortName { get; init; }
+        public System.IO.Stream BaseStream => new MemoryStream(new byte[1]);
+        public bool DtrEnable { get; set; }
+        public bool RtsEnable { get; set; }
 
         public event System.IO.Ports.SerialDataReceivedEventHandler DataReceived;
         public event System.IO.Ports.SerialErrorReceivedEventHandler ErrorReceived;

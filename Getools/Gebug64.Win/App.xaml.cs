@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
-using Gebug64.Unfloader.Flashcart;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.SerialPort;
 using Gebug64.Win.Config;
 using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
@@ -94,11 +96,18 @@ namespace Gebug64.Win
             services.AddSingleton<AppConfigViewModel>(mainConfig);
 
             services.AddSingleton<ILogger>(_theLogger);
-            services.AddSingleton<MainWindowViewModel>();
-            services.AddSingleton<IDeviceManagerResolver>(new DeviceManagerResolver());
 
-            services.AddTransient<MainWindow>();
+            var typeGetter = new SerialPortFactoryTypeGetter() { Type = typeof(WrappedSerialPort) };
+            services.AddSingleton<SerialPortFactoryTypeGetter>(typeGetter);
+
+            services.AddSingleton<SerialPortProvider>();
+            services.AddTransient<SerialPortFactory>();
+
+            services.AddSingleton<IConnectionServiceProviderResolver>(new ConnectionServiceProviderResolver());
             services.AddTransient<Everdrive>();
+
+            services.AddSingleton<MainWindowViewModel>();
+            services.AddTransient<MainWindow>();
 
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
             var tabViewmodelTypes = assemblyTypes.Where(x =>

@@ -72,7 +72,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 
         public int Command { get; set; }
 
+        public DateTime InstantiateTime { get; set; } = DateTime.Now;
+
+        public CommunicationSource Source { get; set; } = CommunicationSource.Pc;
+
         public GebugPacket? FirstPacket { get; set; }
+
+        private string DebugCommand => Gebug64.Unfloader.Protocol.Gebug.Message.MessageType.CommandResolver.ResolveCommand(Category, Command);
+
+        private string DebugFlags => ((GebugMessageFlags)Flags).ToString();
 
         protected GebugMessage(GebugMessageCategory category)
         {
@@ -104,6 +112,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 SetProperties(message, type, packet, packet.Body);
             }
 
+            message.Source = packetFromDirection == ParameterUseDirection.PcToConsole
+                ? CommunicationSource.Pc
+                : CommunicationSource.N64;
+
             return message;
         }
 
@@ -129,6 +141,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug
             {
                 SetProperties(message, type, packets.First(), packets.SelectMany(x => x.Body).ToArray());
             }
+
+            message.Source = packetFromDirection == ParameterUseDirection.PcToConsole
+                ? CommunicationSource.Pc
+                : CommunicationSource.N64;
 
             return message;
         }
