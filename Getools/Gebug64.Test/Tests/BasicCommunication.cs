@@ -17,6 +17,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 using Gebug64.Unfloader.SerialPort;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
 using Xunit;
 
@@ -24,11 +25,15 @@ namespace Gebug64.Test.Tests
 {
     public class BasicCommunication
     {
+        private ILogger _logger;
+
         protected MockConsoleHost ConsoleHost { get; set; }
 
         public BasicCommunication(MockConsoleHost consoleHost)
         {
             ConsoleHost = consoleHost;
+
+            _logger = new Getools.Utility.Logging.Logger();
         }
 
         /// <summary>
@@ -39,7 +44,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_MockConsoleHost_Echo_Direct_ToFlashcart()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
@@ -63,7 +68,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_MockConsoleHost_Printf_ToFlashcart()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
@@ -95,7 +100,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_CommandTest_Direct_ToFlashcart()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
@@ -122,7 +127,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_MockConsoleHost_Printf()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -155,7 +160,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_Gebug_Ping()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -196,7 +201,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_Gebug_Version()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -389,7 +394,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_Gebug_GetFramebuffer()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -444,7 +449,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_TestInMenu()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -467,7 +472,7 @@ namespace Gebug64.Test.Tests
         [Fact]
         public void EverdriveTest_TestInRom()
         {
-            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider);
+            var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -509,7 +514,7 @@ namespace Gebug64.Test.Tests
         {
             public void ConfigureServices(IServiceCollection services)
             {
-                var typeGetter = new SerialPortFactoryTypeGetter() { Type = typeof(VirtualSerialPort) };
+                var typeGetter = new SerialPortFactoryTypeGetter(typeof(VirtualSerialPort));
                 services.AddSingleton<SerialPortFactoryTypeGetter>(typeGetter);
 
                 services.AddTransient<SerialPortFactory>();

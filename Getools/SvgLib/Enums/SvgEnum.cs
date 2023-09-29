@@ -15,7 +15,7 @@ namespace SvgLib
 
         public static implicit operator string(SvgEnum value) => value.ToString();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null) return false;
             if (GetType() != obj.GetType()) return false;

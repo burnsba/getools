@@ -5,13 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace Gebug64.ConsoleApp
+namespace Getools.Utility.Logging
 {
     public class Logger : ILogger
     {
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        public IDisposable BeginScope<TState>(TState state) 
         {
-            return null;
+            return null!;
         }
 
         public bool IsEnabled(LogLevel logLevel) =>

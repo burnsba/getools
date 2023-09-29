@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Getools.Utility\Getools.Utility.csproj" />
     <ProjectReference Include="..\GzipSharpLib\GzipSharpLib.csproj" />
   </ItemGroup>
 

@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
     <ProjectReference Include="..\Getools.Palantir\Getools.Palantir.csproj" />
+    <ProjectReference Include="..\Getools.Utility\Getools.Utility.csproj" />
     <ProjectReference Include="..\GzipSharpLib\GzipSharpLib.csproj" />
   </ItemGroup>
 

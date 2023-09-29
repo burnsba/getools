@@ -12,7 +12,6 @@ using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.SerialPort;
 using Getools.Lib;
-using GzipSharpLib.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart

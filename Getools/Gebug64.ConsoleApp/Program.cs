@@ -1,8 +1,13 @@
-﻿using Gebug64.Unfloader;
-using Gebug64.Unfloader.Message;
-using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
-using System.IO.Ports;
+﻿using System.IO.Ports;
 using System.Text;
+using Gebug64.Unfloader;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Unfloader.SerialPort;
+using Getools.Utility.Logging;
 
 namespace Gebug64.ConsoleApp
 {
@@ -13,6 +18,10 @@ namespace Gebug64.ConsoleApp
         static void Main(string[] args)
         {
             var logger = new Logger();
+
+            var typeGetter = new SerialPortFactoryTypeGetter(typeof(VirtualSerialPort));
+            var serialPortFactory = new SerialPortFactory(typeGetter);
+            var serialPortProvider = new SerialPortProvider(serialPortFactory);
 
             string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
             string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath);
@@ -39,11 +48,10 @@ namespace Gebug64.ConsoleApp
             }
 
             var usePort = "COM5";
-            var device = new Unfloader.Flashcart.Everdrive(logger);
-            var dm = new DeviceManager(device);
+            var device = new Everdrive(serialPortProvider, logger);
+            var dm = new ConnectionServiceProvider(device);
 
-            dm.Init(usePort);
-            dm.Start();
+            dm.Start(usePort);
             //var testResult = dm.TestEverdriveConnected();
 
             //Console.WriteLine($"testResult: {testResult}");
@@ -79,11 +87,11 @@ namespace Gebug64.ConsoleApp
                     Console.WriteLine("enqueue message ...");
                     if (toggle)
                     {
-                        dm.EnqueueMessage(new RomMetaMessage(GebugCmdMeta.Ping) { Source = CommunicationSource.Pc });
+                        dm.SendMessage(new GebugMetaPingMessage());
                     }
                     else
                     {
-                        dm.EnqueueMessage(new RomMiscMessage(GebugCmdMisc.OsTime) { Source = CommunicationSource.Pc });
+                        dm.SendMessage(new GebugMiscOsTimeMessage());
                     }
 
                     toggle = !toggle;
@@ -102,14 +110,7 @@ namespace Gebug64.ConsoleApp
 
         private static void MessageBusLogCallback(IGebugMessage msg)
         {
-            if (msg is RomMessage)
-            {
-                Console.WriteLine(((RomMessage)msg).ToString());
-            }
-            else
-            {
-                Console.WriteLine(msg.GetUsbPacket().ToString());
-            }
+            Console.WriteLine(msg.ToString());
         }
     }
 }

@@ -224,7 +224,7 @@ namespace Getools.Lib.Kaitai
 
         private static void ResolvePointTableData(BgFile result, Gen.Bg kaitaiObject)
         {
-            var logger = new GzipSharpLib.Logging.Logger();
+            var logger = new Getools.Utility.Logging.Logger();
 
             var startLengthData = new List<(int, int)>();
 

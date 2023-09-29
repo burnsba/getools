@@ -72,7 +72,7 @@ namespace Getools.Verbs
 
         private void DoInflate(UnzipOptions opts)
         {
-            var logger = new GzipSharpLib.Logging.Logger();
+            var logger = new Getools.Utility.Logging.Logger();
 
             var gzipContext = new Context(logger);
 

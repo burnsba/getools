@@ -97,7 +97,7 @@ namespace Gebug64.Win
 
             services.AddSingleton<ILogger>(_theLogger);
 
-            var typeGetter = new SerialPortFactoryTypeGetter() { Type = typeof(WrappedSerialPort) };
+            var typeGetter = new SerialPortFactoryTypeGetter(typeof(WrappedSerialPort));
             services.AddSingleton<SerialPortFactoryTypeGetter>(typeGetter);
 
             services.AddSingleton<SerialPortProvider>();

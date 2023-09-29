@@ -1,17 +1,25 @@
 # getools suite
-Goldeneye 007 command line tool suite for N64 hacking. Built in C#, dotnet core 6.
+Goldeneye 007 line tool suite for N64 hacking. Built in C#, dotnet core 6.
 
 Current work in progress.
 
+# Gebug64
+
+Set of windows tools to interface with the gebug romhack. This consists of a test project, a core communication library (based on UNFLoader), and the WPF app project.
+
+- [Test project](Gebug64.Test/).  
+- [Library project readme](Gebug64.Unfloader/Readme.md).  
+- [WPF app project readme](Gebug64.Win/Readme.md).  
+
 # Getools
 
-Command line application. Wrapper for main library.
+Command line application to manipulate game data files. Wrapper for main getools library.
 
 [Project readme](Getools/README.md).
 
 # Getools.Lib
 
-The core code is contained in this library project.
+The core game library code is contained in this library project. C# models for setup files, enums, etc.
 
 [Project readme](Getools.Lib/README.md).
 

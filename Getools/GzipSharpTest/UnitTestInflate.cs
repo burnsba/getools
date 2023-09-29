@@ -11,7 +11,7 @@ namespace GzipSharpTest
         [Fact]
         public void InflateTest1()
         {
-            var logger = new GzipSharpLib.Logging.Logger();
+            var logger = new Getools.Utility.Logging.Logger();
 
             var gzipContext = new Context(logger);
 
