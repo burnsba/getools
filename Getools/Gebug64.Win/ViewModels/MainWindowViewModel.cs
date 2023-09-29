@@ -548,7 +548,7 @@ namespace Gebug64.Win.ViewModels
             SetConnectCommandText();
 
             _logger.Log(LogLevel.Information, $"Disconnected");
-            
+
             _sendRomCancellation = null;
         }
 

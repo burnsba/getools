@@ -7,7 +7,10 @@ using Gebug64.Unfloader.Protocol.Flashcart;
 
 namespace Gebug64.Unfloader.Manage
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// This class is to allow dropping references to the existing service provider (set to null),
+    /// then later retrieve a new reference to the same instance.
+    /// </summary>
     public class ConnectionServiceProviderResolver : IConnectionServiceProviderResolver
     {
         private IConnectionServiceProvider? _device = null;
@@ -16,7 +19,8 @@ namespace Gebug64.Unfloader.Manage
         /// Initializes a new instance of the <see cref="ConnectionServiceProviderResolver"/> class.
         /// </summary>
         public ConnectionServiceProviderResolver()
-        { }
+        {
+        }
 
         /// <inheritdoc />
         public void CreateOnceDeviceManager(IFlashcart flashcart)

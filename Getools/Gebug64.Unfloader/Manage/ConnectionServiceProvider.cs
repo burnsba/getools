@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart;
@@ -17,36 +18,90 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Manage
 {
+    /// <summary>
+    /// This is the core communication provider for Gebug64.
+    /// This runs a background thread to send and receive messages
+    /// from the gebug romhack. High level gebug messages are supported, as well
+    /// as lower level UNFLoader packets (osSyncPrintf text).
+    /// Receiving messages is handled asynchronously. In order to receive a reply
+    /// to a specific message an appropriate callback and filter should be passed
+    /// to the correct Subscribe method.
+    /// </summary>
     public class ConnectionServiceProvider : IConnectionServiceProvider
     {
+        /// <summary>
+        /// The flashcart managed by this service provider.
+        /// </summary>
         private readonly IFlashcart _flashcart;
+
+        /// <summary>
+        /// Thread shutdown flag.
+        /// </summary>
         private bool _stop = false;
+
+        /// <summary>
+        /// Main background worker thread.
+        /// </summary>
         private Thread? _thread = null;
 
-        private List<IFlashcartPacket> _receiveFlashcardPackets = new();
+        /// <summary>
+        /// Incoming data was evaluated and contained UNFLoader packet, but nothing higher.
+        /// </summary>
         private List<IUnfloaderPacket> _receiveUnfPackets = new();
+
+        /// <summary>
+        /// Incoming data was evaluated, and it's a Gebug packet that is a part of a multi-packet message.
+        /// </summary>
         private List<GebugPacket> _receiveMessageFragments = new();
+
+        /// <summary>
+        /// Incoming data was evaluated, and --
+        /// 1) It was a single packet message.
+        /// 2) It was the last remaining packet in a multi-packet message, which
+        /// has now been compiled into a single message.
+        /// </summary>
         private List<IGebugMessage> _receiveMessages = new();
 
+        /// <summary>
+        /// This is the outgoing queue.
+        /// <see cref="IUnfloaderPacket"/> are simply placed in the queue.
+        /// <see cref="IGebugMessage"/> are first converted to <see cref="IUnfloaderPacket"/> then placed
+        /// in the queue.
+        /// </summary>
         private ConcurrentQueue<IUnfloaderPacket> _sendQueue = new ConcurrentQueue<IUnfloaderPacket>();
 
+        /// <summary>
+        /// Message bus for incoming <see cref="IGebugMessage"/>.
+        /// </summary>
         private MessageBus<IGebugMessage> _messageBusGebug = new();
+
+        /// <summary>
+        /// Message bus for incoming <see cref="IUnfloaderPacket"/>.
+        /// </summary>
         private MessageBus<IUnfloaderPacket> _messageBusUnfloader = new();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionServiceProvider"/> class.
+        /// </summary>
+        /// <param name="flashcart">Flashcart to manage.</param>
+        public ConnectionServiceProvider(IFlashcart flashcart)
+        {
+            _flashcart = flashcart;
+        }
+
+        /// <inheritdoc />
         public bool ManagerActive { get; set; } = true;
 
+        /// <inheritdoc />
         public bool IsShutdown => object.ReferenceEquals(null, _thread) || !_thread.IsAlive;
 
+        /// <inheritdoc />
         public TimeSpan SinceDataReceived => _flashcart?.SinceDataReceived ?? TimeSpan.MaxValue;
 
         /// <inheritdoc />
         public TimeSpan SinceRomMessageReceived => _flashcart?.SinceRomMessageReceived ?? TimeSpan.MaxValue;
 
-        public ConnectionServiceProvider(IFlashcart device)
-        {
-            _flashcart = device;
-        }
-
+        /// <inheritdoc />
         public void Start(string port)
         {
             if (_flashcart.IsConnected)
@@ -54,19 +109,32 @@ namespace Gebug64.Unfloader.Manage
                 Stop();
             }
 
+            // Allow background thread to work.
             _stop = false;
+
             _flashcart.Connect(port);
+
+            // There's no pause/resume, so make sure existing queues
+            // are clear on connect.
+            _receiveUnfPackets.Clear();
+            _receiveMessageFragments.Clear();
+            _receiveMessages.Clear();
+            _sendQueue.Clear();
 
             _thread = new Thread(ThreadMain);
             _thread.IsBackground = true;
             _thread.Start();
         }
 
+        /// <inheritdoc />
         public void Stop()
         {
+            // Notify background thread to shutdown.
             _stop = true;
+
             _flashcart.Disconnect();
 
+            // Wait for background thread to quit, or throw fatal exception.
             if (!Object.ReferenceEquals(null, _thread))
             {
                 var timeout = Stopwatch.StartNew();
@@ -83,17 +151,19 @@ namespace Gebug64.Unfloader.Manage
                 _thread = null;
             }
 
-            _receiveFlashcardPackets.Clear();
             _receiveUnfPackets.Clear();
             _receiveMessageFragments.Clear();
             _receiveMessages.Clear();
             _sendQueue.Clear();
         }
 
-        public bool TestInMenu() { return _flashcart.TestInMenu(); }
+        /// <inheritdoc />
+        public bool TestInMenu() => _flashcart.TestInMenu();
 
+        /// <inheritdoc />
         public bool TestInRom()
         {
+            // Instantiate a message to identify the message id.
             GebugMessage sendMesssage = new GebugMetaPingMessage();
             ushort sendMessageId = sendMesssage.MessageId;
             bool receivedPingResponse = false;
@@ -107,17 +177,22 @@ namespace Gebug64.Unfloader.Manage
             {
                 var firstPacket = message.FirstPacket!;
 
+                //// Looking for a Ping message,
                 return message.Category == GebugMessageCategory.Meta
                     && message.Command == (int)GebugCmdMeta.Ping
+                    //// that's a reply,
                     && (firstPacket.Flags & (ushort)GebugMessageFlags.IsAck) > 0
+                    //// to the message we sent.
                     && message.AckId == sendMessageId
                     ;
             };
 
+            // Subscribe for 1 message that matches the filter.
             _messageBusGebug.Subscribe(callback, 1, filter);
 
             SendMessage(sendMesssage);
 
+            // Wait up to 1 second for response.
             int timeoutMs = 1000;
             var sw = Stopwatch.StartNew();
 
@@ -133,8 +208,10 @@ namespace Gebug64.Unfloader.Manage
             return receivedPingResponse;
         }
 
+        /// <inheritdoc />
         public void SendMessage(IGebugMessage msg)
         {
+            // Split message into lower level UNFLoader packets.
             var multiPackets = msg.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
             foreach (var p in multiPackets)
             {
@@ -143,12 +220,14 @@ namespace Gebug64.Unfloader.Manage
             }
         }
 
+        /// <inheritdoc />
         public void SendMessage(IUnfloaderPacket packet)
         {
             _sendQueue.Enqueue(packet);
         }
 
-        public void SendRom(string path, Nullable<CancellationToken> token = null)
+        /// <inheritdoc />
+        public void SendRom(string path, CancellationToken? token = null)
         {
             if (!System.IO.File.Exists(path))
             {
@@ -160,6 +239,7 @@ namespace Gebug64.Unfloader.Manage
             // Read the ROM header to check if its byteswapped
             if (!(filedata[0] == 0x80 && filedata[1] == 0x37 && filedata[2] == 0x12 && filedata[3] == 0x40))
             {
+                // Swap all bytes in ROM.
                 for (var j = 0; j < filedata.Length; j += 2)
                 {
                     filedata[j] ^= filedata[j + 1];
@@ -171,30 +251,45 @@ namespace Gebug64.Unfloader.Manage
             _flashcart!.SendRom(filedata, token);
         }
 
+        /// <inheritdoc />
         public Guid Subscribe(Action<IGebugMessage> callback, int listenCount = 0, Func<IGebugMessage, bool>? filter = null)
         {
             return _messageBusGebug.Subscribe(callback, listenCount, filter);
         }
 
+        /// <inheritdoc />
         public Guid Subscribe(Action<IUnfloaderPacket> callback, int listenCount = 0, Func<IUnfloaderPacket, bool>? filter = null)
         {
             return _messageBusUnfloader.Subscribe(callback, listenCount, filter);
         }
 
+        /// <inheritdoc />
         public void GebugUnsubscribe(Guid id)
         {
             _messageBusGebug.Unsubscribe(id);
         }
 
+        /// <inheritdoc />
         public void UnfloaderUnsubscribe(Guid id)
         {
             _messageBusUnfloader.Unsubscribe(id);
         }
 
+        /// <summary>
+        /// Main worker thread.
+        /// The work is divided into three phases.
+        ///
+        /// Phase 1) Send all queued messages.
+        /// Phase 2) Check the flashcart for any incoming messages.
+        /// Phase 3) Publish notifications about incoming messages.
+        /// </summary>
         private void ThreadMain()
         {
             while (true)
             {
+                // Simple flag to track whether "anything" happened this loop.
+                // If there's nothing going on, then the background worker
+                // can sleep for a bit.
                 bool anyWork = false;
 
                 if (_stop)
@@ -202,6 +297,7 @@ namespace Gebug64.Unfloader.Manage
                     break;
                 }
 
+                // Phase 1) Send all queued messages.
                 while (ManagerActive && !_sendQueue.IsEmpty)
                 {
                     IUnfloaderPacket? sendPacket;
@@ -221,6 +317,8 @@ namespace Gebug64.Unfloader.Manage
                         break;
                     }
 
+                    // Convert UNFloader packet to raw bytes, flashcart instance will convert (wrap)
+                    // to flashcart specific packet.
                     _flashcart.Send(sendPacket!.GetOuterPacket());
                 }
 
@@ -229,6 +327,9 @@ namespace Gebug64.Unfloader.Manage
                     break;
                 }
 
+                // Phase 2) Check the flashcart for any incoming messages.
+                // Since the flashcart is the lowest level protocol, the packets
+                // will need to be parsed up the protocl "hierarchy" and evaulated.
                 while (ManagerActive && !_flashcart.ReadPackets.IsEmpty)
                 {
                     IFlashcartPacket? receivePacket = null;
@@ -237,6 +338,8 @@ namespace Gebug64.Unfloader.Manage
 
                     while (!_flashcart.ReadPackets.TryDequeue(out receivePacket))
                     {
+                        // Occassionally it has been possible to start this `while`
+                        // loop after the queue became empty, so check for that.
                         if (_stop || _flashcart.ReadPackets.IsEmpty)
                         {
                             break;
@@ -248,23 +351,34 @@ namespace Gebug64.Unfloader.Manage
                         break;
                     }
 
+                    // So actually the flashcart parsed the packet already to check if
+                    // it's a `IUnfloaderPacket`, because the Everdrive protocol doesn't include
+                    // data length of incoming data. The result is saved in the `InnerType`/`InnerData`
+                    // properties, so we can just check those.
                     if (typeof(IUnfloaderPacket).IsAssignableFrom(receivePacket.InnerType))
                     {
                         IUnfloaderPacket unfPacket = (IUnfloaderPacket)receivePacket.InnerData!;
 
                         // if this is gebug ROM message, don't care about UNFLoader wrapper any more
-                        var unfInnerData = unfPacket.GetInnerPacket();
+                        var unfInnerData = unfPacket.GetInnerPacket();
                         var gebugParse = GebugPacket.TryParse(unfInnerData.ToList());
 
                         if (gebugParse.ParseStatus == PacketParseStatus.Success)
                         {
                             var packet = gebugParse.Packet;
+
+                            // If the packet is part of a multi-packet message, save this in the
+                            // fragments bucket.
                             if (packet!.TotalNumberPackets > 1)
                             {
                                 _receiveMessageFragments.Add(packet);
 
+                                // We just added a new packet. Count the current number of fragments to determine
+                                // if this could potentially be the last packet in a multi-packet message.
                                 if (_receiveMessageFragments.Count >= packet.TotalNumberPackets)
                                 {
+                                    // The `count` test passed, so now filter out all the fragments
+                                    // that belong to this message.
                                     var fragments = _receiveMessageFragments.Where(x =>
                                         x.Category == packet.Category
                                         && x.Command == packet.Command
@@ -272,11 +386,14 @@ namespace Gebug64.Unfloader.Manage
                                     .OrderBy(x => x.PacketNumber)
                                     .ToList();
 
+                                    // One last sanity check, make sure the number of packets completes a message.
                                     if (fragments.Count == packet.TotalNumberPackets)
                                     {
+                                        // All packets received, convert to single message.
                                         var gebugMessage = GebugMessage.FromPackets(fragments, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                         _receiveMessages.Add(gebugMessage);
 
+                                        // And remove all the associated fragments.
                                         foreach (var f in fragments)
                                         {
                                             _receiveMessageFragments.Remove(f);
@@ -286,18 +403,24 @@ namespace Gebug64.Unfloader.Manage
                             }
                             else
                             {
+                                // Else, this is a single packet message, so convert to complete message accordingly.
                                 var gebugMessage = GebugMessage.FromPacket(packet, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
                                 _receiveMessages.Add(gebugMessage);
                             }
                         }
                         else
                         {
+                            // Not a gebug message.
                             _receiveUnfPackets.Add(unfPacket);
                         }
                     }
                     else
                     {
-                        _receiveFlashcardPackets.Add(receivePacket);
+                        // We got a flashcart packet, but it's not a UNFLoader packet or higher.
+                        // If it was an everdrive test command response, that should have been
+                        // handled already. And there's no message bus to publish just flashcart
+                        // packets.
+                        // Nothing really to do at this point, so just drop the packet.
                     }
                 }
 
@@ -305,6 +428,10 @@ namespace Gebug64.Unfloader.Manage
                 {
                     break;
                 }
+
+                /***
+                 * Phase 3) Publish notifications about incoming messages.
+                 */
 
                 int removeCounter;
 

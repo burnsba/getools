@@ -17,7 +17,7 @@ namespace Gebug64.Unfloader
         private Dictionary<Guid, BusSubscription> _subscribers = new Dictionary<Guid, BusSubscription>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MessageBus"/> class.
+        /// Initializes a new instance of the <see cref="MessageBus{T}"/> class.
         /// </summary>
         public MessageBus()
         {
@@ -37,13 +37,12 @@ namespace Gebug64.Unfloader
                 throw new NullReferenceException(nameof(callback));
             }
 
-            var subscription = new BusSubscription()
+            var subscription = new BusSubscription(callback)
             {
                 Id = Guid.NewGuid(),
                 Index = _existCount,
                 ListenCount = listenCount,
                 Filter = filter,
-                Callback = callback,
             };
 
             _existCount++;
@@ -103,6 +102,11 @@ namespace Gebug64.Unfloader
 
         private class BusSubscription
         {
+            public BusSubscription(Action<T> callback)
+            {
+                Callback = callback;
+            }
+
             public int Index { get; set; }
 
             public Guid Id { get; set; }
@@ -111,11 +115,9 @@ namespace Gebug64.Unfloader
 
             public Func<T, bool>? Filter { get; set; }
 
-            public Action<T> Callback { get; set; }
+            public Action<T> Callback { get; init; }
 
             public int CallbackCount { get; set; }
-
-            public BusSubscription() { }
         }
     }
 }

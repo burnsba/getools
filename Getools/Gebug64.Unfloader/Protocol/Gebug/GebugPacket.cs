@@ -294,7 +294,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         {
             var messageIdBytes = Guid.NewGuid().ToByteArray();
             ushort messageId = (ushort)(messageIdBytes[0] << 8);
-            messageId |= (ushort)(messageIdBytes[1]);
+            messageId |= (ushort)messageIdBytes[1];
 
             return messageId;
         }
