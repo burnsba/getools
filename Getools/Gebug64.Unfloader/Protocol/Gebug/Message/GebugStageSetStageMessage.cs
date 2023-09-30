@@ -8,16 +8,25 @@ using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
+    /// <summary>
+    /// Command to load a stage.
+    /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Stage, Command = (byte)GebugCmdStage.SetStage)]
     public class GebugStageSetStageMessage : GebugMessage, IActivatorGebugMessage
     {
-        [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
-        public byte LevelId { get; set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GebugStageSetStageMessage"/> class.
+        /// </summary>
         public GebugStageSetStageMessage()
           : base(GebugMessageCategory.Stage)
         {
             Command = (int)GebugCmdStage.SetStage;
         }
+
+        /// <summary>
+        /// Stage to load. See <see cref="Getools.Lib.Game.EnumModel.LevelIdX"/>.
+        /// </summary>
+        [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
+        public byte LevelId { get; set; }
     }
 }

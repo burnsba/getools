@@ -10,6 +10,9 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
     /// This interface is used to tag message classes that can be automatically
     /// instantiated by the activator.
     /// </summary>
+    /// <remarks>
+    /// Message also required <see cref="ProtocolCommandAttribute"/>.
+    /// </remarks>
     internal interface IActivatorGebugMessage
     {
     }

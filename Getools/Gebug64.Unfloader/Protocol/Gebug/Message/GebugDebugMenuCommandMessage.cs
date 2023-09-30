@@ -8,16 +8,25 @@ using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
+    /// <summary>
+    /// Execute debug menu command, according to gebug romhack switch statement value.
+    /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Debug, Command = (byte)GebugCmdDebug.DebugMenuProcessor)]
     public class GebugDebugMenuCommandMessage : GebugMessage, IActivatorGebugMessage
     {
-        [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
-        public byte MenuCommand { get; set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GebugDebugMenuCommandMessage"/> class.
+        /// </summary>
         public GebugDebugMenuCommandMessage()
           : base(GebugMessageCategory.Debug)
         {
             Command = (int)GebugCmdDebug.DebugMenuProcessor;
         }
+
+        /// <summary>
+        /// Menu command to execute.
+        /// </summary>
+        [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
+        public byte MenuCommand { get; set; }
     }
 }

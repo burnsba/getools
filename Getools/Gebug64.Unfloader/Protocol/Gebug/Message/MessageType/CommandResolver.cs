@@ -6,8 +6,18 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
 {
+    /// <summary>
+    /// Helper class to convert command information.
+    /// </summary>
     public class CommandResolver
     {
+        /// <summary>
+        /// Converts category+command into friendly command string.
+        /// </summary>
+        /// <param name="category">Category.</param>
+        /// <param name="command">Command in category.</param>
+        /// <returns>Name of command.</returns>
+        /// <exception cref="NotImplementedException">Throw if command is not found in category.</exception>
         public static string ResolveCommand(GebugMessageCategory category, int command)
         {
             switch (category)

@@ -6,12 +6,34 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
 {
+    /// <summary>
+    /// Meta data to be included with parameter in message body.
+    /// </summary>
     public class ParameterInfo
     {
+        /// <summary>
+        /// Magic byte escape value for variable length parameters,
+        /// where the length can be desribed in one byte.
+        /// </summary>
         public const byte Protocol_VariableParameterLength_U8Prefix = 0xff;
+
+        /// <summary>
+        /// Magic byte escape value for variable length parameters,
+        /// where the length can be desribed in two bytes.
+        /// </summary>
         public const byte Protocol_VariableParameterLength_U16Prefix = 0xfe;
+
+        /// <summary>
+        /// Magic byte escape value for variable length parameters,
+        /// where the length can be desribed in four bytes.
+        /// </summary>
         public const byte Protocol_VariableParameterLength_U32Prefix = 0xfd;
 
+        /// <summary>
+        /// For a given parameter, gets the length prefix according to the spec.
+        /// </summary>
+        /// <param name="value">Variable length parameter (property).</param>
+        /// <returns>Byte array containing length prefix (length is in big endien format).</returns>
         public static byte[] GetParameterPrefix(object value)
         {
             var length = (UInt32)GetCollectionLength(value);
@@ -21,7 +43,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
                 return new byte[]
                 {
                     Protocol_VariableParameterLength_U8Prefix,
-                    (byte)length
+                    (byte)length,
                 };
             }
             else if (length <= ushort.MaxValue)
@@ -46,6 +68,12 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
             }
         }
 
+        /// <summary>
+        /// Converts parameter to explicit type and gets the collection length.
+        /// </summary>
+        /// <param name="value">Parameter value (property instance).</param>
+        /// <returns>Length of collection.</returns>
+        /// <exception cref="NotSupportedException">Throws if can't resolve to known type.</exception>
         private static int GetCollectionLength(object value)
         {
             var type = value.GetType();
