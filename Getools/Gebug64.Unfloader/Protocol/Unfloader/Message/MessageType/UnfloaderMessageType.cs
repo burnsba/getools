@@ -9,15 +9,39 @@ namespace Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType
     /// <summary>
     /// UNFLoader USB packet type, as implemented on N64 ROM.
     /// </summary>
+    /// <remarks>
+    /// Values provided by UNFLoader usb.h .
+    /// </remarks>
     public enum UnfloaderMessageType
     {
+        /// <summary>
+        /// Text.
+        /// </summary>
         Text = 1,
-        Binary = 2,
-        Header = 3,
-        Screenshot = 4,
-        HeartBeat = 5,
-        RmonBinary = 0x69,
 
-        Unknown = 999,
+        /// <summary>
+        /// Binary packet. All gebug romhack packets use this format.
+        /// </summary>
+        Binary = 2,
+
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        Header = 3,
+
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        Screenshot = 4,
+
+        /// <summary>
+        /// UNFLoader version information.
+        /// </summary>
+        HeartBeat = 5,
+
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        RmonBinary = 0x69,
     }
 }

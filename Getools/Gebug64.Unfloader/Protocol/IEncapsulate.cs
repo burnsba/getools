@@ -23,5 +23,17 @@ namespace Gebug64.Unfloader.Protocol
         /// Inner message, if set.
         /// </summary>
         object? InnerData { get; }
+
+        /// <summary>
+        /// Gets the inner content of the packet, without any header/tail protocol data.
+        /// </summary>
+        /// <returns>Data.</returns>
+        byte[] GetInnerPacket();
+
+        /// <summary>
+        /// Gets the entire packet, including header/tail protocol data.
+        /// </summary>
+        /// <returns>Data.</returns>
+        byte[] GetOuterPacket();
     }
 }

@@ -12,74 +12,56 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader
 {
+    /// <summary>
+    /// Abstract UNFLoader packet.
+    /// </summary>
     public abstract class UnfloaderPacket : IUnfloaderPacket
     {
+        /// <summary>
+        /// Size in bytes of UNFLoader packet header.
+        /// </summary>
         public const int ProtocolHeaderSize = 4;
 
+        /// <summary>
+        /// Inner packet (body) data without header/tail protocol data.
+        /// </summary>
         protected byte[] _data;
 
-        public UnfloaderMessageType MessageType { get; set; }
-        public int Size { get; set; }
-        public Type InnerType { get; set; }
-        public object InnerData { get; set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UnfloaderPacket"/> class.
+        /// </summary>
+        /// <param name="dataType">Type of UNFLoader packet.</param>
+        /// <param name="data">Inner packet (body) data without header/tail protocol data.</param>
         public UnfloaderPacket(UnfloaderMessageType dataType, byte[] data)
         {
+            if (object.ReferenceEquals(null, data))
+            {
+                throw new NullReferenceException();
+            }
+
             MessageType = dataType;
             Size = data?.Length ?? 0;
-            _data = data;
+            _data = data!;
         }
 
-        public void SetContent(byte[] body)
-        {
-            _data = body;
-        }
+        /// <inheritdoc />
+        public UnfloaderMessageType MessageType { get; set; }
 
-        public byte[] GetInnerPacket()
-        {
-            if (object.ReferenceEquals(null, _data))
-            {
-                throw new NullReferenceException($"Body content not set");
-            }
+        /// <inheritdoc />
+        public int Size { get; set; }
 
-            return _data;
-        }
+        /// <inheritdoc />
+        public Type? InnerType { get; set; }
 
-        public byte[] GetOuterPacket()
-        {
-            var toSend = new List<byte>();
+        /// <inheritdoc />
+        public object? InnerData { get; set; }
 
-            var length = _data?.Length ?? 0;
-
-            // UNFloader/everdrive requires "2 byte aligned" data.
-            // Add an extra zero byte if sending an odd number of bytes.
-            bool pad = false;
-
-            if ((length & 1) == 1)
-            {
-                pad = true;
-                length++;
-            }
-
-            toSend.Add((byte)MessageType);
-
-            toSend.Add((byte)(length >> 16));
-            toSend.Add((byte)(length >> 8));
-            toSend.Add((byte)(length >> 0));
-
-            if (!ReferenceEquals(null, _data))
-            {
-                toSend.AddRange(_data);
-            }
-
-            if (pad)
-            {
-                toSend.Add(0);
-            }
-
-            return toSend.ToArray();
-        }
-
+        /// <summary>
+        /// Reads bytes from incoming source and attempts to read as many as rquired to
+        /// parse a single UNFLoader packet.
+        /// </summary>
+        /// <param name="data">Data to parse.</param>
+        /// <returns>Parse result.</returns>
         public static UnfloaderPacketParseResult TryParse(List<byte> data)
         {
             var result = new UnfloaderPacketParseResult()
@@ -126,6 +108,59 @@ namespace Gebug64.Unfloader.Protocol.Unfloader
 
             result.ParseStatus = PacketParseStatus.Success;
             return result;
+        }
+
+        /// <inheritdoc />
+        public void SetContent(byte[] body)
+        {
+            _data = body;
+        }
+
+        /// <inheritdoc />
+        public byte[] GetInnerPacket()
+        {
+            if (object.ReferenceEquals(null, _data))
+            {
+                throw new NullReferenceException($"Body content not set");
+            }
+
+            return _data;
+        }
+
+        /// <inheritdoc />
+        public byte[] GetOuterPacket()
+        {
+            var toSend = new List<byte>();
+
+            var length = _data?.Length ?? 0;
+
+            // UNFloader/everdrive requires "2 byte aligned" data.
+            // Add an extra zero byte if sending an odd number of bytes.
+            bool pad = false;
+
+            if ((length & 1) == 1)
+            {
+                pad = true;
+                length++;
+            }
+
+            toSend.Add((byte)MessageType);
+
+            toSend.Add((byte)(length >> 16));
+            toSend.Add((byte)(length >> 8));
+            toSend.Add((byte)(length >> 0));
+
+            if (!ReferenceEquals(null, _data))
+            {
+                toSend.AddRange(_data);
+            }
+
+            if (pad)
+            {
+                toSend.Add(0);
+            }
+
+            return toSend.ToArray();
         }
     }
 }

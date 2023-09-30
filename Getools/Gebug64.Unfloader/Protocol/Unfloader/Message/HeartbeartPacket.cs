@@ -10,8 +10,24 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
 
 namespace Gebug64.Unfloader.Protocol.Unfloader.Message
 {
+    /// <summary>
+    /// UNFLoader heartbeat/version/ping packet.
+    /// </summary>
     public class HeartbeartPacket : UnfloaderPacket
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HeartbeartPacket"/> class.
+        /// </summary>
+        /// <param name="data">Inner packet (body) data without header/tail protocol data.</param>
+        public HeartbeartPacket(byte[] data)
+            : base(UnfloaderMessageType.HeartBeat, data)
+        {
+        }
+
+        /// <summary>
+        /// UNFLoader USB library protocol version.
+        /// 2 bytes.
+        /// </summary>
         public int UsbProtocolVersion
         {
             get
@@ -28,6 +44,10 @@ namespace Gebug64.Unfloader.Protocol.Unfloader.Message
             }
         }
 
+        /// <summary>
+        /// UNFLoader heartbeat packet version.
+        /// 2 bytes.
+        /// </summary>
         public int HeartbeatVersion
         {
             get
@@ -44,10 +64,7 @@ namespace Gebug64.Unfloader.Protocol.Unfloader.Message
             }
         }
 
-        public HeartbeartPacket(byte[] data)
-            : base(UnfloaderMessageType.HeartBeat, data)
-        { }
-
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"size={Size}, type={MessageType}, protocol={UsbProtocolVersion}, heartbeat={HeartbeatVersion}";

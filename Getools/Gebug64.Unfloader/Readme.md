@@ -23,16 +23,21 @@ Gebug64.Unfloader
 ├── Manage:
 │   └── ConnectionServiceProvider.cs: High level message manager; core
 │                                     communication library that ties everything together.
+│
 ├── Protocol: Implementations for all layers of protocol communication.
 │   ├── Flashcart: Flashcart packet and protocol implementation.
 │   │   └── Message: Flashcart specific messages.
+│   │
 │   ├── Gebug: Gebug packet and protocol implementation
 │   │   ├── Message: Gebug specific messages.
 │   │   │   └── MessageType: Category and Command definitions.
 │   │   └── Parameter: Parameter meta definitions.
+│   │
 │   ├── Parse: Parse context classes.
+│   │
 │   └── Unfloader: Unfloader packet and protocol implementation
 │       └── Message: Unfloader specific messages.
 │           └── MessageType: Unfloader message type.
+│
 └── SerialPort: Serial port wrapper and virtual serial port.
 ```

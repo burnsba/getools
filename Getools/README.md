@@ -1,5 +1,5 @@
 # getools suite
-Goldeneye 007 line tool suite for N64 hacking. Built in C#, dotnet core 6.
+Goldeneye 007 tool suite for N64 hacking. Built in C#, dotnet core 6.
 
 Current work in progress.
 
