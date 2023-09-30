@@ -267,20 +267,31 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 sizeAdjust += 4;
             }
 
-            // expectedBodyLength: current read offset, moved back to the
+            // expectedReadLength: current read offset, moved back to the
             // size parameter, incremented by `size`.
-            var expectedBodyLength = offset - sizeAdjust + size;
+            var expectedReadLength = offset - sizeAdjust + size;
 
             // If the expected length is bigger than the amount of data available,
             // it's an error.
-            if (expectedBodyLength > dataArr.Length)
+            if (expectedReadLength > dataArr.Length)
             {
                 result.ParseStatus = Parse.PacketParseStatus.Error;
                 return result;
             }
 
-            var body = new byte[expectedBodyLength];
-            Array.Copy(dataArr, offset, body, 0, expectedBodyLength);
+            var bodySize = size - sizeAdjust;
+            if (bodySize < 0)
+            {
+                // This shouldn't happen ....
+                throw new InvalidOperationException();
+            }
+
+            var body = new byte[bodySize];
+
+            if (bodySize > 0)
+            {
+                Array.Copy(dataArr, offset, body, 0, bodySize);
+            }
 
             result.Packet = new GebugPacket(
                 category,
