@@ -7,14 +7,36 @@ using Gebug64.Unfloader.Protocol.Parse;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
+    /// <summary>
+    /// Parse result context.
+    /// </summary>
     public class FlashcartPacketParseResult
     {
-        public IFlashcartPacket? Packet { get; set; }
-        public PacketParseStatus ParseStatus { get; set; }
-        public PacketParseReason ErrorReason { get; set; }
-        public int TotalBytesRead { get; set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FlashcartPacketParseResult"/> class.
+        /// </summary>
         public FlashcartPacketParseResult()
-        { }
+        {
+        }
+
+        /// <summary>
+        /// Gets or sets the associated packet. Null if <see cref="ParseStatus"/> is not <see cref="PacketParseStatus.Success"/>.
+        /// </summary>
+        public IFlashcartPacket? Packet { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the packet was parsed successfully.
+        /// </summary>
+        public PacketParseStatus ParseStatus { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reason the packet failed to parse.
+        /// </summary>
+        public PacketParseReason ErrorReason { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of bytes consumed by the packet.
+        /// </summary>
+        public int TotalBytesRead { get; set; }
     }
 }

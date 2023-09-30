@@ -16,13 +16,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
+    /// <summary>
+    /// Describes Everdrive flashcart device.
+    /// </summary>
     public class Everdrive : Flashcart
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Everdrive"/> class.
+        /// </summary>
+        /// <param name="portProvider">Serial port provider.</param>
+        /// <param name="logger">Logger.</param>
         public Everdrive(SerialPortProvider portProvider, ILogger logger)
           : base(portProvider, logger)
         {
         }
 
+        /// <summary>
+        /// Sends binary data to Everdrive to load and boot/run, then sends the PIFBoot command.
+        /// </summary>
+        /// <param name="filedata">ROM contents. It is assumed this is already in correct endieness.</param>
+        /// <param name="token">Optional cancellation token.</param>
         public override void SendRom(byte[] filedata, CancellationToken? token = null)
         {
             var size = filedata.Length;
@@ -58,7 +71,9 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
                 // End if we've got nothing else to send
                 if (bytesDo <= 0)
+                {
                     break;
+                }
 
                 // Try to send chunks
                 var sendBuffer = new byte[bytesDo];
@@ -96,11 +111,19 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             Send(new EverdriveCmdPifboot());
 
             _disableProcessIncoming = false;
-            
+
             // Process any waiting data that was disabled for SendRom.
             Task.Run(() => TryReadPacket());
         }
 
+        /// <summary>
+        /// Executes specific test to determine whether the connection is currently
+        /// in the Everdrive menu.
+        /// </summary>
+        /// <returns>True if a valid Everdrive level response is received (test command response), false otherwise.</returns>
+        /// <remarks>
+        /// Used to test connection level.
+        /// </remarks>
         public override bool TestInMenu()
         {
             bool receivedTestResponse = false;
@@ -139,11 +162,22 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             return receivedTestResponse;
         }
 
+        /// <summary>
+        /// Reads bytes from incoming source and attempts to read as many as rquired to
+        /// parse a single Everdrive packet.
+        /// </summary>
+        /// <param name="data">Data to parse.</param>
+        /// <returns>Parse result.</returns>
         protected override FlashcartPacketParseResult TryParse(List<byte> data)
         {
             return EverdrivePacket.TryParse(data);
         }
 
+        /// <summary>
+        /// Wraps binary data to create an Everdrive packet.
+        /// </summary>
+        /// <param name="data">Data to create packet.</param>
+        /// <returns>Packet.</returns>
         protected override IFlashcartPacket MakePacket(byte[] data)
         {
             return new EverdrivePacket(data);

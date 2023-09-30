@@ -10,9 +10,20 @@ using Gebug64.Unfloader.Protocol.Unfloader;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
+    /// <summary>
+    /// Defines Everdrive specific communication packet.
+    /// Everdrive packet is the lowest level of communication between PC and gebug romhack.
+    /// </summary>
     public class EverdrivePacket : FlashcartPacket
     {
+        /// <summary>
+        /// Size in bytes of Everdrive packet header.
+        /// </summary>
         public const int ProtocolHeaderSize = 4;
+
+        /// <summary>
+        /// Size in bytes of Everdrive packet tail.
+        /// </summary>
         public const int ProtocolTailSize = 4;
 
         /// <summary>
@@ -20,39 +31,28 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         /// </summary>
         public const int ProtocolByteLength = ProtocolHeaderSize + ProtocolTailSize;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EverdrivePacket"/> class.
+        /// </summary>
         public EverdrivePacket()
-        { }
+        {
+        }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EverdrivePacket"/> class.
+        /// </summary>
+        /// <param name="data">Inner packet (body) data without header/tail protocol data.</param>
         public EverdrivePacket(byte[] data)
             : base(data)
         {
         }
 
-        public override byte[] GetOuterPacket()
-        {
-            if (object.ReferenceEquals(null, _data))
-            {
-                throw new NullReferenceException($"Body content not set");
-            }
-
-            var toSend = new List<byte>
-            {
-                (byte)'D',
-                (byte)'M',
-                (byte)'A',
-                (byte)'@'
-            };
-
-            toSend.AddRange(_data);
-
-            toSend.Add((byte)'C');
-            toSend.Add((byte)'M');
-            toSend.Add((byte)'P');
-            toSend.Add((byte)'H');
-
-            return toSend.ToArray();
-        }
-
+        /// <summary>
+        /// Reads bytes from incoming source and attempts to read as many as rquired to
+        /// parse a single Everdrive packet.
+        /// </summary>
+        /// <param name="data">Data to parse.</param>
+        /// <returns>Parse result.</returns>
         public static FlashcartPacketParseResult TryParse(List<byte> data)
         {
             var result = new FlashcartPacketParseResult()
@@ -124,6 +124,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                         {
                             state = 0;
                         }
+
                         break;
 
                     case 1:
@@ -135,6 +136,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                         {
                             state = 0;
                         }
+
                         break;
 
                     case 2:
@@ -146,6 +148,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                         {
                             state = 0;
                         }
+
                         break;
 
                     case 3:
@@ -157,6 +160,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                         {
                             state = 0;
                         }
+
                         break;
                 }
 
@@ -181,9 +185,11 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 return result;
             }
 
-            // normally the everdrive shouldn't care about the inner UNFLoader packet,
-            // except that we need to know how many bytes to read to check for the tail
-            // of the everdrive packet.
+            /***
+            * normally the everdrive shouldn't care about the inner UNFLoader packet,
+            * except that we need to know how many bytes to read to check for the tail
+            * of the everdrive packet.
+            */
 
             var remain = data.Skip(readOffset).ToList();
             UnfloaderPacketParseResult unfloaderParse = UnfloaderPacket.TryParse(remain);
@@ -221,6 +227,13 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             return result;
         }
 
+        /// <summary>
+        /// Checks whether the bytes at the specified index container the
+        /// tail end of an Everdrive packet.
+        /// </summary>
+        /// <param name="data">Incoming bytes.</param>
+        /// <param name="index">Index into bytes.</param>
+        /// <returns>True if tail protocol bytes, false otherwise.</returns>
         private static bool IsProtocolTail(List<byte> data, int index)
         {
             if (index + 4 > data.Count)
@@ -237,6 +250,32 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             }
 
             return false;
+        }
+
+        /// <inheritdoc />
+        public override byte[] GetOuterPacket()
+        {
+            if (object.ReferenceEquals(null, _data))
+            {
+                throw new NullReferenceException($"Body content not set");
+            }
+
+            var toSend = new List<byte>
+            {
+                (byte)'D',
+                (byte)'M',
+                (byte)'A',
+                (byte)'@',
+            };
+
+            toSend.AddRange(_data);
+
+            toSend.Add((byte)'C');
+            toSend.Add((byte)'M');
+            toSend.Add((byte)'P');
+            toSend.Add((byte)'H');
+
+            return toSend.ToArray();
         }
     }
 }

@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Unfloader.Protocol.Parse
 {
+    /// <summary>
+    /// Description of why a packet failed to parse.
+    /// </summary>
     public enum PacketParseReason
     {
+        /// <summary>
+        /// Unset default value.
+        /// </summary>
         DefaultUnknown,
 
         /// <summary>

@@ -14,27 +14,81 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
+    /// <summary>
+    /// Describes physical flashcart device.
+    /// This is the lowest level of communication to the gebug romhack.
+    /// </summary>
     public abstract class Flashcart : IFlashcart
     {
+        /// <summary>
+        /// Serial port provider.
+        /// </summary>
         private readonly SerialPortProvider _portProvider;
-        private ISerialPort? _serialPort;
-        private List<byte> _readData = new List<byte>();
-        private Mutex _readLock = new();
-        private ConcurrentQueue<IFlashcartPacket> _readPackets = new ConcurrentQueue<IFlashcartPacket>();
-        private Stopwatch? _sinceDataReceived = null;
-        private Stopwatch? _sinceRomMessageReceived = null;
 
-        protected MessageBus<IFlashcartPacket> _flashcartPacketBus = new();
+        /// <summary>
+        /// Serial port instance.
+        /// </summary>
+        private ISerialPort? _serialPort;
+
+        /// <summary>
+        /// Container for incoming read data.
+        /// </summary>
+        private List<byte> _readData = new List<byte>();
+
+        /// <summary>
+        /// Thread lock for <see cref="_readData"/>.
+        /// </summary>
+        private Mutex _readLock = new();
+
+        /// <summary>
+        /// This is the internal queue for incoming data that has been parsed
+        /// into a <see cref="IFlashcartPacket"/>.
+        /// </summary>
+        private ConcurrentQueue<IFlashcartPacket> _readPackets = new ConcurrentQueue<IFlashcartPacket>();
+
+        private Stopwatch? _sinceDataReceived = null;
+
+        private Stopwatch? _sinceFlashcartPacketReceived = null;
+
+        /// <summary>
+        /// Logger.
+        /// </summary>
         protected readonly ILogger _logger;
+
+        /// <summary>
+        /// Internal message bus to notify when a well formed packet has been received. This
+        /// allows the <see cref="TestInMenu"/> method to work without interferring with
+        /// other messages.
+        /// </summary>
+        protected MessageBus<IFlashcartPacket> _flashcartPacketBus = new();
+
+        /// <summary>
+        /// Flag to disable processing incoming messages.
+        /// At one point this was required for long running communcation, such as
+        /// uploading a ROM.
+        /// </summary>
         protected bool _disableProcessIncoming = false;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Flashcart"/> class.
+        /// </summary>
+        /// <param name="portProvider">Serial port provider.</param>
+        /// <param name="logger">Logger.</param>
+        public Flashcart(SerialPortProvider portProvider, ILogger logger)
+        {
+            _portProvider = portProvider;
+            _logger = logger;
+
+            _flashcartPacketBus.Subscribe(SubscriptionEnqueuePacket);
+        }
+
+        /// <inheritdoc />
         public bool IsConnected => _serialPort?.IsOpen ?? false;
 
-        protected abstract FlashcartPacketParseResult TryParse(List<byte> data);
-        protected abstract IFlashcartPacket MakePacket(byte[] data);
-
+        /// <inheritdoc />
         public ConcurrentQueue<IFlashcartPacket> ReadPackets => _readPackets;
 
+        /// <inheritdoc />
         public TimeSpan SinceDataReceived
         {
             get
@@ -48,27 +102,21 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             }
         }
 
-        public TimeSpan SinceRomMessageReceived
+        /// <inheritdoc />
+        public TimeSpan SinceFlashcartPacketReceived
         {
             get
             {
-                if (_sinceRomMessageReceived == null)
+                if (_sinceFlashcartPacketReceived == null)
                 {
                     return TimeSpan.MaxValue;
                 }
 
-                return _sinceRomMessageReceived.Elapsed;
+                return _sinceFlashcartPacketReceived.Elapsed;
             }
         }
 
-        public Flashcart(SerialPortProvider portProvider, ILogger logger)
-        {
-            _portProvider = portProvider;
-            _logger = logger;
-
-            _flashcartPacketBus.Subscribe(SubscriptionEnqueuePacket);
-        }
-
+        /// <inheritdoc />
         public void Connect(string port)
         {
             if (IsConnected)
@@ -83,6 +131,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             _serialPort.Open();
         }
 
+        /// <inheritdoc />
         public void Disconnect()
         {
             if (!object.ReferenceEquals(_serialPort, null))
@@ -107,25 +156,27 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
             _sinceDataReceived = null;
 
-            if (_sinceRomMessageReceived != null)
+            if (_sinceFlashcartPacketReceived != null)
             {
-                _sinceRomMessageReceived.Stop();
+                _sinceFlashcartPacketReceived.Stop();
             }
 
-            _sinceRomMessageReceived = null;
+            _sinceFlashcartPacketReceived = null;
 
             _readData.Clear();
             _readPackets.Clear();
         }
 
-        public abstract void SendRom(byte[] filedata, Nullable<CancellationToken> token = null);
+        /// <inheritdoc />
+        public abstract void SendRom(byte[] filedata, CancellationToken? token = null);
 
-        // deprecated this ?
+        /// <inheritdoc />
         public void Send(byte[] data)
         {
             Send(MakePacket(data));
         }
 
+        /// <inheritdoc />
         public void Send(IFlashcartPacket packet)
         {
             if (!IsConnected)
@@ -137,8 +188,37 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             _serialPort!.Write(data, 0, data.Length);
         }
 
-        public virtual bool TestInMenu() { return false; }
+        /// <inheritdoc />
+        public virtual bool TestInMenu() => false;
 
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Disconnect();
+        }
+
+        /// <summary>
+        /// Reads bytes from incoming source and attempts to read as many as rquired to
+        /// parse a single packet.
+        /// Implementation is device specific.
+        /// </summary>
+        /// <param name="data">Data to parse.</param>
+        /// <returns>Parse result.</returns>
+        protected abstract FlashcartPacketParseResult TryParse(List<byte> data);
+
+        /// <summary>
+        /// Wraps binary data to create a packet.
+        /// Implementation is device specific.
+        /// </summary>
+        /// <param name="data">Data to create packet.</param>
+        /// <returns>Packet.</returns>
+        protected abstract IFlashcartPacket MakePacket(byte[] data);
+
+        /// <summary>
+        /// Internal method to write binary data without wrapping in a packet.
+        /// </summary>
+        /// <param name="data">Raw data to send.</param>
+        /// <exception cref="InvalidOperationException">Throw if not connected.</exception>
         protected void WriteRaw(byte[] data)
         {
             if (!IsConnected)
@@ -149,35 +229,10 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             _serialPort!.Write(data, 0, data.Length);
         }
 
-        private void DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            byte[] data = new byte[_serialPort!.BytesToRead];
-            _serialPort.Read(data, 0, data.Length);
-
-            _readLock.WaitOne();
-
-            try
-            {
-                _readData.AddRange(data);
-            }
-            finally
-            {
-                _readLock.ReleaseMutex();
-            }
-
-            if (!IsConnected)
-            {
-                return;
-            }
-
-            _sinceDataReceived = Stopwatch.StartNew();
-
-            if (!_disableProcessIncoming)
-            {
-                Task.Run(() => TryReadPacket());
-            }
-        }
-
+        /// <summary>
+        /// Background parse method. Attempts to empty the incoming
+        /// read data and parse into packets.
+        /// </summary>
         protected void TryReadPacket()
         {
             List<byte> readCopy;
@@ -212,10 +267,16 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
 
             try
             {
+                // make a copy of the incoming data to allow permutation in place.
                 readCopy = _readData.ToArray().ToList();
 
                 int removeSize = 0;
 
+                // This will read through the incoming data, trying to parse as it goes.
+                // Every successful packet parse will remove the corresponding
+                // bytes from the start of the collection.
+                // Save each packet to a queue to send out when the parsing finishes.
+                // Break on empty / failure.
                 while (readCopy.Count > 0)
                 {
                     if (!IsConnected)
@@ -226,11 +287,12 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                     var parse = TryParse(readCopy);
                     if (parse.ParseStatus == PacketParseStatus.Success)
                     {
-                        _sinceRomMessageReceived = Stopwatch.StartNew();
+                        _sinceFlashcartPacketReceived = Stopwatch.StartNew();
 
                         readCopy.RemoveRange(0, parse.TotalBytesRead);
                         removeSize += parse.TotalBytesRead;
 
+                        // Save the parsed packet to send out once parsing is done.
                         toQueue.Add(parse.Packet!);
                     }
                     else
@@ -252,17 +314,53 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
                 return;
             }
 
+            // Notify listeners about the new packets.
             foreach (var packet in toQueue)
             {
                 _flashcartPacketBus.Publish(packet);
             }
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Serial port data received event.
+        /// Adds incoming data to the read buffer, then starts the background task
+        /// to parse the incoming data.
+        /// </summary>
+        /// <param name="sender">Sender.</param>
+        /// <param name="e">Args.</param>
+        private void DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            Disconnect();
+            byte[] data = new byte[_serialPort!.BytesToRead];
+            _serialPort.Read(data, 0, data.Length);
+
+            _readLock.WaitOne();
+
+            try
+            {
+                _readData.AddRange(data);
+            }
+            finally
+            {
+                _readLock.ReleaseMutex();
+            }
+
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            _sinceDataReceived = Stopwatch.StartNew();
+
+            if (!_disableProcessIncoming)
+            {
+                Task.Run(() => TryReadPacket());
+            }
         }
 
+        /// <summary>
+        /// Default message bus handler. Simply make the packet available to outside sources.
+        /// </summary>
+        /// <param name="packet">Packet.</param>
         private void SubscriptionEnqueuePacket(IFlashcartPacket packet)
         {
             _readPackets.Enqueue(packet);

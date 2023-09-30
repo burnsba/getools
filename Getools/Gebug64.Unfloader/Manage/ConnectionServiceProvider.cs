@@ -99,7 +99,7 @@ namespace Gebug64.Unfloader.Manage
         public TimeSpan SinceDataReceived => _flashcart?.SinceDataReceived ?? TimeSpan.MaxValue;
 
         /// <inheritdoc />
-        public TimeSpan SinceRomMessageReceived => _flashcart?.SinceRomMessageReceived ?? TimeSpan.MaxValue;
+        public TimeSpan SinceRomMessageReceived => _flashcart?.SinceFlashcartPacketReceived ?? TimeSpan.MaxValue;
 
         /// <inheritdoc />
         public void Start(string port)
