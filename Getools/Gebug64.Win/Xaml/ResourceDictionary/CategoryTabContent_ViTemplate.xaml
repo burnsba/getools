@@ -41,6 +41,16 @@
                         <Image Source="{Binding FrameBufferGrab}" MaxWidth="440" MaxHeight="330" MinHeight="16" MinWidth="16"/>
                     </Border>
 
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock VerticalAlignment="Center">Near:</TextBlock>
+                        <TextBox Text="{Binding ViSetZRangeNear}" Width="60" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center">Far:</TextBlock>
+                        <TextBox Text="{Binding ViSetZRangeFar}" Width="60" VerticalAlignment="Center"/>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ViSetZRangeCommand}" HorizontalAlignment="Left">viSetZRange</Button>
+
+                    </StackPanel>
+
                 </StackPanel>
             </Grid>
         </ScrollViewer>

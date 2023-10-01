@@ -27,6 +27,19 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// OS Time value.
         /// </summary>
         [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
-        public int Count { get; set; }
+        public uint Count { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            if (Source == CommunicationSource.Pc)
+            {
+                return $"{Category} {DebugCommand}";
+            }
+            else
+            {
+                return $"{Category} {DebugCommand} 0x{Count:x8}";
+            }
+        }
     }
 }

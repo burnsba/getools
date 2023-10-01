@@ -67,6 +67,10 @@ namespace Getools.Lib
                 {
                     return GetBytesExplicitLittle((sbyte)source, getByteCount);
                 }
+                else if (type == typeof(Single))
+                {
+                    return GetBytesExplicitLittle((Single)source, getByteCount);
+                }
             }
             else if (order == ByteOrder.BigEndien)
             {
@@ -97,6 +101,10 @@ namespace Getools.Lib
                 else if (type == typeof(sbyte))
                 {
                     return GetBytesExplicitBig((sbyte)source, getByteCount);
+                }
+                else if (type == typeof(Single))
+                {
+                    return GetBytesExplicitBig((Single)source, getByteCount);
                 }
             }
 
@@ -144,7 +152,7 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 0) };
-                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
+                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
                 default: throw new NotSupportedException();
             }
         }
@@ -154,7 +162,7 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 8) };
-                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
+                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
                 default: throw new NotSupportedException();
             }
         }
@@ -164,7 +172,7 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 0) };
-                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
+                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
                 default: throw new NotSupportedException();
             }
         }
@@ -174,7 +182,7 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 8) };
-                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
+                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
                 default: throw new NotSupportedException();
             }
         }
@@ -184,9 +192,9 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 0) };
-                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
-                case 3: return new byte[] { (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
-                case 4: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
+                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
+                case 3: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16) };
+                case 4: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
                 default: throw new NotSupportedException();
             }
         }
@@ -196,9 +204,9 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 24) };
-                case 2: return new byte[] { (byte)(source >> 16), (byte)(source >> 24) };
-                case 3: return new byte[] { (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
-                case 4: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
+                case 2: return new byte[] { (byte)(source >> 24), (byte)(source >> 16) };
+                case 3: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8) };
+                case 4: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
                 default: throw new NotSupportedException();
             }
         }
@@ -208,9 +216,9 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 0) };
-                case 2: return new byte[] { (byte)(source >> 8), (byte)(source >> 0) };
-                case 3: return new byte[] { (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
-                case 4: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
+                case 2: return new byte[] { (byte)(source >> 0), (byte)(source >> 8) };
+                case 3: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16) };
+                case 4: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
                 default: throw new NotSupportedException();
             }
         }
@@ -220,11 +228,25 @@ namespace Getools.Lib
             switch (getByteCount)
             {
                 case 1: return new byte[] { (byte)(source >> 24) };
-                case 2: return new byte[] { (byte)(source >> 16), (byte)(source >> 24) };
-                case 3: return new byte[] { (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
-                case 4: return new byte[] { (byte)(source >> 0), (byte)(source >> 8), (byte)(source >> 16), (byte)(source >> 24) };
+                case 2: return new byte[] { (byte)(source >> 24), (byte)(source >> 16) };
+                case 3: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8) };
+                case 4: return new byte[] { (byte)(source >> 24), (byte)(source >> 16), (byte)(source >> 8), (byte)(source >> 0) };
                 default: throw new NotSupportedException();
             }
+        }
+
+        private static byte[] GetBytesExplicitLittle(Single source, int getByteCount)
+        {
+            int intVal = BitUtility.CastToInt32(source);
+
+            return GetBytesExplicitLittle(intVal, getByteCount);
+        }
+
+        private static byte[] GetBytesExplicitBig(Single source, int getByteCount)
+        {
+            int intVal = BitUtility.CastToInt32(source);
+
+            return GetBytesExplicitBig(intVal, getByteCount);
         }
     }
 }

@@ -22,11 +22,6 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         GrabFramebuffer = 10,
 
         /// <summary>
-        /// Native `void viSetFov(f32 fovx, f32 fovy)`.
-        /// </summary>
-        SetFov = 20,
-
-        /// <summary>
         /// Native `void viSetZRange(f32 near, f32 far)`.
         /// </summary>
         SetZRange = 22,

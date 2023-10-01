@@ -97,6 +97,13 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         public GebugPacket? FirstPacket { get; set; }
 
         /// <summary>
+        /// Gets the friendly name of the command.
+        /// </summary>
+        protected string DebugCommand => Gebug64.Unfloader.Protocol.Gebug.Message.MessageType.CommandResolver.ResolveCommand(Category, Command);
+
+        private string DebugFlags => ((GebugMessageFlags)Flags).ToString();
+
+        /// <summary>
         /// Gets the flags of the first packet, or zero.
         /// </summary>
         private ushort Flags
@@ -111,10 +118,6 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 return FirstPacket.Flags;
             }
         }
-
-        private string DebugCommand => Gebug64.Unfloader.Protocol.Gebug.Message.MessageType.CommandResolver.ResolveCommand(Category, Command);
-
-        private string DebugFlags => ((GebugMessageFlags)Flags).ToString();
 
         /// <summary>
         /// Converts packet into single message.

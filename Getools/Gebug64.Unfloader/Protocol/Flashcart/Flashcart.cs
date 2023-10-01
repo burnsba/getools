@@ -138,10 +138,16 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             {
                 _serialPort.DataReceived -= DataReceived;
 
-                _serialPort.DtrEnable = false;
-                _serialPort.RtsEnable = false;
-                _serialPort.DiscardInBuffer();
-                _serialPort.DiscardOutBuffer();
+                try
+                {
+                    _serialPort.DtrEnable = false;
+                    _serialPort.RtsEnable = false;
+                    _serialPort.DiscardInBuffer();
+                    _serialPort.DiscardOutBuffer();
+                }
+                catch
+                {
+                }
 
                 // have to call close last
                 _serialPort.Close();

@@ -70,11 +70,29 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        public Single ViSetZRangeNear { get; set; }
+        public Single ViSetZRangeFar { get; set; }
+        public ICommand ViSetZRangeCommand { get; set; }
+        public bool CanViSetZRange
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
         public ViTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
             : base(_tabName, logger, connectionServiceProviderResolver)
         {
             GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
             SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
+            ViSetZRangeCommand = new CommandHandler(ViSetZRangeCommandHandler, () => CanViSetZRange);
 
             DisplayOrder = 80;
 
@@ -160,6 +178,26 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             {
                 FramebufferGrabSavePath = dialog.FileName!;
             }
+        }
+
+        private void ViSetZRangeCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugViSetZRangeMessage()
+            {
+                Near = ViSetZRangeNear,
+                Far = ViSetZRangeFar,
+            };
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }
