@@ -16,6 +16,8 @@
   "Tiles": [
     {
       "InternalName": 328354,
+      "GroupId": 162,
+      "TileId": 1282,
       "Room": 46,
       "Flags": 0,
       "R": 15,
@@ -50,6 +52,8 @@
     },
     {
       "InternalName": 328353,
+      "GroupId": 161,
+      "TileId": 1282,
       "Room": 46,
       "Flags": 0,
       "R": 15,
@@ -108,6 +112,8 @@
     },
     {
       "InternalName": 296610,
+      "GroupId": 162,
+      "TileId": 1158,
       "Room": 45,
       "Flags": 0,
       "R": 15,
@@ -142,6 +148,8 @@
     },
     {
       "InternalName": 0,
+      "GroupId": 0,
+      "TileId": 0,
       "Room": 0,
       "Flags": 0,
       "R": 0,

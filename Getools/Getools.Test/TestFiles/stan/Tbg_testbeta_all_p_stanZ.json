@@ -15,6 +15,8 @@
   },
   "Tiles": [
     {
+      "GroupId": 162,
+      "TileId": 1282,
       "DebugName": "p502a2",
       "Flags": 0,
       "R": 15,
@@ -49,6 +51,8 @@
       ]
     },
     {
+      "GroupId": 161,
+      "TileId": 1282,
       "DebugName": "p502a1",
       "Flags": 0,
       "R": 15,
@@ -107,6 +111,8 @@
       ]
     },
     {
+      "GroupId": 162,
+      "TileId": 1158,
       "DebugName": "p486a2",
       "Flags": 0,
       "R": 15,
@@ -142,6 +148,8 @@
     },
     {
       "InternalName": 0,
+      "GroupId": 0,
+      "TileId": 0,
       "Room": 0,
       "Flags": 0,
       "R": 0,
