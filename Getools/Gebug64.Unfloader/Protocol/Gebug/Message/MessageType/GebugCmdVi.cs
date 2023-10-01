@@ -27,18 +27,13 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         SetZRange = 22,
 
         /// <summary>
-        /// Native `void currentPlayerSetScreenSize(f32 width, f32 height)`.
+        /// Native `void viSetViewSize(s16 x, s16 y)`.
         /// </summary>
-        CurrentPlayerSetScreenSize = 40,
+        SetViewSize = 24,
 
         /// <summary>
-        /// Native `void currentPlayerSetScreenPosition(f32 left, f32 top)`.
+        /// Native `void viSetViewPosition(s16 left, s16 top)`.
         /// </summary>
-        CurrentPlayerSetScreenPosition = 42,
-
-        /// <summary>
-        /// Native `void currentPlayerSetPerspective(f32 near, f32 fovy, f32 aspect)`.
-        /// </summary>
-        CurrentPlayerSetPerspective = 44,
+        SetViewPosition = 26,
     }
 }

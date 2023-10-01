@@ -51,6 +51,26 @@
 
                     </StackPanel>
 
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock VerticalAlignment="Center">Width:</TextBlock>
+                        <TextBox Text="{Binding ViSetViewSizeWidth}" Width="60" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center">Height:</TextBlock>
+                        <TextBox Text="{Binding ViSetViewSizeHeight}" Width="60" VerticalAlignment="Center"/>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ViSetViewSizeCommand}" HorizontalAlignment="Left">viSetViewSize</Button>
+
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock VerticalAlignment="Center">Left:</TextBlock>
+                        <TextBox Text="{Binding ViSetViewPositionLeft}" Width="60" VerticalAlignment="Center"/>
+                        <TextBlock VerticalAlignment="Center">Top:</TextBlock>
+                        <TextBox Text="{Binding ViSetViewPositionTop}" Width="60" VerticalAlignment="Center"/>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ViSetViewPositionCommand}" HorizontalAlignment="Left">viSetViewPosition</Button>
+
+                    </StackPanel>
+
                 </StackPanel>
             </Grid>
         </ScrollViewer>

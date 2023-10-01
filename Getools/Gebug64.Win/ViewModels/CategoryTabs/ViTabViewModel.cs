@@ -87,12 +87,48 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        public short ViSetViewSizeWidth { get; set; }
+        public short ViSetViewSizeHeight { get; set; }
+        public ICommand ViSetViewSizeCommand { get; set; }
+        public bool CanViSetViewSize
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
+        public short ViSetViewPositionLeft { get; set; }
+        public short ViSetViewPositionTop { get; set; }
+        public ICommand ViSetViewPositionCommand { get; set; }
+        public bool CanViSetViewPosition
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
         public ViTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
             : base(_tabName, logger, connectionServiceProviderResolver)
         {
             GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
             SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
             ViSetZRangeCommand = new CommandHandler(ViSetZRangeCommandHandler, () => CanViSetZRange);
+            ViSetViewSizeCommand = new CommandHandler(ViSetViewSizeCommandHandler, () => CanViSetViewSize);
+            ViSetViewPositionCommand = new CommandHandler(ViSetViewPositionCommandHandler, () => CanViSetViewPosition);
 
             DisplayOrder = 80;
 
@@ -193,6 +229,46 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             {
                 Near = ViSetZRangeNear,
                 Far = ViSetZRangeFar,
+            };
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
+        }
+
+        private void ViSetViewSizeCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugViSetViewSizeMessage()
+            {
+                Width = ViSetViewSizeWidth,
+                Height = ViSetViewSizeHeight,
+            };
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
+        }
+
+        private void ViSetViewPositionCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugViSetViewPositionMessage()
+            {
+                Left = ViSetViewPositionLeft,
+                Top = ViSetViewPositionTop,
             };
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());

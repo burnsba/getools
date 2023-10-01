@@ -56,7 +56,7 @@ The length prefix consists of an "escape" value, followed by the number of bytes
 | `0xfe` | less than 2^16 | 2 byte |
 | `0xfd` | less than 2^32 | 4 byte |
 
-When building a message, the body (parameter values) of a message are computed first. If the length is longer than can fit in a single packet, then the message will be a multi-packet message. The body content is simply split across packets according to the max allowed packet size (the length prefix is only included once).
+When building a message, the body (parameter values) of a message are computed first. If the total length (header + body) is longer than can fit in a single packet, then the message will be a multi-packet message. The body content is simply split across packets according to the max allowed packet size (the length prefix is only included once).
 
 Properties of size 1, 2, and 4 byte values are considered "native" and endieness considerations should apply. Otherwise the property will be considered a byte array as above.
 
@@ -224,11 +224,9 @@ public enum GebugCmdVi
     DefaultUnknown = 0,
 
     GrabFramebuffer = 10,
-    SetFov = 20,
     SetZRange = 22,
-    CurrentPlayerSetScreenSize = 40,
-    CurrentPlayerSetScreenPosition = 42,
-    CurrentPlayerSetPerspective = 44,
+    SetViewSize = 24,
+    SetViewPosition = 26,
 }
 ```
 
@@ -244,6 +242,41 @@ Dumps the framebuffer back to PC. There are a couple different ways to go about 
 |  1            | Width         |  2           | `ConsoleToPc` | result from `viGetX()` |
 |  2            | Height        |  2           | `ConsoleToPc` | result from `viGetY()` |
 |  3            | Data          |  variable    | `ConsoleToPc` | Contains `2 * viGetX() * viGetY()` bytes, as read from `g_ViFrontData->framebuf`. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format. |
+
+### `Vi SetZRange` Command
+
+Call native `void viSetZRange(f32 near, f32 far)`.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Near          |  4    (f32)  | `PcToConsole` | Near parameter |
+|  2            | Far           |  4    (f32)  | `PcToConsole` | Far parameter |
+
+
+### `Vi SetViewSize` Command
+
+Call native `void viSetViewSize(s16 x, s16 y)`.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Width         |  2    (s16)  | `PcToConsole` | Width parameter |
+|  2            | Height        |  2    (s16)  | `PcToConsole` | Height parameter |
+
+
+### `Vi SetViewPosition` Command
+
+Call native `void viSetViewPosition(s16 left, s16 top)`.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Left          |  2    (s16)  | `PcToConsole` | Left parameter |
+|  2            | Top           |  2    (s16)  | `PcToConsole` | Top parameter |
 
 ## `Meta` Category
 

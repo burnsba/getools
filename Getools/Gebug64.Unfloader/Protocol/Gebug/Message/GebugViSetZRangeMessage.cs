@@ -9,7 +9,7 @@ using Gebug64.Unfloader.Protocol.Gebug.Parameter;
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
     /// <summary>
-    /// Get framebuffer message.
+    /// Call native `void viSetZRange(f32 near, f32 far)`.
     /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Vi, Command = (byte)GebugCmdVi.SetZRange)]
     public class GebugViSetZRangeMessage : GebugMessage, IActivatorGebugMessage
