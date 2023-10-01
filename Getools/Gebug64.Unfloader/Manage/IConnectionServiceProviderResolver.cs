@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Manage
 {
@@ -17,7 +18,8 @@ namespace Gebug64.Unfloader.Manage
         /// not already exist.
         /// </summary>
         /// <param name="flashcart">Flashcart to manage.</param>
-        void CreateOnceDeviceManager(IFlashcart flashcart);
+        /// <param name="logger">Logger.</param>
+        void CreateOnceDeviceManager(IFlashcart flashcart, ILogger logger);
 
         /// <summary>
         /// Gets the registered service provider.

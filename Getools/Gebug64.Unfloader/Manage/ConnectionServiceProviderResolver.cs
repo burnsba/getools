@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Manage
 {
@@ -23,11 +24,11 @@ namespace Gebug64.Unfloader.Manage
         }
 
         /// <inheritdoc />
-        public void CreateOnceDeviceManager(IFlashcart flashcart)
+        public void CreateOnceDeviceManager(IFlashcart flashcart, ILogger logger)
         {
             if (object.ReferenceEquals(null, _device))
             {
-                _device = new ConnectionServiceProvider(flashcart);
+                _device = new ConnectionServiceProvider(flashcart, logger);
             }
         }
 

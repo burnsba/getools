@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -468,7 +469,7 @@ namespace Gebug64.Win.ViewModels
 
                     _menuSerialPortGroup.AddItem(mivm, mivm.Id);
                     MenuSerialPorts.Add(mivm);
-                    
+
                     last = mivm;
 
                     foundPorts.Add(port);
@@ -601,7 +602,7 @@ namespace Gebug64.Win.ViewModels
                 OnPropertyChanged(nameof(ConnectCommandText));
                 OnPropertyChanged(nameof(CanSendRom));
 
-                _connectionServiceResolver.CreateOnceDeviceManager(CurrentFlashcart);
+                _connectionServiceResolver.CreateOnceDeviceManager(CurrentFlashcart, _logger);
                 _connectionServiceManager = _connectionServiceResolver.GetDeviceManager();
 
                 _messageBusGebugLogSubscription = _connectionServiceManager!.Subscribe(MessageBusLogGebugCallback);
@@ -998,6 +999,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 _logger.Log(LogLevel.Information, "Receive " + msg.ToString());
+                ////System.Diagnostics.Debug.WriteLine("Receive " + msg.ToString());
             });
         }
 
@@ -1018,7 +1020,8 @@ namespace Gebug64.Win.ViewModels
                     var textMessage = (TextPacket)packet;
                     if (!object.ReferenceEquals(null, textMessage) && !string.IsNullOrEmpty(textMessage.Content))
                     {
-                        _logger.Log(LogLevel.Information, textMessage.Content);
+                        _logger.Log(LogLevel.Information, Gebug64.Win.Formatters.Text.RemoveTrailingNonVisible(textMessage.Content));
+                        ////System.Diagnostics.Debug.WriteLine(Gebug64.Win.Formatters.Text.RemoveTrailingNonVisible(textMessage.Content));
                     }
                     else
                     {
@@ -1028,6 +1031,7 @@ namespace Gebug64.Win.ViewModels
                 else
                 {
                     _logger.Log(LogLevel.Information, "Receive " + packet.ToString());
+                    ////System.Diagnostics.Debug.WriteLine("Receive " + packet.ToString());
                 }
             });
         }

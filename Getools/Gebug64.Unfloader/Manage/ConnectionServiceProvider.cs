@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -15,6 +16,8 @@ using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
+using Getools.Utility.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Unfloader.Manage
 {
@@ -33,6 +36,8 @@ namespace Gebug64.Unfloader.Manage
         /// The flashcart managed by this service provider.
         /// </summary>
         private readonly IFlashcart _flashcart;
+
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Thread shutdown flag.
@@ -84,9 +89,11 @@ namespace Gebug64.Unfloader.Manage
         /// Initializes a new instance of the <see cref="ConnectionServiceProvider"/> class.
         /// </summary>
         /// <param name="flashcart">Flashcart to manage.</param>
-        public ConnectionServiceProvider(IFlashcart flashcart)
+        /// <param name="logger">Logger.</param>
+        public ConnectionServiceProvider(IFlashcart flashcart, ILogger logger)
         {
             _flashcart = flashcart;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -371,6 +378,17 @@ namespace Gebug64.Unfloader.Manage
                             // fragments bucket.
                             if (packet!.TotalNumberPackets > 1)
                             {
+                                string commandName = CommandResolver.ResolveCommand(packet.Category, packet.Command);
+                                _logger.Log(LogLevel.Information, $"Receive message {packet.Category} {commandName} fragment {packet.PacketNumber} of {packet.TotalNumberPackets}");
+
+                                if (packet.PacketNumber < packet.TotalNumberPackets)
+                                {
+                                    if (object.ReferenceEquals(null, packet.Body) || packet.Body.Length == 0)
+                                    {
+                                        throw new InvalidOperationException("Received packet as part of multi-packet message, but body content is missing.");
+                                    }
+                                }
+
                                 _receiveMessageFragments.Add(packet);
 
                                 // We just added a new packet. Count the current number of fragments to determine
