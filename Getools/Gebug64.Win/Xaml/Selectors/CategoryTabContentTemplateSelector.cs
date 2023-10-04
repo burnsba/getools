@@ -15,6 +15,7 @@ namespace Gebug64.Win.Xaml.Selectors
         public DataTemplate MetaTemplate { get; set; }
         public DataTemplate MiscTemplate { get; set; }
         public DataTemplate NothingTemplate { get; set; }
+        public DataTemplate RamromTemplate { get; set; }
         public DataTemplate StageTemplate { get; set; }
         public DataTemplate ViTemplate { get; set; }
 
@@ -32,6 +33,7 @@ namespace Gebug64.Win.Xaml.Selectors
                 case DebugTabViewModel debugTabViewModel: return DebugTemplate;
                 case MetaTabViewModel metaTabViewModel: return MetaTemplate;
                 case MiscTabViewModel miscTabViewModel: return MiscTemplate;
+                case RamromTabViewModel ramromTabViewModel: return RamromTemplate;
                 case StageTabViewModel stageTabViewModel: return StageTemplate;
                 case ViTabViewModel viTabViewModel: return ViTemplate;
                 default: return NothingTemplate;

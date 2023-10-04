@@ -23,6 +23,11 @@ namespace Getools.Lib.Game
         public const int TargetPointerSize = 4;
 
         /// <summary>
+        /// Size of double word (s64/u64) in bytes on N64 MIPS hardware.
+        /// </summary>
+        public const int TargetDoubleWordSize = 8;
+
+        /// <summary>
         /// Size of word in bytes on N64 MIPS hardware.
         /// </summary>
         public const int TargetWordSize = 4;

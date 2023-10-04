@@ -251,7 +251,7 @@ namespace Getools.Lib
         /// <param name="arr">Array to insert value into.</param>
         /// <param name="index">Index to insert value at.</param>
         /// <param name="value">Value to insert.</param>
-        public static void Insert16Little(byte[] arr, Int16 index, Int16 value)
+        public static void Insert16Little(byte[] arr, int index, Int16 value)
         {
             arr[index + 0] = (byte)(value & 0xff);
             arr[index + 1] = (byte)((value >> 8) & 0xff);
@@ -263,7 +263,7 @@ namespace Getools.Lib
         /// <param name="arr">Array to insert value into.</param>
         /// <param name="index">Index to insert value at.</param>
         /// <param name="value">Value to insert.</param>
-        public static void Insert16Little(byte[] arr, Int16 index, UInt16 value)
+        public static void Insert16Little(byte[] arr, int index, UInt16 value)
         {
             arr[index + 0] = (byte)(value & 0xff);
             arr[index + 1] = (byte)((value >> 8) & 0xff);
@@ -275,7 +275,7 @@ namespace Getools.Lib
         /// <param name="arr">Array to insert value into.</param>
         /// <param name="index">Index to insert value at.</param>
         /// <param name="value">Value to insert.</param>
-        public static void Insert16Big(byte[] arr, Int16 index, Int16 value)
+        public static void Insert16Big(byte[] arr, int index, Int16 value)
         {
             arr[index + 0] = (byte)((value >> 8) & 0xff);
             arr[index + 1] = (byte)(value & 0xff);
@@ -287,7 +287,7 @@ namespace Getools.Lib
         /// <param name="arr">Array to insert value into.</param>
         /// <param name="index">Index to insert value at.</param>
         /// <param name="value">Value to insert.</param>
-        public static void Insert16Big(byte[] arr, Int16 index, UInt16 value)
+        public static void Insert16Big(byte[] arr, int index, UInt16 value)
         {
             arr[index + 0] = (byte)((value >> 8) & 0xff);
             arr[index + 1] = (byte)(value & 0xff);
@@ -347,6 +347,78 @@ namespace Getools.Lib
             arr[index + 1] = (byte)((value >> 16) & 0xff);
             arr[index + 2] = (byte)((value >> 8) & 0xff);
             arr[index + 3] = (byte)(value & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 64 bit value to LSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert64Little(byte[] arr, int index, long value)
+        {
+            arr[index + 0] = (byte)(value & 0xff);
+            arr[index + 1] = (byte)((value >> 8) & 0xff);
+            arr[index + 2] = (byte)((value >> 16) & 0xff);
+            arr[index + 3] = (byte)((value >> 24) & 0xff);
+            arr[index + 4] = (byte)((value >> 32) & 0xff);
+            arr[index + 5] = (byte)((value >> 40) & 0xff);
+            arr[index + 6] = (byte)((value >> 48) & 0xff);
+            arr[index + 7] = (byte)((value >> 56) & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 64 bit value to LSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert64Little(byte[] arr, int index, ulong value)
+        {
+            arr[index + 0] = (byte)(value & 0xff);
+            arr[index + 1] = (byte)((value >> 8) & 0xff);
+            arr[index + 2] = (byte)((value >> 16) & 0xff);
+            arr[index + 3] = (byte)((value >> 24) & 0xff);
+            arr[index + 4] = (byte)((value >> 32) & 0xff);
+            arr[index + 5] = (byte)((value >> 40) & 0xff);
+            arr[index + 6] = (byte)((value >> 48) & 0xff);
+            arr[index + 7] = (byte)((value >> 56) & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 64 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert64Big(byte[] arr, int index, long value)
+        {
+            arr[index + 0] = (byte)((value >> 56) & 0xff);
+            arr[index + 1] = (byte)((value >> 48) & 0xff);
+            arr[index + 2] = (byte)((value >> 40) & 0xff);
+            arr[index + 3] = (byte)((value >> 32) & 0xff);
+            arr[index + 4] = (byte)((value >> 24) & 0xff);
+            arr[index + 5] = (byte)((value >> 16) & 0xff);
+            arr[index + 6] = (byte)((value >> 8) & 0xff);
+            arr[index + 7] = (byte)(value & 0xff);
+        }
+
+        /// <summary>
+        /// Converts 64 bit value to MSB and inserts into array at index.
+        /// </summary>
+        /// <param name="arr">Array to insert value into.</param>
+        /// <param name="index">Index to insert value at.</param>
+        /// <param name="value">Value to insert.</param>
+        public static void Insert64Big(byte[] arr, int index, ulong value)
+        {
+            arr[index + 0] = (byte)((value >> 56) & 0xff);
+            arr[index + 1] = (byte)((value >> 48) & 0xff);
+            arr[index + 2] = (byte)((value >> 40) & 0xff);
+            arr[index + 3] = (byte)((value >> 32) & 0xff);
+            arr[index + 4] = (byte)((value >> 24) & 0xff);
+            arr[index + 5] = (byte)((value >> 16) & 0xff);
+            arr[index + 6] = (byte)((value >> 8) & 0xff);
+            arr[index + 7] = (byte)(value & 0xff);
         }
 
         /// <summary>

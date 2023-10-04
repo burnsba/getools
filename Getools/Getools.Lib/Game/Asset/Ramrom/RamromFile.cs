@@ -14,6 +14,11 @@ namespace Getools.Lib.Game.Asset.Ramrom
     public class RamromFile
     {
         /// <summary>
+        /// Size of the `struct ramromfilestructure` in bytes.
+        /// </summary>
+        public const int SizeOf = 0xe8; // 232
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RamromFile"/> class.
         /// </summary>
         public RamromFile()
@@ -147,5 +152,93 @@ namespace Getools.Lib.Game.Asset.Ramrom
         /// Replay iteration data.
         /// </summary>
         public List<CaptureIteration> Iterations { get; set; } = new List<CaptureIteration>();
+
+        public byte[] ToRamromFileStructByteArray()
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            BitUtility.Insert64Big(bytes, pos, RandomSeed);
+            pos += Config.TargetDoubleWordSize;
+
+            BitUtility.Insert64Big(bytes, pos, Randomizer);
+            pos += Config.TargetDoubleWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)LevelId);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Difficulty);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, SizeCommands);
+            pos += Config.TargetWordSize;
+
+            var saveDataBytes = SaveData.ToByteArray();
+            Array.Copy(saveDataBytes, 0, bytes, pos, saveDataBytes.Length);
+            pos += saveDataBytes.Length;
+
+            BitUtility.Insert16Big(bytes, pos, Padding);
+            pos += Config.TargetShortSize;
+
+            BitUtility.Insert32Big(bytes, pos, TotalTimeMs);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, FileSize);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, (int)Mode);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, SlotNumber);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, NumberPlayers);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Scenario);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, MultiplayerStageSel);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, GameLength);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, MultiplayerWeaponSet);
+            pos += Config.TargetWordSize;
+
+            for (int i = 0; i < 4; i++)
+            {
+                BitUtility.Insert32Big(bytes, pos, MultiplayerChar[i]);
+                pos += Config.TargetWordSize;
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                BitUtility.Insert32Big(bytes, pos, MultiplayerHandicap[i]);
+                pos += Config.TargetWordSize;
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                BitUtility.Insert32Big(bytes, pos, MultiplayerControlStyle[i]);
+                pos += Config.TargetWordSize;
+            }
+
+            BitUtility.Insert32Big(bytes, pos, AimOption);
+            pos += Config.TargetWordSize;
+
+            for (int i = 0; i < 4; i++)
+            {
+                BitUtility.Insert32Big(bytes, pos, MultiplayerFlags[i]);
+                pos += Config.TargetWordSize;
+            }
+
+            BitUtility.Insert32Big(bytes, pos, Padding2);
+            pos += Config.TargetWordSize;
+
+            return bytes;
+        }
     }
 }

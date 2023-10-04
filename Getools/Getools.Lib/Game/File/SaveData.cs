@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Getools.Lib.Game.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,11 @@ namespace Getools.Lib.Game.File
     /// </summary>
     public class SaveData
     {
+        /// <summary>
+        /// Size of the `struct save_data` in bytes.
+        /// </summary>
+        public const int SizeOf = 0x5e; // 94
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SaveData"/> class.
         /// </summary>
@@ -80,5 +86,38 @@ namespace Getools.Lib.Game.File
         /// 4 is ... difficulty? File folder?
         /// </remarks>
         public byte[] Times { get; set; } = new byte[(BondConstants.SinglePlayerLevelCount - 1) * 4];
+
+        public byte[] ToByteArray()
+        {
+            var size = SizeOf;
+            var bytes = new byte[size];
+            int pos = 0;
+
+            BitUtility.Insert32Big(bytes, pos, Checksum1);
+            pos += Config.TargetWordSize;
+
+            BitUtility.Insert32Big(bytes, pos, Checksum2);
+            pos += Config.TargetWordSize;
+
+            bytes[pos++] = CompletionBitflags;
+            bytes[pos++] = Flag007;
+            bytes[pos++] = MusicVolume;
+            bytes[pos++] = SfxVolume;
+
+            BitUtility.Insert16Big(bytes, pos, Options);
+            pos += Config.TargetShortSize;
+
+            bytes[pos++] = UnlockedCheats1;
+            bytes[pos++] = UnlockedCheats2;
+            bytes[pos++] = UnlockedCheats3;
+            bytes[pos++] = Padding;
+
+            for (int i = 0; i < Times.Length; i++)
+            {
+                bytes[pos++] = Times[i];
+            }
+
+            return bytes;
+        }
     }
 }

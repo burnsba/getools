@@ -20,6 +20,7 @@ using Gebug64.Win.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Gebug64.Win
 {
@@ -75,6 +76,30 @@ namespace Gebug64.Win
             MainWindowViewModel vm = (MainWindowViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindowViewModel))!;
 
             MainWindow mainWindow = (MainWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindow))!;
+
+            /*** begin resolve tabs */
+
+            // Look up the tabs to add based on the interface ICategoryTabViewModel.
+            // This will instantiate instances of the viewmodels, so needs to happen
+            // outside the constructor of the MainWindowViewModel, otherwise any references in the tabs
+            // to the MainWindowViewModel will create a circular construction chain (a very slow stack overflow).
+            var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
+            var tabViewmodelTypes = assemblyTypes.Where(x =>
+                typeof(ICategoryTabViewModel).IsAssignableFrom(x)
+                && !x.IsAbstract
+                && x.IsClass);
+            var tabViewmodels = new List<TabViewModelBase>();
+            foreach (var t in tabViewmodelTypes)
+            {
+                tabViewmodels.Add((TabViewModelBase)Workspace.Instance.ServiceProvider.GetService(t)!);
+            }
+
+            foreach (var t in tabViewmodels.OrderBy(x => x.DisplayOrder))
+            {
+                vm.Tabs.Add(t);
+            }
+
+            /*** end resolve tabs */
 
             mainWindow.Show();
 

@@ -21,7 +21,6 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using Antlr4.Runtime.Atn;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
@@ -31,6 +30,7 @@ using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Win.Config;
+using Gebug64.Win.Enum;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.Session;
 using Gebug64.Win.Ui;
@@ -88,6 +88,9 @@ namespace Gebug64.Win.ViewModels
 
         private readonly object _logMessagesLock = new object();
         private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
+
+        private readonly object _queryTasksLock = new object();
+        private ObservableCollection<QueryTaskViewModel> _queryTasks = new ObservableCollection<QueryTaskViewModel>();
 
         private readonly object _recentlySentFilesLock = new object();
 
@@ -214,7 +217,7 @@ namespace Gebug64.Win.ViewModels
             _isConnected
             && !_currentlySendingRom
             && _connectionError == false
-            && _connectionLevel == ConnectionLevel.Everdrive;
+            && _connectionLevel == ConnectionLevel.Flashcart;
 
         public ICommand SendRomCommand { get; set; }
 
@@ -251,7 +254,7 @@ namespace Gebug64.Win.ViewModels
         {
             get
             {
-                if (_connectionLevel == ConnectionLevel.Everdrive)
+                if (_connectionLevel == ConnectionLevel.Flashcart)
                 {
                     return "menu";
                 }
@@ -263,6 +266,8 @@ namespace Gebug64.Win.ViewModels
                 return string.Empty;
             }
         }
+
+        public ConnectionLevel ConnectionLevel => _connectionLevel;
 
         public string StatusSerialPort
         {
@@ -319,6 +324,19 @@ namespace Gebug64.Win.ViewModels
 
         public string RomVersionString => _romVersion?.ToString() ?? "unk";
 
+        public ObservableCollection<QueryTaskViewModel> QueryTasks
+        {
+            get
+            {
+                return _queryTasks;
+            }
+
+            set
+            {
+                BindingOperations.EnableCollectionSynchronization(_queryTasks, _queryTasksLock);
+            }
+        }
+
         public MainWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
         {
             _ignoreAppSettingsChange = true;
@@ -349,33 +367,11 @@ namespace Gebug64.Win.ViewModels
             SetAvailableFlashcarts();
             BuildMenuSendRom();
 
-            // Look up the tabs to add based on the interface ICategoryTabViewModel.
-            var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
-            var tabViewmodelTypes = assemblyTypes.Where(x =>
-                typeof(ICategoryTabViewModel).IsAssignableFrom(x)
-                && !x.IsAbstract
-                && x.IsClass);
-            var tabViewmodels = new List<TabViewModelBase>();
-            foreach (var t in tabViewmodelTypes)
-            {
-                tabViewmodels.Add((TabViewModelBase)Workspace.Instance.ServiceProvider.GetService(t)!);
-            }
-
-            foreach (var t in tabViewmodels.OrderBy(x => x.DisplayOrder))
-            {
-                Tabs.Add(t);
-            }
+            
 
             StartThread();
 
             _ignoreAppSettingsChange = false;
-        }
-
-        private enum ConnectionLevel
-        {
-            NotConnected,
-            Everdrive,
-            Rom,
         }
 
         public void Shutdown()
@@ -383,6 +379,23 @@ namespace Gebug64.Win.ViewModels
             _shutdown = true;
 
             // cleanup handled at end of ThreadMain
+        }
+
+        public bool RegisterBegin(QueryTaskViewModel task)
+        {
+            if (task.TaskIsUnique)
+            {
+                var type = task.TaskType;
+                if (QueryTasks.Any(x => x.TaskType == type && x.State == QueryTask.TaskState.Running))
+                {
+                    return false;
+                }
+            }
+
+            QueryTasks.Add(task);
+            Task.Run(() => task.Begin());
+
+            return true;
         }
 
         private void BuildMenuSendRom()
@@ -616,7 +629,7 @@ namespace Gebug64.Win.ViewModels
 
                 if (testResult)
                 {
-                    _connectionLevel = ConnectionLevel.Everdrive;
+                    _connectionLevel = ConnectionLevel.Flashcart;
                 }
 
                 if (false && !testResult)
@@ -929,7 +942,7 @@ namespace Gebug64.Win.ViewModels
             {
                 FileName = "gebug64-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"), // Default file name
                 DefaultExt = ".txt", // Default file extension
-                Filter = "TXT format | *.txt" // Filter files by extension
+                Filter = "TXT format | *.txt", // Filter files by extension
             };
 
             // Show save file dialog box
@@ -1009,7 +1022,7 @@ namespace Gebug64.Win.ViewModels
             {
                 if (_connectionLevel == ConnectionLevel.NotConnected)
                 {
-                    _connectionLevel = ConnectionLevel.Everdrive;
+                    _connectionLevel = ConnectionLevel.Flashcart;
 
                     OnPropertyChanged(nameof(CanSendRom));
                     OnPropertyChanged(nameof(StatusConnectionLevelText));

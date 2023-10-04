@@ -19,7 +19,6 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         private readonly string _tabName;
 
         protected readonly ILogger _logger;
-        protected IConnectionServiceProvider? _connectionServiceProvider;
         protected readonly IConnectionServiceProviderResolver _connectionServiceProviderResolver;
         protected readonly Dispatcher _dispatcher;
         protected bool _ignoreAppSettingsChange = false;
@@ -29,7 +28,10 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
         public int DisplayOrder { get; set; }
 
-        public TabViewModelBase(string tabName, ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+        public TabViewModelBase(
+            string tabName,
+            ILogger logger,
+            IConnectionServiceProviderResolver connectionServiceProviderResolver)
         {
             _tabName = tabName;
 

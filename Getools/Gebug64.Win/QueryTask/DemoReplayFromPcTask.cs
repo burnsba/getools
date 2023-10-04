@@ -1,0 +1,90 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Getools.Lib.Game.Asset.Ramrom;
+using Getools.Lib.Kaitai;
+using Microsoft.Extensions.Logging;
+
+namespace Gebug64.Win.QueryTask
+{
+    public class DemoReplayFromPcTask : QueryTaskContext
+    {
+        private readonly RamromFile _ramromFile;
+        private readonly string _demoFilePath;
+        private readonly string _filename;
+        private readonly ILogger _logger;
+        private readonly IConnectionServiceProviderResolver _connectionServiceProviderResolver;
+
+        private GebugRamromStartDemoReplayFromPcMessage? _headerMessage = null;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DemoReplayFromPcTask"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Service provider resolver.</param>
+        /// <param name="demoFilePath">Path on disk of demo file.</param>
+        public DemoReplayFromPcTask(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver, string demoFilePath)
+        {
+            _logger = logger;
+            _connectionServiceProviderResolver = connectionServiceProviderResolver;
+
+            _ramromFile = RamromParser.ParseBin(demoFilePath);
+            _demoFilePath = demoFilePath;
+
+            _filename = System.IO.Path.GetFileName(_demoFilePath);
+
+            _logger.Log(LogLevel.Information, $"Load ramrom file {_demoFilePath}");
+        }
+
+        /// <inheritdoc />
+        public override bool TaskIsUnique => true;
+
+        /// <inheritdoc />
+        public override string DisplayName => $"Ramrom replay {_filename}";
+
+        /// <inheritdoc />
+        public override void Begin()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                throw new NullReferenceException();
+            }
+
+            _headerMessage = new GebugRamromStartDemoReplayFromPcMessage();
+            _headerMessage.Header = _ramromFile.ToRamromFileStructByteArray();
+
+            connectionServiceProvider.Subscribe(IterationMessageCallback, 0, IterationMessageFilter);
+
+            connectionServiceProvider.SendMessage(_headerMessage);
+        }
+
+        private bool IterationMessageFilter(IGebugMessage msg)
+        {
+            if (msg.Category == GebugMessageCategory.Ramrom
+                && msg.Command == (int)GebugCmdRamrom.ReplayRequestNextIteration)
+            {
+                if (msg is GebugRamromIterationMessage iterMessage)
+                {
+                    if (iterMessage.ReplayId == _headerMessage!.MessageId)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void IterationMessageCallback(IGebugMessage msg)
+        {
+            return;
+        }
+    }
+}
