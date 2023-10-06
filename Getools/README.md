@@ -40,3 +40,9 @@ C# partial port of GNU gzip `inflate.c`, from version 1.2.4 release. This is the
 Fork of https://github.com/huysentruitw/svglib/tree/master project (MIT license).
 
 [Project readme](SvgLib/README.md).
+
+# WPF.MDI
+
+Clone of https://github.com/dutts/wpfmdi/tree/master project (Apache 2.0 license).
+
+[Project readme](WPF.MDI/README.md).

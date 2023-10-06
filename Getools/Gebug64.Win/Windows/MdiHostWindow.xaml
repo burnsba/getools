@@ -1,0 +1,35 @@
+﻿<Window x:Class="Gebug64.Win.Windows.MdiHostWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gebug64.Win.Windows"
+        xmlns:mdi="clr-namespace:WPF.MDI;assembly=WPF.MDI"
+        mc:Ignorable="d"
+        Title="Gebug64" Height="500" Width="900">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        </ResourceDictionary>
+    </Window.Resources>
+    
+    <DockPanel>
+        <mdi:MdiContainer Name="Container">
+            <mdi:MdiContainer.Menu>
+                <Menu DockPanel.Dock="Top">
+
+                    <MenuItem Header="View" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuShowWindow}">
+                    </MenuItem>
+                    
+                    <MenuItem Header="Window" x:Name="WindowsMenu" x:FieldModifier="private" />
+                </Menu>
+            </mdi:MdiContainer.Menu>
+            
+        </mdi:MdiContainer>
+    </DockPanel>
+</Window>

@@ -32,6 +32,7 @@ using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Win.Config;
 using Gebug64.Win.Enum;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.QueryTask;
 using Gebug64.Win.Session;
 using Gebug64.Win.Ui;
 using Gebug64.Win.ViewModels.CategoryTabs;
@@ -302,10 +303,10 @@ namespace Gebug64.Win.ViewModels
 
         public ObservableCollection<string> RecentlySentFiles
         {
-            get { return AppConfig.RecentSendRom; }
+            get { return AppConfig.RecentPath.RecentSendRom; }
             set
             {
-                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentSendRom, _recentlySentFilesLock);
+                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentPath.RecentSendRom, _recentlySentFilesLock);
             }
         }
 
@@ -367,8 +368,6 @@ namespace Gebug64.Win.ViewModels
             SetAvailableFlashcarts();
             BuildMenuSendRom();
 
-            
-
             StartThread();
 
             _ignoreAppSettingsChange = false;
@@ -381,16 +380,26 @@ namespace Gebug64.Win.ViewModels
             // cleanup handled at end of ThreadMain
         }
 
-        public bool RegisterBegin(QueryTaskViewModel task)
+        public bool RegisterBegin(QueryTaskContext context)
         {
-            if (task.TaskIsUnique)
+            if (context.TaskIsUnique)
             {
-                var type = task.TaskType;
+                var type = context.GetType();
                 if (QueryTasks.Any(x => x.TaskType == type && x.State == QueryTask.TaskState.Running))
                 {
                     return false;
                 }
             }
+
+            Action<QueryTaskViewModel> deleteAction = x =>
+            {
+                if (x.DeleteCommand.CanExecute(context))
+                {
+                    QueryTasks.Remove(x);
+                }
+            };
+
+            var task = new QueryTaskViewModel(context, deleteAction);
 
             QueryTasks.Add(task);
             Task.Run(() => task.Begin());
@@ -917,8 +926,13 @@ namespace Gebug64.Win.ViewModels
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 DefaultExt = ".z64", // Default file extension
-                Filter = "z64 format | *.z64" // Filter files by extension
+                Filter = "z64 format | *.z64", // Filter files by extension
             };
+
+            if (System.IO.Directory.Exists(AppConfig.RecentPath.SendRomFolder))
+            {
+                dialog.InitialDirectory = AppConfig.RecentPath.SendRomFolder;
+            }
 
             // Show open file dialog box
             bool? result = dialog.ShowDialog();
@@ -927,6 +941,9 @@ namespace Gebug64.Win.ViewModels
             if (result == true && !string.IsNullOrEmpty(dialog.FileName))
             {
                 SelectedRom = dialog.FileName;
+
+                AppConfig.RecentPath.SendRomFolder = System.IO.Path.GetDirectoryName(dialog.FileName);
+                SaveAppSettings();
             }
             else
             {

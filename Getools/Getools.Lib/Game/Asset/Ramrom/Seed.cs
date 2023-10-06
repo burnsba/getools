@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -37,5 +38,14 @@ namespace Getools.Lib.Game.Asset.Ramrom
         /// Checksum byte.
         /// </summary>
         public byte Check { get; set; }
+
+        /// <summary>
+        /// Converts seed into byte array.
+        /// </summary>
+        /// <returns>Data.</returns>
+        public byte[] ToByteArray()
+        {
+            return new byte[] { SpeedFrames, Count, RandomSeed, Check };
+        }
     }
 }

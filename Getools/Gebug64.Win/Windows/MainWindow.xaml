@@ -127,13 +127,7 @@
                 <RowDefinition MinHeight="120"></RowDefinition>
             </Grid.RowDefinitions>
 
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="5"></ColumnDefinition>
-                <ColumnDefinition MinWidth="120" MaxWidth="240"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-
-            <Grid Grid.Row="1" Grid.Column="0">
+            <Grid Grid.Row="1" >
                     <!-- TabStripPlacement="Left" -->
                     <TabControl
                 x:Name="CategoryTabList"
@@ -145,9 +139,9 @@
                 </TabControl>
             </Grid>
 
-            <GridSplitter Grid.Row="2" Grid.Column="0" Height="5" HorizontalAlignment="Stretch" />
+            <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" />
 
-            <Grid Grid.Row="3" Grid.Column="0">
+            <Grid Grid.Row="3" >
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"></RowDefinition>
@@ -171,31 +165,6 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
-            </Grid>
-
-
-            <GridSplitter Grid.Row="1" Grid.Column="1" Grid.RowSpan="3" Width="5" HorizontalAlignment="Stretch" />
-
-            <Grid Grid.Row="1" Grid.Column="2" Grid.RowSpan="3">
-
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="24"></RowDefinition>
-                    <RowDefinition Height="*"></RowDefinition>
-                </Grid.RowDefinitions>
-                
-                <TextBlock Grid.Row="0" HorizontalAlignment="Center">Query Tasks</TextBlock>
-
-                <ListBox Grid.Row="1" Margin="2"
-                         ItemsSource="{Binding QueryTasks}"
-                         ScrollViewer.VerticalScrollBarVisibility="Visible">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock TextWrapping="Wrap" Text="{Binding DisplayName}" FontFamily="pack://application:,,,/Font/#Ac437 IBM EGA 9x14" FontSize="28" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
             </Grid>
 
         </Grid>

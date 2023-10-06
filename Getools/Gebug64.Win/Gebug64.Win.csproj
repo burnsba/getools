@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
@@ -29,6 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Gebug64.Unfloader\Gebug64.Unfloader.csproj" />
     <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
+    <ProjectReference Include="..\WPF.MDI\WPF.MDI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

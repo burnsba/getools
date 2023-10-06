@@ -13,13 +13,12 @@ namespace Gebug64.Win.ViewModels.Config
 
         public ConnectionSectionViewModel Connection { get; set; }
 
-        public ObservableCollection<string> RecentSendRom { get; set; } = new ObservableCollection<string>();
+        public RecentPathSectionViewModel RecentPath { get; set; }
 
         public string FramebufferGrabSavePath { get; set; }
 
         public AppConfigViewModel()
         {
-            RecentSendRom.CollectionChanged += (a, b) => IsDirty = true;
         }
     }
 }

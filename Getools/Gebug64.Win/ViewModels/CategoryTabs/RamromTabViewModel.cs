@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Antlr4.Runtime.Atn;
 using Antlr4.Runtime.Tree.Xpath;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
@@ -62,7 +63,6 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         {
             get
             {
-                return true;
                 IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
                 if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
@@ -108,6 +108,11 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 Filter = "BIN format | *.bin", // Filter files by extension
             };
 
+            if (System.IO.Directory.Exists(_mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder))
+            {
+                dialog.InitialDirectory = _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder;
+            }
+
             // Show open file dialog box
             bool? result = dialog.ShowDialog();
 
@@ -115,9 +120,16 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             if (result == true && !string.IsNullOrEmpty(dialog.FileName))
             {
                 string filename = dialog.FileName;
+
+                if (dialog.FileName != _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder)
+                {
+                    _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder = System.IO.Path.GetDirectoryName(dialog.FileName);
+                    SaveAppSettings();
+                }
+
                 var context = new DemoReplayFromPcTask(_logger, _connectionServiceProviderResolver, filename);
 
-                _mainWindowViewModel.RegisterBegin(new QueryTaskViewModel(context));
+                _mainWindowViewModel.RegisterBegin(context);
             }
         }
 

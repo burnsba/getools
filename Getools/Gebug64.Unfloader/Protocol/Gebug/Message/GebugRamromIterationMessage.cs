@@ -38,5 +38,18 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
 
         [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.PcToConsole)]
         public byte[]? IterationData { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            if (Source == CommunicationSource.Pc)
+            {
+                return $"{Category} {DebugCommand}";
+            }
+            else
+            {
+                return $"{Category} {DebugCommand} {nameof(ReplayId)}=0x{ReplayId:x4} {nameof(IterationIndex)}=0x{IterationIndex:x4}";
+            }
+        }
     }
 }

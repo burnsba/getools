@@ -26,16 +26,18 @@ namespace Gebug64.Win.QueryTask
         /// <summary>
         /// Current task state.
         /// </summary>
-        public TaskState State { get; private set; }
+        public TaskState State { get; protected set; }
 
         /// <summary>
         /// Reason task is no longer running.
         /// </summary>
-        public TaskStopReason StopReason { get; private set; }
+        public TaskStopReason StopReason { get; protected set; }
 
         /// <summary>
         /// Start worker task.
         /// </summary>
         public abstract void Begin();
+
+        public abstract void Cancel();
     }
 }

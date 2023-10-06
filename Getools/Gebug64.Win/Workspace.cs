@@ -16,6 +16,8 @@ using Gebug64.Win.Config;
 using Gebug64.Win.ViewModels.Config;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Gebug64.Win.Controls;
+using AutoMapper;
 
 namespace Gebug64.Win
 {
@@ -294,10 +296,16 @@ namespace Gebug64.Win
 
         public void SaveAppSettings()
         {
+            /*
             var translateService = (TranslateService)ServiceProvider.GetService(typeof(TranslateService))!;
             var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
 
             var settings = translateService.Translate<AppConfigViewModel, AppConfigSettings>(appConfig);
+            */
+            var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
+
+            var mapper = (IMapper)ServiceProvider.GetService(typeof(IMapper))!;
+            var settings = mapper.Map<AppConfigSettings>(appConfig);
 
             var jobj = JObject.FromObject(settings);
             // parent the C# class into a container called "AppConfigSettings"

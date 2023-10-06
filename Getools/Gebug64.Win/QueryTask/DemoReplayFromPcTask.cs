@@ -63,6 +63,16 @@ namespace Gebug64.Win.QueryTask
             connectionServiceProvider.Subscribe(IterationMessageCallback, 0, IterationMessageFilter);
 
             connectionServiceProvider.SendMessage(_headerMessage);
+
+            State = TaskState.Running;
+        }
+
+        public override void Cancel()
+        {
+            // There's no cancel message to send to the console, so just allow cancel.
+            State = TaskState.Stopped;
+
+            _logger.Log(LogLevel.Information, $"{nameof(DemoReplayFromPcTask)}: cancel request");
         }
 
         private bool IterationMessageFilter(IGebugMessage msg)
@@ -74,6 +84,9 @@ namespace Gebug64.Win.QueryTask
                 {
                     if (iterMessage.ReplayId == _headerMessage!.MessageId)
                     {
+                        // If this was previously stopped, we just got a new message so make sure state is updated.
+                        State = TaskState.Running;
+
                         return true;
                     }
                 }
@@ -84,7 +97,40 @@ namespace Gebug64.Win.QueryTask
 
         private void IterationMessageCallback(IGebugMessage msg)
         {
-            return;
+            // Should only get here after filter callback, so it will be safe to cast.
+            var iterMessage = (GebugRamromIterationMessage)msg;
+
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                throw new NullReferenceException();
+            }
+
+            var reply = new GebugRamromIterationMessage();
+            reply.ReplyTo(msg);
+
+            if (iterMessage.IterationIndex < _ramromFile.Iterations.Count)
+            {
+                reply.IterationData = _ramromFile.Iterations[iterMessage.IterationIndex].ToByteArray();
+            }
+            else
+            {
+                _logger.Log(LogLevel.Information, $"{nameof(DemoReplayFromPcTask)}: iteration request failed, index={iterMessage.IterationIndex} outside array length={_ramromFile.Iterations.Count}");
+
+                State = TaskState.Stopped;
+
+                return;
+            }
+
+            connectionServiceProvider.SendMessage(reply);
+
+            // If this was the last message, console shouldn't be asking for any more data.
+            if (iterMessage.IterationIndex == _ramromFile.Iterations.Count - 1)
+            {
+                _logger.Log(LogLevel.Information, $"{nameof(DemoReplayFromPcTask)}: sent last iteration, stopping now");
+
+                State = TaskState.Stopped;
+            }
         }
     }
 }

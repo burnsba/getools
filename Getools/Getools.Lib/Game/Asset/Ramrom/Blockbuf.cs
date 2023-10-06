@@ -37,5 +37,14 @@ namespace Getools.Lib.Game.Asset.Ramrom
         /// High byte of button press.
         /// </summary>
         public byte ButtonHigh { get; set; }
+
+        /// <summary>
+        /// Converts blockbuf into byte array.
+        /// </summary>
+        /// <returns>Data.</returns>
+        public byte[] ToByteArray()
+        {
+            return new byte[] { (byte)StickX, (byte)StickY, ButtonLow, ButtonHigh };
+        }
     }
 }

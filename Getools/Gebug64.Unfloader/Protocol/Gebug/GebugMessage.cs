@@ -545,6 +545,12 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         }
 
         /// <inheritdoc />
+        public void ReplyTo(IGebugMessage source)
+        {
+            AckId = source.MessageId;
+        }
+
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"{Category} {DebugCommand}";

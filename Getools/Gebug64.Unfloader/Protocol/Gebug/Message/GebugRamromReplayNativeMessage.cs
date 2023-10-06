@@ -29,5 +29,18 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// </summary>
         [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
         public byte Index { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            if (Source == CommunicationSource.Pc)
+            {
+                return $"{Category} {DebugCommand} {Index}";
+            }
+            else
+            {
+                return $"{Category} {DebugCommand}";
+            }
+        }
     }
 }

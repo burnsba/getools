@@ -7,11 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using Antlr4.Runtime.Atn;
+using AutoMapper;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.SerialPort;
 using Gebug64.Win.Config;
+using Gebug64.Win.Controls;
 using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.CategoryTabs;
@@ -75,7 +77,7 @@ namespace Gebug64.Win
 
             MainWindowViewModel vm = (MainWindowViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindowViewModel))!;
 
-            MainWindow mainWindow = (MainWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindow))!;
+            //MainWindow mainWindow = (MainWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindow))!;
 
             /*** begin resolve tabs */
 
@@ -101,22 +103,38 @@ namespace Gebug64.Win
 
             /*** end resolve tabs */
 
-            mainWindow.Show();
+            //mainWindow.Show();
+
+            var host = (MdiHostWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MdiHostWindow))!;
+
+            MainControl main = (MainControl)Workspace.Instance.ServiceProvider.GetService(typeof(MainControl))!;
+            host.AddPermanentMdiChild(main, Gebug64.Win.Ui.Lang.Window_MessageCenterTitle, conf =>
+            {
+                conf.MinHeight = 400;
+                conf.MinWidth = 800;
+            });
+
+            host.Show();
 
             _theLogger.Log(LogLevel.Information, "Application started");
         }
 
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
+            var mapeprConfiguration = new MapperConfiguration(x => Session.MapperConfig.SetConfiguration(x));
+            var mapper = mapeprConfiguration.CreateMapper();
+            services.AddSingleton(typeof(IMapper), mapper);
+
             services.AddSingleton(typeof(IConfiguration), configuration);
 
             // load and register session service type translators.
-            var translateService = new TranslateService();
+            //var translateService = new TranslateService();
+            //services.AddSingleton(typeof(TranslateService), translateService);
 
-            services.AddSingleton(typeof(TranslateService), translateService);
 
             var appSettings = new AppConfigStartupResolver(configuration).GetAppConfigSettings();
-            var mainConfig = translateService.Translate<AppConfigSettings, AppConfigViewModel>(appSettings);
+            //var mainConfig = translateService.Translate<AppConfigSettings, AppConfigViewModel>(appSettings);
+            var mainConfig = mapper.Map<AppConfigViewModel>(appSettings);
 
             services.AddSingleton<AppConfigViewModel>(mainConfig);
 
@@ -133,6 +151,14 @@ namespace Gebug64.Win
 
             services.AddSingleton<MainWindowViewModel>();
             services.AddTransient<MainWindow>();
+
+            // MdiChild windows
+            services.AddTransient<MainControl>();
+            services.AddTransient<LogControl>();
+            services.AddTransient<QueryTasksControl>();
+            services.AddSingleton<MdiHostViewModel>();
+
+            services.AddTransient<MdiHostWindow>();
 
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
             var tabViewmodelTypes = assemblyTypes.Where(x =>

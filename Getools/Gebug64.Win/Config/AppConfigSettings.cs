@@ -18,13 +18,28 @@ namespace Gebug64.Win.Config
 
         public ConnectionSectionSettings Connection { get; set; }
 
-        public List<string> RecentSendRom { get; set; } = new List<string>();
+        public RecentPathSection RecentPath { get; set; }
 
         public string FramebufferGrabSavePath { get; set; }
 
         public AppConfigSettings(IConfiguration config)
         {
             config.GetSection(nameof(AppConfigSettings)).Bind(this);
+
+            if (Device == null)
+            {
+                Device = new();
+            }
+
+            if (Connection == null)
+            {
+                Connection = new();
+            }
+
+            if (RecentPath == null)
+            {
+                RecentPath = new();
+            }
         }
 
         private AppConfigSettings()
@@ -40,6 +55,15 @@ namespace Gebug64.Win.Config
             string json = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(path, json);
         }
+    }
+
+    public class RecentPathSection
+    {
+        public string? SendRomFolder { get; set; }
+
+        public string? RamromPcReplayFolder { get; set; }
+
+        public List<string> RecentSendRom { get; set; } = new List<string>();
     }
 
     public class DeviceSectionSettings
