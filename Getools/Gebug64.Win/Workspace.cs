@@ -1,23 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using System.Xml;
-using Microsoft.Extensions.Configuration;
-using Gebug64.Win.ViewModels;
-using Gebug64.Win.Windows;
 using System.Windows.Threading;
-using Gebug64.Win.Session;
+using System.Xml;
+using AutoMapper;
 using Gebug64.Win.Config;
+using Gebug64.Win.Controls;
+using Gebug64.Win.Session;
+using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.Config;
+using Gebug64.Win.Windows;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Gebug64.Win.Controls;
-using AutoMapper;
 
 namespace Gebug64.Win
 {
@@ -35,6 +35,10 @@ namespace Gebug64.Win
 
         private Dictionary<string, Control> _registeredControls = new Dictionary<string, Control>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Workspace"/> class.
+        /// </summary>
+        /// <param name="serviceProvider">Service provider.</param>
         private Workspace(IServiceProvider serviceProvider)
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
@@ -273,6 +277,11 @@ namespace Gebug64.Win
             return null;
         }
 
+        /// <summary>
+        /// Exception handler when a task throws.
+        /// </summary>
+        /// <param name="task">Task.</param>
+        /// <param name="title">Window title.</param>
         public void ShowTaskException(Task task, string title)
         {
             if (object.ReferenceEquals(null, task))
@@ -294,6 +303,9 @@ namespace Gebug64.Win
             }
         }
 
+        /// <summary>
+        /// Serializes runtime app settings and saves to default json file.
+        /// </summary>
         public void SaveAppSettings()
         {
             /*
@@ -308,6 +320,7 @@ namespace Gebug64.Win
             var settings = mapper.Map<AppConfigSettings>(appConfig);
 
             var jobj = JObject.FromObject(settings);
+
             // parent the C# class into a container called "AppConfigSettings"
             var container = JObject.FromObject(new { AppConfigSettings = jobj });
 

@@ -6,6 +6,7 @@
                     xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
                     xmlns:ctvm="clr-namespace:Gebug64.Win.ViewModels.CategoryTabs"
                     mc:Ignorable="d"
+                    x:Name="CategoryTabContent_NothingTemplate"
                     >
     <DataTemplate
         x:Key="CategoryTabContentNothingTemplate"

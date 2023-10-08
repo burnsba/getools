@@ -9,7 +9,7 @@
                     >
     <DataTemplate
         x:Key="CategoryTabContentViTemplate"
-        DataType="{x:Type ctvm:StageTabViewModel}"
+        DataType="{x:Type ctvm:ViTabViewModel}"
         >
         <DataTemplate.Resources>
         </DataTemplate.Resources>

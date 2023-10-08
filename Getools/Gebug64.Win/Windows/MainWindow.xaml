@@ -16,15 +16,6 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/Controls.xaml"/>
-                
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_CheatTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_DebugTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MetaTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_MiscTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_NothingTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_RamromTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_StageTemplate.xaml"/>
-                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/CategoryTabContent_ViTemplate.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
             <converters:BoolToInvertedBoolConverter x:Key="BoolToInvertedBoolConverter" />
@@ -35,14 +26,6 @@
 
             <selectors:CategoryTabContentTemplateSelector
                     x:Key="CompareContentSelector"
-                    CheatTemplate="{StaticResource CategoryTabContentCheatTemplate}"
-                    DebugTemplate="{StaticResource CategoryTabContentDebugTemplate}"
-                    MetaTemplate="{StaticResource CategoryTabContentMetaTemplate}"
-                    MiscTemplate="{StaticResource CategoryTabContentMiscTemplate}"
-                    NothingTemplate="{StaticResource CategoryTabContentNothingTemplate}"
-                    RamromTemplate="{StaticResource CategoryTabContentRamromTemplate}"
-                    StageTemplate="{StaticResource CategoryTabContentStageTemplate}"
-                    ViTemplate="{StaticResource CategoryTabContentViTemplate}"
                     />
 
             <DataTemplate x:Key="CategoryTabHeader">

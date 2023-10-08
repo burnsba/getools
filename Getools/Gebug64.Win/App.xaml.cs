@@ -31,7 +31,7 @@ namespace Gebug64.Win
     /// </summary>
     public partial class App : Application
     {
-        private ILogger _theLogger;
+        private ILogger? _theLogger;
 
         private void App_Startup(object sender, StartupEventArgs e)
         {
@@ -40,7 +40,7 @@ namespace Gebug64.Win
             ServiceProvider serviceProvider;
 
             Logger.CreateInstance();
-            _theLogger = Logger.Instance;
+            _theLogger = Logger.Instance!;
 
             try
             {
@@ -77,8 +77,6 @@ namespace Gebug64.Win
 
             MainWindowViewModel vm = (MainWindowViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindowViewModel))!;
 
-            //MainWindow mainWindow = (MainWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindow))!;
-
             /*** begin resolve tabs */
 
             // Look up the tabs to add based on the interface ICategoryTabViewModel.
@@ -103,8 +101,6 @@ namespace Gebug64.Win
 
             /*** end resolve tabs */
 
-            //mainWindow.Show();
-
             var host = (MdiHostWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MdiHostWindow))!;
 
             MainControl main = (MainControl)Workspace.Instance.ServiceProvider.GetService(typeof(MainControl))!;
@@ -128,17 +124,12 @@ namespace Gebug64.Win
             services.AddSingleton(typeof(IConfiguration), configuration);
 
             // load and register session service type translators.
-            //var translateService = new TranslateService();
-            //services.AddSingleton(typeof(TranslateService), translateService);
-
-
             var appSettings = new AppConfigStartupResolver(configuration).GetAppConfigSettings();
-            //var mainConfig = translateService.Translate<AppConfigSettings, AppConfigViewModel>(appSettings);
             var mainConfig = mapper.Map<AppConfigViewModel>(appSettings);
 
             services.AddSingleton<AppConfigViewModel>(mainConfig);
 
-            services.AddSingleton<ILogger>(_theLogger);
+            services.AddSingleton<ILogger>(_theLogger!);
 
             var typeGetter = new SerialPortFactoryTypeGetter(typeof(WrappedSerialPort));
             services.AddSingleton<SerialPortFactoryTypeGetter>(typeGetter);
