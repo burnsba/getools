@@ -34,6 +34,11 @@ namespace Getools.Lib.Converters
             CStanListener listener = new CStanListener();
             ParseTreeWalker.Default.Walk(listener, tree);
 
+            if (object.ReferenceEquals(null, listener.Result))
+            {
+                throw new NullReferenceException();
+            }
+
             listener.Result.SetFormat(TypeFormat.Normal);
             listener.Result.DeserializeFix();
 
@@ -55,6 +60,11 @@ namespace Getools.Lib.Converters
             BetaCStanListener listener = new BetaCStanListener();
             ParseTreeWalker.Default.Walk(listener, tree);
 
+            if (object.ReferenceEquals(null, listener.Result))
+            {
+                throw new NullReferenceException();
+            }
+
             listener.Result.SetFormat(TypeFormat.Beta);
             listener.Result.DeserializeFix();
 
@@ -70,6 +80,12 @@ namespace Getools.Lib.Converters
         public static StandFile ReadFromBinFile(string path, string name)
         {
             var stan = Kaitai.StanParser.ParseBin(path);
+
+            if (object.ReferenceEquals(null, stan.Header))
+            {
+                throw new NullReferenceException();
+            }
+
             stan.Header.Name = name;
 
             return stan;
@@ -84,6 +100,12 @@ namespace Getools.Lib.Converters
         public static StandFile ReadFromBetaBinFile(string path, string name)
         {
             var stan = Kaitai.BetaStanParser.ParseBin(path);
+
+            if (object.ReferenceEquals(null, stan.Header))
+            {
+                throw new NullReferenceException();
+            }
+
             stan.Header.Name = name;
 
             return stan;
@@ -104,6 +126,11 @@ namespace Getools.Lib.Converters
                 {
                     ContractResolver = new StanShouldSerializeContractResolver(),
                 });
+
+            if (object.ReferenceEquals(null, stan))
+            {
+                throw new NullReferenceException();
+            }
 
             if (stan.Format == TypeFormat.DefaultUnknown)
             {

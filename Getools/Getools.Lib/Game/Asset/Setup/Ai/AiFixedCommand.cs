@@ -7,19 +7,47 @@ using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// An AI Command with a fixed size.
+    /// </summary>
     public class AiFixedCommand : IAiFixedCommand
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiFixedCommand"/> class.
+        /// </summary>
         public AiFixedCommand()
         {
+            CommandParameters = new List<IAiParameter>();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiFixedCommand"/> class.
+        /// </summary>
+        /// <param name="description">Base command.</param>
         public AiFixedCommand(IAiCommandDescription description)
         {
+            if (object.ReferenceEquals(null, description))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (string.IsNullOrEmpty(description.DecompName))
+            {
+                throw new NullReferenceException();
+            }
+
             DecompName = description.DecompName;
             CommandId = description.CommandId;
             CommandLengthBytes = description.CommandLengthBytes;
+
+            CommandParameters = new List<IAiParameter>();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiFixedCommand"/> class.
+        /// </summary>
+        /// <param name="description">Base command.</param>
+        /// <param name="parameters">Parameter values.</param>
         public AiFixedCommand(IAiCommandDescription description, List<IAiParameter> parameters)
             : this(description)
         {
@@ -27,16 +55,22 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             CommandParameters = parameters;
         }
 
-        public string DecompName { get; set; }
+        /// <inheritdoc />
+        public string? DecompName { get; set; }
 
+        /// <inheritdoc />
         public byte CommandId { get; set; }
 
+        /// <inheritdoc />
         public int CommandLengthBytes { get; set; }
 
+        /// <inheritdoc />
         public int NumberParameters { get; set; }
 
+        /// <inheritdoc />
         public List<IAiParameter> CommandParameters { get; set; }
 
+        /// <inheritdoc />
         public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             var results = new byte[CommandLengthBytes];
@@ -51,6 +85,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return results;
         }
 
+        /// <inheritdoc />
         public void CMacroAppend(string prefix, StringBuilder sb)
         {
             var indent = "    ";
@@ -70,6 +105,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             if (NumberParameters > 0)

@@ -7,12 +7,23 @@ using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// Variable length AI Command.
+    /// The length of a "variable" command depends on the parameters used.
+    /// </summary>
     public class AiVariableCommand : IAiVariableCommand
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiVariableCommand"/> class.
+        /// </summary>
         public AiVariableCommand()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiVariableCommand"/> class.
+        /// </summary>
+        /// <param name="description">Base command.</param>
         public AiVariableCommand(IAiCommandDescription description)
         {
             DecompName = description.DecompName;
@@ -21,9 +32,9 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         }
 
         /// <summary>
-        /// 
+        /// Initializes a new instance of the <see cref="AiVariableCommand"/> class.
         /// </summary>
-        /// <param name="description"></param>
+        /// <param name="description">Base command.</param>
         /// <param name="commandData">Includes leading commandid byte.</param>
         public AiVariableCommand(IAiCommandDescription description, byte[] commandData)
         {
@@ -34,8 +45,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             CommandData = commandData;
         }
 
-        public string DecompName { get; set; }
+        /// <inheritdoc />
+        public string? DecompName { get; set; }
 
+        /// <inheritdoc />
         public byte CommandId { get; set; }
 
         /// <summary>
@@ -43,8 +56,14 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// </summary>
         public int CommandLengthBytes { get; set; }
 
-        public byte[] CommandData { get; set; }
+        /// <inheritdoc />
+        public byte[]? CommandData { get; set; }
 
+        /// <summary>
+        /// Converts command into text to write as C macro format, as used in decomp.
+        /// </summary>
+        /// <param name="prefix">Any indentation prefix.</param>
+        /// <param name="sb">Current string builder.</param>
         public void CMacroAppend(string prefix, StringBuilder sb)
         {
             sb.AppendLine(prefix + $"// 0x{CommandId:x2}");
@@ -84,6 +103,12 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             sb.Append(",");
         }
 
+        /// <summary>
+        /// Converts command into text to write as C macro format, as used in decomp.
+        /// Value is written as native 32 bit word hex value.
+        /// </summary>
+        /// <param name="prefix">Any indentation prefix.</param>
+        /// <param name="sb">Current string builder.</param>
         public void CMacroAppendInt(string prefix, StringBuilder sb)
         {
             sb.AppendLine(prefix + $"// 0x{CommandId:x2}");
@@ -126,16 +151,21 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         }
 
         /// <summary>
-        /// 
+        /// Convert <see cref="CommandId"/> and <see cref="CommandData"/> to byte array.
         /// </summary>
         /// <param name="endien">Ignored.</param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <returns>Command as byte array.</returns>
+        /// <exception cref="InvalidOperationException">Throws if CommandLengthBytes < 1.</exception>
         public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             if (CommandLengthBytes < 1)
             {
                 throw new InvalidOperationException();
+            }
+
+            if (object.ReferenceEquals(null, CommandData))
+            {
+                throw new NullReferenceException();
             }
 
             var results = new byte[CommandLengthBytes];

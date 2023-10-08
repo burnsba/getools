@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Enums
 {
+    /// <summary>
+    /// Native CHEAT_ID enum.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:Enumeration items should be documented", Justification = "<Justification>")]
     public enum CheatId
     {
         Unused,
@@ -89,6 +93,6 @@ namespace Getools.Lib.Game.Enums
 
         Invalid,
 
-        Max = Invalid + 5
+        Max = Invalid + 5,
     }
 }

@@ -76,8 +76,14 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public int InternalName { get; set; }
 
+        /// <summary>
+        /// Gets 8 bit group id from 24 bit name.
+        /// </summary>
         public int GroupId => InternalName & 0xff;
 
+        /// <summary>
+        /// Gets 16 bit tile id from 24 bit name.
+        /// </summary>
         public int TileId => (InternalName & 0xffff00) >> 8;
 
         /// <summary>
@@ -92,7 +98,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// Debug string giving the tile name. This may be the <see cref="InternalName"/>
         /// but this is not known for sure.
         /// </summary>
-        public ClaimedStringPointer DebugName { get; set; }
+        public ClaimedStringPointer? DebugName { get; set; }
 
         /// <summary>
         /// 4 bits.
@@ -156,7 +162,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <summary>
         /// List of points associated with the tile.
@@ -251,9 +257,14 @@ namespace Getools.Lib.Game.Asset.Stan
             }
             else if (Format == TypeFormat.Beta)
             {
-                if (!object.ReferenceEquals(null, DebugName) && !string.IsNullOrEmpty(DebugName.GetString()) && DebugName.GetString()[0] == 'p')
+                if (!object.ReferenceEquals(null, DebugName))
                 {
-                    InternalName = Convert.ToInt32(DebugName.GetString().Substring(1), 16);
+                    var name = DebugName.GetString();
+
+                    if (!string.IsNullOrEmpty(name) && name[0] == 'p')
+                    {
+                        InternalName = Convert.ToInt32(name.Substring(1), 16);
+                    }
                 }
 
                 if (Room == 0)
@@ -334,7 +345,13 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (Format == TypeFormat.Beta)
             {
-                context.AppendToRodataSection(DebugName.GetLibString());
+                var name = DebugName!.GetLibString();
+                if (object.ReferenceEquals(null, name))
+                {
+                    throw new NullReferenceException($"{nameof(DebugName)} required for beta");
+                }
+
+                context.AppendToRodataSection(name);
             }
 
             for (int i = 0; i < Points.Count; i++)
@@ -381,7 +398,7 @@ namespace Getools.Lib.Game.Asset.Stan
                 var result = context.AssembleAppendBytes(results, Config.TargetWordSize);
                 BaseDataOffset = result.DataStartAddress;
 
-                DebugName.BaseDataOffset = result.DataStartAddress;
+                DebugName!.BaseDataOffset = result.DataStartAddress;
                 context.RegisterPointer(DebugName);
             }
             else
@@ -610,6 +627,11 @@ namespace Getools.Lib.Game.Asset.Stan
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1119:Statement should not use unnecessary parenthesis", Justification = "<Justification>")]
         private void ToBetaCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
+            if (object.ReferenceEquals(null, DebugName))
+            {
+                throw new NullReferenceException();
+            }
+
             sb.AppendLine($"{prefix}{Config.DefaultIndent}{Formatters.Strings.ToCValueOrNullEmpty(DebugName.GetString())},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(Flags & 0xf):x1},");
             sb.AppendLine($"{prefix}{Config.DefaultIndent}0x{(R & 0xf):x1}, 0x{(G & 0xf):x1}, 0x{(B & 0xf):x1},");

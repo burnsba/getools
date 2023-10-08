@@ -36,10 +36,10 @@ namespace Getools.Lib.Antlr
         private bool _ignoreNextAssignment = false;
         private Listener _lastListenerEntered = Listener.Unset;
 
-        private StandTile _workingTile = null;
-        private StandTilePoint _workingPoint = null;
+        private StandTile? _workingTile = null;
+        private StandTilePoint? _workingPoint = null;
 
-        private StandFile _workingResult = null;
+        private StandFile? _workingResult = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CStanListener"/> class.
@@ -94,7 +94,7 @@ namespace Getools.Lib.Antlr
         /// <summary>
         /// Gets the result after parsing a stan C file.
         /// </summary>
-        public StandFile Result { get; private set; }
+        public StandFile? Result { get; private set; }
 
         /// <summary>
         /// Entry point to begin parsing.
@@ -114,6 +114,11 @@ namespace Getools.Lib.Antlr
         /// <param name="context">Context.</param>
         public override void ExitCompilationUnit([NotNull] CParser.CompilationUnitContext context)
         {
+            if (object.ReferenceEquals(null, _workingResult))
+            {
+                throw new NullReferenceException();
+            }
+
             _workingResult.Tiles = _workingResult.Tiles.OrderBy(x => x.OrderIndex).ToList();
 
             string msg;
@@ -186,6 +191,11 @@ namespace Getools.Lib.Antlr
                         }
                     }
 
+                    if (object.ReferenceEquals(null, _workingResult))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     _workingResult.Tiles.Add(_workingTile);
                 }
 
@@ -234,6 +244,11 @@ namespace Getools.Lib.Antlr
 
             if (_parseState == ParseState.Header)
             {
+                if (object.ReferenceEquals(null, _workingResult))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // header
                 if (object.ReferenceEquals(null, _workingResult.Header))
                 {
@@ -393,6 +408,11 @@ namespace Getools.Lib.Antlr
                     case 3:
                         _workingPoint.Link = (short)val.Value;
 
+                        if (object.ReferenceEquals(null, _workingTile))
+                        {
+                            throw new NullReferenceException();
+                        }
+
                         // This declaration is an inline array listing, so need to reset the working point
                         // for the next value in the array.
                         _currentFieldIndex = 0;
@@ -402,6 +422,11 @@ namespace Getools.Lib.Antlr
             }
             else if (_parseState == ParseState.Footer)
             {
+                if (object.ReferenceEquals(null, _workingResult))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // footer
                 if (object.ReferenceEquals(null, _workingResult.Footer))
                 {
@@ -512,6 +537,11 @@ namespace Getools.Lib.Antlr
 
             if (_parseState == ParseState.Header)
             {
+                if (object.ReferenceEquals(null, _workingResult))
+                {
+                    throw new NullReferenceException();
+                }
+
                 if (object.ReferenceEquals(null, _workingResult.Header))
                 {
                     _workingResult.Header = new StandFileHeader();
@@ -536,6 +566,11 @@ namespace Getools.Lib.Antlr
             }
             else if (_parseState == ParseState.Footer)
             {
+                if (object.ReferenceEquals(null, _workingResult))
+                {
+                    throw new NullReferenceException();
+                }
+
                 if (object.ReferenceEquals(null, _workingResult.Footer))
                 {
                     _workingResult.Footer = new StandFileFooter();

@@ -66,7 +66,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Header.
         /// </summary>
-        public StandFileHeader Header { get; set; }
+        public StandFileHeader? Header { get; set; }
 
         /// <summary>
         /// List of tiles.
@@ -76,7 +76,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Footer.
         /// </summary>
-        public StandFileFooter Footer { get; set; }
+        public StandFileFooter? Footer { get; set; }
 
         /// <summary>
         /// Gets or sets explanation for how object should be serialized to JSON.
@@ -117,6 +117,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// </summary>
         public void DeserializeFix()
         {
+            if (object.ReferenceEquals(null, Header))
+            {
+                throw new NullReferenceException();
+            }
+
             if (Tiles.Any())
             {
                 // check if variable name was parsed from .c file, if so then
@@ -159,8 +164,20 @@ namespace Getools.Lib.Game.Asset.Stan
 
             if (string.IsNullOrEmpty(Header.FirstTilePointer.AddressOfVariableName))
             {
+                if (object.ReferenceEquals(null, Header.FirstTilePointer))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // can only assign name after DeserializeFix is called on the tile
-                Header.FirstTilePointer.AddressOfVariableName = ((StandTile)Header.FirstTilePointer.Dereference()).VariableName;
+                var st = (StandTile?)Header.FirstTilePointer.Dereference();
+
+                if (object.ReferenceEquals(null, st) || string.IsNullOrEmpty(st.VariableName))
+                {
+                    throw new NullReferenceException();
+                }
+
+                Header.FirstTilePointer.AddressOfVariableName = st.VariableName;
             }
         }
 
@@ -170,6 +187,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <returns>Compile size, without .rodata.</returns>
         public int GetDataSizeOf()
         {
+            if (object.ReferenceEquals(null, Header))
+            {
+                throw new NullReferenceException();
+            }
+
             int tileSize = Tiles.Sum(x => x.GetDataSizeOf());
 
             var dataSize = Header.GetDataSizeOf()
@@ -185,6 +207,16 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="sw">Stream to write to</param>
         internal void WriteToCFile(StreamWriter sw)
         {
+            if (object.ReferenceEquals(null, Header))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, Footer))
+            {
+                throw new NullReferenceException();
+            }
+
             sw.WriteLine("/*");
 
             foreach (var prefix in Config.COutputPrefix)
@@ -207,7 +239,18 @@ namespace Getools.Lib.Game.Asset.Stan
 
             sw.WriteLine();
 
-            string tileName = Tiles.First().VariableName;
+            if (!Tiles.Any())
+            {
+                throw new InvalidOperationException("No tiles in stan");
+            }
+
+            string tileName = Tiles.First().VariableName!;
+
+            if (string.IsNullOrEmpty(tileName))
+            {
+                throw new NullReferenceException("Variable name not set");
+            }
+
             string tilePointer = "&" + tileName;
             string tileForwardDeclaration = $"{Tiles.First().GetCTypeName()} {tileName};";
 
@@ -238,6 +281,16 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <param name="file">File to add stan to.</param>
         internal void AddToMipsFile(MipsFile file)
         {
+            if (object.ReferenceEquals(null, Header))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, Footer))
+            {
+                throw new NullReferenceException();
+            }
+
             Header.Collect(file);
 
             foreach (var tile in Tiles)

@@ -51,6 +51,11 @@ namespace Getools.Lib.Converters
                     ContractResolver = new SetupShouldSerializeContractResolver(),
                 });
 
+            if (object.ReferenceEquals(null, setup))
+            {
+                throw new NullReferenceException();
+            }
+
             setup.DeserializeFix();
 
             return setup;

@@ -17,7 +17,7 @@ namespace Getools.Lib.Converters
             _types = types;
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             if (value is ClaimedStringPointer csp)
             {
@@ -25,7 +25,7 @@ namespace Getools.Lib.Converters
             }
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             var s = reader.Value as string;
             return new ClaimedStringPointer(s);

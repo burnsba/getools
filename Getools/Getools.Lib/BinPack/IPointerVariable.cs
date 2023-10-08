@@ -8,7 +8,7 @@
         /// <summary>
         /// Gets or sets the game file variable name of the pointer.
         /// </summary>
-        string AddressOfVariableName { get; set; }
+        string? AddressOfVariableName { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether the game file pointer is null or not.
@@ -37,6 +37,6 @@
         /// Returns the object the pointer points to.
         /// </summary>
         /// <returns>Object or null.</returns>
-        IGetoolsLibObject Dereference();
+        IGetoolsLibObject? Dereference();
     }
 }

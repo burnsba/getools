@@ -132,15 +132,16 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathTables.GetPrequelDataSize();
                 var firstEntry = ssf.SectionPathTables.PathTables
-                    .Where(x => x.EntryPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .Where(x => x.EntryPointer != null
+                        && x.EntryPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.EntryPointer!.PointedToOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer!.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.EntryPointer.PointedToOffset, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.EntryPointer!.PointedToOffset, -1);
                     }
                 }
             }
@@ -150,15 +151,16 @@ namespace Getools.Lib.Kaitai
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
                 var firstEntry = ssf.SectionPathList.PathLinkEntries
-                    .Where(x => x.NeighborsPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.NeighborsPointer.PointedToOffset)
+                    .Where(x => x.NeighborsPointer != null
+                        && x.NeighborsPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.NeighborsPointer!.PointedToOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.NeighborsPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.NeighborsPointer!.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.NeighborsPointer.PointedToOffset, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.NeighborsPointer!.PointedToOffset, -1);
                     }
                 }
             }
@@ -168,15 +170,16 @@ namespace Getools.Lib.Kaitai
                 var entrySize = ssf.SectionPathList.GetPrequelDataSize();
 
                 var firstEntry = ssf.SectionPathList.PathLinkEntries
-                    .Where(x => x.IndexPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.IndexPointer.PointedToOffset)
+                    .Where(x => x.IndexPointer != null
+                        && x.IndexPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.IndexPointer!.PointedToOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.IndexPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.IndexPointer!.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes(firstEntry.IndexPointer.PointedToOffset, -1);
+                        ssf.ClaimUnrefSectionBytes(firstEntry.IndexPointer!.PointedToOffset, -1);
                     }
                 }
             }
@@ -185,15 +188,16 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionPathSets.GetPrequelDataSize();
                 var firstEntry = ssf.SectionPathSets.PathSets
-                    .Where(x => x.EntryPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .Where(x => x.EntryPointer != null
+                        && x.EntryPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.EntryPointer!.PointedToOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer!.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer.PointedToOffset, -1);
+                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer!.PointedToOffset, -1);
                     }
                 }
             }
@@ -202,15 +206,16 @@ namespace Getools.Lib.Kaitai
             {
                 var entrySize = ssf.SectionAiLists.GetPrequelDataSize();
                 var firstEntry = ssf.SectionAiLists.AiLists
-                    .Where(x => x.EntryPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.EntryPointer.PointedToOffset)
+                    .Where(x => x.EntryPointer != null
+                        && x.EntryPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.EntryPointer!.PointedToOffset)
                     .FirstOrDefault();
 
                 if (!object.ReferenceEquals(null, firstEntry) && entrySize > 0)
                 {
-                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer.PointedToOffset && x.Length == entrySize))
+                    if (ssf.FillerBlocks.Any(x => x.BaseDataOffset == firstEntry.EntryPointer!.PointedToOffset && x.Length == entrySize))
                     {
-                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer.PointedToOffset, -1);
+                        ssf.ClaimUnrefSectionBytes((int)firstEntry.EntryPointer!.PointedToOffset, -1);
                     }
                 }
             }
@@ -1563,12 +1568,13 @@ namespace Getools.Lib.Kaitai
         private static void ParseAiListData(StageSetupFile ssf)
         {
             if (!object.ReferenceEquals(null, ssf.SectionAiLists)
-                && ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer.PointedToOffset > 0).Any())
+                && ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer != null && x.EntryPointer.PointedToOffset > 0).Any())
             {
                 // Facility has a duplicate ailist entry, so note the .Distinct here.
                 var sortedPointers = ssf.SectionAiLists.AiLists
-                    .Where(x => x.EntryPointer.PointedToOffset > 0)
-                    .Select(x => x.EntryPointer.PointedToOffset)
+                    .Where(x => x.EntryPointer != null
+                        && x.EntryPointer.PointedToOffset > 0)
+                    .Select(x => x.EntryPointer!.PointedToOffset)
                     .OrderBy(x => x)
                     .Distinct()
                     .ToList();
@@ -1577,9 +1583,10 @@ namespace Getools.Lib.Kaitai
                 int functionSize = 0;
 
                 var aidataOffset = ssf.SectionAiLists.AiLists
-                    .Where(x => x.EntryPointer.PointedToOffset > 0)
-                    .OrderBy(x => x.EntryPointer.PointedToOffset)
-                    .Select(x => x.EntryPointer.PointedToOffset)
+                    .Where(x => x.EntryPointer != null
+                        && x.EntryPointer.PointedToOffset > 0)
+                    .OrderBy(x => x.EntryPointer!.PointedToOffset)
+                    .Select(x => x.EntryPointer!.PointedToOffset)
                     .First();
 
                 var aidataBlock = ssf.FillerBlocks.FirstOrDefault(x => x.BaseDataOffset == aidataOffset);
@@ -1594,6 +1601,11 @@ namespace Getools.Lib.Kaitai
                         .Where(x => x.BaseDataOffset > previousSectionOffset && x.BaseDataOffset < ssf.SectionAiLists.BaseDataOffset)
                         .OrderByDescending(x => x.BaseDataOffset)
                         .FirstOrDefault();
+
+                    if (object.ReferenceEquals(null, aidataBlock))
+                    {
+                        throw new NullReferenceException();
+                    }
 
                     functionSize = (int)aidataOffset - aidataBlock.BaseDataOffset;
                     if (functionSize < 0)
@@ -1632,10 +1644,10 @@ namespace Getools.Lib.Kaitai
                 var aimap = new Dictionary<int, AiFunction>();
                 var claimedDataSize = 0;
 
-                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer.PointedToOffset > 0))
+                foreach (var entry in ssf.SectionAiLists.AiLists.Where(x => x.EntryPointer != null && x.EntryPointer.PointedToOffset > 0))
                 {
                     // if this is a duplicate entry link the existing function and continue.
-                    if (aimap.ContainsKey((int)entry.EntryPointer.PointedToOffset))
+                    if (aimap.ContainsKey((int)entry.EntryPointer!.PointedToOffset))
                     {
                         entry.Function = aimap[(int)entry.EntryPointer.PointedToOffset];
                         continue;
@@ -1687,6 +1699,11 @@ namespace Getools.Lib.Kaitai
 
         private static void ParseUnrefAiListData(StageSetupFile ssf)
         {
+            if (object.ReferenceEquals(null, ssf.SectionAiLists))
+            {
+                throw new NullReferenceException();
+            }
+
             // "0x04" marks the end of an entry, and these are byte arrays, so "0x04..." (pad to 1 word) is the "not used" entry.
             if (ssf.SectionAiLists.AiLists.Count <= 1)
             {

@@ -48,10 +48,10 @@ namespace Getools.Verbs
             // stan
             {
                 var check = InputComboCheck(opts.StanFilename, result);
-                opts.StanFilename = check.Item1;
-                opts.StanFileType = check.Item2;
-                opts.StanTypeFormat = check.Item3;
-                opts.StanDataFormat = check.Item4;
+                opts.StanFilename = check.Filename;
+                opts.StanFileType = check.FileType;
+                opts.StanTypeFormat = check.TypeFormat;
+                opts.StanDataFormat = check.DataFormat;
 
                 if (opts.StanDataFormatIsBeta)
                 {
@@ -62,19 +62,19 @@ namespace Getools.Verbs
             // setup
             {
                 var check = InputComboCheck(opts.SetupFilename, result);
-                opts.SetupFilename = check.Item1;
-                opts.SetupFileType = check.Item2;
-                opts.SetupTypeFormat = check.Item3;
-                opts.SetupDataFormat = check.Item4;
+                opts.SetupFilename = check.Filename;
+                opts.SetupFileType = check.FileType;
+                opts.SetupTypeFormat = check.TypeFormat;
+                opts.SetupDataFormat = check.DataFormat;
             }
 
             // bg
             {
                 var check = InputComboCheck(opts.BgFilename, result);
-                opts.BgFilename = check.Item1;
-                opts.BgFileType = check.Item2;
-                opts.BgTypeFormat = check.Item3;
-                opts.BgDataFormat = check.Item4;
+                opts.BgFilename = check.Filename;
+                opts.BgFileType = check.FileType;
+                opts.BgTypeFormat = check.TypeFormat;
+                opts.BgDataFormat = check.DataFormat;
             }
 
             if (opts.SlizeZ.HasValue)
@@ -104,7 +104,7 @@ namespace Getools.Verbs
             Go(opts);
         }
 
-        private (string, Getools.Lib.Game.FileType, Getools.Lib.Game.TypeFormat, Getools.Lib.Game.DataFormats) InputComboCheck<T>(string filename, ParserResult<T> result)
+        private ComboCheck InputComboCheck<T>(string filename, ParserResult<T> result)
         {
             string r1 = filename;
             Getools.Lib.Game.FileType r2 = Lib.Game.FileType.DefaultUnknown;
@@ -148,7 +148,7 @@ namespace Getools.Verbs
                 }
             }
 
-            return (r1, r2, r3, r4);
+            return new ComboCheck(r1, r2, r3, r4);
         }
 
         /// <summary>
@@ -223,11 +223,25 @@ namespace Getools.Verbs
 
                     case Lib.Game.DataFormats.C:
                         stan = StanConverters.ParseFromC(opts.StanFilename);
+
+                        if (object.ReferenceEquals(null, stan.Header))
+                        {
+                            ConsoleColor.ConsoleWriteLineRed($"Error parsing file. stan.Header is null.");
+                            Environment.Exit(1);
+                        }
+
                         stan.Header.Name = "ignore";
                         break;
 
                     case Lib.Game.DataFormats.BetaC:
                         stan = StanConverters.ParseFromBetaC(opts.StanFilename);
+
+                        if (object.ReferenceEquals(null, stan.Header))
+                        {
+                            ConsoleColor.ConsoleWriteLineRed($"Error parsing file. stan.Header is null.");
+                            Environment.Exit(1);
+                        }
+
                         stan.Header.Name = "ignore";
                         break;
 
@@ -289,6 +303,14 @@ namespace Getools.Verbs
                 Console.WriteLine($"write output file: {opts.OutputFilename}");
                 svg.Save(fs);
             }
+        }
+
+        private record struct ComboCheck(
+            string Filename,
+            Getools.Lib.Game.FileType FileType,
+            Getools.Lib.Game.TypeFormat TypeFormat,
+            Getools.Lib.Game.DataFormats DataFormat)
+        {
         }
     }
 }

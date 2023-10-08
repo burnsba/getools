@@ -14,14 +14,15 @@ namespace Getools.Lib.Game.Asset.Setup
     {
         private const string _defaultVariableName = "unknown_setup_block";
 
+        private readonly byte[] _byteData;
+
         // 1 for byte, 4 for word
         private int _dataElementSize = 1;
 
         // "u8" for byte, "s32" for word
         private string _dataTypeName = "u8";
 
-        private byte[] _byteData = null;
-        private int[] _wordData = null;
+        private int[]? _wordData = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnrefSectionUnknown"/> class.
@@ -34,12 +35,12 @@ namespace Getools.Lib.Game.Asset.Setup
             IsUnreferenced = true;
 
             var len = data.Length;
-            if ((len % 4) == 0)
+            if ((len % Config.TargetWordSize) == 0)
             {
                 _dataTypeName = "s32";
-                _dataElementSize = 4;
+                _dataElementSize = Config.TargetWordSize;
 
-                var wordLen = len / 4;
+                var wordLen = len / Config.TargetWordSize;
 
                 _wordData = new int[wordLen];
 
@@ -47,7 +48,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 for (int i = 0; i < wordLen; i++)
                 {
                     _wordData[i] = BitUtility.Read32Big(data, index);
-                    index += 4;
+                    index += Config.TargetWordSize;
                 }
             }
 
@@ -96,7 +97,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 throw new NotSupportedException($"Data element is not word sized (={Config.TargetWordSize} bytes)");
             }
 
-            return _wordData;
+            return _wordData!;
         }
 
         /// <summary>
@@ -138,9 +139,9 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             sw.Write($"{GetDeclarationTypeName()} = {{ ");
 
-            if (_dataElementSize == 4)
+            if (_dataElementSize == Config.TargetWordSize)
             {
-                sw.Write(string.Join(", ", _wordData));
+                sw.Write(string.Join(", ", _wordData!));
             }
             else
             {

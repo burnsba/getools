@@ -224,11 +224,10 @@ namespace Gebug64.Test.Framework
                                     // PcToConsole: Load header contents, but skip reading property values from body byte array.
                                     Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
                                     
-                                // Console data will be in big endien format, but PC native format is little endien.
-                                replyMessage.VersionA = BinaryPrimitives.ReverseEndianness(0x11223344);
-                                replyMessage.VersionB = BinaryPrimitives.ReverseEndianness(0x22222222);
-                                replyMessage.VersionC = BinaryPrimitives.ReverseEndianness(0x44444444);
-                                replyMessage.VersionD = BinaryPrimitives.ReverseEndianness(0x00888888);
+                                replyMessage.VersionA = 0x11223344;
+                                replyMessage.VersionB = 0x22222222;
+                                replyMessage.VersionC = 0x44444444;
+                                replyMessage.VersionD = 0x00888888;
 
                                 // Need to specify ConsoleToPc to load correct properties.
                                 // Make sure data is in big endien format.
@@ -263,10 +262,9 @@ namespace Gebug64.Test.Framework
                                         // PcToConsole: Load header contents, but skip reading property values from body byte array.
                                         Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
 
-                                    // Console data will be in big endien format, but PC native format is little endien.
                                     // Arbitrary values, just want a multi-packet message (larger than single packet size)
-                                    replyMessage.Width = BinaryPrimitives.ReverseEndianness((ushort)36);
-                                    replyMessage.Height = BinaryPrimitives.ReverseEndianness((ushort)42);
+                                    replyMessage.Width = (ushort)36;
+                                    replyMessage.Height = (ushort)42;
 
                                     int size = 36 * 42;
                                     var data = new byte[size];

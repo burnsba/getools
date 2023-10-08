@@ -11,7 +11,7 @@ namespace Getools.Lib.BinPack
     /// </summary>
     public class PointerVariable : IGetoolsLibObject, IBinData, IPointerVariable, IComparable
     {
-        private IGetoolsLibObject _pointsTo = null;
+        private IGetoolsLibObject? _pointsTo = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PointerVariable"/> class.
@@ -54,7 +54,7 @@ namespace Getools.Lib.BinPack
         public int PointedToSize { get; set; }
 
         /// <inheritdoc />
-        public string AddressOfVariableName { get; set; }
+        public string? AddressOfVariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -102,7 +102,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public IGetoolsLibObject Dereference()
+        public IGetoolsLibObject? Dereference()
         {
             return _pointsTo;
         }
@@ -137,7 +137,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             var other = obj as PointerVariable;
 

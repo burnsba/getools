@@ -7,15 +7,18 @@ using Getools.Lib.Game;
 
 namespace Getools.Lib.Math
 {
+    /// <summary>
+    /// Geometry methods.
+    /// </summary>
     public static class Geometry
     {
         /// <summary>
-        /// For a list of points that describe a mesh, intersect at the given height
-        /// and return all points on the boundary.
+        /// For a list of points that describe a mesh, intersect a plane at the given axis
+        /// and return a new set of points on on the plane-mesh intersection.
         /// </summary>
-        /// <param name="source"></param>
-        /// <param name="z"></param>
-        /// <returns></returns>
+        /// <param name="source">Points that describe a mesh.</param>
+        /// <param name="z">Z axis value for intersect (this is not the game native height axis).</param>
+        /// <returns>List of intersect points.</returns>
         public static List<Coord3dd> PlaneIntersectZ(List<Coord3dd> source, double z)
         {
             var result = new HashSet<Coord3dd>();
@@ -83,12 +86,12 @@ namespace Getools.Lib.Math
         }
 
         /// <summary>
-        /// For a list of points that describe a mesh, intersect at the given height
-        /// and return all points on the boundary.
+        /// For a list of points that describe a mesh, intersect a plane at the given height
+        /// and return a new set of points on on the plane-mesh intersection.
         /// </summary>
-        /// <param name="source"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
+        /// <param name="source">Points that describe a mesh.</param>
+        /// <param name="y">Y axis value for intersect (game native vertical axis).</param>
+        /// <returns>List of intersect points.</returns>
         public static List<Coord3dd> PlaneIntersectY(List<Coord3dd> source, double y)
         {
             var result = new HashSet<Coord3dd>();
@@ -158,12 +161,12 @@ namespace Getools.Lib.Math
         /// <remarks>
         /// https://stackoverflow.com/a/17693189/1462295
         /// </remarks>
-        /// <param name="p1x"></param>
-        /// <param name="p1y"></param>
-        /// <param name="p2x"></param>
-        /// <param name="p2y"></param>
-        /// <param name="atx"></param>
-        /// <returns></returns>
+        /// <param name="p1x">Point 1 x.</param>
+        /// <param name="p1y">Point 1 y.</param>
+        /// <param name="p2x">Point 2 x.</param>
+        /// <param name="p2y">Point 2 y.</param>
+        /// <param name="atx">X value to find corresponding y value.</param>
+        /// <returns>Y value.</returns>
         public static double FindPointOnSegment(double p1x, double p1y, double p2x, double p2y, double atx)
         {
             /***
@@ -190,8 +193,8 @@ namespace Getools.Lib.Math
         /// <remarks>
         /// https://stackoverflow.com/a/46371357/1462295
         /// </remarks>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="points">Points to create hull from.</param>
+        /// <returns>Convex hull.</returns>
         public static List<Coord2dd> GetConvexHull(List<Coord2dd> points)
         {
             if (points == null)
@@ -235,6 +238,12 @@ namespace Getools.Lib.Math
             return hull.Take(k - 1).ToList();
         }
 
+        /// <summary>
+        /// Gets the bounding min/max values to create a rectangular bounding box around the given points.
+        /// </summary>
+        /// <param name="p1">Point 1.</param>
+        /// <param name="p2">Point 2.</param>
+        /// <returns>Bounding box.</returns>
         public static BoundingBoxd GetBounds(Coord3dd p1, Coord3dd p2)
         {
             var bb = new BoundingBoxd();
@@ -250,6 +259,7 @@ namespace Getools.Lib.Math
             return bb;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1313:Parameter names should begin with lower-case letter", Justification = "<Justification>")]
         private static double HullCross(Coord2dd O, Coord2dd A, Coord2dd B)
         {
             return ((A.X - O.X) * (B.Y - O.Y)) - ((A.Y - O.Y) * (B.X - O.X));

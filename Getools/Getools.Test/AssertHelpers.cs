@@ -7,7 +7,7 @@ namespace Getools.Test
 {
     public static class AssertHelpers
     {
-        public static void AssertStringListsEqual(List<string> expected, List<string> actual, int skip = 0, List<Func<string,bool>> assumeMatchWhen = null)
+        public static void AssertStringListsEqual(List<string> expected, List<string> actual, int skip = 0, List<Func<string,bool>>? assumeMatchWhen = null)
         {
             Assert.Equal(expected.Count, actual.Count);
 

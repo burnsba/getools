@@ -45,7 +45,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_MockConsoleHost_Echo_Direct_ToFlashcart()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -69,7 +69,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_MockConsoleHost_Printf_ToFlashcart()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -101,7 +101,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_CommandTest_Direct_ToFlashcart()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
             csp.Start(MockConsoleHost.PcSerialPortName);
 
@@ -128,7 +128,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_MockConsoleHost_Printf()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             Assert.Empty(flashcart.ReadPackets);
@@ -161,7 +161,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_Gebug_Ping()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             Assert.Empty(flashcart.ReadPackets);
@@ -202,7 +202,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_Gebug_Version()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             Assert.Empty(flashcart.ReadPackets);
@@ -256,8 +256,8 @@ namespace Gebug64.Test.Tests
             var sendMesssage = new GebugViFramebufferMessage();
 
             // Console data will be in big endien format, but PC native format is little endien.
-            sendMesssage.Width = BinaryPrimitives.ReverseEndianness((ushort)expectedWidth);
-            sendMesssage.Height = BinaryPrimitives.ReverseEndianness((ushort)expectedHeight);
+            sendMesssage.Width = (ushort)expectedWidth;
+            sendMesssage.Height = (ushort)expectedHeight;
 
             int size = expectedWidth * expectedHeight;
             var data = new byte[size];
@@ -395,7 +395,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_Gebug_GetFramebuffer()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             Assert.Empty(flashcart.ReadPackets);
@@ -437,6 +437,10 @@ namespace Gebug64.Test.Tests
             TimeoutAssert.True(ref messageReceived, TimeSpan.FromSeconds(3), "Did not receive packet matching filter");
 
             int size = receiveMessage!.Width * receiveMessage.Height;
+
+            Assert.NotNull(receiveMessage.Data);
+            Assert.Equal(size, receiveMessage.Data.Length);
+
             for (int i = 0; i < size; i++)
             {
                 Assert.Equal(i % 255, receiveMessage.Data[i]);
@@ -450,7 +454,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_TestInMenu()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             bool actualReply;
@@ -473,7 +477,7 @@ namespace Gebug64.Test.Tests
         public void EverdriveTest_TestInRom()
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
-            var csp = new ConnectionServiceProvider(flashcart);
+            var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.Start(MockConsoleHost.PcSerialPortName);
 
             bool actualReply;
@@ -493,7 +497,7 @@ namespace Gebug64.Test.Tests
         {
             var sw = Stopwatch.StartNew();
             IFlashcartPacket flashcartPacket;
-            while (!flashcart.ReadPackets.TryDequeue(out flashcartPacket))
+            while (!flashcart.ReadPackets.TryDequeue(out flashcartPacket!))
             {
                 if (sw.Elapsed.TotalSeconds > 1)
                 {

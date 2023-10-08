@@ -10,7 +10,7 @@ using Getools.Lib.Game.Asset.Ramrom;
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
     /// <summary>
-    /// Console request for next iteration blocks.
+    /// Console request for next iteration of ramrom replay blocks.
     /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Ramrom, Command = (byte)GebugCmdRamrom.ReplayRequestNextIteration)]
     public class GebugRamromIterationMessage : GebugMessage, IActivatorGebugMessage
@@ -36,6 +36,9 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         [GebugParameter(ParameterIndex = 1, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public ushort IterationIndex { get; set; }
 
+        /// <summary>
+        /// Replay iteration data for the single request iteration.
+        /// </summary>
         [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.PcToConsole)]
         public byte[]? IterationData { get; set; }
 

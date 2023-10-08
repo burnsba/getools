@@ -10,7 +10,7 @@ using Getools.Lib.Game.Asset.Ramrom;
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
     /// <summary>
-    /// Console request to start a native replay demo.
+    /// Request to start a replay demo from the native `ramrom_table` list.
     /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Ramrom, Command = (byte)GebugCmdRamrom.ReplayNativeDemo)]
     public class GebugRamromReplayNativeMessage : GebugMessage, IActivatorGebugMessage

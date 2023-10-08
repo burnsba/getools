@@ -9,6 +9,7 @@ namespace Getools.Lib.Game.Enums
     /// <summary>
     /// typedef enum LEVELID
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:Enumeration items should be documented", Justification = "<Justification>")]
     public enum LevelId
     {
         None = -1,
@@ -60,6 +61,6 @@ namespace Getools.Lib.Game.Enums
         Archives_MP = Archives + 400,
         Caverns_MP = Caverns + 400,
         Facility_MP = Facility + 400,
-        Egypt_MP = Egypt + 400
+        Egypt_MP = Egypt + 400,
     }
 }

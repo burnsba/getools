@@ -10,7 +10,7 @@ using Getools.Lib.Game.Asset.Ramrom;
 namespace Gebug64.Unfloader.Protocol.Gebug.Message
 {
     /// <summary>
-    /// Packet contains `struct ramromfilestructure` header data, load and start replay.
+    /// Packet contains `struct ramromfilestructure` header data, will load and start replay.
     /// </summary>
     [ProtocolCommand(Category = GebugMessageCategory.Ramrom, Command = (byte)GebugCmdRamrom.StartDemoReplayFromPc)]
     public class GebugRamromStartDemoReplayFromPcMessage : GebugMessage, IActivatorGebugMessage

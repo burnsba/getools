@@ -7,12 +7,24 @@ using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// Interface to define a parameter to an AI Command.
+    /// </summary>
     public interface IAiParameter : IAiCmacro, IAiByteConvertable
     {
-        string ParameterName { get; init; }
+        /// <summary>
+        /// Friendly parameter name.
+        /// </summary>
+        string? ParameterName { get; init; }
 
+        /// <summary>
+        /// Number of bytes in the parameter.
+        /// </summary>
         int ByteLength { get; init; }
 
+        /// <summary>
+        /// Endieneness of parameter.
+        /// </summary>
         ByteOrder Endien { get; }
 
         /// <summary>
@@ -20,7 +32,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// If the native <see cref="Endien"/> is not in <see cref="ByteOrder.BigEndien"/> format,
         /// the result will be swapped.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Value as string using big endien byte order.</returns>
         string ToStringBig();
 
         /// <summary>
@@ -28,7 +40,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// If the native <see cref="Endien"/> is not in <see cref="ByteOrder.LittleEndien"/> format,
         /// the result will be swapped.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Value as string using little endien byte order.</returns>
         string ToStringLittle();
 
         /// <summary>
@@ -36,7 +48,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// </summary>
         /// <param name="endien">Desired result endieness.</param>
         /// <param name="expandSpecial">Replace special values or ids with enum names.</param>
-        /// <returns></returns>
+        /// <returns>Value as string using specified byte order.</returns>
         string ValueToString(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true);
 
         /// <summary>
@@ -44,8 +56,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// If the native <see cref="Endien"/> is not the same as parameter format,
         /// the result will be swapped.
         /// </summary>
-        /// <param name="endien"></param>
-        /// <returns></returns>
+        /// <param name="endien">Byte order.</param>
+        /// <returns>Value as int.</returns>
         int GetIntValue(ByteOrder endien = ByteOrder.BigEndien);
     }
 }

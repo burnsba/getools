@@ -10,6 +10,11 @@ using Newtonsoft.Json.Linq;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// AI Command parameter.
+    /// Can be used in the concrete implementation, in which case the value needs to be set,
+    /// or can be used in the command desription.
+    /// </summary>
     public class AiParameter : IAiParameter
     {
         private readonly byte[] _value;
@@ -17,19 +22,25 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         private readonly int _valueBig;
         private readonly int _valueLittle;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AiParameter"/> class.
+        /// </summary>
+        /// <remarks>
+        /// Should be used with AI Command descriptions (i.e., not concrete).
+        /// </remarks>
         public AiParameter()
         {
-            //
+            _value = new byte[0];
         }
 
         /// <summary>
-        /// 
+        /// Initializes a new instance of the <see cref="AiParameter"/> class.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="length"></param>
+        /// <param name="name">Parameter name.</param>
+        /// <param name="length">Set <see cref="ByteLength"/>. Must be between 1 and 4 bytes inclusive.</param>
         /// <param name="val">Value of parameter. This parameter should use <paramref name="endien"/>.</param>
         /// <param name="endien">Specifies the internal byte order of the parameter.</param>
-        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">If length is not between 1 and 4 bytes inclusive.</exception>
         public AiParameter(string name, int length, byte[] val, ByteOrder endien = ByteOrder.BigEndien)
         {
             if (length < 1 || length > 4)
@@ -92,12 +103,16 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             }
         }
 
-        public string ParameterName { get; init; }
+        /// <inheritdoc />
+        public string? ParameterName { get; init; }
 
+        /// <inheritdoc />
         public int ByteLength { get; init; }
 
+        /// <inheritdoc />
         public ByteOrder Endien => _endien;
 
+        /// <inheritdoc />
         public void CMacroAppend(string prefix, StringBuilder sb)
         {
             var byteText = string.Join(string.Empty, ToByteArray().Select(x => x.ToString("x2")));
@@ -105,26 +120,31 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             sb.Append($"{prefix}0x{byteText}");
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"{ParameterName}={GetValueText()}";
         }
 
+        /// <inheritdoc />
         public string ToStringBig()
         {
             return $"{ParameterName}={GetValueText(ByteOrder.BigEndien)}";
         }
 
+        /// <inheritdoc />
         public string ToStringLittle()
         {
             return $"{ParameterName}={GetValueText(ByteOrder.LittleEndien)}";
         }
 
+        /// <inheritdoc />
         public string ValueToString(ByteOrder endien = ByteOrder.BigEndien, bool expandSpecial = true)
         {
             return GetValueText(endien, expandSpecial: expandSpecial);
         }
 
+        /// <inheritdoc />
         public byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien)
         {
             var results = new byte[ByteLength];
@@ -139,6 +159,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return results;
         }
 
+        /// <inheritdoc />
         public int GetIntValue(ByteOrder endien = ByteOrder.BigEndien)
         {
             if (endien == ByteOrder.BigEndien)
@@ -149,6 +170,13 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return _valueLittle;
         }
 
+        /// <summary>
+        /// Gets value of parameter in specified endieness.
+        /// Note that the value is stored internally as an <see cref="Int32"/>,
+        /// so endieness applies.
+        /// </summary>
+        /// <param name="endien">Which end of the internal value to read.</param>
+        /// <returns>Value as byte.</returns>
         public byte GetByteValue(ByteOrder endien = ByteOrder.BigEndien)
         {
             if (endien == ByteOrder.BigEndien)

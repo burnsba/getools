@@ -9,6 +9,7 @@ namespace Getools.Lib.Game.Enums
     /// <summary>
     /// Reserverd values for ai script parameters.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:Enumeration items should be documented", Justification = "<Justification>")]
     public enum ChrNum
     {
         /* chr numbers start at 0. */

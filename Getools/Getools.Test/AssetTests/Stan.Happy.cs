@@ -527,7 +527,9 @@ namespace Getools.Test.AssetTests
             _testOutputHelper.WriteLine($"reference: {referenceFilePath}");
             _testOutputHelper.WriteLine($"output: {outfile}");
 
-            Assert.Equal("Tbg_testbeta_all_p_stanZ", stan.Header.Name);
+            Assert.NotNull(stan.Header);
+
+            Assert.Equal("Tbg_testbeta_all_p_stanZ", stan.Header!.Name);
 
             // Change the name so it will match against the reference file.
             stan.Header.Name = "Tbg_test_all_p_stanZ";

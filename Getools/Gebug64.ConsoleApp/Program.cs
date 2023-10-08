@@ -24,7 +24,7 @@ namespace Gebug64.ConsoleApp
             var serialPortProvider = new SerialPortProvider(serialPortFactory);
 
             string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath);
+            string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath)!;
             if (!Directory.Exists(strWorkPath))
             {
                 throw new DirectoryNotFoundException(strWorkPath);
@@ -49,7 +49,7 @@ namespace Gebug64.ConsoleApp
 
             var usePort = "COM5";
             var device = new Everdrive(serialPortProvider, logger);
-            var dm = new ConnectionServiceProvider(device);
+            var dm = new ConnectionServiceProvider(device, logger);
 
             dm.Start(usePort);
             //var testResult = dm.TestEverdriveConnected();

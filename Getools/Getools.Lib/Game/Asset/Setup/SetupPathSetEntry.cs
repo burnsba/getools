@@ -24,12 +24,12 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets pointer to <see cref="Entry"/>.
         /// </summary>
-        public PointerVariable EntryPointer { get; set; }
+        public PointerVariable? EntryPointer { get; set; }
 
         /// <summary>
         /// List of ids pointed to from <see cref="EntryPointer"/>.
         /// </summary>
-        public PathSet Entry { get; set; }
+        public PathSet? Entry { get; set; }
 
         /// <summary>
         /// Gets or sets path id.
@@ -118,6 +118,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, EntryPointer))
+            {
+                throw new NullReferenceException();
+            }
+
             var size = SizeOf;
             var bytes = new byte[size];
             int pos = 0;

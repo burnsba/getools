@@ -26,7 +26,7 @@ namespace Getools.Lib.BinPack
         /// Initializes a new instance of the <see cref="RodataString"/> class.
         /// </summary>
         /// <param name="value">Value of string.</param>
-        public RodataString(string value)
+        public RodataString(string? value)
         {
             Value = value;
         }
@@ -36,7 +36,7 @@ namespace Getools.Lib.BinPack
         /// </summary>
         /// <param name="baseDataOffset">base data offset.</param>
         /// <param name="value">Value of string.</param>
-        public RodataString(int baseDataOffset, string value)
+        public RodataString(int baseDataOffset, string? value)
         {
             BaseDataOffset = baseDataOffset;
             Value = value;
@@ -72,13 +72,13 @@ namespace Getools.Lib.BinPack
         /// <summary>
         /// Gets or sets the value of the string.
         /// </summary>
-        public string Value { get; set; }
+        public string? Value { get; set; }
 
         /// <summary>
         /// Implicit conversion from string.
         /// </summary>
         /// <param name="value">Zero terminated string.</param>
-        public static implicit operator RodataString(string value)
+        public static implicit operator RodataString(string? value)
         {
             return new RodataString(value);
         }
@@ -100,6 +100,11 @@ namespace Getools.Lib.BinPack
         /// <returns>String as byte array.</returns>
         public byte[] ToByteArray(int? prependBytesCount = null, int? appendBytesCount = null)
         {
+            if (object.ReferenceEquals(null, Value))
+            {
+                throw new NullReferenceException();
+            }
+
             return BitUtility.StringToBytesPad(Value, true, prependBytesCount ?? 0, appendBytesCount ?? 0);
         }
 
@@ -121,7 +126,7 @@ namespace Getools.Lib.BinPack
         /// <inheritdoc />
         public override string ToString()
         {
-            return Value;
+            return Value ?? string.Empty;
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Getools.Lib.Formatters
         /// </summary>
         /// <param name="s">Variable name.</param>
         /// <returns>Address of variable, or c macro NULL.</returns>
-        public static string ToCPointerOrNull(string s)
+        public static string ToCPointerOrNull(string? s)
         {
             if (string.IsNullOrEmpty(s))
             {
@@ -92,7 +92,7 @@ namespace Getools.Lib.Formatters
         /// <param name="s">String to format.</param>
         /// <param name="prefix">Optional prefix before string.</param>
         /// <returns>Quoted value.</returns>
-        public static string ToCValueOrNullEmpty(string s, string prefix = "")
+        public static string ToCValueOrNullEmpty(string? s, string prefix = "")
         {
             if (object.ReferenceEquals(null, s))
             {

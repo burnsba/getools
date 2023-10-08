@@ -41,7 +41,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Gets or sets pointer to the first tile.
         /// </summary>
-        public PointerVariable FirstTilePointer { get; set; }
+        public PointerVariable? FirstTilePointer { get; set; }
 
         /// <summary>
         /// Unknown data after <see cref="FirstTileOffset"/> but before the first tile.
@@ -52,7 +52,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <summary>
         /// Name of the header object (c declaration variable name). Convention is that this matches the file name.
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -69,7 +69,7 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <inheritdoc />
         public override string ToString()
         {
-            return Name;
+            return Name ?? string.Empty;
         }
 
         /// <summary>
@@ -127,6 +127,11 @@ namespace Getools.Lib.Game.Asset.Stan
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, FirstTilePointer))
+            {
+                throw new NullReferenceException();
+            }
+
             var aac = context.AssembleAppendBytes(ToByteArray(), Config.TargetWordSize);
             BaseDataOffset = aac.DataStartAddress;
 

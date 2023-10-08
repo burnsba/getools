@@ -72,11 +72,6 @@ namespace Getools.Lib.Game.Asset.Setup
 
             sb.Append($"{prefix}{CTypeName} {VariableName}[] = {{ ");
 
-            if (VariableName == "ai_9")
-            {
-                int a = 9;
-            }
-
             sb.AppendLine();
             var ai = GetParsedAiBlock();
 

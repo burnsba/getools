@@ -6,20 +6,34 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// LibUltra `Vtx_tn` (set up for use with normals).
+    /// </summary>
     public class GbiVtx
     {
-        public Coord3dshort Ob { get; set; }
+        /// <summary>
+        /// x, y, z.
+        /// </summary>
+        public Coord3dshort? Ob { get; set; }
 
-        // unsigned short
+        /// <summary>
+        /// Flag.
+        /// </summary>
         public ushort Flag { get; set; }
 
-        // short
-        public Coord2dshort TextureCoordinate { get; set; }
+        /// <summary>
+        /// Texture coordinate.
+        /// </summary>
+        public Coord2dshort? TextureCoordinate { get; set; }
 
-        // signed char
-        public Coord3dsbyte Normal { get; set; }
+        /// <summary>
+        /// Normal.
+        /// </summary>
+        public Coord3dsbyte? Normal { get; set; }
 
-        // unsigned char
+        /// <summary>
+        /// Alpha.
+        /// </summary>
         public byte Alpha { get; set; }
     }
 }

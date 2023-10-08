@@ -173,11 +173,25 @@ namespace Getools.Verbs
 
                 case Lib.Game.DataFormats.C:
                     stan = StanConverters.ParseFromC(opts.InputFilename);
+
+                    if (object.ReferenceEquals(null, stan.Header))
+                    {
+                        ConsoleColor.ConsoleWriteLineRed($"Error parsing file. stan.Header is null.");
+                        Environment.Exit(1);
+                    }
+
                     stan.Header.Name = opts.DeclarationName;
                     break;
 
                 case Lib.Game.DataFormats.BetaC:
                     stan = StanConverters.ParseFromBetaC(opts.InputFilename);
+
+                    if (object.ReferenceEquals(null, stan.Header))
+                    {
+                        ConsoleColor.ConsoleWriteLineRed($"Error parsing file. stan.Header is null.");
+                        Environment.Exit(1);
+                    }
+
                     stan.Header.Name = opts.DeclarationName;
                     break;
 

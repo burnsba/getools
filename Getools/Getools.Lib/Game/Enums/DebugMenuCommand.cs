@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Enums
 {
+    /// <summary>
+    /// Native id of debug menu command.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:Enumeration items should be documented", Justification = "<Justification>")]
     public enum DebugMenuCommand
     {
         PlayTitle = 6,

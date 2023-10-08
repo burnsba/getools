@@ -75,60 +75,78 @@ namespace Getools.Test.AssetTests
             Assert.NotNull(setup.SectionPathSets);
             Assert.NotNull(setup.SectionAiLists);
 
-            Assert.Equal(2, setup.SectionPadList.PadList.Count);
+            Assert.Equal(2, setup.SectionPadList!.PadList.Count);
             Assert.Equal(setup.SectionPadList.GetEntriesCount(), setup.SectionPadList.PadList.Count);
 
-            Assert.Equal(2, setup.SectionPad3dList.Pad3dList.Count);
+            Assert.Equal(2, setup.SectionPad3dList!.Pad3dList.Count);
             Assert.Equal(setup.SectionPad3dList.GetEntriesCount(), setup.SectionPad3dList.Pad3dList.Count);
 
-            Assert.Equal(2, setup.SectionObjects.Objects.Count);
+            Assert.Equal(2, setup.SectionObjects!.Objects.Count);
             Assert.Equal(setup.SectionObjects.GetEntriesCount(), setup.SectionObjects.Objects.Count);
 
-            Assert.Equal(2, setup.SectionIntros.Intros.Count);
+            Assert.Equal(2, setup.SectionIntros!.Intros.Count);
             Assert.Equal(setup.SectionIntros.GetEntriesCount(), setup.SectionIntros.Intros.Count);
 
-            Assert.Equal(2, setup.SectionPathList.PathLinkEntries.Count);
+            Assert.Equal(2, setup.SectionPathList!.PathLinkEntries.Count);
             Assert.Equal(setup.SectionPathList.GetEntriesCount(), setup.SectionPathList.PathLinkEntries.Count);
 
-            Assert.Equal(2, setup.SectionPad3dNames.Pad3dNames.Count);
+            Assert.Equal(2, setup.SectionPad3dNames!.Pad3dNames.Count);
             Assert.Equal(setup.SectionPad3dNames.GetEntriesCount(), setup.SectionPad3dNames.Pad3dNames.Count);
 
-            Assert.Equal(2, setup.SectionPathTables.PathTables.Count);
+            Assert.Equal(2, setup.SectionPathTables!.PathTables.Count);
             Assert.Equal(setup.SectionPathTables.GetEntriesCount(), setup.SectionPathTables.PathTables.Count);
 
-            Assert.Equal(2, setup.SectionPadNames.PadNames.Count);
+            Assert.Equal(2, setup.SectionPadNames!.PadNames.Count);
             Assert.Equal(setup.SectionPadNames.GetEntriesCount(), setup.SectionPadNames.PadNames.Count);
 
-            Assert.Equal(2, setup.SectionPathSets.PathSets.Count);
+            Assert.Equal(2, setup.SectionPathSets!.PathSets.Count);
             Assert.Equal(setup.SectionPathSets.GetEntriesCount(), setup.SectionPathSets.PathSets.Count);
 
-            Assert.Equal(2, setup.SectionAiLists.AiLists.Count);
+            Assert.Equal(2, setup.SectionAiLists!.AiLists.Count);
             Assert.Equal(setup.SectionAiLists.GetEntriesCount(), setup.SectionAiLists.AiLists.Count);
 
             Assert.Single(setup.Sections.OfType<UnrefSectionAiFunction>());
 
             var pathLink = setup.SectionPathList.PathLinkEntries.First();
-            Assert.False(pathLink.NeighborsPointer.IsNull);
-            Assert.False(pathLink.IndexPointer.IsNull);
+
+            Assert.NotNull(pathLink.NeighborsPointer);
+            Assert.NotNull(pathLink.IndexPointer);
             Assert.NotNull(pathLink.Neighbors);
             Assert.NotNull(pathLink.Indeces);
-            Assert.Equal(2, pathLink.Neighbors.Ids.Count);
-            Assert.Equal(4, pathLink.Indeces.Ids.Count);
+
+            Assert.False(pathLink.NeighborsPointer!.IsNull);
+            Assert.False(pathLink.IndexPointer!.IsNull);
+            Assert.NotNull(pathLink.Neighbors);
+            Assert.NotNull(pathLink.Indeces);
+            Assert.Equal(2, pathLink.Neighbors!.Ids.Count);
+            Assert.Equal(4, pathLink.Indeces!.Ids.Count);
 
             var pathTable = setup.SectionPathTables.PathTables.First();
-            Assert.False(pathTable.EntryPointer.IsNull);
+
+            Assert.NotNull(pathTable.EntryPointer);
             Assert.NotNull(pathTable.Entry);
-            Assert.Equal(5, pathTable.Entry.Ids.Count);
+
+            Assert.False(pathTable.EntryPointer!.IsNull);
+            Assert.NotNull(pathTable.Entry);
+            Assert.Equal(5, pathTable.Entry!.Ids.Count);
 
             var pathSet = setup.SectionPathSets.PathSets.First();
-            Assert.False(pathSet.EntryPointer.IsNull);
+
+            Assert.NotNull(pathSet.EntryPointer);
             Assert.NotNull(pathSet.Entry);
-            Assert.Equal(4, pathSet.Entry.Ids.Count);
+
+            Assert.False(pathSet.EntryPointer!.IsNull);
+            Assert.NotNull(pathSet.Entry);
+            Assert.Equal(4, pathSet.Entry!.Ids.Count);
 
             var aifunction = setup.SectionAiLists.AiLists.First();
-            Assert.False(aifunction.EntryPointer.IsNull);
+
+            Assert.NotNull(aifunction.EntryPointer);
             Assert.NotNull(aifunction.Function);
-            Assert.NotNull(aifunction.Function.Data);
+
+            Assert.False(aifunction.EntryPointer!.IsNull);
+            Assert.NotNull(aifunction.Function);
+            Assert.NotNull(aifunction.Function!.Data);
         }
     }
 }

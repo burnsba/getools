@@ -1,9 +1,9 @@
-﻿using Getools.Lib.Game.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.File
 {
@@ -87,6 +87,11 @@ namespace Getools.Lib.Game.File
         /// </remarks>
         public byte[] Times { get; set; } = new byte[(BondConstants.SinglePlayerLevelCount - 1) * 4];
 
+        /// <summary>
+        /// Converts this object to byte array as it would appear in MIPS .data section.
+        /// Alignment is not considered.
+        /// </summary>
+        /// <returns>Byte array of this object.</returns>
         public byte[] ToByteArray()
         {
             var size = SizeOf;

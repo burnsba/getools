@@ -112,6 +112,58 @@ public enum GebugMessageCategory
 }
 ```
 
+## `Ramrom` Category
+
+The `Ramrom` category is for the native demo replay and recording methods in the game.
+
+`Ramrom` commands are as follows
+
+```
+public enum GebugCmdRamrom
+{
+    DefaultUnknown = 0,
+
+    StartDemoReplayFromPc = 10,
+    ReplayRequestNextIteration = 12,
+    ReplayNativeDemo = 30,
+}
+```
+
+### `Ramrom StartDemoReplayFromPc` Command
+
+Packet contains `struct ramromfilestructure` header data, will load and start replay.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Header        |  variable    | `PcToConsole` | Byte array of `struct ramromfilestructure` |
+
+
+### `Ramrom ReplayRequestNextIteration` Command
+
+Console request for next iteration of ramrom replay blocks.
+
+**Reply**: Yes.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ReplayId        |  2  (u16)    | `ConsoleToPc` | MessageId of original request to load demo from PC. |
+|  2            | IterationIndex        |  2  (u16)    | `ConsoleToPc` | Index of the iteration data being requested (starts at zero). |
+|  3            | IterationData        |  variable    | `PcToConsole` | Replay iteration data for the single request iteration. |
+
+### `Ramrom ReplayNativeDemo` Command
+
+Request to start a replay demo from the native `ramrom_table` list.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Index        |  1    | `PcToConsole` | Which replay demo to start. |
+
+
+
 ## `Debug` Category
 
 The `Debug` category is for executing debug methods still in the retail version of the game.

@@ -35,13 +35,13 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Value pointed to from <see cref="EntryPointer"/>.
         /// </summary>
-        public PathTable Entry { get; set; }
+        public PathTable? Entry { get; set; }
 
         /// <summary>
         /// Gets or sets pointer to <see cref="Entry"/>.
         /// Struct offset 0x4.
         /// </summary>
-        public PointerVariable EntryPointer { get; set; }
+        public PointerVariable? EntryPointer { get; set; }
 
         /// <summary>
         /// Gets or sets group num.
@@ -127,6 +127,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, EntryPointer))
+            {
+                throw new NullReferenceException();
+            }
+
             var size = SizeOf;
             var bytes = new byte[size];
             int pos = 0;

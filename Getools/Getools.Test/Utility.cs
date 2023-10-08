@@ -10,7 +10,7 @@ namespace Getools.Test
     {
         public static string SHA256CheckSum(string path)
         {
-            using (SHA256 SHA256 = SHA256Managed.Create())
+            using (SHA256 SHA256 = SHA256.Create())
             {
                 using (FileStream fileStream = File.OpenRead(path))
                 {

@@ -36,7 +36,7 @@ namespace Getools.Lib.Extensions
         }
 
         /// <summary>
-        /// 
+        /// Convert to rectangle and rotate.
         /// </summary>
         /// <param name="p"></param>
         /// <param name="halfOffsetWidth"></param>

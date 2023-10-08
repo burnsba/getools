@@ -14,11 +14,12 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class RefSectionRodata : SetupDataSection
     {
+        private readonly byte[] _byteData;
+
         // 1 for byte, 4 for word
         private int _dataElementSize = 1;
 
-        private byte[] _byteData = null;
-        private int[] _wordData = null;
+        private int[]? _wordData = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RefSectionRodata"/> class.
@@ -92,7 +93,7 @@ namespace Getools.Lib.Game.Asset.Setup
                 throw new NotSupportedException($"Data element is not word sized (={Config.TargetWordSize} bytes)");
             }
 
-            return _wordData;
+            return _wordData!;
         }
 
         /// <summary>

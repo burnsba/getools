@@ -17,7 +17,7 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// </summary>
         /// <param name="bytes">Bytes to read.</param>
         /// <returns>Command block.</returns>
-        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">If the command description can't be resolved to a known implementation.</exception>
         public static AiCommandBlock ParseBytes(byte[] bytes)
         {
             int position = 0;
@@ -60,7 +60,12 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
                         Array.Copy(bytes, position, byteValue, 0, len);
                         position += len;
 
-                        commandParameters.Add(new AiParameter(fcommand.CommandParameters[i].ParameterName, len, byteValue, Architecture.ByteOrder.BigEndien));
+                        if (string.IsNullOrEmpty(fcommand.CommandParameters[i].ParameterName))
+                        {
+                            throw new NullReferenceException();
+                        }
+
+                        commandParameters.Add(new AiParameter(fcommand.CommandParameters[i].ParameterName!, len, byteValue, Architecture.ByteOrder.BigEndien));
                     }
 
                     aic = new AiFixedCommand(fcommand, commandParameters);
@@ -82,6 +87,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return results;
         }
 
+        /// <summary>
+        /// Lookup of all known AI Commands.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1201:Elements should appear in the correct order", Justification = "<Justification>")]
         public static Dictionary<int, IAiCommandDescription> AiCommandById = new Dictionary<int, IAiCommandDescription>()
         {
             { GotoNext.CommandId, GotoNext },

@@ -16,7 +16,7 @@ namespace Getools.Lib.BinPack
     /// </summary>
     public class ClaimedStringPointer : IPointerVariable
     {
-        private RodataString _pointsTo = null;
+        private RodataString? _pointsTo = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClaimedStringPointer"/> class.
@@ -58,7 +58,7 @@ namespace Getools.Lib.BinPack
         /// Not used for <see cref="ClaimedStringPointer"/>.
         /// </summary>
         [JsonIgnore]
-        public string AddressOfVariableName
+        public string? AddressOfVariableName
         {
             get
             {
@@ -118,7 +118,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public IGetoolsLibObject Dereference()
+        public IGetoolsLibObject? Dereference()
         {
             return _pointsTo;
         }
@@ -127,7 +127,7 @@ namespace Getools.Lib.BinPack
         /// Strongly typed version of <see cref="Dereference"/>.
         /// </summary>
         /// <returns>Underlying <see cref="RodataString"/>.</returns>
-        public RodataString GetLibString()
+        public RodataString? GetLibString()
         {
             return _pointsTo;
         }
@@ -136,7 +136,7 @@ namespace Getools.Lib.BinPack
         /// Gets the underlying string being pointed to or null.
         /// </summary>
         /// <returns>String being pointed to or null.</returns>
-        public string GetString()
+        public string? GetString()
         {
             if (object.ReferenceEquals(null, _pointsTo))
             {

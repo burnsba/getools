@@ -32,22 +32,22 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets pointer to <see cref="Neighbors"/>.
         /// </summary>
-        public PointerVariable NeighborsPointer { get; set; }
+        public PointerVariable? NeighborsPointer { get; set; }
 
         /// <summary>
         /// List of ids pointed to from <see cref="NeighborsPointer"/>.
         /// </summary>
-        public PathListing Neighbors { get; set; }
+        public PathListing? Neighbors { get; set; }
 
         /// <summary>
         /// Gets or sets pointer to <see cref="Indeces"/>.
         /// </summary>
-        public PointerVariable IndexPointer { get; set; }
+        public PointerVariable? IndexPointer { get; set; }
 
         /// <summary>
         /// List of ids pointed to from <see cref="IndexPointer"/>.
         /// </summary>
-        public PathListing Indeces { get; set; }
+        public PathListing? Indeces { get; set; }
 
         /// <summary>
         /// Some setups have a single NULL entry before the path link section,
@@ -66,7 +66,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -169,6 +169,16 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, NeighborsPointer))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, IndexPointer))
+            {
+                throw new NullReferenceException();
+            }
+
             var size = SizeOf;
             var bytes = new byte[size];
             int pos = 0;

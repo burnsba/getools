@@ -33,6 +33,8 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             TypeId = typeId;
 
+            VariableName = "noname";
+
             Init();
         }
 

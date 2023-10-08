@@ -15,7 +15,7 @@ namespace Getools.Lib.Game.Asset.Setup
     /// </summary>
     public class RefSectionCredits : SetupDataSection
     {
-        private IntroCredits _credits = null;
+        private IntroCredits? _credits = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RefSectionCredits"/> class.
@@ -66,6 +66,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void WriteSectionData(StreamWriter sw)
         {
+            if (object.ReferenceEquals(null, _credits))
+            {
+                throw new NullReferenceException();
+            }
+
             if (_credits.Credits != null)
             {
                 sw.WriteLine(_credits.Credits.ToCDeclaration(printIndex: true));
@@ -90,6 +95,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void Collect(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, _credits))
+            {
+                throw new NullReferenceException();
+            }
+
             if (_credits.Credits != null)
             {
                 context.AppendToDataSection(_credits.Credits);

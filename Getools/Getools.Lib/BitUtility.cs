@@ -455,7 +455,9 @@ namespace Getools.Lib
 
             Int16 i = arr[index];
             i <<= 8;
+#pragma warning disable CS0675 // Bitwise-or operator used on a sign-extended operand
             i |= arr[index + 1];
+#pragma warning restore CS0675 // Bitwise-or operator used on a sign-extended operand
 
             return i;
         }
@@ -736,10 +738,10 @@ namespace Getools.Lib
         }
 
         /// <summary>
-        /// UNFLoader calc_padsize.
+        /// UNFLoader calc_padsize. Used with everdrive.
         /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
+        /// <param name="size">Input value.</param>
+        /// <returns>UNFLoader adjusted size.</returns>
         public static UInt32 CalculatePadsize(UInt32 size)
         {
             size--;
