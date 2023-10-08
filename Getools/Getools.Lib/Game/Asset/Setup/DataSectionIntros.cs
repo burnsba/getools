@@ -88,6 +88,11 @@ namespace Getools.Lib.Game.Asset.Setup
                 {
                     foreach (var entry in Intros.OfType<IntroCredits>().Where(x => x.Credits != null))
                     {
+                        if (object.ReferenceEquals(null, entry.Credits))
+                        {
+                            throw new NullReferenceException();
+                        }
+
                         sw.WriteLine(entry.Credits.ToCDeclaration());
                     }
                 }
@@ -122,9 +127,19 @@ namespace Getools.Lib.Game.Asset.Setup
 
             foreach (var entry in Intros.OfType<IntroCredits>().Where(x => x.Credits != null))
             {
+                if (object.ReferenceEquals(null, entry.Credits))
+                {
+                    throw new NullReferenceException();
+                }
+
                 if (string.IsNullOrEmpty(entry.Credits.VariableName))
                 {
                     entry.Credits.VariableName = $"credits_data_{index}";
+                }
+
+                if (object.ReferenceEquals(null, entry.CreditsDataPointer))
+                {
+                    throw new NullReferenceException();
                 }
 
                 if (entry.CreditsDataPointer.IsNull || entry.CreditsDataPointer.PointedToOffset == 0)

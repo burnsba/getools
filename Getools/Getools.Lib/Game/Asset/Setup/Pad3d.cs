@@ -33,7 +33,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets 3d bounding box.
         /// Struct offset 0x2c (relative to start of <see cref="Pad"/>).
         /// </summary>
-        public BoundingBoxf BoundingBox { get; set; }
+        public BoundingBoxf? BoundingBox { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -42,6 +42,26 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void Collect(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, Position))
+            {
+                throw new NullReferenceException($"{nameof(Position)}");
+            }
+
+            if (object.ReferenceEquals(null, Up))
+            {
+                throw new NullReferenceException($"{nameof(Up)}");
+            }
+
+            if (object.ReferenceEquals(null, Look))
+            {
+                throw new NullReferenceException($"{nameof(Look)}");
+            }
+
+            if (object.ReferenceEquals(null, BoundingBox))
+            {
+                throw new NullReferenceException($"{nameof(BoundingBox)}");
+            }
+
             context.AppendToDataSection(Position);
             context.AppendToDataSection(Up);
             context.AppendToDataSection(Look);
@@ -52,6 +72,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         protected override void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
+            if (object.ReferenceEquals(null, BoundingBox))
+            {
+                throw new NullReferenceException($"{nameof(BoundingBox)}");
+            }
+
             base.ToCDeclarationCommon(sb, prefix);
             sb.Append(", ");
             sb.Append(BoundingBox.ToCInlineDeclaration(string.Empty));

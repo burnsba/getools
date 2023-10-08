@@ -36,7 +36,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <summary>
         /// Gets or sets ids of this listing.

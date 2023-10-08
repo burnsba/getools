@@ -57,12 +57,34 @@ namespace Getools.Lib.Kaitai
                 result.RoomDataTable.Entries.Insert(0, x);
             }
 
+            if (object.ReferenceEquals(null, result.Header))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, result.Header.RoomDataTablePointer))
+            {
+                throw new NullReferenceException();
+            }
+
             result.Header.RoomDataTablePointer.AssignPointer(result.RoomDataTable);
 
             result.PortalDataTable = Convert(kaitaiObject.HeaderBlock.PortalDataTable);
+
+            if (object.ReferenceEquals(null, result.Header.PortalDataTablePointer))
+            {
+                throw new NullReferenceException();
+            }
+
             result.Header.PortalDataTablePointer.AssignPointer(result.PortalDataTable);
 
             result.GlobalVisibilityCommands = Convert(kaitaiObject.HeaderBlock.GlobalVisibilityCommands);
+
+            if (object.ReferenceEquals(null, result.Header.GlobalVisibilityCommandsPointer))
+            {
+                throw new NullReferenceException();
+            }
+
             result.Header.GlobalVisibilityCommandsPointer.AssignPointer(result.GlobalVisibilityCommands);
 
             ResolvePointTableData(result, kaitaiObject);
@@ -228,9 +250,14 @@ namespace Getools.Lib.Kaitai
 
             var startLengthData = new List<(int, int)>();
 
+            if (object.ReferenceEquals(null, result.RoomDataTable))
+            {
+                throw new NullReferenceException();
+            }
+
             var offsets = result.RoomDataTable.Entries
-                .Where(x => x.PointTablePointer.PointedToOffset > 0)
-                .Select(x => x.PointTablePointer.PointedToOffset)
+                .Where(x => x.PointTablePointer != null && x.PointTablePointer.PointedToOffset > 0)
+                .Select(x => x.PointTablePointer!.PointedToOffset)
                 .OrderBy(x => x)
                 .ToList();
 
@@ -244,6 +271,11 @@ namespace Getools.Lib.Kaitai
 
             foreach (var roomData in result.RoomDataTable.Entries)
             {
+                if (object.ReferenceEquals(null, roomData.PointTablePointer))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // The first and last entries are empty structs.
                 if (roomData.PointTablePointer.PointedToOffset == 0
                     || roomData.PointTablePointer.PointedToOffset == offsets.Last())

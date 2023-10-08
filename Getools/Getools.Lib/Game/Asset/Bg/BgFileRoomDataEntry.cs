@@ -8,17 +8,42 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Bg
 {
+    /// <summary>
+    /// Entry in BG room section.
+    /// </summary>
     public class BgFileRoomDataEntry
     {
-        public PointerVariable PointTablePointer { get; set; }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BgFileRoomDataEntry"/> class.
+        /// </summary>
+        public BgFileRoomDataEntry()
+        {
+        }
 
-        public List<GbiVtx> Points { get; set; }
+        /// <summary>
+        /// Pointer to table.
+        /// </summary>
+        public PointerVariable? PointTablePointer { get; set; }
 
-        public PointerVariable PrimaryDisplayList { get; set; }
+        /// <summary>
+        /// List of points in the room.
+        /// </summary>
+        public List<GbiVtx> Points { get; set; } = new List<GbiVtx>();
 
-        public PointerVariable SecondaryDisplayList { get; set; }
+        /// <summary>
+        /// Primary display list pointer.
+        /// </summary>
+        public PointerVariable? PrimaryDisplayList { get; set; }
 
-        public Coord3df Coord { get; set; }
+        /// <summary>
+        /// Secondary display list pointer.
+        /// </summary>
+        public PointerVariable? SecondaryDisplayList { get; set; }
+
+        /// <summary>
+        /// Center coordinate.
+        /// </summary>
+        public Coord3df? Coord { get; set; }
 
         /// <summary>
         /// When loading a binary file, this will be the index of the roomdata seen so far (0,1,2,...).

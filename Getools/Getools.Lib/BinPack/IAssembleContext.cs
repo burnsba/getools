@@ -88,6 +88,6 @@ namespace Getools.Lib.BinPack
         /// Call <see cref="Assemble"/> to build byte arrays first.
         /// </summary>
         /// <returns>Full linked and assembled file as byte array.</returns>
-        byte[] GetLinkedFile();
+        byte[]? GetLinkedFile();
     }
 }

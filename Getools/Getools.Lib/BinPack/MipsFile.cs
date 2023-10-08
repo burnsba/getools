@@ -53,7 +53,7 @@ namespace Getools.Lib.BinPack
         /// <summary>
         /// Collected, assembled, linked file contents.
         /// </summary>
-        private byte[] _linkedFile = null;
+        private byte[]? _linkedFile = null;
 
         /// <summary>
         /// Current file assembly context state.
@@ -174,7 +174,7 @@ namespace Getools.Lib.BinPack
         }
 
         /// <inheritdoc />
-        public byte[] GetLinkedFile()
+        public byte[]? GetLinkedFile()
         {
             if (_buildState == FileBuildState.FullyLinked)
             {
@@ -243,7 +243,7 @@ namespace Getools.Lib.BinPack
         {
             var pointerKey = pointer.MetaId;
 
-            IGetoolsLibObject pointsTo = pointer.Dereference();
+            IGetoolsLibObject? pointsTo = pointer.Dereference();
 
             if (!object.ReferenceEquals(null, pointsTo))
             {
@@ -268,7 +268,7 @@ namespace Getools.Lib.BinPack
         {
             var pointerKey = pointer.MetaId;
 
-            IGetoolsLibObject pointsTo = pointer.Dereference();
+            IGetoolsLibObject? pointsTo = pointer.Dereference();
 
             if (!object.ReferenceEquals(null, pointsTo))
             {
@@ -296,7 +296,7 @@ namespace Getools.Lib.BinPack
                 return;
             }
 
-            HashSet<Guid> backRef = null;
+            HashSet<Guid>? backRef = null;
             var pointsToKey = pointsTo.MetaId;
 
             if (_objectToPointersLookup.TryGetValue(pointsToKey, out backRef))
@@ -331,7 +331,7 @@ namespace Getools.Lib.BinPack
 
         private void AddPointerReferenceOnObject(Guid pointerKey, Guid pointsToKey)
         {
-            HashSet<Guid> backRef = null;
+            HashSet<Guid>? backRef = null;
 
             if (_objectToPointersLookup.TryGetValue(pointsToKey, out backRef))
             {
@@ -364,7 +364,7 @@ namespace Getools.Lib.BinPack
 
         private void RemovePointerReferenceOnObject(Guid pointerKey, Guid pointsToKey)
         {
-            HashSet<Guid> backRef = null;
+            HashSet<Guid>? backRef = null;
 
             if (_objectToPointersLookup.TryGetValue(pointsToKey, out backRef))
             {

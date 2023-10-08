@@ -35,34 +35,39 @@ namespace Getools.Lib.Game.Asset.Bg
         /// <summary>
         /// Pointer to the room data array.
         /// </summary>
-        public PointerVariable RoomDataTablePointer { get; set; }
+        public PointerVariable? RoomDataTablePointer { get; set; }
 
         /// <summary>
         /// Pointer to the portal data array.
         /// </summary>
-        public PointerVariable PortalDataTablePointer { get; set; }
+        public PointerVariable? PortalDataTablePointer { get; set; }
 
         /// <summary>
         /// Pointer to the global visibility commands array.
         /// </summary>
-        public PointerVariable GlobalVisibilityCommandsPointer { get; set; }
+        public PointerVariable? GlobalVisibilityCommandsPointer { get; set; }
 
         /// <summary>
         /// Last field, unknown. Appears to always be 4 zero'd bytes.
         /// </summary>
         public int Unknown2 { get; set; }
 
+        /// <inheritdoc />
         public int ByteAlignment => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public int BaseDataOffset { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        /// <inheritdoc />
         public int BaseDataSize => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public void Assemble(IAssembleContext context)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc />
         public void Collect(IAssembleContext context)
         {
             throw new NotImplementedException();

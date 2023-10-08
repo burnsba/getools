@@ -65,9 +65,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void WritePrequelData(StreamWriter sw)
         {
-            foreach (var entry in PathTables.Where(x => x.Entry != null).OrderBy(x => x.EntryPointer.PointedToOffset))
+            foreach (var entry in PathTables.Where(x => x.Entry != null && x.EntryPointer != null).OrderBy(x => x.EntryPointer!.PointedToOffset))
             {
-                sw.Write(entry.Entry.ToCDeclaration());
+                sw.Write(entry.Entry!.ToCDeclaration());
             }
 
             if (PathTables.Where(x => x.Entry != null).Any())
@@ -93,7 +93,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public override void DeserializeFix(int startingIndex = 0)
         {
             int index = startingIndex;
-            string baseNameFormat = null;
+            string baseNameFormat;
 
             if (IsUnreferenced)
             {
@@ -115,6 +115,11 @@ namespace Getools.Lib.Game.Asset.Setup
                         entry.Entry.VariableName = string.Format(baseNameFormat, index);
                     }
 
+                    if (object.ReferenceEquals(null, entry.EntryPointer))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     if (entry.EntryPointer.IsNull || entry.EntryPointer.PointedToOffset == 0)
                     {
                         entry.EntryPointer.AssignPointer(entry.Entry);
@@ -134,7 +139,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override int GetPrequelDataSize()
         {
-            return PathTables.Where(x => x.Entry != null).Sum(x => x.Entry.Ids.Count) * Config.TargetWordSize;
+            return PathTables.Where(x => x.Entry != null).Sum(x => x.Entry!.Ids.Count) * Config.TargetWordSize;
         }
 
         /// <inheritdoc />
@@ -142,6 +147,11 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             foreach (var entry in PathTables)
             {
+                if (object.ReferenceEquals(null, entry.Entry))
+                {
+                    throw new NullReferenceException();
+                }
+
                 context.AppendToDataSection(entry.Entry);
             }
 

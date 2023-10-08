@@ -6,14 +6,31 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// A command block is a collection (sequence) of commands to be run.
+    /// </summary>
     public class AiCommandBlock
     {
+        /// <summary>
+        /// Type of the script.
+        /// </summary>
         public AiScriptType ScriptType { get; set; } = AiScriptType.DefaultUnknown;
 
+        /// <summary>
+        /// Id or index of the script.
+        /// </summary>
         public int Id { get; set; }
 
+        /// <summary>
+        /// Commands in the script.
+        /// </summary>
         public List<IAiConcreteCommand> Commands { get; set; } = new List<IAiConcreteCommand>();
 
+        /// <summary>
+        /// Converts script into newline separate list of commands.
+        /// </summary>
+        /// <param name="prefix">Whitespace indentation.</param>
+        /// <returns>String.</returns>
         public string ToFriendlyLines(string prefix = "")
         {
             var sb = new StringBuilder();
@@ -34,6 +51,10 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Complete byte array of all commands in the script.
+        /// </summary>
+        /// <returns>Data.</returns>
         public byte[] ToBytes()
         {
             var results = new List<byte>();
@@ -50,6 +71,11 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             return results.ToArray();
         }
 
+        /// <summary>
+        /// Writes object as C macro definition.
+        /// </summary>
+        /// <param name="prefix">Whitespace indentation.</param>
+        /// <returns>Macro text.</returns>
         public string ToCMacro(string prefix = "")
         {
             var sb = new StringBuilder();

@@ -7,6 +7,9 @@ using Getools.Lib.Architecture;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// Interface to desribe something that can be converted to byte array.
+    /// </summary>
     public interface IAiByteConvertable
     {
         /// <summary>
@@ -14,8 +17,8 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
         /// If the native <see cref="Endien"/> is not the same as parameter format,
         /// the result will be swapped.
         /// </summary>
-        /// <param name="endien"></param>
-        /// <returns></returns>
+        /// <param name="endien">Byte order.</param>
+        /// <returns>Object as byte array.</returns>
         byte[] ToByteArray(ByteOrder endien = ByteOrder.BigEndien);
     }
 }

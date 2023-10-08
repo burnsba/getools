@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// Type of AI script.
+    /// </summary>
     public enum AiScriptType
     {
+        /// <summary>
+        /// Unset / unknown.
+        /// </summary>
         DefaultUnknown,
 
         /// <summary>

@@ -613,6 +613,11 @@ namespace Getools.Lib.Game.Asset.Setup
             file.Assemble();
             var fileContents = file.GetLinkedFile();
 
+            if (object.ReferenceEquals(null, fileContents))
+            {
+                throw new NullReferenceException();
+            }
+
             bw.Write(fileContents);
 
             _header = null;

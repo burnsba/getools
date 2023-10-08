@@ -7,9 +7,15 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Bg
 {
+    /// <summary>
+    /// Room section.
+    /// </summary>
     public class BgFileRoomDataTable : IGetoolsLibObject
     {
-        public List<BgFileRoomDataEntry> Entries { get; set; }
+        /// <summary>
+        /// Entries.
+        /// </summary>
+        public List<BgFileRoomDataEntry> Entries { get; set; } = new List<BgFileRoomDataEntry>();
 
         /// <summary>
         /// Gets Getools.Lib reference id for the section/filler section.

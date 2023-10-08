@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Bg
 {
+    /// <summary>
+    /// Point table section.
+    /// </summary>
     public class BgFilePointTableEntry
     {
-        public List<GbiVtx> Verteces { get; set; }
+        /// <summary>
+        /// Verteces.
+        /// </summary>
+        public List<GbiVtx> Verteces { get; set; } = new List<GbiVtx>();
     }
 }

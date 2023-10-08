@@ -14,6 +14,9 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Getools.Lib.Game.Asset.Model
 {
+    /// <summary>
+    /// Helper class to associate known data with specific prop information.
+    /// </summary>
     public static class ModelDataResolver
     {
         private static bool _bboxJsonLoaded = false;
@@ -25,6 +28,12 @@ namespace Getools.Lib.Game.Asset.Model
         private static Dictionary<PropId, ModelData> _modelBboxLookup = new Dictionary<PropId, ModelData>();
         private static Dictionary<PropId, Single> _modelScaleLookup = new Dictionary<PropId, Single>();
 
+        /// <summary>
+        /// Lookup model data from prop id.
+        /// </summary>
+        /// <param name="propId">Prop.</param>
+        /// <returns>Model.</returns>
+        /// <exception cref="KeyNotFoundException">Throw if model name could not be resolved.</exception>
         public static ModelData GetModelDataFromPropId(PropId propId)
         {
             if (_modelBboxLookup.ContainsKey(propId))
@@ -65,6 +74,12 @@ namespace Getools.Lib.Game.Asset.Model
             return data.Clone();
         }
 
+        /// <summary>
+        /// Lookup model scale from prop id.
+        /// </summary>
+        /// <param name="propId">Prop.</param>
+        /// <returns>Scale.</returns>
+        /// <exception cref="KeyNotFoundException">Throw if model name could not be resolved.</exception>
         public static Single GetModelScaleFromPropId(PropId propId)
         {
             if (_modelScaleLookup.ContainsKey(propId))
@@ -106,7 +121,7 @@ namespace Getools.Lib.Game.Asset.Model
 
             // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
             string resourcePath = "Getools.Lib.Game.Asset.Model.ModelBboxDefinition.json";
-            using (Stream stream = assembly.GetManifestResourceStream(resourcePath))
+            using (Stream stream = assembly.GetManifestResourceStream(resourcePath)!)
             using (StreamReader reader = new StreamReader(stream))
             {
                 var json = reader.ReadToEnd();
@@ -123,7 +138,7 @@ namespace Getools.Lib.Game.Asset.Model
 
             // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
             string resourcePath = "Getools.Lib.Game.Asset.Model.ModelScaleDefinition.json";
-            using (Stream stream = assembly.GetManifestResourceStream(resourcePath))
+            using (Stream stream = assembly.GetManifestResourceStream(resourcePath)!)
             using (StreamReader reader = new StreamReader(stream))
             {
                 var json = reader.ReadToEnd();
@@ -157,7 +172,9 @@ namespace Getools.Lib.Game.Asset.Model
         private class ModelScalJson
         {
             [JsonProperty(PropertyName = "name")]
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
             public string Name { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
             [JsonProperty(PropertyName = "scale")]
             public Single Scale { get; set; }

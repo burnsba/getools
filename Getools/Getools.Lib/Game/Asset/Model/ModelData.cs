@@ -7,41 +7,88 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Model
 {
+    /// <summary>
+    /// Maps model data, as found in assets\obseg\prop\P*Z.bin files.
+    /// </summary>
     public class ModelData
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ModelData"/> class.
+        /// </summary>
+        public ModelData()
+        {
+        }
+
+        /// <summary>
+        /// X position.
+        /// </summary>
         [JsonProperty(PropertyName = "xpos")]
-        public Single XPos { get; set; }
+        public Single XPos { get; init; }
 
+        /// <summary>
+        /// Y position.
+        /// </summary>
         [JsonProperty(PropertyName = "ypos")]
-        public Single YPos { get; set; }
+        public Single YPos { get; init; }
 
+        /// <summary>
+        /// Z position.
+        /// </summary>
         [JsonProperty(PropertyName = "zpos")]
-        public Single ZPos { get; set; }
+        public Single ZPos { get; init; }
 
+        /// <summary>
+        /// Bounding box radius.
+        /// </summary>
         [JsonProperty(PropertyName = "bboxradius")]
-        public Single BboxRadius { get; set; }
+        public Single BboxRadius { get; init; }
 
+        /// <summary>
+        /// Bounding box, min x.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_minx")]
-        public Single BboxMinX { get; set; }
+        public Single BboxMinX { get; init; }
 
+        /// <summary>
+        /// Bounding box, min x.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_maxx")]
-        public Single BboxMaxX { get; set; }
+        public Single BboxMaxX { get; init; }
 
+        /// <summary>
+        /// Bounding box, min y.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_miny")]
-        public Single BboxMinY { get; set; }
+        public Single BboxMinY { get; init; }
 
+        /// <summary>
+        /// Bounding box, max y.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_maxy")]
-        public Single BboxMaxY { get; set; }
+        public Single BboxMaxY { get; init; }
 
+        /// <summary>
+        /// Bounding box, min z.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_minz")]
-        public Single BboxMinZ { get; set; }
+        public Single BboxMinZ { get; init; }
 
+        /// <summary>
+        /// Bounding box, max z.
+        /// </summary>
         [JsonProperty(PropertyName = "bbox_maxz")]
-        public Single BboxMaxZ { get; set; }
+        public Single BboxMaxZ { get; init; }
 
+        /// <summary>
+        /// Name.
+        /// </summary>
         [JsonProperty(PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; init; }
 
+        /// <summary>
+        /// Copies object.
+        /// </summary>
+        /// <returns>Copy.</returns>
         public ModelData Clone()
         {
             return new ModelData()
@@ -60,6 +107,10 @@ namespace Getools.Lib.Game.Asset.Model
             };
         }
 
+        /// <summary>
+        /// Convert to standard json format.
+        /// </summary>
+        /// <returns>JSON string.</returns>
         public string ToJsonString()
         {
             var sb = new StringBuilder();

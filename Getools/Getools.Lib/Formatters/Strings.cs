@@ -56,7 +56,7 @@ namespace Getools.Lib.Formatters
         /// <param name="s">String to format.</param>
         /// <param name="prefix">Optional prefix before string.</param>
         /// <returns>Quoted value.</returns>
-        public static string ToCValue(string s, string prefix = "")
+        public static string ToCValue(string? s, string prefix = "")
         {
             if (string.IsNullOrEmpty(s))
             {
@@ -74,7 +74,7 @@ namespace Getools.Lib.Formatters
         /// <param name="s">String to format.</param>
         /// <param name="prefix">Optional prefix before string.</param>
         /// <returns>Quoted value.</returns>
-        public static string ToCValueOrNull(string s, string prefix = "")
+        public static string ToCValueOrNull(string? s, string prefix = "")
         {
             if (string.IsNullOrEmpty(s))
             {

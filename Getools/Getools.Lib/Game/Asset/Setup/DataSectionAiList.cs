@@ -75,7 +75,12 @@ namespace Getools.Lib.Game.Asset.Setup
             {
                 foreach (var entry in AiLists.Where(x => x.Function != null))
                 {
-                    if (!declared.Contains(entry.Function.VariableName))
+                    if (string.IsNullOrEmpty(entry.Function!.VariableName))
+                    {
+                        throw new NullReferenceException();
+                    }
+
+                    if (!declared.Contains(entry.Function!.VariableName))
                     {
                         sw.Write(entry.Function.ToCDeclaration());
                     }
@@ -85,9 +90,14 @@ namespace Getools.Lib.Game.Asset.Setup
             }
             else
             {
-                foreach (var entry in AiLists.Where(x => x.Function != null).OrderBy(x => x.EntryPointer.PointedToOffset))
+                foreach (var entry in AiLists.Where(x => x.Function != null && x.EntryPointer != null).OrderBy(x => x.EntryPointer!.PointedToOffset))
                 {
-                    if (!declared.Contains(entry.Function.VariableName))
+                    if (string.IsNullOrEmpty(entry.Function!.VariableName))
+                    {
+                        throw new NullReferenceException();
+                    }
+
+                    if (!declared.Contains(entry.Function!.VariableName))
                     {
                         sw.Write(entry.Function.ToCDeclaration());
                     }
@@ -129,7 +139,7 @@ namespace Getools.Lib.Game.Asset.Setup
         public override void DeserializeFix(int startingIndex = 0)
         {
             int index = startingIndex;
-            string baseNameFormat = null;
+            string baseNameFormat;
 
             if (IsUnreferenced)
             {
@@ -165,6 +175,11 @@ namespace Getools.Lib.Game.Asset.Setup
                         entry.Function.VariableName = string.Format(baseNameFormat, entry.Function.OrderIndex);
                     }
 
+                    if (object.ReferenceEquals(null, entry.EntryPointer))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     if (entry.EntryPointer.IsNull || entry.EntryPointer.PointedToOffset == 0)
                     {
                         entry.EntryPointer.AssignPointer(entry.Function);
@@ -182,7 +197,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override int GetPrequelDataSize()
         {
-            return AiLists.Where(x => x.Function != null).Sum(x => x.Function.Data.Length);
+            return AiLists.Where(x => x.Function != null).Sum(x => x.Function!.Data.Length);
         }
 
         /// <inheritdoc />
@@ -190,6 +205,11 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             foreach (var entry in AiLists)
             {
+                if (object.ReferenceEquals(null, entry.Function))
+                {
+                    throw new NullReferenceException();
+                }
+
                 context.AppendToDataSection(entry.Function);
             }
 

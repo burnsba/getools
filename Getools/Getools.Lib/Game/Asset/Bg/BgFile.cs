@@ -21,12 +21,21 @@ namespace Getools.Lib.Game.Asset.Bg
         /// <summary>
         /// Header.
         /// </summary>
-        public BgFileHeader Header { get; set; }
+        public BgFileHeader? Header { get; set; }
 
-        public BgFileRoomDataTable RoomDataTable { get; set; }
+        /// <summary>
+        /// Room section.
+        /// </summary>
+        public BgFileRoomDataTable? RoomDataTable { get; set; }
 
-        public BgFileVisibilityCommandTable GlobalVisibilityCommands { get; set; }
+        /// <summary>
+        /// Visibility commands section.
+        /// </summary>
+        public BgFileVisibilityCommandTable? GlobalVisibilityCommands { get; set; }
 
-        public BgFilePortalDataTable PortalDataTable { get; set; }
+        /// <summary>
+        /// Portal section.
+        /// </summary>
+        public BgFilePortalDataTable? PortalDataTable { get; set; }
     }
 }

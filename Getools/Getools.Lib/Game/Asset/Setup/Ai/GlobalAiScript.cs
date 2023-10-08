@@ -7,10 +7,16 @@ using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.Setup.Ai
 {
+    /// <summary>
+    /// List of global AI scripts.
+    /// </summary>
     public class GlobalAiScript
     {
         private static Dictionary<GlobalAiList, AiCommandBlock> _aiCommands = new Dictionary<GlobalAiList, AiCommandBlock>();
 
+        /// <summary>
+        /// List of global scripts defined in the ROM.
+        /// </summary>
         private static List<byte[]> _globalCommandBytes = new List<byte[]>()
         {
             // dword_D_80037070: ~ 0
@@ -68,6 +74,12 @@ namespace Getools.Lib.Game.Asset.Setup.Ai
             new byte[] { 0x23, 0xfd, 0x05, 0xfd, 0x00, 0x01, 0x04, 0x00 },
         };
 
+        /// <summary>
+        /// Gets the global AI script by the given id.
+        /// </summary>
+        /// <param name="id">Id of sript.</param>
+        /// <returns>AI script.</returns>
+        /// <exception cref="IndexOutOfRangeException">If index out of range of known scripts.</exception>
         public static AiCommandBlock GetGlobalAiScript(GlobalAiList id)
         {
             var index = (int)id;

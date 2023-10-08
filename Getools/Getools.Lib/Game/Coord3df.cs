@@ -31,6 +31,12 @@ namespace Getools.Lib.Game
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Coord3df"/> class.
+        /// </summary>
+        /// <param name="x">X.</param>
+        /// <param name="y">Y.</param>
+        /// <param name="z">Z.</param>
         public Coord3df(double x, double y, double z)
         {
             X = (Single)x;
@@ -38,6 +44,12 @@ namespace Getools.Lib.Game
             Z = (Single)z;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Coord3df"/> class.
+        /// </summary>
+        /// <param name="x">X.</param>
+        /// <param name="y">Y.</param>
+        /// <param name="z">Z.</param>
         public Coord3df(Single x, Single y, Single z)
         {
             X = x;
@@ -60,12 +72,15 @@ namespace Getools.Lib.Game
         /// </summary>
         public Single Z { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether all points in the coordinate are finite.
+        /// </summary>
         public bool IsFinite => double.IsFinite(X) && double.IsFinite(Y) && double.IsFinite(Z);
 
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -169,6 +184,7 @@ namespace Getools.Lib.Game
             return $"{FloatingPoint.ToFloatString(X)}, {FloatingPoint.ToFloatString(Y)}, {FloatingPoint.ToFloatString(Z)}";
         }
 
+        /// <inheritdoc />
         public override bool Equals(object? obj)
         {
             var other = obj as Coord3df;
@@ -241,21 +257,34 @@ namespace Getools.Lib.Game
             return xequals && yequals && zequals;
         }
 
+        /// <summary>
+        /// Convert to <see cref="Coord2df"/> using <see cref="X"/> and <see cref="Y"/>.
+        /// </summary>
+        /// <returns>Point.</returns>
         public Coord2df To2DXY()
         {
             return new Coord2df(X, Y);
         }
 
+        /// <summary>
+        /// Convert to <see cref="Coord2df"/> using <see cref="X"/> and <see cref="Z"/>.
+        /// </summary>
+        /// <returns>Point.</returns>
         public Coord2df To2DXZ()
         {
             return new Coord2df(X, Z);
         }
 
+        /// <summary>
+        /// Convert to <see cref="Coord2df"/> using <see cref="Y"/> and <see cref="Z"/>.
+        /// </summary>
+        /// <returns>Point.</returns>
         public Coord2df To2DYZ()
         {
             return new Coord2df(Y, Z);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             return X.GetHashCode() ^ (Y.GetHashCode() + 100) ^ (Z.GetHashCode() + 10000);

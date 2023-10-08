@@ -22,7 +22,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Initializes a new instance of the <see cref="AiFunction"/> class.
         /// </summary>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public AiFunction()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
         }
 
@@ -30,12 +32,12 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the ai script definition.
         /// Eventually this will be replaced with strongly typed data.
         /// </summary>
-        public byte[] Data { get; set; }
+        public byte[] Data { get; init; }
 
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <summary>
         /// Gets or sets the index of this ai script, in the list of ai scripts
@@ -100,6 +102,10 @@ namespace Getools.Lib.Game.Asset.Setup
             BaseDataOffset = result.DataStartAddress;
         }
 
+        /// <summary>
+        /// Convert sequences of AI Commands into command block.
+        /// </summary>
+        /// <returns>Block.</returns>
         public AiCommandBlock GetParsedAiBlock()
         {
             if (object.ReferenceEquals(null, _aiblock))

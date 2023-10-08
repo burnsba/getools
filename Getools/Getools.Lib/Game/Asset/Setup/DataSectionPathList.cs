@@ -79,9 +79,9 @@ namespace Getools.Lib.Game.Asset.Setup
                 }
             }
 
-            foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null).OrderBy(x => x.NeighborsPointer.PointedToOffset))
+            foreach (var entry in PathLinkEntries.Where(x => x.Neighbors != null && x.NeighborsPointer != null).OrderBy(x => x.NeighborsPointer!.PointedToOffset))
             {
-                sw.Write(entry.Neighbors.ToCDeclaration());
+                sw.Write(entry.Neighbors!.ToCDeclaration());
             }
 
             if (PathLinkEntries.Where(x => x.Neighbors != null).Any())
@@ -89,9 +89,9 @@ namespace Getools.Lib.Game.Asset.Setup
                 sw.WriteLine();
             }
 
-            foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null).OrderBy(x => x.IndexPointer.PointedToOffset))
+            foreach (var entry in PathLinkEntries.Where(x => x.Indeces != null && x.IndexPointer != null).OrderBy(x => x.IndexPointer!.PointedToOffset))
             {
-                sw.Write(entry.Indeces.ToCDeclaration());
+                sw.Write(entry.Indeces!.ToCDeclaration());
             }
 
             if (PathLinkEntries.Where(x => x.Indeces != null).Any())
@@ -131,6 +131,11 @@ namespace Getools.Lib.Game.Asset.Setup
                             entry.Neighbors.VariableName = $"path_neighbors_not_used_{index}";
                         }
 
+                        if (object.ReferenceEquals(null, entry.NeighborsPointer))
+                        {
+                            throw new NullReferenceException();
+                        }
+
                         if (entry.NeighborsPointer.IsNull || entry.NeighborsPointer.PointedToOffset == 0)
                         {
                             entry.NeighborsPointer.AssignPointer(entry.Neighbors);
@@ -142,6 +147,11 @@ namespace Getools.Lib.Game.Asset.Setup
                         if (string.IsNullOrEmpty(entry.Indeces.VariableName))
                         {
                             entry.Indeces.VariableName = $"path_indeces_not_used_{index}";
+                        }
+
+                        if (object.ReferenceEquals(null, entry.IndexPointer))
+                        {
+                            throw new NullReferenceException();
                         }
 
                         if (entry.IndexPointer.IsNull || entry.IndexPointer.PointedToOffset == 0)
@@ -171,6 +181,11 @@ namespace Getools.Lib.Game.Asset.Setup
                             entry.Neighbors.VariableName = $"path_neighbors_{index}";
                         }
 
+                        if (object.ReferenceEquals(null, entry.NeighborsPointer))
+                        {
+                            throw new NullReferenceException();
+                        }
+
                         if (entry.NeighborsPointer.IsNull || entry.NeighborsPointer.PointedToOffset == 0)
                         {
                             entry.NeighborsPointer.AssignPointer(entry.Neighbors);
@@ -182,6 +197,11 @@ namespace Getools.Lib.Game.Asset.Setup
                         if (string.IsNullOrEmpty(entry.Indeces.VariableName))
                         {
                             entry.Indeces.VariableName = $"path_indeces_{index}";
+                        }
+
+                        if (object.ReferenceEquals(null, entry.IndexPointer))
+                        {
+                            throw new NullReferenceException();
                         }
 
                         if (entry.IndexPointer.IsNull || entry.IndexPointer.PointedToOffset == 0)
@@ -204,8 +224,8 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override int GetPrequelDataSize()
         {
-            var neighborsSize = PathLinkEntries.Where(x => x.Neighbors != null).Sum(x => x.Neighbors.Ids.Count) * Config.TargetWordSize;
-            var indecesSize = PathLinkEntries.Where(x => x.Indeces != null).Sum(x => x.Indeces.Ids.Count) * Config.TargetWordSize;
+            var neighborsSize = PathLinkEntries.Where(x => x.Neighbors != null).Sum(x => x.Neighbors!.Ids.Count) * Config.TargetWordSize;
+            var indecesSize = PathLinkEntries.Where(x => x.Indeces != null).Sum(x => x.Indeces!.Ids.Count) * Config.TargetWordSize;
             return neighborsSize + indecesSize;
         }
 
@@ -214,11 +234,21 @@ namespace Getools.Lib.Game.Asset.Setup
         {
             foreach (var entry in PathLinkEntries)
             {
+                if (object.ReferenceEquals(null, entry.Neighbors))
+                {
+                    throw new NullReferenceException();
+                }
+
                 context.AppendToDataSection(entry.Neighbors);
             }
 
             foreach (var entry in PathLinkEntries)
             {
+                if (object.ReferenceEquals(null, entry.Indeces))
+                {
+                    throw new NullReferenceException();
+                }
+
                 context.AppendToDataSection(entry.Indeces);
             }
 

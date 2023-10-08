@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game.Asset.Bg
 {
+    /// <summary>
+    /// Display list section.
+    /// </summary>
     public class BgFileRoomDisplayListEntry
     {
-        public uint[] DisplayList { get; set; }
+        /// <summary>
+        /// Display list data.
+        /// </summary>
+        public uint[]? DisplayList { get; set; }
     }
 }

@@ -116,6 +116,11 @@ namespace Getools.Lib.Kaitai
 
                 foreach (var credits in creditsIntros)
                 {
+                    if (object.ReferenceEquals(null, credits.Credits))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     var entrySize = credits.Credits.CreditsEntries.Count * IntroCreditEntry.SizeOf;
 
                     if (entrySize > 0)

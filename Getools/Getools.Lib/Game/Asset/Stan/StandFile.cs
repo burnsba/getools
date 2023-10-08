@@ -314,6 +314,11 @@ namespace Getools.Lib.Game.Asset.Stan
             file.Assemble();
             var fileContents = file.GetLinkedFile();
 
+            if (object.ReferenceEquals(null, fileContents))
+            {
+                throw new NullReferenceException();
+            }
+
             bw.Write(fileContents);
         }
     }

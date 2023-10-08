@@ -27,12 +27,12 @@ namespace Getools.Lib.Game.Asset.Intro
         /// <summary>
         /// Gets or sets pointer to <see cref="Credits"/>.
         /// </summary>
-        public PointerVariable CreditsDataPointer { get; set; }
+        public PointerVariable? CreditsDataPointer { get; set; }
 
         /// <summary>
         /// Credits data.
         /// </summary>
-        public CreditsContainer Credits { get; set; }
+        public CreditsContainer? Credits { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -87,6 +87,11 @@ namespace Getools.Lib.Game.Asset.Intro
             var result = context.AssembleAppendBytes(bytes, Config.TargetWordSize);
             BaseDataOffset = result.DataStartAddress;
 
+            if (object.ReferenceEquals(null, CreditsDataPointer))
+            {
+                throw new NullReferenceException();
+            }
+
             CreditsDataPointer.BaseDataOffset = BaseDataOffset + pointerOffset;
 
             context.RegisterPointer(CreditsDataPointer);
@@ -104,6 +109,11 @@ namespace Getools.Lib.Game.Asset.Intro
             }
             else
             {
+                if (object.ReferenceEquals(null, CreditsDataPointer))
+                {
+                    throw new NullReferenceException();
+                }
+
                 sb.Append(", ");
                 sb.Append(CreditsDataPointer.AddressOfVariableName);
             }

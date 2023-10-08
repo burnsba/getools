@@ -27,7 +27,7 @@ namespace Getools.Lib.Game.Asset.Intro
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]

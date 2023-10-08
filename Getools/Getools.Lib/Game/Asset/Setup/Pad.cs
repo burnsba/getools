@@ -36,25 +36,25 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets position coordinate.
         /// Struct offset 0x0.
         /// </summary>
-        public Coord3df Position { get; set; }
+        public Coord3df? Position { get; set; }
 
         /// <summary>
         /// Gets or sets "up" coordinate.
         /// Struct offset 0xc.
         /// </summary>
-        public Coord3df Up { get; set; }
+        public Coord3df? Up { get; set; }
 
         /// <summary>
         /// Gets or sets "look" coordinate.
         /// Struct offset 0x18.
         /// </summary>
-        public Coord3df Look { get; set; }
+        public Coord3df? Look { get; set; }
 
         /// <summary>
         /// Gets or sets name string/pointer.
         /// Struct offset 0x24.
         /// </summary>
-        public ClaimedStringPointer Name { get; set; }
+        public ClaimedStringPointer? Name { get; set; }
 
         /// <summary>
         /// TODO: Unknown fields.
@@ -66,7 +66,7 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <summary>
         /// Gets or sets the variable name used in source file.
         /// </summary>
-        public string VariableName { get; set; }
+        public string? VariableName { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -127,6 +127,21 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public virtual void Collect(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, Position))
+            {
+                throw new NullReferenceException($"{nameof(Position)}");
+            }
+
+            if (object.ReferenceEquals(null, Up))
+            {
+                throw new NullReferenceException($"{nameof(Up)}");
+            }
+
+            if (object.ReferenceEquals(null, Look))
+            {
+                throw new NullReferenceException($"{nameof(Look)}");
+            }
+
             context.AppendToDataSection(Position);
             context.AppendToDataSection(Up);
             context.AppendToDataSection(Look);
@@ -136,6 +151,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public virtual void Assemble(IAssembleContext context)
         {
+            if (object.ReferenceEquals(null, Name))
+            {
+                throw new NullReferenceException($"{nameof(Name)}");
+            }
+
             // the coord3d are handled in their own class, only need the native properties here.
             var size = Config.TargetWordSize * 2;
             var bytes = new byte[size];
@@ -167,6 +187,26 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <param name="prefix">Optional prefix to prepend.</param>
         protected virtual void ToCDeclarationCommon(StringBuilder sb, string prefix = "")
         {
+            if (object.ReferenceEquals(null, Position))
+            {
+                throw new NullReferenceException($"{nameof(Position)}");
+            }
+
+            if (object.ReferenceEquals(null, Up))
+            {
+                throw new NullReferenceException($"{nameof(Up)}");
+            }
+
+            if (object.ReferenceEquals(null, Look))
+            {
+                throw new NullReferenceException($"{nameof(Look)}");
+            }
+
+            if (object.ReferenceEquals(null, Name))
+            {
+                throw new NullReferenceException($"{nameof(Name)}");
+            }
+
             sb.Append(Position.ToCInlineDeclaration(string.Empty));
             sb.Append(", ");
             sb.Append(Up.ToCInlineDeclaration(string.Empty));

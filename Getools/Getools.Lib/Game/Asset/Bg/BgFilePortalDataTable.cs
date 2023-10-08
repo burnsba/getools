@@ -7,9 +7,22 @@ using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Bg
 {
+    /// <summary>
+    /// Portal section.
+    /// </summary>
     public class BgFilePortalDataTable : IGetoolsLibObject
     {
-        public List<BgFilePortalDataEntry> Entries { get; set; }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BgFilePortalDataTable"/> class.
+        /// </summary>
+        public BgFilePortalDataTable()
+        {
+        }
+
+        /// <summary>
+        /// Entries.
+        /// </summary>
+        public List<BgFilePortalDataEntry> Entries { get; set; } = new List<BgFilePortalDataEntry>();
 
         /// <summary>
         /// Gets Getools.Lib reference id for the section/filler section.
