@@ -624,7 +624,12 @@ namespace Getools.Palantir
 
                     if (command is IAiFixedCommand fcommand)
                     {
-                        var parameterKvp = fcommand.CommandParameters.ToDictionary(k => k.ParameterName, v => v.ValueToString());
+                        if (fcommand.CommandParameters.Any(x => x.ParameterName == null))
+                        {
+                            throw new NullReferenceException();
+                        }
+
+                        var parameterKvp = fcommand.CommandParameters.ToDictionary(k => k.ParameterName!, v => v.ValueToString());
 
                         if (parameterKvp.Any())
                         {

@@ -21,6 +21,7 @@ using Getools.Lib.Game.Enums;
 using Getools.Palantir.Render;
 using Microsoft.Win32.SafeHandles;
 using SvgLib;
+using static Getools.Lib.Kaitai.Gen.Avtx;
 
 namespace Getools.Palantir
 {
@@ -172,6 +173,11 @@ namespace Getools.Palantir
                 return;
             }
 
+            if (object.ReferenceEquals(null, _stage.Bg.RoomDataTable))
+            {
+                throw new NullReferenceException();
+            }
+
             Console.WriteLine("MapImageMaker: Found bg");
 
             foreach (var roomData in _stage.Bg.RoomDataTable.Entries)
@@ -189,11 +195,21 @@ namespace Getools.Palantir
                 var roomNativeMin = Coord3dd.MaxValue.Clone();
                 var roomNativeMax = Coord3dd.MinValue.Clone();
 
+                if (object.ReferenceEquals(null, roomData.Coord))
+                {
+                    throw new NullReferenceException();
+                }
+
                 var center = roomData.Coord;
                 var roomPoints = new List<Coord3dd>();
 
                 foreach (var vtx in roomData.Points)
                 {
+                    if (object.ReferenceEquals(null, vtx.Ob))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     var roomPoint = new Coord3dd()
                     {
                         X = (double)center.X + (double)vtx.Ob.X,
@@ -514,6 +530,16 @@ namespace Getools.Palantir
 
             Console.WriteLine("MapImageMaker: Found setup");
 
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPadList))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPad3dList))
+            {
+                throw new NullReferenceException();
+            }
+
             var presets = _stage.Setup.SectionPadList.PadList;
             var presets3d = _stage.Setup.SectionPad3dList.Pad3dList;
 
@@ -524,11 +550,16 @@ namespace Getools.Palantir
             // can be tracked between object<->script.
             SetupProcessAi(context);
 
+            if (object.ReferenceEquals(null, _stage.Setup.SectionObjects))
+            {
+                throw new NullReferenceException();
+            }
+
             foreach (var setupObject in _stage.Setup.SectionObjects.Objects)
             {
                 setupObjectIndex++;
 
-                string presetName = string.Empty;
+                string? presetName = string.Empty;
                 Pad? pad = null;
 
                 var baseObject = setupObject as SetupObjectBase;
@@ -640,6 +671,21 @@ namespace Getools.Palantir
                     usePresetId = setupObjectIndex;
                 }
 
+                if (object.ReferenceEquals(null, pad.Position))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, pad.Up))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, pad.Look))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // Points are scaled later, depending on type
                 var propPosition = new PropPosition()
                 {
@@ -662,7 +708,18 @@ namespace Getools.Palantir
                 if (pad is Pad3d)
                 {
                     var pad3d = (Pad3d)pad;
+
+                    if (object.ReferenceEquals(null, pad3d.BoundingBox))
+                    {
+                        throw new NullReferenceException();
+                    }
+
                     propPosition.Bbox = pad3d.BoundingBox.ToBoundingBoxd();
+                }
+
+                if (object.ReferenceEquals(null, pad.Name))
+                {
+                    throw new NullReferenceException();
                 }
 
                 // pad name is used to resolve the room id.
@@ -714,6 +771,11 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessSetupPad(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionPadList))
+            {
+                throw new NullReferenceException();
+            }
+
             byte roomId;
 
             // add presets to the output.
@@ -721,7 +783,7 @@ namespace Getools.Palantir
             foreach (var pad in _stage.Setup!.SectionPadList.PadList)
             {
                 roomId = 0;
-                if (!TryGetRoomId(pad.Name.GetString(), out roomId))
+                if (!TryGetRoomId(pad.Name?.GetString(), out roomId))
                 {
                     // continue outer foreach, increment index
                     index++;
@@ -729,6 +791,11 @@ namespace Getools.Palantir
                 }
 
                 bool withinBounds = false;
+
+                if (object.ReferenceEquals(null, pad.Position))
+                {
+                    throw new NullReferenceException();
+                }
 
                 if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
                 {
@@ -751,6 +818,16 @@ namespace Getools.Palantir
                 Getools.Lib.Math.Compare.SetUnboundCompareX(context.ScaledMin, context.ScaledMax, scaled.X);
                 Getools.Lib.Math.Compare.SetUnboundCompareY(context.ScaledMin, context.ScaledMax, scaled.Y);
                 Getools.Lib.Math.Compare.SetUnboundCompareZ(context.ScaledMin, context.ScaledMax, scaled.Z);
+
+                if (object.ReferenceEquals(null, pad.Up))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, pad.Look))
+                {
+                    throw new NullReferenceException();
+                }
 
                 context.PresetPolygons.Add(new RenderPosition()
                 {
@@ -772,17 +849,27 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessSetupPad3d(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionPad3dList))
+            {
+                throw new NullReferenceException();
+            }
+
             byte roomId;
             ushort index = 0;
             foreach (var pad in _stage.Setup!.SectionPad3dList.Pad3dList)
             {
                 roomId = 0;
-                if (!TryGetRoomId(pad.Name.GetString(), out roomId))
+                if (!TryGetRoomId(pad.Name?.GetString(), out roomId))
                 {
                     // don't do anything if the room can't be resolved.
                 }
 
                 bool withinBounds = false;
+
+                if (object.ReferenceEquals(null, pad.Position))
+                {
+                    throw new NullReferenceException();
+                }
 
                 if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
                 {
@@ -805,6 +892,21 @@ namespace Getools.Palantir
                 Getools.Lib.Math.Compare.SetUnboundCompareX(context.ScaledMin, context.ScaledMax, scaled.X);
                 Getools.Lib.Math.Compare.SetUnboundCompareY(context.ScaledMin, context.ScaledMax, scaled.Y);
                 Getools.Lib.Math.Compare.SetUnboundCompareZ(context.ScaledMin, context.ScaledMax, scaled.Z);
+
+                if (object.ReferenceEquals(null, pad.Up))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, pad.Look))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, pad.BoundingBox))
+                {
+                    throw new NullReferenceException();
+                }
 
                 context.PresetPolygons.Add(new RenderPosition()
                 {
@@ -827,6 +929,21 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessSetupIntro(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionPadList))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPad3dList))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionIntros))
+            {
+                throw new NullReferenceException();
+            }
+
             byte roomId;
             ushort index = 0;
 
@@ -847,8 +964,18 @@ namespace Getools.Palantir
                 var introSpawn = intro as IntroSpawn;
 
                 var presetId = (ushort)introSpawn!.Unknown_00;
-
                 var preset = presets[presetId];
+
+                if (object.ReferenceEquals(null, preset.Name))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (object.ReferenceEquals(null, preset.Position))
+                {
+                    throw new NullReferenceException();
+                }
+
                 var presetName = preset.Name.GetString();
                 var workingPoint = preset.Position.ToCoord3dd();
 
@@ -892,6 +1019,16 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessPathWaypoints(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionPathTables))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPadList))
+            {
+                throw new NullReferenceException();
+            }
+
             int room1Id;
             int room2Id;
 
@@ -913,7 +1050,8 @@ namespace Getools.Palantir
                 }
 
                 var pad = pads[(int)waypoint.PadId];
-                if (!TryGetRoomId(pad.Name.GetString(), out b))
+
+                if (!TryGetRoomId(pad.Name?.GetString(), out b))
                 {
                     // continue outer foreach, increment index
                     index++;
@@ -921,6 +1059,11 @@ namespace Getools.Palantir
                 }
 
                 room1Id = b;
+
+                if (object.ReferenceEquals(null, pad.Position))
+                {
+                    throw new NullReferenceException();
+                }
 
                 bool withinBounds = false;
                 if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
@@ -937,6 +1080,12 @@ namespace Getools.Palantir
 
                 var pathTable = waypoint.Entry;
                 int tableIndex = 0;
+
+                if (object.ReferenceEquals(null, pathTable))
+                {
+                    throw new NullReferenceException();
+                }
+
                 foreach (var id in pathTable.Ids)
                 {
                     // list terminates with -1
@@ -947,7 +1096,8 @@ namespace Getools.Palantir
 
                     var secondWaypoint = pathTables[id];
                     var pad2 = pads[(int)secondWaypoint.PadId];
-                    if (!TryGetRoomId(pad2.Name.GetString(), out b))
+
+                    if (!TryGetRoomId(pad2.Name?.GetString(), out b))
                     {
                         // continue inner foreach
                         tableIndex++;
@@ -956,6 +1106,11 @@ namespace Getools.Palantir
 
                     room2Id = b;
                     withinBounds = false;
+
+                    if (object.ReferenceEquals(null, pad2.Position))
+                    {
+                        throw new NullReferenceException();
+                    }
 
                     if (pad2.Position.Y >= context.Zmin!.Value && pad2.Position.Y <= context.Zmax!.Value)
                     {
@@ -997,12 +1152,32 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SliceProcessPatrolPaths(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionPathTables))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPadList))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, _stage.Setup.SectionPathSets))
+            {
+                throw new NullReferenceException();
+            }
+
             var waypoints = _stage.Setup!.SectionPathTables.PathTables;
             var pads = _stage.Setup.SectionPadList.PadList;
 
             ushort index = 0;
             foreach (var patrolpath in _stage.Setup.SectionPathSets.PathSets)
             {
+                if (object.ReferenceEquals(null, patrolpath.EntryPointer))
+                {
+                    throw new NullReferenceException();
+                }
+
                 // list terminates with null pointer to pathset.
                 if (patrolpath.EntryPointer.IsNull || patrolpath.Entry == null)
                 {
@@ -1026,6 +1201,11 @@ namespace Getools.Palantir
                     var pad = pads[(int)waypoint.PadId];
 
                     bool withinBounds = false;
+
+                    if (object.ReferenceEquals(null, pad.Position))
+                    {
+                        throw new NullReferenceException();
+                    }
 
                     if (pad.Position.Y >= context.Zmin!.Value && pad.Position.Y <= context.Zmax!.Value)
                     {
@@ -1059,14 +1239,19 @@ namespace Getools.Palantir
         /// <param name="context">Current processing context.</param>
         private void SetupProcessAi(ProcessedStageDataContext context)
         {
+            if (object.ReferenceEquals(null, _stage.Setup!.SectionAiLists))
+            {
+                throw new NullReferenceException();
+            }
+
             if (!_stage.Setup!.SectionAiLists.AiLists.Any())
             {
                 return;
             }
 
-            foreach (var ailisty in _stage.Setup.SectionAiLists.AiLists)
+            foreach (var ailisty in _stage.Setup.SectionAiLists.AiLists.Where(x => x.EntryPointer != null))
             {
-                if (ailisty.EntryPointer.IsNull || ailisty.Function == null)
+                if (ailisty.EntryPointer!.IsNull || ailisty.Function == null)
                 {
                     // end of section
                     break;
@@ -1286,7 +1471,7 @@ namespace Getools.Palantir
         /// <param name="presetName">String from ROM.</param>
         /// <param name="roomId">Room id result or zero.</param>
         /// <returns>True if able to decode to room id, false otherwise.</returns>
-        private bool TryGetRoomId(string presetName, out byte roomId)
+        private bool TryGetRoomId(string? presetName, out byte roomId)
         {
             roomId = 0;
 
