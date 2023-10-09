@@ -8,19 +8,27 @@ using System.Windows.Data;
 
 namespace Gebug64.Win.Converters
 {
+    /// <summary>
+    /// Negates boolean value.
+    /// </summary>
     [ValueConversion(typeof(bool), typeof(bool))]
     public class BoolToInvertedBoolConverter : IValueConverter
     {
+        /// <inheritdoc />
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
+            {
                 return !boolValue;
+            }
+
             return false;
         }
 
+        /// <inheritdoc />
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException("ConvertBack() of BoolToInvertedBoolConverter is not implemented");
+            throw new NotImplementedException();
         }
     }
 }

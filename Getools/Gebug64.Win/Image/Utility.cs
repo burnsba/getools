@@ -12,8 +12,18 @@ using System.Windows.Media.Imaging;
 
 namespace Gebug64.Win.Image
 {
+    /// <summary>
+    /// Helper class to manage image data.
+    /// </summary>
     public static class Utility
     {
+        /// <summary>
+        /// Convert a byte array of the N64 native framebuffer data into a friendly windows format.
+        /// </summary>
+        /// <param name="inData">Console framebuffer data in RGBA 5551 format.</param>
+        /// <param name="width">Pixel width of framebuffer.</param>
+        /// <param name="height">Pixel height of framebuffer.</param>
+        /// <returns>Pixel data translated to windows ARGB 1555 format.</returns>
         public static byte[] GeRgba5551ToWindowsArgb1555(byte[] inData, int width, int height)
         {
             int outSize = width * height * sizeof(Int16);
@@ -46,23 +56,40 @@ namespace Gebug64.Win.Image
             return outData;
         }
 
+        /// <summary>
+        /// Converts a raw byte array into a managed object.
+        /// </summary>
+        /// <param name="data">Image pixel data.</param>
+        /// <param name="dataPixelFormat">Data format of <paramref name="data"/>.</param>
+        /// <param name="width">Pixel width of <paramref name="data"/>.</param>
+        /// <param name="height">Pixel height of <paramref name="data"/>.</param>
+        /// <returns>Managed <see cref="Bitmap"/>.</returns>
         public static Bitmap BitmapFromRaw(byte[] data, System.Drawing.Imaging.PixelFormat dataPixelFormat, int width, int height)
         {
             // Here create the Bitmap to the know height, width and format
             Bitmap bmp = new Bitmap(width, height, dataPixelFormat);
 
-            // Create a BitmapData and Lock all pixels to be written 
+            // Create a BitmapData and Lock all pixels to be written.
             BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.WriteOnly, bmp.PixelFormat);
 
             // Copy the data from the byte array into BitmapData.Scan0
             Marshal.Copy(data, 0, bmpData.Scan0, data.Length);
 
-            //Unlock the pixels
+            // Unlock the pixels
             bmp.UnlockBits(bmpData);
 
             return bmp;
         }
 
+        /// <summary>
+        /// Converts a raw byte array into an image and saves to disk.
+        /// </summary>
+        /// <param name="data">Image pixel data.</param>
+        /// <param name="dataPixelFormat">Data format of <paramref name="data"/>.</param>
+        /// <param name="width">Pixel width of <paramref name="data"/>.</param>
+        /// <param name="height">Pixel height of <paramref name="data"/>.</param>
+        /// <param name="path">Path on disk to save file.</param>
+        /// <param name="saveImageFormat">Format of image to save to.</param>
         public static void SaveRawToFile(byte[] data, System.Drawing.Imaging.PixelFormat dataPixelFormat, int width, int height, string path, ImageFormat saveImageFormat)
         {
             var bmp = BitmapFromRaw(data, dataPixelFormat, width, height);
@@ -70,7 +97,14 @@ namespace Gebug64.Win.Image
             bmp.Save(path, saveImageFormat);
         }
 
-        // https://stackoverflow.com/a/66957361/1462295
+        /// <summary>
+        /// Converts a <see cref="System.Drawing.Bitmap"/> into an <see cref="BitmapImage"/> to be used by WPF.
+        /// </summary>
+        /// <param name="bitmap">Bitmap.</param>
+        /// <returns>Bitmap.</returns>
+        /// <remarks>
+        /// https://stackoverflow.com/a/66957361/1462295 .
+        /// </remarks>
         public static BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
         {
             using (MemoryStream memory = new MemoryStream())

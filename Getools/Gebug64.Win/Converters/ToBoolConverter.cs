@@ -29,7 +29,7 @@ namespace Gebug64.Win.Converters
             }
 
             var normed = s.ToLower().Trim();
-            
+
             if (normed.Length == 1)
             {
                 if (normed[0] == '0'

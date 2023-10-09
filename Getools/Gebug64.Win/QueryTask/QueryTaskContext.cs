@@ -6,8 +6,15 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Win.QueryTask
 {
+    /// <summary>
+    /// Base class to define a long running or periodic task that sends data to/from
+    /// the connected flashcart.
+    /// </summary>
     public abstract class QueryTaskContext
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryTaskContext"/> class.
+        /// </summary>
         public QueryTaskContext()
         {
         }
@@ -38,6 +45,9 @@ namespace Gebug64.Win.QueryTask
         /// </summary>
         public abstract void Begin();
 
+        /// <summary>
+        /// Attempts to cancel the current task.
+        /// </summary>
         public abstract void Cancel();
     }
 }

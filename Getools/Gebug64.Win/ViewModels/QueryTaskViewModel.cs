@@ -24,6 +24,7 @@ namespace Gebug64.Win.ViewModels
         /// Initializes a new instance of the <see cref="QueryTaskViewModel"/> class.
         /// </summary>
         /// <param name="context">Associated work.</param>
+        /// <param name="deleteAction">Action to perform for <see cref="DeleteCommand"/>.</param>
         public QueryTaskViewModel(QueryTaskContext context, Action<QueryTaskViewModel> deleteAction)
         {
             _context = context;
@@ -36,15 +37,24 @@ namespace Gebug64.Win.ViewModels
             DeleteCommand = new CommandHandler(deleteCallback, () => CanDelete);
         }
 
-        public ICommand CancelCommand { get; set; }
+        /// <summary>
+        /// Gets the cancel command.
+        /// </summary>
+        public ICommand CancelCommand { get; init; }
 
-        public ICommand DeleteCommand { get; set; }
+        /// <summary>
+        /// Gets the delete command.
+        /// </summary>
+        public ICommand DeleteCommand { get; init; }
 
         /// <summary>
         /// Current task state.
         /// </summary>
         public TaskState State => _context.State;
 
+        /// <summary>
+        /// <see cref="State"/> as string.
+        /// </summary>
         public string StateDisplayName => State.ToString();
 
         /// <summary>
@@ -88,6 +98,9 @@ namespace Gebug64.Win.ViewModels
             RefreshDisplayStatus();
         }
 
+        /// <summary>
+        /// Attempts to cancel the current task.
+        /// </summary>
         public void Cancel()
         {
             _context.Cancel();
@@ -95,6 +108,9 @@ namespace Gebug64.Win.ViewModels
             RefreshDisplayStatus();
         }
 
+        /// <summary>
+        /// Sends view notification to refresh properties.
+        /// </summary>
         public void RefreshDisplayStatus()
         {
             OnPropertyChanged(nameof(State));

@@ -15,6 +15,7 @@ namespace Gebug64.Win.Converters
     [ValueConversion(typeof(Color), typeof(SolidColorBrush))]
     public class ColorToBrushConverter : IValueConverter
     {
+        /// <inheritdoc />
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             Color col = (Color)value;
@@ -22,6 +23,7 @@ namespace Gebug64.Win.Converters
             return new SolidColorBrush(c);
         }
 
+        /// <inheritdoc />
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             SolidColorBrush c = (SolidColorBrush)value;

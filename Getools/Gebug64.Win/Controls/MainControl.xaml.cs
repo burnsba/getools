@@ -23,6 +23,10 @@ namespace Gebug64.Win.Controls
     {
         private readonly MainWindowViewModel _vm;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainControl"/> class.
+        /// </summary>
+        /// <param name="vm">Main app viewmodel.</param>
         public MainControl(MainWindowViewModel vm)
         {
             InitializeComponent();

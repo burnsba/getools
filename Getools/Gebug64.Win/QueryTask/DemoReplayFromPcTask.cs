@@ -13,6 +13,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.QueryTask
 {
+    /// <summary>
+    /// Native ramrom demo replay task.
+    /// This starts the demo, then waits for the console to request each iteration of the demo.
+    /// </summary>
     public class DemoReplayFromPcTask : QueryTaskContext
     {
         private readonly RamromFile _ramromFile;
@@ -67,6 +71,7 @@ namespace Gebug64.Win.QueryTask
             State = TaskState.Running;
         }
 
+        /// <inheritdoc />
         public override void Cancel()
         {
             // There's no cancel message to send to the console, so just allow cancel.

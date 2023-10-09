@@ -123,8 +123,7 @@ namespace Gebug64.Win
 
             services.AddSingleton(typeof(IConfiguration), configuration);
 
-            // load and register session service type translators.
-            var appSettings = new AppConfigStartupResolver(configuration).GetAppConfigSettings();
+            var appSettings = new AppConfigSettings(configuration);
             var mainConfig = mapper.Map<AppConfigViewModel>(appSettings);
 
             services.AddSingleton<AppConfigViewModel>(mainConfig);
@@ -141,7 +140,6 @@ namespace Gebug64.Win
             services.AddTransient<Everdrive>();
 
             services.AddSingleton<MainWindowViewModel>();
-            services.AddTransient<MainWindow>();
 
             // MdiChild windows
             services.AddTransient<MainControl>();

@@ -24,6 +24,10 @@ namespace Gebug64.Win.Windows
     {
         private MdiHostViewModel _vm;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MdiHostWindow"/> class.
+        /// </summary>
+        /// <param name="vm">Main host viewmodel.</param>
         public MdiHostWindow(MdiHostViewModel vm)
         {
             InitializeComponent();
@@ -39,6 +43,11 @@ namespace Gebug64.Win.Windows
             Menu_RefreshWindows();
         }
 
+        /// <summary>
+        /// Helper method to focus on a child control, or create it if it doesn't exist.
+        /// </summary>
+        /// <param name="controlType">Internal <see cref="MdiChild.Content"/> type.</param>
+        /// <param name="title">Optional. Title of child window; only used if the child is created.</param>
         public void FocusCreateChild(Type controlType, string title)
         {
             foreach (var child in Container.Children)
@@ -61,6 +70,13 @@ namespace Gebug64.Win.Windows
             Container.Children.Add(newChild);
         }
 
+        /// <summary>
+        /// Unconditionally creates a new <see cref="MdiChild"/> with the given content, then
+        /// disables <see cref="MdiChild.CloseBox"/>.
+        /// </summary>
+        /// <param name="content">Internal <see cref="MdiChild.Content"/> type.</param>
+        /// <param name="title">Title of child window.</param>
+        /// <param name="configCallback">Optional callback. Called with newly created <see cref="MdiChild"/>. Use to set config parameters, etc.</param>
         public void AddPermanentMdiChild(Control content, string title, Action<MdiChild>? configCallback = null)
         {
             var child = new MdiChild()

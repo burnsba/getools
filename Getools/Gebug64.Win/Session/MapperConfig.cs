@@ -9,8 +9,15 @@ using Gebug64.Win.ViewModels.Config;
 
 namespace Gebug64.Win.Session
 {
+    /// <summary>
+    /// Helper class to define automapper configuration.
+    /// </summary>
     public class MapperConfig
     {
+        /// <summary>
+        /// Startup method to configure AutoMapper class mappings.
+        /// </summary>
+        /// <param name="mce">Configurator.</param>
         public static void SetConfiguration(IMapperConfigurationExpression mce)
         {
             mce.CreateMap<RecentPathSection, RecentPathSectionViewModel>();

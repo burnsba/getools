@@ -23,6 +23,10 @@ namespace Gebug64.Win.Controls
     {
         private readonly MainWindowViewModel _vm;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryTasksControl"/> class.
+        /// </summary>
+        /// <param name="vm">Reference to main viewmodel.</param>
         public QueryTasksControl(MainWindowViewModel vm)
         {
             InitializeComponent();

@@ -9,17 +9,30 @@ using Gebug64.Win.Mvvm;
 
 namespace Gebug64.Win.ViewModels
 {
+    /// <summary>
+    /// Maine host conatiner viewmodel.
+    /// </summary>
     public class MdiHostViewModel : WindowViewModelBase
     {
         private Action<Type, string>? _focusCallback;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MdiHostViewModel"/> class.
+        /// </summary>
         public MdiHostViewModel()
         {
             BuildViewWindowList();
         }
 
+        /// <summary>
+        /// List of "standard windows" that should always be available to show.
+        /// </summary>
         public ObservableCollection<MenuItemViewModel> MenuShowWindow { get; set; } = new ObservableCollection<MenuItemViewModel>();
 
+        /// <summary>
+        /// Passthrough helper to set the focus action for when an item from the "standard window list" is clicked.
+        /// </summary>
+        /// <param name="callback">Callback to execute.</param>
         public void SetFocusChildCallback(Action<Type, string> callback)
         {
             _focusCallback = callback;
@@ -47,6 +60,16 @@ namespace Gebug64.Win.ViewModels
 
         private void InvokeFocusCallback(MenuItemViewModel mivm)
         {
+            if (object.ReferenceEquals(null, mivm.Value))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (object.ReferenceEquals(null, mivm.Header))
+            {
+                throw new NullReferenceException();
+            }
+
             _focusCallback?.Invoke((Type)mivm.Value, mivm.Header);
         }
     }
