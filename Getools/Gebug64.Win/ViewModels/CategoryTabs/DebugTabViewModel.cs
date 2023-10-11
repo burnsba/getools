@@ -16,20 +16,58 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.CategoryTabs
 {
+    /// <summary>
+    /// View model for "debug" tab.
+    /// </summary>
     public class DebugTabViewModel : TabViewModelBase, ICategoryTabViewModel
     {
         private const string _tabName = "Debug";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DebugTabViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public DebugTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
+        {
+            SetDebugMenuOpenOnCommand = new CommandHandler(SetDebugMenuOpenOnCommandHandler, () => CanSetDebugMenuOpenOnCommand);
+            SetDebugMenuOpenOffCommand = new CommandHandler(SetDebugMenuOpenOffCommandHandler, () => CanSetDebugMenuOpenOffCommand);
+            DebugMenuCommand = new CommandHandler(DebugMenuCommandHandler, () => CanDebugMenuCommand);
+
+            DisplayOrder = 25;
+
+            DebugMenuCommandX.ValidCommands.ForEach(x => MenuItems.Add(x));
+        }
+
+        /// <summary>
+        /// Command to open debug menu (sets variable on console).
+        /// </summary>
         public ICommand SetDebugMenuOpenOnCommand { get; set; }
+
+        /// <summary>
+        /// Command to close debug menu (clears variable on console).
+        /// </summary>
         public ICommand SetDebugMenuOpenOffCommand { get; set; }
 
-        // Choose line mode by default
+        /// <summary>
+        /// Currently selected debug menu item. Choose "line mode" by default.
+        /// </summary>
         public DebugMenuCommandX SelectedMenuItem { get; set; } = DebugMenuCommandX.VisCvg;
 
+        /// <summary>
+        /// List of available menu items.
+        /// </summary>
         public ObservableCollection<DebugMenuCommandX> MenuItems { get; set; } = new ObservableCollection<DebugMenuCommandX>();
 
+        /// <summary>
+        /// Sends console message to execute selected debug item.
+        /// </summary>
         public ICommand DebugMenuCommand { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="SetDebugMenuOpenOnCommand"/> can execute.
+        /// </summary>
         public bool CanSetDebugMenuOpenOnCommand
         {
             get
@@ -44,6 +82,9 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="SetDebugMenuOpenOffCommand"/> can execute.
+        /// </summary>
         public bool CanSetDebugMenuOpenOffCommand
         {
             get
@@ -58,6 +99,9 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="DebugMenuCommand"/> can execute.
+        /// </summary>
         public bool CanDebugMenuCommand
         {
             get
@@ -72,19 +116,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
-        public DebugTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
-            : base(_tabName, logger, connectionServiceProviderResolver)
-        {
-            SetDebugMenuOpenOnCommand = new CommandHandler(SetDebugMenuOpenOnCommandHandler, () => CanSetDebugMenuOpenOnCommand);
-            SetDebugMenuOpenOffCommand = new CommandHandler(SetDebugMenuOpenOffCommandHandler, () => CanSetDebugMenuOpenOffCommand);
-            DebugMenuCommand = new CommandHandler(DebugMenuCommandHandler, () => CanDebugMenuCommand);
-
-            DisplayOrder = 25;
-
-            DebugMenuCommandX.ValidCommands.ForEach(x => MenuItems.Add(x));
-        }
-
-        public void SetDebugMenuOpenOnCommandHandler()
+        private void SetDebugMenuOpenOnCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
@@ -103,7 +135,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             connectionServiceProvider.SendMessage(msg);
         }
 
-        public void SetDebugMenuOpenOffCommandHandler()
+        private void SetDebugMenuOpenOffCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
@@ -122,7 +154,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             connectionServiceProvider.SendMessage(msg);
         }
 
-        public void DebugMenuCommandHandler()
+        private void DebugMenuCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 

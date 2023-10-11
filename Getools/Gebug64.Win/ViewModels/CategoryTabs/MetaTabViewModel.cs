@@ -13,14 +13,40 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.CategoryTabs
 {
+    /// <summary>
+    /// View model for "meta" tab.
+    /// </summary>
     public class MetaTabViewModel : TabViewModelBase, ICategoryTabViewModel
     {
         private const string _tabName = "Meta";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MetaTabViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public MetaTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
+        {
+            PingCommand = new CommandHandler(PingCommandHandler, () => CanSendPingCommand);
+            VersionCommand = new CommandHandler(VersionCommandHandler, () => CanSendVersionCommand);
+
+            DisplayOrder = 90;
+        }
+
+        /// <summary>
+        /// Command to send "ping" message.
+        /// </summary>
         public ICommand PingCommand { get; set; }
 
+        /// <summary>
+        /// Command to send "version" message.
+        /// </summary>
         public ICommand VersionCommand { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="PingCommand"/> can execute.
+        /// </summary>
         public bool CanSendPingCommand
         {
             get
@@ -35,6 +61,9 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="VersionCommand"/> can execute.
+        /// </summary>
         public bool CanSendVersionCommand
         {
             get
@@ -49,16 +78,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
-        public MetaTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
-            : base(_tabName, logger, connectionServiceProviderResolver)
-        {
-            PingCommand = new CommandHandler(PingCommandHandler, () => CanSendPingCommand);
-            VersionCommand = new CommandHandler(VersionCommandHandler, () => CanSendVersionCommand);
-
-            DisplayOrder = 90;
-        }
-
-        public void PingCommandHandler()
+        private void PingCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
@@ -74,7 +94,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             connectionServiceProvider.SendMessage(msg);
         }
 
-        public void VersionCommandHandler()
+        private void VersionCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 

@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Win.Config
 {
+    /// <summary>
+    /// Connection settings.
+    /// </summary>
     public class ConnectionSectionSettings
     {
+        /// <summary>
+        /// Currently selected serial port.
+        /// </summary>
         public string? SerialPort { get; set; }
     }
 }

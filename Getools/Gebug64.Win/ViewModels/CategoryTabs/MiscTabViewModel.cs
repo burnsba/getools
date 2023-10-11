@@ -14,12 +14,34 @@ using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.CategoryTabs
 {
+    /// <summary>
+    /// View model for "misc" tab.
+    /// </summary>
     public class MiscTabViewModel : TabViewModelBase, ICategoryTabViewModel
     {
         private const string _tabName = "Misc";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MiscTabViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public MiscTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
+        {
+            OsTimeCommand = new CommandHandler(OsTimeCommandHandler, () => CanSendOsTimeCommand);
+
+            DisplayOrder = 95;
+        }
+
+        /// <summary>
+        /// Command to send os time message.
+        /// </summary>
         public ICommand OsTimeCommand { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="OsTimeCommand"/> can execute.
+        /// </summary>
         public bool CanSendOsTimeCommand
         {
             get
@@ -34,15 +56,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
-        public MiscTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
-            : base(_tabName, logger, connectionServiceProviderResolver)
-        {
-            OsTimeCommand = new CommandHandler(OsTimeCommandHandler, () => CanSendOsTimeCommand);
-
-            DisplayOrder = 95;
-        }
-
-        public void OsTimeCommandHandler()
+        private void OsTimeCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 

@@ -23,18 +23,56 @@ using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace Gebug64.Win.ViewModels.CategoryTabs
 {
+    /// <summary>
+    /// View model for "vi" tab.
+    /// </summary>
     public class ViTabViewModel : TabViewModelBase, ICategoryTabViewModel
     {
         private const string _tabName = "Vi";
 
         private string _framebufferGrabSavePath;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ViTabViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public ViTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(_tabName, logger, connectionServiceProviderResolver)
+        {
+            GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
+            SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
+            ViSetZRangeCommand = new CommandHandler(ViSetZRangeCommandHandler, () => CanViSetZRange);
+            ViSetViewSizeCommand = new CommandHandler(ViSetViewSizeCommandHandler, () => CanViSetViewSize);
+            ViSetViewPositionCommand = new CommandHandler(ViSetViewPositionCommandHandler, () => CanViSetViewPosition);
+
+            DisplayOrder = 80;
+
+            _framebufferGrabSavePath = _appConfig.FramebufferGrabSavePath;
+            if (string.IsNullOrEmpty(_framebufferGrabSavePath))
+            {
+                _framebufferGrabSavePath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            }
+        }
+
+        /// <summary>
+        /// Sends message to get the framebuffer.
+        /// </summary>
         public ICommand GetFrameBufferCommand { get; set; }
 
+        /// <summary>
+        /// Command to set the framebuffer save folder location.
+        /// </summary>
         public ICommand SetSaveFrameBufferPathCommand { get; set; }
 
-        public ImageSource FrameBufferGrab { get; set; }
+        /// <summary>
+        /// Image preview of last grabbed framebuffer.
+        /// </summary>
+        public ImageSource? FrameBufferGrab { get; set; }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="GetFrameBufferCommand"/> can execute.
+        /// </summary>
         public bool CanSendGetFrameBuffer
         {
             get
@@ -49,8 +87,14 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="SetSaveFrameBufferPathCommand"/> can execute.
+        /// </summary>
         public bool CanSetSaveFrameBufferPath => true; // always
 
+        /// <summary>
+        /// Folder path that framebuffer images will save to.
+        /// </summary>
         public string FramebufferGrabSavePath
         {
             get => _framebufferGrabSavePath;
@@ -70,9 +114,24 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// <see cref="GebugViSetZRangeMessage.Near"/> parameter of <see cref="GebugViSetZRangeMessage"/>.
+        /// </summary>
         public Single ViSetZRangeNear { get; set; }
+
+        /// <summary>
+        /// <see cref="GebugViSetZRangeMessage.Far"/> parameter of <see cref="GebugViSetZRangeMessage"/>.
+        /// </summary>
         public Single ViSetZRangeFar { get; set; }
+
+        /// <summary>
+        /// Send <see cref="GebugViSetZRangeMessage"/>.
+        /// </summary>
         public ICommand ViSetZRangeCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="ViSetZRangeCommand"/> can execute.
+        /// </summary>
         public bool CanViSetZRange
         {
             get
@@ -87,9 +146,24 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// <see cref="GebugViSetViewSizeMessage.Width"/> parameter of <see cref="GebugViSetViewSizeMessage"/>.
+        /// </summary>
         public short ViSetViewSizeWidth { get; set; }
+
+        /// <summary>
+        /// <see cref="GebugViSetViewSizeMessage.Height"/> parameter of <see cref="GebugViSetViewSizeMessage"/>.
+        /// </summary>
         public short ViSetViewSizeHeight { get; set; }
+
+        /// <summary>
+        /// Send <see cref="GebugViSetViewSizeMessage"/>.
+        /// </summary>
         public ICommand ViSetViewSizeCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="ViSetViewSizeCommand"/> can execute.
+        /// </summary>
         public bool CanViSetViewSize
         {
             get
@@ -104,9 +178,24 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// <see cref="GebugViSetViewPositionMessage.Left"/> parameter of <see cref="GebugViSetViewPositionMessage"/>.
+        /// </summary>
         public short ViSetViewPositionLeft { get; set; }
+
+        /// <summary>
+        /// <see cref="GebugViSetViewPositionMessage.Top"/> parameter of <see cref="GebugViSetViewPositionMessage"/>.
+        /// </summary>
         public short ViSetViewPositionTop { get; set; }
+
+        /// <summary>
+        /// Send <see cref="GebugViSetViewPositionMessage"/>.
+        /// </summary>
         public ICommand ViSetViewPositionCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="CanViSetViewPosition"/> can execute.
+        /// </summary>
         public bool CanViSetViewPosition
         {
             get
@@ -121,25 +210,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
-        public ViTabViewModel(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
-            : base(_tabName, logger, connectionServiceProviderResolver)
-        {
-            GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
-            SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
-            ViSetZRangeCommand = new CommandHandler(ViSetZRangeCommandHandler, () => CanViSetZRange);
-            ViSetViewSizeCommand = new CommandHandler(ViSetViewSizeCommandHandler, () => CanViSetViewSize);
-            ViSetViewPositionCommand = new CommandHandler(ViSetViewPositionCommandHandler, () => CanViSetViewPosition);
-
-            DisplayOrder = 80;
-
-            _framebufferGrabSavePath = _appConfig.FramebufferGrabSavePath;
-            if (string.IsNullOrEmpty(_framebufferGrabSavePath))
-            {
-                _framebufferGrabSavePath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            }
-        }
-
-        public void GetFrameBufferCommandHandler()
+        private void GetFrameBufferCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
 
@@ -165,7 +236,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             _dispatcher.BeginInvoke(() =>
             {
-                var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.Data, viMessage.Width, viMessage.Height);
+                var windowsFrameBuffer = Image.Utility.GeRgba5551ToWindowsArgb1555(viMessage.Data!, viMessage.Width, viMessage.Height);
 
                 var bmp = Image.Utility.BitmapFromRaw(windowsFrameBuffer, System.Drawing.Imaging.PixelFormat.Format16bppArgb1555, viMessage.Width, viMessage.Height);
 

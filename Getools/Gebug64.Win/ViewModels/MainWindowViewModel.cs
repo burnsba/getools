@@ -60,285 +60,158 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private const int TimeoutDisconnectSec = 70;
 
+        /// <summary>
+        /// Max number of "recent files" to show in "send ROM" dropdown.
+        /// </summary>
         private const int MaxRecentlySentFiles = 10;
 
-        private bool _ignoreAppSettingsChange = false;
-
-        private Version? _romVersion = null;
-
-        private bool _isConnected = false;
-        private bool _isConnecting = false;
-        private bool _isRefreshing = false;
-        private bool _connectionError = false;
-        private IFlashcart _currentFlashCart;
-        private string _selectedRomPath;
-
-        private bool _flashcartIsValid = false;
-        private bool _currentlySendingRom = false;
-
-        private bool _setAvailableFlashcarts = false;
-
-        private Guid _messageBusGebugLogSubscription = Guid.Empty;
-        private Guid _messageBusUnfloaderLogSubscription = Guid.Empty;
-
         private readonly object _availableSerialPortsLock = new object();
-        private ObservableCollection<string> _availableSerialPorts = new ObservableCollection<string>();
-
         private readonly object _availableFlashcartsLock = new object();
-        private ObservableCollection<IFlashcart> _availableFlashcarts = new ObservableCollection<IFlashcart>();
-
         private readonly object _logMessagesLock = new object();
-        private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
-
         private readonly object _queryTasksLock = new object();
-        private ObservableCollection<QueryTaskViewModel> _queryTasks = new ObservableCollection<QueryTaskViewModel>();
-
         private readonly object _recentlySentFilesLock = new object();
 
         private readonly ILogger _logger;
-
-        private IConnectionServiceProvider? _connectionServiceManager;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
-
         private readonly Dispatcher _dispatcher;
+
+        /// <summary>
+        /// Flag to disable saving app settings. Used during startup.
+        /// </summary>
+        private bool _ignoreAppSettingsChange = false;
+
+        /// <summary>
+        /// Current known connected gebug ROM version.
+        /// </summary>
+        private Version? _romVersion = null;
+
+        /// <summary>
+        /// Flag to indicate the app is currently connected to a flashcart (any connection level).
+        /// </summary>
+        private bool _isConnected = false;
+
+        /// <summary>
+        /// Flag to indicate the app is attempting to connect to a flashcart.
+        /// </summary>
+        private bool _isConnecting = false;
+
+        /// <summary>
+        /// Flag to indicate the app is currently scanning the computer for available serial ports.
+        /// </summary>
+        private bool _isRefreshingSerialPorts = false;
+
+        /// <summary>
+        /// Flag to indicate the connection is currently in an error state.
+        /// </summary>
+        private bool _connectionError = false;
+
+        /// <summary>
+        /// Currently connected flashcart device type or null.
+        /// </summary>
+        private IFlashcart? _currentFlashCart;
+
+        /// <summary>
+        /// If a ROM was sent since the application started, this is the last used file path. Or null.
+        /// </summary>
+        private string? _selectedRomPath;
+
+        /// <summary>
+        /// When the app starts, the last used flashcart is deserialized from a string.
+        /// This value indicates whether that is a valid flashcart or not.
+        /// </summary>
+        private bool _flashcartIsValid = false;
+
+        /// <summary>
+        /// Gets a value indicating whether the app is currently sending a ROM.
+        /// </summary>
+        private bool _currentlySendingRom = false;
+
+        /// <summary>
+        /// Startup flag to indicate the list of available flashcarts has been loaded.
+        /// </summary>
+        private bool _setAvailableFlashcarts = false;
+
+        /// <summary>
+        /// Device manager subscription for gebug level messages.
+        /// This sends the message to the log output.
+        /// </summary>
+        private Guid _messageBusGebugLogSubscription = Guid.Empty;
+
+        /// <summary>
+        /// Device manager subscription for UNFLoader level messages.
+        /// This sends the message to the log output.
+        /// </summary>
+        private Guid _messageBusUnfloaderLogSubscription = Guid.Empty;
+
+        /// <summary>
+        /// List of available serial ports.
+        /// </summary>
+        private ObservableCollection<string> _availableSerialPorts = new ObservableCollection<string>();
+
+        /// <summary>
+        /// List of available flashcarts.
+        /// </summary>
+        private ObservableCollection<IFlashcart> _availableFlashcarts = new ObservableCollection<IFlashcart>();
+
+        /// <summary>
+        /// List of items send to the logger.
+        /// </summary>
+        private ObservableCollection<string> _logMessages = new ObservableCollection<string>();
+
+        /// <summary>
+        /// The long running query tasks.
+        /// </summary>
+        private ObservableCollection<QueryTaskViewModel> _queryTasks = new ObservableCollection<QueryTaskViewModel>();
+
+        /// <summary>
+        /// Core connection manager.
+        /// </summary>
+        private IConnectionServiceProvider? _connectionServiceManager;
+
+        /// <summary>
+        /// Thread flag to indicate safe shutdown.
+        /// </summary>
         private bool _shutdown = false;
+
+        /// <summary>
+        /// Main worker thread. Sends and receives messages between pc and console.
+        /// </summary>
         private Thread _thread;
 
+        /// <summary>
+        /// Tracks duration since the last time a message was sent from pc to console.
+        /// </summary>
         private Stopwatch? _lastMessageSent = null;
 
+        /// <summary>
+        /// Current connection level.
+        /// </summary>
         private ConnectionLevel _connectionLevel = ConnectionLevel.NotConnected;
 
+        /// <summary>
+        /// Cancellation token for active long running events (sending ROM).
+        /// </summary>
         private CancellationTokenSource? _sendRomCancellation = null;
 
-        public string? CurrentSerialPort
-        {
-            get
-            {
-                return AppConfig?.Connection?.SerialPort ?? string.Empty;
-            }
-
-            set
-            {
-                if ((AppConfig?.Connection?.SerialPort ?? string.Empty) == value)
-                {
-                    return;
-                }
-
-                AppConfig.Connection.SerialPort = value ?? string.Empty;
-                OnPropertyChanged(nameof(CurrentSerialPort));
-                OnPropertyChanged(nameof(CanConnect));
-
-                SaveAppSettings();
-            }
-        }
-
-        public ObservableCollection<string> AvailableSerialPorts
-        {
-            get { return _availableSerialPorts; }
-            set
-            {
-                _availableSerialPorts = value;
-                BindingOperations.EnableCollectionSynchronization(_availableSerialPorts, _availableSerialPortsLock);
-            }
-        }
-
-        public bool CanRefresh => !_isRefreshing;
-
-        public ICommand RefreshAvailableSerialPortsCommand { get; set; }
-
-        public IFlashcart CurrentFlashcart
-        {
-            get { return _currentFlashCart; }
-            set
-            {
-                if (object.ReferenceEquals(_currentFlashCart, value))
-                {
-                    return;
-                }
-
-                _currentFlashCart = value;
-
-                if (!object.ReferenceEquals(value, null))
-                {
-                    AppConfig.Device.Flashcart = value.GetType().Name;
-                }
-                else
-                {
-                    AppConfig.Device.Flashcart = string.Empty;
-                }
-
-                _flashcartIsValid = !object.ReferenceEquals(null, value);
-                OnPropertyChanged(nameof(CurrentFlashcart));
-                OnPropertyChanged(nameof(CanConnect));
-
-                SaveAppSettings();
-            }
-        }
-
-        public ObservableCollection<IFlashcart> AvailableFlashcarts
-        {
-            get { return _availableFlashcarts; }
-            set
-            {
-                _availableFlashcarts = value;
-                BindingOperations.EnableCollectionSynchronization(_availableFlashcarts, _availableFlashcartsLock);
-            }
-        }
-
-        public bool IsConnected
-        {
-            get { return _isConnected; }
-            set { _isConnected = value; OnPropertyChanged(nameof(IsConnected)); }
-        }
-
-        public bool CanConnect => !_isConnecting && !string.IsNullOrEmpty(CurrentSerialPort) && _flashcartIsValid && _connectionError == false;
-
-        public string ConnectCommandText { get; set; }
-
-        public ICommand ConnectDeviceCommand { get; set; }
-
-        public bool CanResetConnection => _connectionError;
-
-        public ICommand ResetConnectionCommand { get; set; }
-
-        public string SelectedRom
-        {
-            get { return _selectedRomPath; }
-            set
-            {
-                _selectedRomPath = value;
-                OnPropertyChanged(nameof(SelectedRom));
-                OnPropertyChanged(nameof(CanSendRom));
-            }
-        }
-
-        public ICommand ChooseSelectedRomCommand { get; set; }
-
-        public bool CanSendRom =>
-            _isConnected
-            && !_currentlySendingRom
-            && _connectionError == false
-            && _connectionLevel == ConnectionLevel.Flashcart;
-
-        public ICommand SendRomCommand { get; set; }
-
-        public ObservableCollection<string> LogMessages
-        {
-            get { return _logMessages; }
-            set
-            {
-                _logMessages = value;
-                BindingOperations.EnableCollectionSynchronization(_logMessages, _logMessagesLock);
-            }
-        }
-
-        public ICommand SaveLogCommand { get; set; }
-
-        public ICommand ClearLogCommand { get; set; }
-
-        public ObservableCollection<TabViewModelBase> Tabs { get; set; } = new ObservableCollection<TabViewModelBase>();
-
-        public string StatusConnectedText
-        {
-            get
-            {
-                if (IsConnected)
-                {
-                    return "connected";
-                }
-
-                return "disconnected";
-            }
-        }
-
-        public string StatusConnectionLevelText
-        {
-            get
-            {
-                if (_connectionLevel == ConnectionLevel.Flashcart)
-                {
-                    return "menu";
-                }
-                else if (_connectionLevel == ConnectionLevel.Rom)
-                {
-                    return "rom";
-                }
-
-                return string.Empty;
-            }
-        }
-
-        public ConnectionLevel ConnectionLevel => _connectionLevel;
-
-        public string StatusSerialPort
-        {
-            get
-            {
-                if (IsConnected)
-                {
-                    return CurrentSerialPort!;
-                }
-
-                return string.Empty;
-            }
-        }
-
-        private bool IsRefreshing
-        {
-            get { return _isRefreshing; }
-            set
-            {
-                _isRefreshing = value;
-                OnPropertyChanged(nameof(IsRefreshing));
-                OnPropertyChanged(nameof(CanRefresh));
-            }
-        }
-
+        /// <summary>
+        /// Window menu group for the list of flashcarts, such that only one element in the group can be checked.
+        /// </summary>
         private OnlyOneChecked<MenuItemViewModel, Guid> _menuDeviceGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
+
+        /// <summary>
+        /// Window menu group for the list of serial ports, such that only one element in the group can be checked.
+        /// </summary>
         private OnlyOneChecked<MenuItemViewModel, Guid> _menuSerialPortGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
 
-        public ObservableCollection<MenuItemViewModel> MenuDevice { get; set; } = new ObservableCollection<MenuItemViewModel>();
-        public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
-        public ObservableCollection<MenuItemViewModel> MenuSendRom { get; set; } = new ObservableCollection<MenuItemViewModel>();
-
-        public ObservableCollection<string> RecentlySentFiles
-        {
-            get { return AppConfig.RecentPath.RecentSendRom; }
-            set
-            {
-                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentPath.RecentSendRom, _recentlySentFilesLock);
-            }
-        }
-
-        public AppConfigViewModel AppConfig { get; set; }
-
-        public Version? RomVersion
-        {
-            get => _romVersion;
-            set
-            {
-                _romVersion = value;
-                OnPropertyChanged(nameof(RomVersion));
-                OnPropertyChanged(nameof(RomVersionString));
-            }
-        }
-
-        public string RomVersionString => _romVersion?.ToString() ?? "unk";
-
-        public ObservableCollection<QueryTaskViewModel> QueryTasks
-        {
-            get
-            {
-                return _queryTasks;
-            }
-
-            set
-            {
-                BindingOperations.EnableCollectionSynchronization(_queryTasks, _queryTasksLock);
-            }
-        }
-
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="deviceManagerResolver">Device manager.</param>
+        /// <param name="appConfig">Main app config.</param>
         public MainWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             _ignoreAppSettingsChange = true;
 
@@ -373,6 +246,372 @@ namespace Gebug64.Win.ViewModels
             _ignoreAppSettingsChange = false;
         }
 
+        /// <summary>
+        /// Window menu items for the list of flashcarts.
+        /// </summary>
+        public ObservableCollection<MenuItemViewModel> MenuDevice { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
+        /// <summary>
+        /// Window menu items for the list of serial ports.
+        /// </summary>
+        public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
+        /// <summary>
+        /// Window menu items for send rom, and recently sent roms.
+        /// </summary>
+        public ObservableCollection<MenuItemViewModel> MenuSendRom { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
+        /// <summary>
+        /// Currently selected serial port.
+        /// </summary>
+        public string? CurrentSerialPort
+        {
+            get
+            {
+                return AppConfig?.Connection?.SerialPort ?? string.Empty;
+            }
+
+            set
+            {
+                if ((AppConfig?.Connection?.SerialPort ?? string.Empty) == value)
+                {
+                    return;
+                }
+
+                AppConfig!.Connection.SerialPort = value ?? string.Empty;
+                OnPropertyChanged(nameof(CurrentSerialPort));
+                OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
+            }
+        }
+
+        /// <summary>
+        /// List of available serial ports.
+        /// </summary>
+        public ObservableCollection<string> AvailableSerialPorts
+        {
+            get
+            {
+                return _availableSerialPorts;
+            }
+
+            set
+            {
+                _availableSerialPorts = value;
+                BindingOperations.EnableCollectionSynchronization(_availableSerialPorts, _availableSerialPortsLock);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the list of serial ports is currently refreshing.
+        /// </summary>
+        public bool CanRefresh => !_isRefreshingSerialPorts;
+
+        /// <summary>
+        /// Command to refresh serial ports.
+        /// </summary>
+        public ICommand RefreshAvailableSerialPortsCommand { get; set; }
+
+        /// <summary>
+        /// Currently selected flashcart.
+        /// </summary>
+        public IFlashcart? CurrentFlashcart
+        {
+            get
+            {
+                return _currentFlashCart;
+            }
+
+            set
+            {
+                if (object.ReferenceEquals(_currentFlashCart, value))
+                {
+                    return;
+                }
+
+                _currentFlashCart = value;
+
+                if (!object.ReferenceEquals(value, null))
+                {
+                    AppConfig.Device.Flashcart = value.GetType().Name;
+                }
+                else
+                {
+                    AppConfig.Device.Flashcart = string.Empty;
+                }
+
+                _flashcartIsValid = !object.ReferenceEquals(null, value);
+                OnPropertyChanged(nameof(CurrentFlashcart));
+                OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
+            }
+        }
+
+        /// <summary>
+        /// List of available flashcarts.
+        /// </summary>
+        public ObservableCollection<IFlashcart> AvailableFlashcarts
+        {
+            get
+            {
+                return _availableFlashcarts;
+            }
+
+            set
+            {
+                _availableFlashcarts = value;
+                BindingOperations.EnableCollectionSynchronization(_availableFlashcarts, _availableFlashcartsLock);
+            }
+        }
+
+        /// <summary>
+        /// Flag to indicate the app is currently connected to a flashcart (any connection level).
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                return _isConnected;
+            }
+
+            set
+            {
+                _isConnected = value;
+                OnPropertyChanged(nameof(IsConnected));
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the app can attempt to connect to the flashcart.
+        /// </summary>
+        public bool CanConnect => !_isConnecting && !string.IsNullOrEmpty(CurrentSerialPort) && _flashcartIsValid && _connectionError == false;
+
+        /// <summary>
+        /// Connection level text to show in the status b ar.
+        /// </summary>
+        public string ConnectCommandText { get; set; }
+
+        /// <summary>
+        /// Command to connect to the flashcart.
+        /// </summary>
+        public ICommand ConnectDeviceCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the current connection can be reset.
+        /// </summary>
+        public bool CanResetConnection => _connectionError;
+
+        /// <summary>
+        /// Command to reset the connection.
+        /// </summary>
+        public ICommand ResetConnectionCommand { get; set; }
+
+        /// <summary>
+        /// Currently selected ROM path.
+        /// </summary>
+        public string? SelectedRom
+        {
+            get
+            {
+                return _selectedRomPath;
+            }
+
+            set
+            {
+                _selectedRomPath = value;
+                OnPropertyChanged(nameof(SelectedRom));
+                OnPropertyChanged(nameof(CanSendRom));
+            }
+        }
+
+        /// <summary>
+        /// Command to open a dialog and select a ROM.
+        /// </summary>
+        public ICommand ChooseSelectedRomCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether it's possible to send a ROM.
+        /// </summary>
+        public bool CanSendRom =>
+            _isConnected
+            && !_currentlySendingRom
+            && _connectionError == false
+            && _connectionLevel == ConnectionLevel.Flashcart;
+
+        /// <summary>
+        /// Command to send ROM to flashcart.
+        /// </summary>
+        public ICommand SendRomCommand { get; set; }
+
+        /// <summary>
+        /// List of known log messages.
+        /// </summary>
+        public ObservableCollection<string> LogMessages
+        {
+            get
+            {
+                return _logMessages;
+            }
+
+            set
+            {
+                _logMessages = value;
+                BindingOperations.EnableCollectionSynchronization(_logMessages, _logMessagesLock);
+            }
+        }
+
+        /// <summary>
+        /// Command to save <see cref="LogMessages"/> to a file on disk.
+        /// </summary>
+        public ICommand SaveLogCommand { get; set; }
+
+        /// <summary>
+        /// Command to clear <see cref="LogMessages"/>.
+        /// </summary>
+        public ICommand ClearLogCommand { get; set; }
+
+        /// <summary>
+        /// Different category tabs.
+        /// </summary>
+        public ObservableCollection<TabViewModelBase> Tabs { get; set; } = new ObservableCollection<TabViewModelBase>();
+
+        /// <summary>
+        /// Status bar text to display whether the app is currently connected to the flashcart or not.
+        /// </summary>
+        public string StatusConnectedText
+        {
+            get
+            {
+                if (IsConnected)
+                {
+                    return "connected";
+                }
+
+                return "disconnected";
+            }
+        }
+
+        /// <summary>
+        /// Status bar text to display the connection level to the flashcart.
+        /// </summary>
+        public string StatusConnectionLevelText
+        {
+            get
+            {
+                if (_connectionLevel == ConnectionLevel.Flashcart)
+                {
+                    return "menu";
+                }
+                else if (_connectionLevel == ConnectionLevel.Rom)
+                {
+                    return "rom";
+                }
+
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Current connection level.
+        /// </summary>
+        public ConnectionLevel ConnectionLevel => _connectionLevel;
+
+        /// <summary>
+        /// Status bar text listing current serial port.
+        /// </summary>
+        public string StatusSerialPort
+        {
+            get
+            {
+                if (IsConnected)
+                {
+                    return CurrentSerialPort!;
+                }
+
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Flag to indicate the app is currently scanning the computer for available serial ports.
+        /// </summary>
+        private bool IsRefreshing
+        {
+            get
+            {
+                return _isRefreshingSerialPorts;
+            }
+
+            set
+            {
+                _isRefreshingSerialPorts = value;
+                OnPropertyChanged(nameof(IsRefreshing));
+                OnPropertyChanged(nameof(CanRefresh));
+            }
+        }
+
+        /// <summary>
+        /// Recently sent files.
+        /// </summary>
+        public ObservableCollection<string> RecentlySentFiles
+        {
+            get
+            {
+                return AppConfig.RecentPath.RecentSendRom;
+            }
+
+            set
+            {
+                BindingOperations.EnableCollectionSynchronization(AppConfig.RecentPath.RecentSendRom, _recentlySentFilesLock);
+            }
+        }
+
+        /// <summary>
+        /// Current app settings.
+        /// </summary>
+        public AppConfigViewModel AppConfig { get; init; }
+
+        /// <summary>
+        /// Current known connected gebug ROM version.
+        /// </summary>
+        public Version? RomVersion
+        {
+            get => _romVersion;
+
+            set
+            {
+                _romVersion = value;
+                OnPropertyChanged(nameof(RomVersion));
+                OnPropertyChanged(nameof(RomVersionString));
+            }
+        }
+
+        /// <summary>
+        /// Current known connected gebug ROM version, as a string.
+        /// </summary>
+        public string RomVersionString => _romVersion?.ToString() ?? "unk";
+
+        /// <summary>
+        /// The long running query tasks.
+        /// </summary>
+        public ObservableCollection<QueryTaskViewModel> QueryTasks
+        {
+            get
+            {
+                return _queryTasks;
+            }
+
+            set
+            {
+                BindingOperations.EnableCollectionSynchronization(_queryTasks, _queryTasksLock);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to stop all threads and gracefully shutdown.
+        /// </summary>
         public void Shutdown()
         {
             _shutdown = true;
@@ -438,7 +677,7 @@ namespace Gebug64.Win.ViewModels
 
         private void RefreshAvailableSerialPortsCommandHandler()
         {
-            if (_isRefreshing)
+            if (_isRefreshingSerialPorts)
             {
                 return;
             }
@@ -453,6 +692,7 @@ namespace Gebug64.Win.ViewModels
                 {
                     _menuSerialPortGroup.RemoveItem(x.Id);
                 }
+
                 MenuSerialPorts.Clear();
 
                 var mivm = new MenuItemViewModel() { Header = "Refresh" };
@@ -515,6 +755,16 @@ namespace Gebug64.Win.ViewModels
 
         private void MenuSerialPortClick(MenuItemViewModel self)
         {
+            if (object.ReferenceEquals(null, self))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (!typeof(string).IsAssignableFrom(self.Value?.GetType()))
+            {
+                throw new NullReferenceException("Incorrect self.Value");
+            }
+
             _menuSerialPortGroup.CheckOne(self.Id);
             CurrentSerialPort = (string)self.Value;
         }
@@ -618,6 +868,11 @@ namespace Gebug64.Win.ViewModels
         {
             _dispatcher.BeginInvoke(() =>
             {
+                if (object.ReferenceEquals(null, CurrentFlashcart))
+                {
+                    throw new NullReferenceException();
+                }
+
                 Disconnect();
                 _isConnecting = true;
                 OnPropertyChanged(nameof(CanConnect));
@@ -770,6 +1025,16 @@ namespace Gebug64.Win.ViewModels
 
         private void MenuFlashcartClick(MenuItemViewModel self)
         {
+            if (object.ReferenceEquals(null, self))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (!typeof(IFlashcart).IsAssignableFrom(self.Value?.GetType()))
+            {
+                throw new NullReferenceException("Incorrect self.Value");
+            }
+
             _menuDeviceGroup.CheckOne(self.Id);
             CurrentFlashcart = (IFlashcart)self.Value;
         }
@@ -806,6 +1071,16 @@ namespace Gebug64.Win.ViewModels
 
         private void SendSelectedRom(MenuItemViewModel self)
         {
+            if (object.ReferenceEquals(null, self))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (!typeof(string).IsAssignableFrom(self.Value?.GetType()))
+            {
+                throw new NullReferenceException("Incorrect self.Value");
+            }
+
             string path = (string)self.Value;
 
             if (!File.Exists(path))
@@ -814,7 +1089,6 @@ namespace Gebug64.Win.ViewModels
                 string caption = "File not found";
                 MessageBoxButton button = MessageBoxButton.OK;
                 MessageBoxImage icon = MessageBoxImage.Error;
-                MessageBoxResult result;
 
                 MessageBox.Show(messageBoxText, caption, button, icon, MessageBoxResult.OK);
 
@@ -840,7 +1114,17 @@ namespace Gebug64.Win.ViewModels
             bool found = false;
             for (i = 0; i < MenuSendRom.Count; i++)
             {
-                if (string.Compare(path, (string)MenuSendRom[i].Value, true) == 0)
+                if (object.ReferenceEquals(null, MenuSendRom[i]))
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (!typeof(string).IsAssignableFrom(MenuSendRom[i].Value?.GetType()))
+                {
+                    throw new NullReferenceException("Incorrect self.Value");
+                }
+
+                if (string.Compare(path, (string)MenuSendRom[i].Value!, true) == 0)
                 {
                     found = true;
                     break;
@@ -884,6 +1168,11 @@ namespace Gebug64.Win.ViewModels
                     if (object.ReferenceEquals(null, _sendRomCancellation))
                     {
                         _sendRomCancellation = new CancellationTokenSource();
+                    }
+
+                    if (object.ReferenceEquals(null, SelectedRom))
+                    {
+                        throw new NullReferenceException();
                     }
 
                     _connectionServiceManager!.SendRom(SelectedRom, _sendRomCancellation.Token);
@@ -1024,7 +1313,6 @@ namespace Gebug64.Win.ViewModels
                             versionMessage.VersionB,
                             versionMessage.VersionC,
                             versionMessage.VersionD);
-
                     }
                 }
 
