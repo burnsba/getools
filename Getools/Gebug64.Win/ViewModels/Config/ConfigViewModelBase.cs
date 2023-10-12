@@ -6,10 +6,15 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Win.ViewModels.Config
 {
+    /// <summary>
+    /// Base class for app settings viewmodel sections.
+    /// </summary>
     public abstract class ConfigViewModelBase : ISettingsViewModel
     {
+        /// <inheritdoc />
         public bool IsDirty { get; set; }
 
+        /// <inheritdoc />
         public void ClearIsDirty()
         {
             IsDirty = false;

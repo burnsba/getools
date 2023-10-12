@@ -6,10 +6,23 @@ using System.Threading.Tasks;
 
 namespace Gebug64.Win.ViewModels.Config
 {
+    /// <summary>
+    /// Connection settings.
+    /// </summary>
     public class ConnectionSectionViewModel : ConfigViewModelBase, ISettingsViewModel
     {
         private string? _serialPort;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionSectionViewModel"/> class.
+        /// </summary>
+        public ConnectionSectionViewModel()
+        {
+        }
+
+        /// <summary>
+        /// Currently selected serial port.
+        /// </summary>
         public string? SerialPort
         {
             get => _serialPort;
@@ -23,7 +36,5 @@ namespace Gebug64.Win.ViewModels.Config
                 }
             }
         }
-
-        public ConnectionSectionViewModel() { }
     }
 }
