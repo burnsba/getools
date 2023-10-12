@@ -49,6 +49,11 @@ namespace Gebug64.Win.ViewModels
     public class MainWindowViewModel : WindowViewModelBase
     {
         /// <summary>
+        /// Number of menu entries before the send rom list begins.
+        /// </summary>
+        private const int RecentSendRomPermanentCount = 3;
+
+        /// <summary>
         /// If the device is connected, and no communication occurs for this many seconds,
         /// then try to send the ping command.
         /// </summary>
@@ -619,6 +624,13 @@ namespace Gebug64.Win.ViewModels
             // cleanup handled at end of ThreadMain
         }
 
+        /// <summary>
+        /// Accepts a task context. Checks for <see cref="QueryTaskContext.TaskIsUnique"/>, and if task is already
+        /// running does nothing. Otherwise appends a new viewmodel and calls <see cref="QueryTaskContext.Begin"/>
+        /// on the task.
+        /// </summary>
+        /// <param name="context">Query task context.</param>
+        /// <returns>True if the task was started, false otherwise.</returns>
         public bool RegisterBegin(QueryTaskContext context)
         {
             if (context.TaskIsUnique)
@@ -646,6 +658,9 @@ namespace Gebug64.Win.ViewModels
             return true;
         }
 
+        /// <summary>
+        /// Clears existing <see cref="MenuSendRom"/> then rebuilds the menu, adding recently sent rom paths.
+        /// </summary>
         private void BuildMenuSendRom()
         {
             MenuSendRom.Clear();
@@ -675,6 +690,9 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Clears existing <see cref="MenuSerialPorts"/> then rebuilds the menu.
+        /// </summary>
         private void RefreshAvailableSerialPortsCommandHandler()
         {
             if (_isRefreshingSerialPorts)
@@ -753,6 +771,11 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Click handler for serial port menu item. Changes the <see cref="CurrentSerialPort"/>.
+        /// </summary>
+        /// <param name="self">Menu item that was clicked.</param>
+        /// <exception cref="NullReferenceException">Throw if <see cref="MenuItemViewModel.Value"/> isn't string.</exception>
         private void MenuSerialPortClick(MenuItemViewModel self)
         {
             if (object.ReferenceEquals(null, self))
@@ -769,6 +792,12 @@ namespace Gebug64.Win.ViewModels
             CurrentSerialPort = (string)self.Value;
         }
 
+        /// <summary>
+        /// Disconnects from flashcart.
+        /// Unsubscribes from device manager message bus.
+        /// Attempts to gracefully shutdown the device manager worker thread.
+        /// </summary>
+        /// <exception cref="Exception">Throw if could not gracefully shutdown device manager.</exception>
         private void Disconnect()
         {
             if (object.ReferenceEquals(null, _connectionServiceManager))
@@ -825,6 +854,9 @@ namespace Gebug64.Win.ViewModels
             _sendRomCancellation = null;
         }
 
+        /// <summary>
+        /// Sets the connection status text in the status bar.
+        /// </summary>
         private void SetConnectCommandText()
         {
             if (_connectionError)
@@ -847,6 +879,9 @@ namespace Gebug64.Win.ViewModels
             OnPropertyChanged(nameof(ConnectCommandText));
         }
 
+        /// <summary>
+        /// Trigger a toggle for the device manager, either connect or disconnect.
+        /// </summary>
         private void ConnectDeviceCommandHandler()
         {
             if (_isConnecting)
@@ -864,6 +899,11 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Command to connect to the flashcart.
+        /// Will send test messages to establish connection level.
+        /// </summary>
+        /// <exception cref="NullReferenceException">Throw if current flashcart not set.</exception>
         private void ConnectDeviceCommandHandler_Connect()
         {
             _dispatcher.BeginInvoke(() =>
@@ -950,6 +990,9 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Triggers <see cref="Disconnect"/> and notifies property changed.
+        /// </summary>
         private void ConnectDeviceCommandHandler_Disconnect()
         {
             _dispatcher.BeginInvoke(() =>
@@ -970,6 +1013,10 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Command to disconnect from the flashcart and set the app back into a state
+        /// that it can connect again.
+        /// </summary>
         private void ResetConnectionCommandHandler()
         {
             Disconnect();
@@ -983,6 +1030,11 @@ namespace Gebug64.Win.ViewModels
             SetConnectCommandText();
         }
 
+        /// <summary>
+        /// Adds all supported flashcart types to the menu.
+        /// This can only be run once.
+        /// Available flashcarts are hard coded below.
+        /// </summary>
         private void SetAvailableFlashcarts()
         {
             if (_setAvailableFlashcarts)
@@ -1023,6 +1075,11 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Click command handler for clicking on a flashcart from the menu.
+        /// </summary>
+        /// <param name="self">Menu item that was clicked.</param>
+        /// <exception cref="NullReferenceException">Throw if <see cref="MenuItemViewModel.Value"/> isn't <see cref="IFlashcart"/>.</exception>
         private void MenuFlashcartClick(MenuItemViewModel self)
         {
             if (object.ReferenceEquals(null, self))
@@ -1039,18 +1096,26 @@ namespace Gebug64.Win.ViewModels
             CurrentFlashcart = (IFlashcart)self.Value;
         }
 
+        /// <summary>
+        /// Clears recently sent rom paths from <see cref="RecentlySentFiles"/>.
+        /// The first several entries in the menu are not paths.
+        /// </summary>
         private void ClearRecentlySentFiles()
         {
             RecentlySentFiles.Clear();
 
-            while (MenuSendRom.Count > 3)
+            while (MenuSendRom.Count > RecentSendRomPermanentCount)
             {
-                MenuSendRom.RemoveAt(3);
+                MenuSendRom.RemoveAt(RecentSendRomPermanentCount);
             }
 
             SaveAppSettings();
         }
 
+        /// <summary>
+        /// Meta method, calls <see cref="ChooseSelectedRomCommandHandler"/> and if a <see cref="SelectedRom"/>
+        /// is set then calls <see cref="SendSelectedRom"/>.
+        /// </summary>
         private void ChooseAndSendRom()
         {
             ChooseSelectedRomCommandHandler();
@@ -1069,6 +1134,13 @@ namespace Gebug64.Win.ViewModels
             SendSelectedRom(mivm);
         }
 
+        /// <summary>
+        /// Updates app state, user interface, and app settings.
+        /// If the selected path is valid, and the above updates succeed, then calls
+        /// <see cref="SendRomCommandHandler"/> to send the selected rom to the flashcart.
+        /// </summary>
+        /// <param name="self">Menu item that was clicked.</param>
+        /// <exception cref="NullReferenceException">Throw if <see cref="MenuItemViewModel.Value"/> isn't <see cref="string"/>.</exception>
         private void SendSelectedRom(MenuItemViewModel self)
         {
             if (object.ReferenceEquals(null, self))
@@ -1140,12 +1212,18 @@ namespace Gebug64.Win.ViewModels
             var mivm = new MenuItemViewModel() { Header = path };
             mivm.Command = new CommandHandler(dddd, () => CanSendRom);
             mivm.Value = (string)path;
-            MenuSendRom.Insert(3, mivm);
+
+            // Insert at top of list.
+            MenuSendRom.Insert(RecentSendRomPermanentCount, mivm);
 
             SelectedRom = path;
             SendRomCommandHandler();
         }
 
+        /// <summary>
+        /// Sends the selected rom to the flashcart.
+        /// </summary>
+        /// <exception cref="NullReferenceException">Throw if <see cref="SelectedRom"/> is null.</exception>
         private void SendRomCommandHandler()
         {
             if (_currentlySendingRom)
@@ -1210,6 +1288,9 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Opens dialog box to choose a rom.
+        /// </summary>
         private void ChooseSelectedRomCommandHandler()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
@@ -1242,6 +1323,9 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Saves log messages to a file.
+        /// </summary>
         private void SaveLogCommandHandler()
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
@@ -1263,11 +1347,18 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Clears all log messages.
+        /// </summary>
         private void ClearLogCommandHandler()
         {
             LogMessages.Clear();
         }
 
+        /// <summary>
+        /// If <see cref="_thread"/> is null, then starts a new instance of the thread to run <see cref="ThreadMain"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Throw if attempted to restart a dead thread.</exception>
         private void StartThread()
         {
             if (object.ReferenceEquals(null, _thread))
@@ -1288,6 +1379,11 @@ namespace Gebug64.Win.ViewModels
             throw new InvalidOperationException("DeviceManager thread cannot be restarted.");
         }
 
+        /// <summary>
+        /// Call back for all gebug messages.
+        /// Writes message to the log.
+        /// </summary>
+        /// <param name="msg">Gebug level message from flashcart.</param>
         private void MessageBusLogGebugCallback(IGebugMessage msg)
         {
             _dispatcher.BeginInvoke(() =>
@@ -1321,6 +1417,11 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Call back for all UNFLoader messages.
+        /// Writes message to the log.
+        /// </summary>
+        /// <param name="packet">UNFLoader level message from flashcart.</param>
         private void MessageBusLogUnfloaderCallback(IUnfloaderPacket packet)
         {
             _dispatcher.BeginInvoke(() =>
@@ -1354,6 +1455,9 @@ namespace Gebug64.Win.ViewModels
             });
         }
 
+        /// <summary>
+        /// Saves app settings to disk and calls <see cref="ConfigViewModelBase.ClearIsDirty"/>.
+        /// </summary>
         private void SaveAppSettings()
         {
             if (_ignoreAppSettingsChange)
@@ -1366,6 +1470,13 @@ namespace Gebug64.Win.ViewModels
             AppConfig.ClearIsDirty();
         }
 
+        /// <summary>
+        /// View model main thread.
+        /// Tracks how long since a message was last received from the flashcart.
+        /// If too much time has elapsed, attempts to ping the flashcart.
+        /// If no messages are received after <see cref="TimeoutDisconnectSec"/> then
+        /// the connection is disconnected.
+        /// </summary>
         private void ThreadMain()
         {
             while (_shutdown == false)
