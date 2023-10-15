@@ -125,6 +125,7 @@ public enum GebugCmdRamrom
 
     StartDemoReplayFromPc = 10,
     ReplayRequestNextIteration = 12,
+    ReplayFromExpansionPak = 13,
     ReplayNativeDemo = 30,
 }
 ```
@@ -151,6 +152,16 @@ Console request for next iteration of ramrom replay blocks.
 |  1            | ReplayId        |  2  (u16)    | `ConsoleToPc` | MessageId of original request to load demo from PC. |
 |  2            | IterationIndex        |  2  (u16)    | `ConsoleToPc` | Index of the iteration data being requested (starts at zero). |
 |  3            | IterationData        |  variable    | `PcToConsole` | Replay iteration data for the single request iteration. |
+
+### `Ramrom ReplayFromExpansionPak` Command
+
+Transfer replay to expansion pak memory, then start ramrom replay. PC should first check if xpak is installed.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Data        |  variable    | `PcToConsole` | Ramrom replay. Should contain file contents of `struct ramromfilestructure` with all iteration data. |
 
 ### `Ramrom ReplayNativeDemo` Command
 

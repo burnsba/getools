@@ -36,7 +36,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         public ushort Height { get; set; }
 
         /// <summary>
-        /// Framebuffeer data. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format.
+        /// Framebuffer data. Data should be processed 16 bits at a time, read as N64 native 5551 RGBA format.
         /// </summary>
         [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[]? Data { get; set; }

@@ -24,7 +24,13 @@
 
                     <StackPanel Orientation="Horizontal">
 
-                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=StartDemoReplayFromPcCommand}" HorizontalAlignment="Left">Play ramrom demo from PC</Button>
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=StartDemoReplayFromPcCommand}" HorizontalAlignment="Left">Stream ramrom demo from PC</Button>
+
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=ReplayFromExpansionPakCommand}" HorizontalAlignment="Left">Xpak replay (load from PC)</Button>
 
                     </StackPanel>
                     

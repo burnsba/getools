@@ -1213,7 +1213,7 @@ namespace Gebug64.Win.ViewModels
 
             RecentlySentFiles.Insert(0, path);
 
-            if (RecentlySentFiles.Count > MaxRecentlySentFiles)
+            while (RecentlySentFiles.Count > MaxRecentlySentFiles)
             {
                 RecentlySentFiles.RemoveAt(MaxRecentlySentFiles);
             }

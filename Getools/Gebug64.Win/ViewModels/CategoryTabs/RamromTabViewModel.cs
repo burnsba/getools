@@ -47,6 +47,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
             StartDemoReplayFromPcCommand = new CommandHandler(StartDemoReplayFromPcHandler, () => CanStartDemoReplayFromPc);
             ReplayNativeCommand = new CommandHandler(ReplayNativeHandler, () => CanReplayNative);
+            ReplayFromExpansionPakCommand = new CommandHandler(ReplayFromExpansionPakHandler, () => CanReplayFromExpansionPak);
 
             _mainWindowViewModel = (MainWindowViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(MainWindowViewModel))!;
         }
@@ -79,12 +80,12 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
         public byte ReplayNativeIndex { get; set; }
 
         /// <summary>
-        /// Command.
+        /// Command to send <see cref="GebugRamromReplayNativeMessage"/>.
         /// </summary>
         public ICommand ReplayNativeCommand { get; set; }
 
         /// <summary>
-        /// Gets a value indicating whether the app can send the command.
+        /// Gets a value indicating whether <see cref="ReplayNativeCommand"/> can execute.
         /// </summary>
         public bool CanReplayNative
         {
@@ -97,6 +98,30 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
                 }
 
                 return !connectionServiceProvider.IsShutdown && _mainWindowViewModel.ConnectionLevel == Enum.ConnectionLevel.Rom;
+            }
+        }
+
+        /// <summary>
+        /// Command to send <see cref="GebugRamromReplayFromXpakMessage"/>.
+        /// </summary>
+        public ICommand ReplayFromExpansionPakCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="ReplayFromExpansionPakCommand"/> can execute.
+        /// </summary>
+        public bool CanReplayFromExpansionPak
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown
+                    && _mainWindowViewModel.ConnectionLevel == Enum.ConnectionLevel.Rom
+                    && _mainWindowViewModel.HasExpansionBack;
             }
         }
 
@@ -149,6 +174,51 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 
             connectionServiceProvider.SendMessage(msg);
+        }
+
+        private void ReplayFromExpansionPakHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                DefaultExt = ".bin", // Default file extension
+                Filter = "BIN format | *.bin", // Filter files by extension
+            };
+
+            if (System.IO.Directory.Exists(_mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder))
+            {
+                dialog.InitialDirectory = _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder;
+            }
+
+            // Show open file dialog box
+            bool? result = dialog.ShowDialog();
+
+            // Process open file dialog box results
+            if (result == true && !string.IsNullOrEmpty(dialog.FileName))
+            {
+                string filename = dialog.FileName;
+
+                if (dialog.FileName != _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder)
+                {
+                    _mainWindowViewModel.AppConfig.RecentPath.RamromPcReplayFolder = System.IO.Path.GetDirectoryName(dialog.FileName);
+                    SaveAppSettings();
+                }
+
+                var msg = new GebugRamromReplayFromXpakMessage();
+
+                msg.Data = System.IO.File.ReadAllBytes(filename);
+
+                _logger.Log(LogLevel.Information, $"Read ramrom file: {filename}");
+                _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+                connectionServiceProvider.SendMessage(msg);
+            }
         }
     }
 }
