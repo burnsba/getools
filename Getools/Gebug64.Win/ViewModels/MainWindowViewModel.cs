@@ -1254,6 +1254,11 @@ namespace Gebug64.Win.ViewModels
             // Insert at top of list.
             MenuSendRom.Insert(RecentSendRomPermanentCount, mivm);
 
+            while (MenuSendRom.Count > RecentSendRomPermanentCount + MaxRecentlySentFiles)
+            {
+                MenuSendRom.RemoveAt(RecentSendRomPermanentCount + MaxRecentlySentFiles);
+            }
+
             SelectedRom = path;
             SendRomCommandHandler();
         }
