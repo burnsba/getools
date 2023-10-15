@@ -9,6 +9,8 @@
             xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
             xmlns:selectors="clr-namespace:Gebug64.Win.Xaml.Selectors"
             d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}"
+             MinHeight="400"
+             MinWidth="800"
             
              >
     <UserControl.Resources>

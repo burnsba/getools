@@ -7,12 +7,15 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace WPF.MDI
 {
 	[ContentProperty("Content")]
 	public class MdiChild : Control
 	{
+		private int _preMinHeight;
+
 		#region Constants
 
 		/// <summary>
@@ -927,6 +930,11 @@ namespace WPF.MDI
 			{
 				case WindowState.Normal:
 					{
+						if (mdiChild._preMinHeight > 0)
+						{
+							mdiChild.MinHeight = mdiChild._preMinHeight;
+                        }
+
 						mdiChild.Position = new Point(mdiChild.originalDimension.X, mdiChild.originalDimension.Y);
 						mdiChild.Width = mdiChild.originalDimension.Width;
 						mdiChild.Height = mdiChild.originalDimension.Height;
@@ -937,7 +945,10 @@ namespace WPF.MDI
 						if (previousWindowState == WindowState.Normal)
 							mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
 
-						double newLeft, newTop;
+						mdiChild._preMinHeight = (int)mdiChild.MinHeight;
+						mdiChild.MinHeight = 0;
+
+                        double newLeft, newTop;
 						if (mdiChild.minimizedPosition.X >= 0 || mdiChild.minimizedPosition.Y >= 0)
 						{
 							newLeft = mdiChild.minimizedPosition.X;
@@ -999,7 +1010,12 @@ namespace WPF.MDI
 					break;
 				case WindowState.Maximized:
 					{
-						if (previousWindowState == WindowState.Normal)
+                        if (mdiChild._preMinHeight > 0)
+                        {
+                            mdiChild.MinHeight = mdiChild._preMinHeight;
+                        }
+
+                        if (previousWindowState == WindowState.Normal)
 							mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
 						mdiChild.NonMaximizedState = previousWindowState;
 

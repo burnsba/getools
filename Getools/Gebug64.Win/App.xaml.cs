@@ -104,11 +104,7 @@ namespace Gebug64.Win
             var host = (MdiHostWindow)Workspace.Instance.ServiceProvider.GetService(typeof(MdiHostWindow))!;
 
             MainControl main = (MainControl)Workspace.Instance.ServiceProvider.GetService(typeof(MainControl))!;
-            host.AddPermanentMdiChild(main, Gebug64.Win.Ui.Lang.Window_MessageCenterTitle, conf =>
-            {
-                conf.MinHeight = 400;
-                conf.MinWidth = 800;
-            });
+            host.AddPermanentMdiChild(main, Gebug64.Win.Ui.Lang.Window_MessageCenterTitle);
 
             host.Show();
 

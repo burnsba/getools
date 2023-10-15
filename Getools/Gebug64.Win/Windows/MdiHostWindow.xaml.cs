@@ -85,6 +85,18 @@ namespace Gebug64.Win.Windows
                 Title = title,
             };
 
+            if (content.MinHeight > 0)
+            {
+                child.MinHeight = content.MinHeight;
+            }
+
+            if (content.MinWidth > 0)
+            {
+                child.MinWidth = content.MinWidth;
+            }
+
+            child.Resizable = true;
+
             if (configCallback != null)
             {
                 configCallback(child);
