@@ -346,7 +346,18 @@ namespace WPF.MDI
 							mdiChild.Position = new Point(_windowOffset, _windowOffset);
 						_windowCanvas.Children.Add(mdiChild);
 
-						_windowOffset += WindowOffset;
+						if (mdiChild.Width < mdiChild.MinWidth)
+						{
+							mdiChild.Width = mdiChild.MinWidth;
+                        }
+
+                        if (mdiChild.Height < mdiChild.MinHeight)
+                        {
+							// 44: adjust for title bar height
+                            mdiChild.Height = mdiChild.MinHeight + 44;
+                        }
+
+                        _windowOffset += WindowOffset;
 						if (_windowOffset + mdiChild.Width > ActualWidth)
 							_windowOffset = 0;
 						if (_windowOffset + mdiChild.Height > ActualHeight)
@@ -383,9 +394,24 @@ namespace WPF.MDI
 
 			for (int i = 0; i < Children.Count; i++)
 			{
+				double w;
+				double h;
+
 				MdiChild mdiChild = Children[i];
 
-				Point farPosition = new Point(mdiChild.Position.X + mdiChild.Width, mdiChild.Position.Y + mdiChild.Height);
+				w = mdiChild.Width;
+				if (mdiChild.MinWidth > w)
+				{
+					w = mdiChild.MinWidth;
+                }
+
+                h = mdiChild.Height;
+                if (mdiChild.MinHeight > h)
+                {
+                    h = mdiChild.MinHeight;
+                }
+
+                Point farPosition = new Point(mdiChild.Position.X + w, mdiChild.Position.Y + h);
 
 				if (farPosition.X > largestPoint.X)
 					largestPoint.X = farPosition.X;

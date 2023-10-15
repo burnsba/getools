@@ -26,7 +26,7 @@ namespace WPF.MDI
 		/// <summary>
 		/// Height of minimized window.
 		/// </summary>
-		internal const int MinimizedHeight = 29;
+		internal const int MinimizedHeight = 32;
 
 		#endregion
 
@@ -326,6 +326,7 @@ namespace WPF.MDI
 		/// Dimensions of window in Normal state.
 		/// </summary>
 		private Rect originalDimension;
+		private bool _originalDimensionSet = false;
 
 		/// <summary>
 		/// Position of window in Minimized state.
@@ -359,7 +360,7 @@ namespace WPF.MDI
 			Loaded += MdiChild_Loaded;
 			GotFocus += MdiChild_GotFocus;
 			KeyDown += MdiChild_KeyDown;
-		}
+        }
 
 		static void MdiChild_KeyDown(object sender, KeyEventArgs e)
 		{
@@ -622,7 +623,12 @@ namespace WPF.MDI
 			if (Width - e.HorizontalChange < MinWidth)
 				return;
 
-			double newLeft = e.HorizontalChange;
+            if (WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
+            double newLeft = e.HorizontalChange;
 
 			if (Position.X + newLeft < 0)
 				newLeft = 0 - Position.X;
@@ -641,10 +647,16 @@ namespace WPF.MDI
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
 		private void ResizeTop_DragDelta(object sender, DragDeltaEventArgs e)
 		{
-			if (Height - e.VerticalChange < MinHeight)
+            // 44: adjust for title bar height
+            if (Height - e.VerticalChange < MinHeight + 44)
 				return;
 
-			double newTop = e.VerticalChange;
+            if (WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
+            double newTop = e.VerticalChange;
 
 			if (Position.Y + newTop < 0)
 				newTop = 0 - Position.Y;
@@ -666,7 +678,12 @@ namespace WPF.MDI
 			if (Width + e.HorizontalChange < MinWidth)
 				return;
 
-			Width += e.HorizontalChange;
+            if (WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
+            Width += e.HorizontalChange;
 
 			if (sender != null)
 				Container.InvalidateSize();
@@ -679,8 +696,14 @@ namespace WPF.MDI
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
 		private void ResizeBottom_DragDelta(object sender, DragDeltaEventArgs e)
 		{
-			if (Height + e.VerticalChange < MinHeight)
+            // 44: adjust for title bar height
+            if (Height + e.VerticalChange < MinHeight + 44)
 				return;
+
+			if (WindowState == WindowState.Minimized)
+			{
+				return;
+			}
 
 			Height += e.VerticalChange;
 
@@ -732,7 +755,16 @@ namespace WPF.MDI
 			MdiChild mdiChild = (MdiChild)sender;
 			Point newPosition = (Point)e.NewValue;
 
-			Canvas.SetTop(mdiChild, newPosition.Y < 0 ? 0 : newPosition.Y);
+    //        if (mdiChild._originalDimensionSet == false)
+    //        {
+    //            mdiChild._originalDimensionSet = true;
+    //            mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
+
+				//mdiChild.Width = mdiChild.ActualWidth;
+				//mdiChild.Height = mdiChild.ActualHeight;
+    //        }
+
+            Canvas.SetTop(mdiChild, newPosition.Y < 0 ? 0 : newPosition.Y);
 			Canvas.SetLeft(mdiChild, newPosition.X < 0 ? 0 : newPosition.X);
 		}
 
@@ -916,7 +948,7 @@ namespace WPF.MDI
 					sv.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
 				}
 
-				mdiChild.Buttons.Children.Clear();
+				mdiChild?.Buttons?.Children?.Clear();
 				mdiChild.Buttons = null;
 				mdiChild.buttonsPanel.Children.Add(mdiChild.minimizeButton);
 				mdiChild.buttonsPanel.Children.Add(mdiChild.maximizeButton);
@@ -946,7 +978,7 @@ namespace WPF.MDI
 							mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
 
 						mdiChild._preMinHeight = (int)mdiChild.MinHeight;
-						mdiChild.MinHeight = 0;
+						mdiChild.MinHeight = MinimizedHeight;
 
                         double newLeft, newTop;
 						if (mdiChild.minimizedPosition.X >= 0 || mdiChild.minimizedPosition.Y >= 0)
@@ -1010,12 +1042,12 @@ namespace WPF.MDI
 					break;
 				case WindowState.Maximized:
 					{
-                        if (mdiChild._preMinHeight > 0)
-                        {
-                            mdiChild.MinHeight = mdiChild._preMinHeight;
-                        }
+						if (mdiChild._preMinHeight > 0)
+						{
+							mdiChild.MinHeight = mdiChild._preMinHeight;
+						}
 
-                        if (previousWindowState == WindowState.Normal)
+						if (previousWindowState == WindowState.Normal)
 							mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
 						mdiChild.NonMaximizedState = previousWindowState;
 
