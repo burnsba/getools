@@ -22,6 +22,8 @@
             <StackPanel Orientation="Vertical" Grid.Row="0">
 
                 <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=OsTimeCommand}" HorizontalAlignment="Left">OS Time</Button>
+
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=OsMemSizeCommand}" HorizontalAlignment="Left">OS Mem Size</Button>
                 
             </StackPanel>
         </Grid>

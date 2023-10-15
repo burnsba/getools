@@ -30,6 +30,7 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             : base(_tabName, logger, connectionServiceProviderResolver)
         {
             OsTimeCommand = new CommandHandler(OsTimeCommandHandler, () => CanSendOsTimeCommand);
+            OsMemSizeCommand = new CommandHandler(OsMemSizeCommandHandler, () => CanSendOsMemSizeCommand);
 
             DisplayOrder = 95;
         }
@@ -56,6 +57,28 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
         }
 
+        /// <summary>
+        /// Command to send <see cref="GebugMiscOsGetMemSizeMessage"/>.
+        /// </summary>
+        public ICommand OsMemSizeCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="OsMemSizeCommand"/> can execute.
+        /// </summary>
+        public bool CanSendOsMemSizeCommand
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
         private void OsTimeCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
@@ -66,6 +89,22 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             }
 
             var msg = new GebugMiscOsTimeMessage();
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
+        }
+
+        private void OsMemSizeCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugMiscOsGetMemSizeMessage();
 
             _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
 

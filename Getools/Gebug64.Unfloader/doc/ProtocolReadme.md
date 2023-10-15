@@ -369,6 +369,7 @@ Version information about the ROM running on console. This is 4 words describing
 |  2            | VersionB      |  4           | `ConsoleToPc` | Version word 2 |
 |  3            | VersionC      |  4           | `ConsoleToPc` | Version word 3 |
 |  4            | VersionD      |  4           | `ConsoleToPc` | Version word 4 |
+|  5            | Size          |  4 (u32)     | `ConsoleToPc` | Size in bytes of available memory |
 
 
 ## `Misc` Category
@@ -383,6 +384,7 @@ public enum GebugCmdMisc
     DefaultUnknown = 0,
 
     OsTime = 1,
+    OsMemSize = 2,
 }
 ```
 
@@ -395,3 +397,15 @@ Requests current ROM OS time.
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  1            | Count      |  4           | `ConsoleToPc` | `osGetCount()` |
+
+
+
+### `Misc OsMemSize` Command
+
+Requests available memory size.
+
+**Reply**: Yes.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Size          |  4 (u32)     | `ConsoleToPc` | `osGetMemSize()` |

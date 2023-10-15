@@ -46,5 +46,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// </summary>
         [GebugParameter(ParameterIndex = 3, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public int VersionD { get; set; }
+
+        /// <summary>
+        /// OS memory size value in bytes.
+        /// </summary>
+        [GebugParameter(ParameterIndex = 4, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        public uint Size { get; set; }
     }
 }

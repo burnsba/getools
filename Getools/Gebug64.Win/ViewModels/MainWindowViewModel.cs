@@ -49,6 +49,16 @@ namespace Gebug64.Win.ViewModels
     public class MainWindowViewModel : WindowViewModelBase
     {
         /// <summary>
+        /// Baseline memory size.
+        /// </summary>
+        private const int BaseMemSizeBytes = 0x00400000;
+
+        /// <summary>
+        /// Size in bytes if expansion pak is installed.
+        /// </summary>
+        private const int ExpansionPakMemSizeBytes = 0x00800000;
+
+        /// <summary>
         /// Number of menu entries before the send rom list begins.
         /// </summary>
         private const int RecentSendRomPermanentCount = 3;
@@ -79,6 +89,11 @@ namespace Gebug64.Win.ViewModels
         private readonly ILogger _logger;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
         private readonly Dispatcher _dispatcher;
+
+        /// <summary>
+        /// Size in bytes of attached ROM memory.
+        /// </summary>
+        private int _memSize = 0;
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -596,7 +611,28 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// Current known connected gebug ROM version, as a string.
         /// </summary>
-        public string RomVersionString => _romVersion?.ToString() ?? "unk";
+        public string RomVersionString
+        {
+            get
+            {
+                if (object.ReferenceEquals(null, _romVersion))
+                {
+                    return "unk";
+                }
+
+                return _romVersion.ToString() + (HasExpansionBack ? "+xpak" : string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Gets the attached ROM memory size.
+        /// </summary>
+        public int RomMemorySize => _memSize;
+
+        /// <summary>
+        /// Gets a value indicating whether the console has an expansion pak installed or not.
+        /// </summary>
+        public bool HasExpansionBack => _isConnected && _memSize >= ExpansionPakMemSizeBytes;
 
         /// <summary>
         /// The long running query tasks.
@@ -852,6 +888,8 @@ namespace Gebug64.Win.ViewModels
             _logger.Log(LogLevel.Information, $"Disconnected");
 
             _sendRomCancellation = null;
+
+            SetKnownMemorySize(0);
         }
 
         /// <summary>
@@ -1184,7 +1222,7 @@ namespace Gebug64.Win.ViewModels
 
             int i;
             bool found = false;
-            for (i = 0; i < MenuSendRom.Count; i++)
+            for (i = RecentSendRomPermanentCount; i < MenuSendRom.Count; i++)
             {
                 if (object.ReferenceEquals(null, MenuSendRom[i]))
                 {
@@ -1409,6 +1447,8 @@ namespace Gebug64.Win.ViewModels
                             versionMessage.VersionB,
                             versionMessage.VersionC,
                             versionMessage.VersionD);
+
+                        SetKnownMemorySize((int)versionMessage.Size);
                     }
                 }
 
@@ -1519,6 +1559,19 @@ namespace Gebug64.Win.ViewModels
             {
                 _connectionServiceManager.Stop();
             }
+        }
+
+        /// <summary>
+        /// Update tracked memory related values.
+        /// </summary>
+        /// <param name="size">Size in bytes of console memory.</param>
+        private void SetKnownMemorySize(int size)
+        {
+            _memSize = size;
+
+            OnPropertyChanged(nameof(RomMemorySize));
+            OnPropertyChanged(nameof(HasExpansionBack));
+            OnPropertyChanged(nameof(RomVersionString));
         }
     }
 }

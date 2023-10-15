@@ -20,5 +20,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         /// Requests current ROM OS time.
         /// </summary>
         OsTime = 1,
+
+        /// <summary>
+        /// Requests current ROM OS memory size in bytes.
+        /// </summary>
+        OsMemSize = 2,
     }
 }
