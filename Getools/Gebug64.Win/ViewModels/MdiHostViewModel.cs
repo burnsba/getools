@@ -4,8 +4,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Mvvm;
+using WPF.MDI;
 
 namespace Gebug64.Win.ViewModels
 {
@@ -36,6 +38,40 @@ namespace Gebug64.Win.ViewModels
         public void SetFocusChildCallback(Action<Type, string> callback)
         {
             _focusCallback = callback;
+        }
+
+        /// <summary>
+        /// Resize event handler for resizing a child control.
+        /// </summary>
+        /// <param name="sender">Sender object (child).</param>
+        /// <param name="e">Event args.</param>
+        public void ResizeChildHandler(object sender, RoutedEventArgs e)
+        {
+            var args = (ResizeEventArgs)e;
+
+            System.Diagnostics.Debug.WriteLine("Resize child");
+        }
+
+        /// <summary>
+        /// Move event handler for moving a child control.
+        /// </summary>
+        /// <param name="sender">Sender object (child).</param>
+        /// <param name="e">Event args.</param>
+        public void MoveChildHandler(object sender, RoutedEventArgs e)
+        {
+            var args = (MoveEventArgs)e;
+
+            System.Diagnostics.Debug.WriteLine("Move child");
+        }
+
+        /// <summary>
+        /// Close event handler for closing a child control.
+        /// </summary>
+        /// <param name="sender">Sender object (child).</param>
+        /// <param name="e">Event args.</param>
+        public void CloseChildHandler(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("Close child");
         }
 
         private void BuildViewWindowList()

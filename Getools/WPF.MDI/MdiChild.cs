@@ -144,6 +144,20 @@ namespace WPF.MDI
 		public static readonly RoutedEvent ClosedEvent =
 			EventManager.RegisterRoutedEvent("Closed", RoutingStrategy.Bubble, typeof(RoutedEventArgs), typeof(MdiChild));
 
+        /// <summary>
+        /// Identifies the WPF.MDI.MdiChild.MoveEvent routed event.
+        /// </summary>
+        /// <returns>The identifier for the WPF.MDI.MdiChild.MoveEvent routed event.</returns>
+        public static readonly RoutedEvent MoveEvent =
+			EventManager.RegisterRoutedEvent("Move", RoutingStrategy.Bubble, typeof(MoveEventArgs), typeof(MdiChild));
+
+        /// <summary>
+        /// Identifies the WPF.MDI.MdiChild.MoveEvent routed event.
+        /// </summary>
+        /// <returns>The identifier for the WPF.MDI.MdiChild.MoveEvent routed event.</returns>
+        public static readonly RoutedEvent ResizeEvent =
+			EventManager.RegisterRoutedEvent("Resize", RoutingStrategy.Bubble, typeof(ResizeEventArgs), typeof(MdiChild));
+
 		#endregion
 
 		#region Property Accessors
@@ -298,6 +312,18 @@ namespace WPF.MDI
 		{
 			add { AddHandler(ClosedEvent, value); }
 			remove { RemoveHandler(ClosedEvent, value); }
+		}
+
+		public event RoutedEventHandler Move
+        {
+			add { AddHandler(MoveEvent, value); }
+			remove { RemoveHandler(MoveEvent, value); }
+		}
+
+		public event RoutedEventHandler Resize
+        {
+			add { AddHandler(ResizeEvent, value); }
+			remove { RemoveHandler(ResizeEvent, value); }
 		}
 
 		#endregion
@@ -591,7 +617,9 @@ namespace WPF.MDI
 			RaiseEvent(eventArgs);
 
 			if (eventArgs.Cancel)
+			{
 				return;
+			}
 
 			Close();
 
@@ -621,24 +649,52 @@ namespace WPF.MDI
 		private void ResizeLeft_DragDelta(object sender, DragDeltaEventArgs e)
 		{
 			if (Width - e.HorizontalChange < MinWidth)
+			{
 				return;
+			}
 
             if (WindowState == WindowState.Minimized)
             {
                 return;
             }
 
+			double oldWidth = Width;
+			double oldHeight = Height;
+            var oldPosition = new Point(Position.X, Position.Y);
+
             double newLeft = e.HorizontalChange;
 
 			if (Position.X + newLeft < 0)
+			{
 				newLeft = 0 - Position.X;
+			}
 
 			Width -= newLeft;
 			Position = new Point(Position.X + newLeft, Position.Y);
 
 			if (sender != null)
+			{
 				Container.InvalidateSize();
-		}
+			}
+
+            ResizeEventArgs eventArgs = new ResizeEventArgs(ResizeEvent)
+            {
+                OldWidth = oldWidth,
+                OldHeight = oldHeight,
+                NewWidth = Width,
+                NewHeight = Height,
+            };
+
+            RaiseEvent(eventArgs);
+
+            MoveEventArgs moveEventArgs = new MoveEventArgs(MoveEvent)
+            {
+                OldPosition = oldPosition,
+                NewPosition = Position,
+            };
+
+            RaiseEvent(moveEventArgs);
+        }
 
 		/// <summary>
 		/// Handles the DragDelta event of the ResizeTop control.
@@ -649,24 +705,52 @@ namespace WPF.MDI
 		{
             // 44: adjust for title bar height
             if (Height - e.VerticalChange < MinHeight + 44)
+			{
 				return;
+			}
 
             if (WindowState == WindowState.Minimized)
             {
                 return;
             }
 
+            double oldWidth = Width;
+            double oldHeight = Height;
+            var oldPosition = new Point(Position.X, Position.Y);
+
             double newTop = e.VerticalChange;
 
 			if (Position.Y + newTop < 0)
+			{
 				newTop = 0 - Position.Y;
+			}
 
 			Height -= newTop;
 			Position = new Point(Position.X, Position.Y + newTop);
 
 			if (sender != null)
+			{
 				Container.InvalidateSize();
-		}
+			}
+
+            ResizeEventArgs eventArgs = new ResizeEventArgs(ResizeEvent)
+            {
+                OldWidth = oldWidth,
+                OldHeight = oldHeight,
+                NewWidth = Width,
+                NewHeight = Height,
+            };
+
+            RaiseEvent(eventArgs);
+
+            MoveEventArgs moveEventArgs = new MoveEventArgs(MoveEvent)
+            {
+                OldPosition = oldPosition,
+                NewPosition = Position,
+            };
+
+            RaiseEvent(moveEventArgs);
+        }
 
 		/// <summary>
 		/// Handles the DragDelta event of the ResizeRight control.
@@ -676,18 +760,35 @@ namespace WPF.MDI
 		private void ResizeRight_DragDelta(object sender, DragDeltaEventArgs e)
 		{
 			if (Width + e.HorizontalChange < MinWidth)
+			{
 				return;
+			}
 
             if (WindowState == WindowState.Minimized)
             {
                 return;
             }
 
+            double oldWidth = Width;
+            double oldHeight = Height;
+
             Width += e.HorizontalChange;
 
 			if (sender != null)
+			{
 				Container.InvalidateSize();
-		}
+			}
+
+            ResizeEventArgs eventArgs = new ResizeEventArgs(ResizeEvent)
+            {
+                OldWidth = oldWidth,
+                OldHeight = oldHeight,
+                NewWidth = Width,
+                NewHeight = Height,
+            };
+
+            RaiseEvent(eventArgs);
+        }
 
 		/// <summary>
 		/// Handles the DragDelta event of the ResizeBottom control.
@@ -698,18 +799,35 @@ namespace WPF.MDI
 		{
             // 44: adjust for title bar height
             if (Height + e.VerticalChange < MinHeight + 44)
-				return;
-
-			if (WindowState == WindowState.Minimized)
 			{
 				return;
 			}
 
-			Height += e.VerticalChange;
+			if (WindowState == WindowState.Minimized)
+			{
+				return;
+            }
+
+            double oldWidth = Width;
+            double oldHeight = Height;
+
+            Height += e.VerticalChange;
 
 			if (sender != null)
+			{
 				Container.InvalidateSize();
-		}
+			}
+
+            ResizeEventArgs eventArgs = new ResizeEventArgs(ResizeEvent)
+            {
+                OldWidth = oldWidth,
+                OldHeight = oldHeight,
+                NewWidth = Width,
+                NewHeight = Height,
+            };
+
+            RaiseEvent(eventArgs);
+        }
 
 		#endregion
 
@@ -723,20 +841,41 @@ namespace WPF.MDI
 		private void dragThumb_DragDelta(object sender, DragDeltaEventArgs e)
 		{
 			if (WindowState == WindowState.Maximized)
+			{
 				return;
+			}
 
-			double newLeft = Position.X + e.HorizontalChange,
+            double oldWidth = Width;
+            double oldHeight = Height;
+            var oldPosition = new Point(Position.X, Position.Y);
+
+            double newLeft = Position.X + e.HorizontalChange,
 				newTop = Position.Y + e.VerticalChange;
 
 			if (newLeft < 0)
+			{
 				newLeft = 0;
+			}
+
 			if (newTop < 0)
+			{
 				newTop = 0;
+			}
 
 			Position = new Point(newLeft, newTop);
 
 			Container.InvalidateSize();
-		}
+
+            ResizeEventArgs eventArgs = new ResizeEventArgs(ResizeEvent)
+            {
+                OldWidth = oldWidth,
+                OldHeight = oldHeight,
+                NewWidth = Width,
+                NewHeight = Height,
+            };
+
+            RaiseEvent(eventArgs);
+        }
 
 		#endregion
 
@@ -750,10 +889,14 @@ namespace WPF.MDI
 		private static void PositionValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
 		{
 			if ((Point)e.NewValue == (Point)e.OldValue)
+			{
 				return;
+			}
 
-			MdiChild mdiChild = (MdiChild)sender;
+            MdiChild mdiChild = (MdiChild)sender;
 			Point newPosition = (Point)e.NewValue;
+
+            var oldPosition = new Point(mdiChild.Position.X, mdiChild.Position.Y);
 
     //        if (mdiChild._originalDimensionSet == false)
     //        {
@@ -766,7 +909,15 @@ namespace WPF.MDI
 
             Canvas.SetTop(mdiChild, newPosition.Y < 0 ? 0 : newPosition.Y);
 			Canvas.SetLeft(mdiChild, newPosition.X < 0 ? 0 : newPosition.X);
-		}
+
+            MoveEventArgs eventArgs = new MoveEventArgs(MoveEvent)
+            {
+                OldPosition = oldPosition,
+                NewPosition = newPosition,
+            };
+
+            mdiChild.RaiseEvent(eventArgs);
+        }
 
 		/// <summary>
 		/// Dependency property event once the focused value has changed.

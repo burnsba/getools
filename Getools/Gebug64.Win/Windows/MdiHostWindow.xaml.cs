@@ -67,6 +67,10 @@ namespace Gebug64.Win.Windows
                 Title = title,
             };
 
+            newChild.Resize += _vm.ResizeChildHandler;
+            newChild.Move += _vm.MoveChildHandler;
+            newChild.Closed += _vm.CloseChildHandler;
+
             Container.Children.Add(newChild);
         }
 
@@ -103,6 +107,10 @@ namespace Gebug64.Win.Windows
             }
 
             child.CloseBox = false;
+
+            child.Resize += _vm.ResizeChildHandler;
+            child.Move += _vm.MoveChildHandler;
+            child.Closed += _vm.CloseChildHandler;
 
             Container.Children.Add(child);
         }

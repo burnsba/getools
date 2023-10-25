@@ -74,6 +74,8 @@
   <ItemGroup>
     <Compile Include="Enums\MdiLayout.cs" />
     <Compile Include="Enums\ThemeType.cs" />
+    <Compile Include="Event\ResizeEventArgs.cs" />
+    <Compile Include="Event\MoveEventArgs.cs" />
     <Compile Include="Event\ClosingEventArgs.cs" />
     <Compile Include="MdiChild.cs" />
     <Compile Include="MdiContainer.cs" />
