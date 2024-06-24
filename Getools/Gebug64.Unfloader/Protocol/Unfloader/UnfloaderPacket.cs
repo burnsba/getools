@@ -72,6 +72,13 @@ namespace Gebug64.Unfloader.Protocol.Unfloader
             int readOffset = 0;
             int packetSize = 0;
 
+            if (data.Count < 4)
+            {
+                result.ParseStatus = PacketParseStatus.Error;
+                result.ErrorReason = PacketParseReason.DataTooShort;
+                return result;
+            }
+
             var dataType = (UnfloaderMessageType)(int)data[readOffset++];
 
             packetSize |= data[readOffset++] << 16;

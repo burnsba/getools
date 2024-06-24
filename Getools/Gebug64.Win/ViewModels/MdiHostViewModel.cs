@@ -12,7 +12,7 @@ using WPF.MDI;
 namespace Gebug64.Win.ViewModels
 {
     /// <summary>
-    /// Maine host conatiner viewmodel.
+    /// Main host conatiner viewmodel.
     /// </summary>
     public class MdiHostViewModel : WindowViewModelBase
     {
