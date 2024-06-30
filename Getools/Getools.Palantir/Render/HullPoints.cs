@@ -4,14 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Getools.Lib.Game;
+using Getools.Palantir.Enums;
 
-namespace Getools.Palantir
+namespace Getools.Palantir.Render
 {
     /// <summary>
     /// Helper class to collect information about a 2d (convex) polygon.
     /// Used to model stan tiles and bg boundary.
     /// </summary>
-    internal class CollectionHullSvgPoints
+    public class HullPoints
     {
         /// <summary>
         /// Gets or sets the order index of the item.
@@ -47,5 +48,10 @@ namespace Getools.Palantir
         /// Stage scaled coordinate value.
         /// </summary>
         public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
+
+        /// <summary>
+        /// Type of object polygon describes.
+        /// </summary>
+        public PolygonSource Source { get; set; } = PolygonSource.DefaultUnknown;
     }
 }

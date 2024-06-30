@@ -8,7 +8,7 @@ namespace Getools.Palantir
     /// <summary>
     /// Helper class to manage data as it's being processed.
     /// </summary>
-    internal class ProcessedStageDataContext
+    public class ProcessedStageData
     {
         /// <summary>
         /// Gets or sets final output image format.
@@ -40,12 +40,12 @@ namespace Getools.Palantir
         /// <summary>
         /// Gets or sets the collection of room polygons.
         /// </summary>
-        public List<CollectionHullSvgPoints> RoomPolygons { get; set; } = new List<CollectionHullSvgPoints>();
+        public List<HullPoints> RoomPolygons { get; set; } = new List<HullPoints>();
 
         /// <summary>
         /// Gets or sets the collection of stan polygons.
         /// </summary>
-        public List<CollectionHullSvgPoints> TilePolygons { get; set; } = new List<CollectionHullSvgPoints>();
+        public List<HullPoints> TilePolygons { get; set; } = new List<HullPoints>();
 
         /// <summary>
         /// Gets or sets the collection of pad items to be rendered.

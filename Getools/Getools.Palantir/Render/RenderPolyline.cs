@@ -10,7 +10,7 @@ namespace Getools.Palantir.Render
     /// <summary>
     /// General container for rendering a sequence of lines, such as patrol path.
     /// </summary>
-    internal class RenderPolyline
+    public class RenderPolyline
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RenderPolyline"/> class.

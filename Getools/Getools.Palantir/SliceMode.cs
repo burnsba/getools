@@ -9,7 +9,7 @@ namespace Getools.Palantir
     /// <summary>
     /// How the stage data should be filtered.
     /// </summary>
-    internal enum SliceMode
+    public enum SliceMode
     {
         /// <summary>
         /// Take only objects that intersect at this Y value.

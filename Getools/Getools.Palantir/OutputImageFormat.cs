@@ -20,5 +20,10 @@ namespace Getools.Palantir
         /// SVG format (uncompressed).
         /// </summary>
         Svg,
+
+        /// <summary>
+        /// Output is to be consumed by another part of the application.
+        /// </summary>
+        CsharpRaw,
     }
 }

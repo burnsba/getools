@@ -83,7 +83,7 @@ namespace Getools.Palantir
 
         private const double MaxPixelSizeError = 10000000;
 
-        private readonly ProcessedStageDataContext _context;
+        private readonly ProcessedStageData _context;
         private readonly Stage _stage;
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Getools.Palantir
         /// </summary>
         /// <param name="context">Current stage data context.</param>
         /// <param name="stage">Stage data.</param>
-        public SvgBuilder(ProcessedStageDataContext context, Stage stage)
+        public SvgBuilder(ProcessedStageData context, Stage stage)
         {
             _context = context;
             _stage = stage;
@@ -295,7 +295,7 @@ namespace Getools.Palantir
             }
         }
 
-        private void AddBgGroupToSvgDoc(SvgDocument svg, List<CollectionHullSvgPoints> roomPolygons)
+        private void AddBgGroupToSvgDoc(SvgDocument svg, List<HullPoints> roomPolygons)
         {
             var group2 = svg.AddGroup();
             group2.Id = SvgBgLayerId;
@@ -369,7 +369,7 @@ namespace Getools.Palantir
             }
         }
 
-        private void AddStanGroupToSvgDoc(SvgDocument svg, List<CollectionHullSvgPoints> tilePolygons)
+        private void AddStanGroupToSvgDoc(SvgDocument svg, List<HullPoints> tilePolygons)
         {
             var group1 = svg.AddGroup();
             group1.Id = SvgStanLayerId;

@@ -10,7 +10,7 @@ namespace Getools.Palantir.Render
     /// <summary>
     /// General container for rendering lines from stage data.
     /// </summary>
-    internal class RenderLine
+    public class RenderLine
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RenderLine"/> class.
@@ -38,7 +38,7 @@ namespace Getools.Palantir.Render
         public int WaypointIndex { get; set; }
 
         /// <summary>
-        /// If this line is a waypoint, this is the path table index from the seutp file.
+        /// If this line is a waypoint, this is the path table index from the setup file.
         /// </summary>
         public int TableIndex { get; set; }
 

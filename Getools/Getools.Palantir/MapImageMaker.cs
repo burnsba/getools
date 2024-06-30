@@ -62,7 +62,7 @@ namespace Getools.Palantir
         /// <returns>Svg.</returns>
         public SvgDocument BoundingZToImageSvg(double zmin, double zmax)
         {
-            var context = new ProcessedStageDataContext()
+            var context = new ProcessedStageData()
             {
                 OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.BoundingBox,
@@ -85,7 +85,7 @@ namespace Getools.Palantir
         /// <returns>Svg.</returns>
         public SvgDocument SliceZToImageSvg(double z)
         {
-            var context = new ProcessedStageDataContext()
+            var context = new ProcessedStageData()
             {
                 OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.Slice,
@@ -106,7 +106,7 @@ namespace Getools.Palantir
         /// <returns>Svg.</returns>
         public SvgDocument FullImageSvg()
         {
-            var context = new ProcessedStageDataContext()
+            var context = new ProcessedStageData()
             {
                 OutputFormat = OutputImageFormat.Svg,
                 Mode = SliceMode.Unbound,
@@ -123,10 +123,29 @@ namespace Getools.Palantir
         }
 
         /// <summary>
+        /// Process stage data into csharp types.
+        /// </summary>
+        /// <returns>Unbound stage data.</returns>
+        public ProcessedStageData GetFullRawStage()
+        {
+            var context = new ProcessedStageData()
+            {
+                OutputFormat = OutputImageFormat.CsharpRaw,
+                Mode = SliceMode.Unbound,
+                Zmin = double.MinValue,
+                Zmax = double.MaxValue,
+            };
+
+            SliceCommon(context);
+
+            return context;
+        }
+
+        /// <summary>
         /// Entry point to begin processing stage data.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceCommon(ProcessedStageDataContext context)
+        private void SliceCommon(ProcessedStageData context)
         {
             if (OutputWidth < 1)
             {
@@ -163,10 +182,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessBg(ProcessedStageDataContext context)
+        private void SliceProcessBg(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Bg))
             {
@@ -294,11 +313,12 @@ namespace Getools.Palantir
                 // to an existing point.
                 svgScaledPoints.Add(svgScaledPoints[0].Clone()); // created from scaled points
 
-                var collection = new CollectionHullSvgPoints()
+                var collection = new HullPoints()
                 {
                     OrderIndex = roomData.OrderIndex,
                     Room = roomData.OrderIndex,
                     Points = svgScaledPoints,
+                    Source = Enums.PolygonSource.Bg,
                 };
 
                 if (roomNativeMin.X < double.MaxValue)
@@ -344,10 +364,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessStan(ProcessedStageDataContext context)
+        private void SliceProcessStan(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Stan))
             {
@@ -459,11 +479,12 @@ namespace Getools.Palantir
                 // to an existing point.
                 svgScaledPoints.Add(svgScaledPoints[0].Clone()); // created from scaled points
 
-                var collection = new CollectionHullSvgPoints()
+                var collection = new HullPoints()
                 {
                     OrderIndex = tile.OrderIndex,
                     Room = tile.Room,
                     Points = svgScaledPoints,
+                    Source = Enums.PolygonSource.Stan,
                 };
 
                 if (tileNativeMin.X < double.MaxValue)
@@ -509,10 +530,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessSetup(ProcessedStageDataContext context)
+        private void SliceProcessSetup(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup))
             {
@@ -766,10 +787,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessSetupPad(ProcessedStageDataContext context)
+        private void SliceProcessSetupPad(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionPadList))
             {
@@ -844,10 +865,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessSetupPad3d(ProcessedStageDataContext context)
+        private void SliceProcessSetupPad3d(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionPad3dList))
             {
@@ -924,10 +945,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessSetupIntro(ProcessedStageDataContext context)
+        private void SliceProcessSetupIntro(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionPadList))
             {
@@ -1014,10 +1035,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessPathWaypoints(ProcessedStageDataContext context)
+        private void SliceProcessPathWaypoints(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionPathTables))
             {
@@ -1147,10 +1168,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SliceProcessPatrolPaths(ProcessedStageDataContext context)
+        private void SliceProcessPatrolPaths(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionPathTables))
             {
@@ -1234,10 +1255,10 @@ namespace Getools.Palantir
         }
 
         /// <summary>
-        /// Helper method called from <see cref="SliceCommon(ProcessedStageDataContext)"/>.
+        /// Helper method called from <see cref="SliceCommon(ProcessedStageData)"/>.
         /// </summary>
         /// <param name="context">Current processing context.</param>
-        private void SetupProcessAi(ProcessedStageDataContext context)
+        private void SetupProcessAi(ProcessedStageData context)
         {
             if (object.ReferenceEquals(null, _stage.Setup!.SectionAiLists))
             {
