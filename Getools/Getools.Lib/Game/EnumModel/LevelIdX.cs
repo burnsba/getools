@@ -15,6 +15,13 @@ namespace Getools.Lib.Game.EnumModel
     /// </remarks>
     public record LevelIdX : EnumModelBase
     {
+        public static LevelIdX DefaultUnkown { get; } = new LevelIdX()
+        {
+            Id = 0,
+            DisplayOrder = 0,
+            Name = string.Empty,
+        };
+
         public static LevelIdX Dam { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Dam,

@@ -49,7 +49,7 @@
         <Grid Grid.Row="0">
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150" MaxWidth="400"></ColumnDefinition>
+                <ColumnDefinition Width="300" MaxWidth="400"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
@@ -73,7 +73,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Text="{Binding SetupBinFolder}"></TextBox>
+                            <TextBox Grid.Column="0" Text="{Binding SetupBinFolder}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
                             <Button Grid.Column="2" Style="{DynamicResource RoundButton}" Command="{Binding SetSetupBinFolderCommand}">...</Button>
                         </Grid>
@@ -87,7 +87,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Text="{Binding StanBinFolder}"></TextBox>
+                            <TextBox Grid.Column="0" Text="{Binding StanBinFolder}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
                             <Button Grid.Column="2" Style="{DynamicResource RoundButton}" Command="{Binding SetStanBinFolderCommand}">...</Button>
                         </Grid>
@@ -101,7 +101,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Text="{Binding BgBinFolder}"></TextBox>
+                            <TextBox Grid.Column="0" Text="{Binding BgBinFolder}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
                             <Button Grid.Column="2" Style="{DynamicResource RoundButton}" Command="{Binding SetBgBinFolderCommand}">...</Button>
                         </Grid>
@@ -111,9 +111,12 @@
                         <RadioButton>Load map on stage load</RadioButton>
                         <RadioButton>Manual</RadioButton>
 
-                        <ComboBox>
-                            <ComboBoxItem>Dam</ComboBoxItem>
-                            <ComboBoxItem>Facility</ComboBoxItem>
+                        <ComboBox Style="{DynamicResource MonoCombo}" ItemsSource="{Binding Path=AvailableStages}" SelectedItem="{Binding Path=SelectedStage}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock  Text="{Binding Name}"></TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
                         </ComboBox>
 
                         <Separator Style="{StaticResource LeftLine}"/>

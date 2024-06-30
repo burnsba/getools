@@ -324,6 +324,12 @@ namespace Gebug64.Win
             File.WriteAllText(AppConfigSettings.DefaultFilename, json);
         }
 
+        /// <summary>
+        /// Helper method to set a property on an object from a directory picker dialog.
+        /// </summary>
+        /// <param name="instance">Object containing property.</param>
+        /// <param name="propertyName">Name of property to set. Also reads this for the starting value.</param>
+        /// <param name="getDefaultValue">If property isn't set, method to get default value.</param>
         public void SetDirectoryCommandHandler(object instance, string propertyName, Func<string> getDefaultValue)
         {
             // TODO: Use the new folder open dialog in .net 8.
@@ -349,7 +355,10 @@ namespace Gebug64.Win
 
             if (string.IsNullOrEmpty(startDir) || !System.IO.Directory.Exists(startDir))
             {
-                startDir = getDefaultValue();
+                if (getDefaultValue != null)
+                {
+                    startDir = getDefaultValue();
+                }
             }
 
             dialog.InitialDirectory = startDir;

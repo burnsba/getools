@@ -50,51 +50,6 @@ namespace Gebug64.Win.Controls
             MainContent.Items.Refresh();
         }
 
-        // https://stackoverflow.com/a/41985834/1462295
-        public static T? FindParentOfType<T>(DependencyObject? child) where T : DependencyObject
-        {
-            if (object.ReferenceEquals(null, child))
-            {
-                return null;
-            }
-
-            DependencyObject parentDepObj = child;
-            do
-            {
-                parentDepObj = VisualTreeHelper.GetParent(parentDepObj);
-                T? parent = parentDepObj as T;
-                if (parent != null)
-                {
-                    return parent;
-                }
-            }
-            while (parentDepObj != null);
-
-            return null;
-        }
-
-        public static T? FindParentByRef<T>(DependencyObject? child, T obj) where T : DependencyObject
-        {
-            if (object.ReferenceEquals(null, child))
-            {
-                return null;
-            }
-
-            DependencyObject parentDepObj = child;
-            do
-            {
-                parentDepObj = VisualTreeHelper.GetParent(parentDepObj);
-                T? parent = parentDepObj as T;
-                if (parent != null && object.ReferenceEquals(parent, obj))
-                {
-                    return parent;
-                }
-            }
-            while (parentDepObj != null);
-
-            return null;
-        }
-
         private void scrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (!MainScrollViewer.IsMouseOver)
@@ -106,8 +61,8 @@ namespace Gebug64.Win.Controls
             // consumes the scrollviewer edges including the scrollbars. When a user clicks on the
             // scrollbars, instead of scrolling this begins the pan logic.
             // Check if the mouse event is contained within a scrollbar, and if so, ignore it.
-            var a = FindParentOfType<ScrollBar>((DependencyObject)e.OriginalSource);
-            var b = FindParentByRef((DependencyObject)a, MainScrollViewer);
+            var a = Wpf.Utility.FindParentOfType<ScrollBar>((DependencyObject)e.OriginalSource);
+            var b = Wpf.Utility.FindParentByRef(a, MainScrollViewer);
             if (!object.ReferenceEquals(null, b))
             {
                 return;

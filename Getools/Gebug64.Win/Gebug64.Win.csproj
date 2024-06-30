@@ -34,6 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Gebug64.Unfloader\Gebug64.Unfloader.csproj" />
     <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
+    <ProjectReference Include="..\Getools.Palantir\Getools.Palantir.csproj" />
     <ProjectReference Include="..\WPF.MDI\WPF.MDI.csproj" />
   </ItemGroup>
 

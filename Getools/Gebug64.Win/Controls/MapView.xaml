@@ -4,10 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Gebug64.Win.Controls"
-             xmlns:vm="clr-namespace:Gebug64.Win.ViewModels.Map"
+             xmlns:vm="clr-namespace:Gebug64.Win.ViewModels"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-             d:DataContext="{d:DesignInstance vm:MapViewModel}"
+             d:DataContext="{d:DesignInstance vm:MapWindowViewModel}"
              PreviewMouseLeftButtonDown="scrollViewer_MouseLeftButtonDown"
              PreviewMouseMove="scrollViewer_PreviewMouseMove"
              PreviewMouseLeftButtonUp="scrollViewer_PreviewMouseLeftButtonUp"
@@ -30,8 +30,8 @@
 
             <ItemsControl
                 x:Name="MainContent"
-                Width="56899"
-                Height="80726"
+                Width="{Binding MapScaledWidth}"
+                Height="{Binding MapScaledHeight}"
                 ItemsSource="{Binding Layers}">
                 
 
