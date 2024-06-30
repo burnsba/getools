@@ -14,20 +14,20 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Gebug64.Win.ViewModels;
 
-namespace Gebug64.Win.Controls
+namespace Gebug64.Win.Windows.Mdi
 {
     /// <summary>
-    /// Interaction logic for MainControl.xaml
+    /// MDI Child window for Map.
     /// </summary>
-    public partial class MainControl : UserControl
+    public partial class MapControl : UserControl
     {
-        private readonly MainWindowViewModel _vm;
+        private readonly MapWindowViewModel _vm;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MainControl"/> class.
+        /// Initializes a new instance of the <see cref="MapControl"/> class.
         /// </summary>
-        /// <param name="vm">Main app viewmodel.</param>
-        public MainControl(MainWindowViewModel vm)
+        /// <param name="vm">Reference to main viewmodel.</param>
+        public MapControl(MapWindowViewModel vm)
         {
             InitializeComponent();
 

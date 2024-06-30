@@ -32,4 +32,12 @@
         <Setter Property="FontFamily" Value="pack://application:,,,/Font/#Ac437 IBM EGA 9x14"/>
     </Style>
 
+    <Style TargetType="CheckBox">
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style TargetType="RadioButton">
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
 </ResourceDictionary>

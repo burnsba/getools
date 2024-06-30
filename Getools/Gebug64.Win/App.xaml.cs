@@ -19,6 +19,7 @@ using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.CategoryTabs;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows;
+using Gebug64.Win.Windows.Mdi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -136,13 +137,18 @@ namespace Gebug64.Win
             services.AddTransient<Everdrive>();
 
             services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<MapWindowViewModel>();
 
             // MdiChild windows
             services.AddTransient<MainControl>();
             services.AddTransient<LogControl>();
             services.AddTransient<QueryTasksControl>();
+            services.AddTransient<MapControl>();
+
+            // Parent MDI object
             services.AddSingleton<MdiHostViewModel>();
 
+            // Parent MDI window
             services.AddTransient<MdiHostWindow>();
 
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();

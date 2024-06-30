@@ -37,6 +37,11 @@ namespace Gebug64.Win.ViewModels.Config
         public RecentPathSectionViewModel RecentPath { get; set; }
 
         /// <summary>
+        /// Map settings.
+        /// </summary>
+        public MapSettingsViewModel Map { get; set; }
+
+        /// <summary>
         /// Path to save framebuffer grabs to.
         /// </summary>
         public string FramebufferGrabSavePath { get; set; }

@@ -14,36 +14,26 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Gebug64.Win.ViewModels;
 
-namespace Gebug64.Win.Controls
+namespace Gebug64.Win.Windows.Mdi
 {
     /// <summary>
-    /// Interaction logic for LogControl.xaml
+    /// MDI Child window for query tasks.
     /// </summary>
-    public partial class LogControl : UserControl
+    public partial class QueryTasksControl : UserControl
     {
         private readonly MainWindowViewModel _vm;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LogControl"/> class.
+        /// Initializes a new instance of the <see cref="QueryTasksControl"/> class.
         /// </summary>
         /// <param name="vm">Reference to main viewmodel.</param>
-        public LogControl(MainWindowViewModel vm)
+        public QueryTasksControl(MainWindowViewModel vm)
         {
             InitializeComponent();
 
             _vm = vm;
 
             DataContext = _vm;
-
-            _vm.LogMessages.CollectionChanged += (a, b) =>
-            {
-                if (VisualTreeHelper.GetChildrenCount(LogBox) > 0)
-                {
-                    Border border = (Border)VisualTreeHelper.GetChild(LogBox, 0);
-                    ScrollViewer scrollViewer = (ScrollViewer)VisualTreeHelper.GetChild(border, 0);
-                    scrollViewer.ScrollToBottom();
-                }
-            };
         }
     }
 }

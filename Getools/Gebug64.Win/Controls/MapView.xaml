@@ -1,0 +1,69 @@
+﻿<UserControl x:Class="Gebug64.Win.Controls.MapView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Gebug64.Win.Controls"
+             xmlns:vm="clr-namespace:Gebug64.Win.ViewModels.Map"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             d:DataContext="{d:DesignInstance vm:MapViewModel}"
+             PreviewMouseLeftButtonDown="scrollViewer_MouseLeftButtonDown"
+             PreviewMouseMove="scrollViewer_PreviewMouseMove"
+             PreviewMouseLeftButtonUp="scrollViewer_PreviewMouseLeftButtonUp"
+             PreviewMouseWheel="UserControl_PreviewMouseWheel"
+             DataContext="{Binding}"
+             >
+    <Grid>
+        <ScrollViewer
+            x:Name="MainScrollViewer"
+            HorizontalScrollBarVisibility="Visible"
+            VerticalScrollBarVisibility="Visible"
+            >
+            <!--<Canvas
+                x:Name="MainContent"
+                Width="1000"
+                Height="1000"
+                >
+                
+            </Canvas>-->
+
+            <ItemsControl
+                x:Name="MainContent"
+                Width="56899"
+                Height="80726"
+                ItemsSource="{Binding Layers}">
+                
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ItemsControl ItemsSource="{Binding Entities}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Polygon
+                                        Stroke="{Binding Path=DataContext.Stroke, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        StrokeThickness="{Binding Path=DataContext.StrokeThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Fill="{Binding Path=DataContext.Fill, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Points="{Binding Points}"
+                                        Canvas.Left="{Binding UiX}"
+                                        Canvas.Top="{Binding UiY}"
+                                        >
+                                    </Polygon>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
+        </ScrollViewer>
+    </Grid>
+</UserControl>

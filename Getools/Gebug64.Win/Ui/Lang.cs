@@ -22,6 +22,11 @@ namespace Gebug64.Win.Ui
         public const string Window_MessageCenterTitle = "Message Center";
 
         /// <summary>
+        /// MDI Child "map" title.
+        /// </summary>
+        public const string Window_MapTitle = "Map";
+
+        /// <summary>
         /// MDI Child "log" window title.
         /// </summary>
         public const string Window_LogTitle = "Log";

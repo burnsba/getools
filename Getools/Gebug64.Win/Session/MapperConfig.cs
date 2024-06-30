@@ -24,11 +24,13 @@ namespace Gebug64.Win.Session
             mce.CreateMap<DeviceSectionSettings, DeviceSectionViewModel>();
             mce.CreateMap<ConnectionSectionSettings, ConnectionSectionViewModel>();
             mce.CreateMap<AppConfigSettings, AppConfigViewModel>();
+            mce.CreateMap<MapSettings, MapSettingsViewModel>();
 
             mce.CreateMap<RecentPathSectionViewModel, RecentPathSection>();
             mce.CreateMap<DeviceSectionViewModel, DeviceSectionSettings>();
             mce.CreateMap<ConnectionSectionViewModel, ConnectionSectionSettings>();
             mce.CreateMap<AppConfigViewModel, AppConfigSettings>();
+            mce.CreateMap<MapSettingsViewModel, MapSettings>();
         }
     }
 }

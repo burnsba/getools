@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml;
 using AutoMapper;
@@ -16,6 +17,7 @@ using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows;
 using Microsoft.Extensions.Configuration;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -308,12 +310,6 @@ namespace Gebug64.Win
         /// </summary>
         public void SaveAppSettings()
         {
-            /*
-            var translateService = (TranslateService)ServiceProvider.GetService(typeof(TranslateService))!;
-            var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
-
-            var settings = translateService.Translate<AppConfigViewModel, AppConfigSettings>(appConfig);
-            */
             var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
 
             var mapper = (IMapper)ServiceProvider.GetService(typeof(IMapper))!;
@@ -326,6 +322,54 @@ namespace Gebug64.Win
 
             string json = JsonConvert.SerializeObject(container, Newtonsoft.Json.Formatting.Indented);
             File.WriteAllText(AppConfigSettings.DefaultFilename, json);
+        }
+
+        public void SetDirectoryCommandHandler(object instance, string propertyName, Func<string> getDefaultValue)
+        {
+            // TODO: Use the new folder open dialog in .net 8.
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
+
+            if (object.ReferenceEquals(null, instance))
+            {
+                return;
+            }
+
+            var pi = instance.GetType().GetProperty(propertyName);
+            if (object.ReferenceEquals(null, pi))
+            {
+                return;
+            }
+
+            string startDir = (string?)pi.GetValue(instance) ?? string.Empty;
+
+            if (string.IsNullOrEmpty(startDir) || !System.IO.Directory.Exists(startDir))
+            {
+                startDir = getDefaultValue();
+            }
+
+            dialog.InitialDirectory = startDir;
+            dialog.IsFolderPicker = true;
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok && !string.IsNullOrEmpty(dialog.FileName))
+            {
+                string dir = dialog.FileName!;
+
+                if (!System.IO.Directory.Exists(dir) && System.IO.File.Exists(dir))
+                {
+                    // ignore possible null
+                    dir = System.IO.Path.GetDirectoryName(dir)!;
+                }
+
+                if (System.IO.Directory.Exists(dir))
+                {
+                    pi.SetValue(instance, dir);
+                }
+            }
         }
     }
 }

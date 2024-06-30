@@ -41,7 +41,12 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
             : base(_tabName, logger, connectionServiceProviderResolver)
         {
             GetFrameBufferCommand = new CommandHandler(GetFrameBufferCommandHandler, () => CanSendGetFrameBuffer);
-            SetSaveFrameBufferPathCommand = new CommandHandler(SetSaveFrameBufferPathCommandHandler, () => CanSetSaveFrameBufferPath);
+            SetSaveFrameBufferPathCommand = new CommandHandler(
+                () => Workspace.Instance.SetDirectoryCommandHandler(
+                    this,
+                    nameof(FramebufferGrabSavePath),
+                    () => Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)),
+                () => CanSetSaveFrameBufferPath);
             ViSetZRangeCommand = new CommandHandler(ViSetZRangeCommandHandler, () => CanViSetZRange);
             ViSetViewSizeCommand = new CommandHandler(ViSetViewSizeCommandHandler, () => CanViSetViewSize);
             ViSetViewPositionCommand = new CommandHandler(ViSetViewPositionCommandHandler, () => CanViSetViewPosition);

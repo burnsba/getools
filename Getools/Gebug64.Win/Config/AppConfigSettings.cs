@@ -48,6 +48,11 @@ namespace Gebug64.Win.Config
                 RecentPath = new();
             }
 
+            if (Map == null)
+            {
+                Map = new();
+            }
+
             if (string.IsNullOrEmpty(FramebufferGrabSavePath))
             {
                 FramebufferGrabSavePath = _currentLocation;
@@ -76,6 +81,11 @@ namespace Gebug64.Win.Config
                 RecentPath = new();
             }
 
+            if (Map == null)
+            {
+                Map = new();
+            }
+
             FramebufferGrabSavePath = _currentLocation;
         }
 
@@ -98,6 +108,11 @@ namespace Gebug64.Win.Config
         /// Path to save framebuffer grabs to.
         /// </summary>
         public string FramebufferGrabSavePath { get; set; }
+
+        /// <summary>
+        /// Map settings.
+        /// </summary>
+        public MapSettings Map { get; set; }
 
         /// <summary>
         /// Gets the default (empty) settings.

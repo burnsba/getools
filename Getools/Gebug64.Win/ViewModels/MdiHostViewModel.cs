@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.Windows.Mdi;
 using WPF.MDI;
 
 namespace Gebug64.Win.ViewModels
@@ -79,6 +80,11 @@ namespace Gebug64.Win.ViewModels
             Action<object?> dddd = x => InvokeFocusCallback((MenuItemViewModel)x!);
 
             var mivm = new MenuItemViewModel() { Header = Gebug64.Win.Ui.Lang.Window_MessageCenterTitle, Value = typeof(MainControl) };
+            mivm.Command = new CommandHandler(dddd, () => true);
+
+            MenuShowWindow.Add(mivm);
+
+            mivm = new MenuItemViewModel() { Header = Gebug64.Win.Ui.Lang.Window_MapTitle, Value = typeof(MapControl) };
             mivm.Command = new CommandHandler(dddd, () => true);
 
             MenuShowWindow.Add(mivm);
