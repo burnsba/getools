@@ -1,5 +1,6 @@
 ﻿using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Setup.Ai;
+using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.Enums;
 using Getools.Palantir.Render;
 
@@ -50,12 +51,12 @@ namespace Getools.Palantir
         /// <summary>
         /// Gets or sets the collection of pad items to be rendered.
         /// </summary>
-        public List<RenderPosition> PresetPolygons { get; set; } = new List<RenderPosition>();
+        public List<PointPosition> PresetPolygons { get; set; } = new List<PointPosition>();
 
         /// <summary>
         /// Gets or sets the collection of setup intro items to be rendered.
         /// </summary>
-        public List<RenderPosition> IntroPolygons { get; set; } = new List<RenderPosition>();
+        public List<PointPosition> IntroPolygons { get; set; } = new List<PointPosition>();
 
         /// <summary>
         /// Gets or sets the collection of setup path waypoints to be rendered.
@@ -70,7 +71,7 @@ namespace Getools.Palantir
         /// <summary>
         /// Gets or sets the collection of "everything else" setup data to be rendered (props, guards, doors, etc).
         /// </summary>
-        public Dictionary<PropDef, List<PropPosition>> SetupPolygonsCollection { get; set; } = new Dictionary<PropDef, List<PropPosition>>();
+        public Dictionary<PropDef, List<PropPointPosition>> SetupPolygonsCollection { get; set; } = new Dictionary<PropDef, List<PropPointPosition>>();
 
         /// <summary>
         /// Gets or sets the overall min scaled value seen so far.

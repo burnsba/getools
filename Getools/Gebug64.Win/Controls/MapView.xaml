@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Gebug64.Win.Controls"
              xmlns:vm="clr-namespace:Gebug64.Win.ViewModels"
+             xmlns:vmmo="clr-namespace:Gebug64.Win.ViewModels.Map"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance vm:MapWindowViewModel}"
@@ -13,6 +14,8 @@
              PreviewMouseLeftButtonUp="scrollViewer_PreviewMouseLeftButtonUp"
              PreviewMouseWheel="UserControl_PreviewMouseWheel"
              DataContext="{Binding}"
+             Name="MapWindowZ"
+             MouseMove="UserControl_MouseMove"
              >
     <Grid>
         <ScrollViewer
@@ -20,20 +23,14 @@
             HorizontalScrollBarVisibility="Visible"
             VerticalScrollBarVisibility="Visible"
             >
-            <!--<Canvas
-                x:Name="MainContent"
-                Width="1000"
-                Height="1000"
-                >
-                
-            </Canvas>-->
 
             <ItemsControl
                 x:Name="MainContent"
+                Grid.Row="1"
+                Grid.Column="1"
                 Width="{Binding MapScaledWidth}"
                 Height="{Binding MapScaledHeight}"
                 ItemsSource="{Binding Layers}">
-                
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -43,9 +40,17 @@
                                     <Canvas />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="{x:Type ContentPresenter}">
+                                    <!-- Here would the binding to some properties that take care of placement -->
+                                    <Setter Property="Canvas.Left" Value="{Binding UiX}" />
+                                    <Setter Property="Canvas.Top" Value="{Binding UiY}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
                             
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                            <ItemsControl.Resources>
+                                <DataTemplate DataType="{x:Type vmmo:MapObjectPoly}">
                                     <Polygon
                                         Stroke="{Binding Path=DataContext.Stroke, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                         StrokeThickness="{Binding Path=DataContext.StrokeThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -53,17 +58,30 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Points="{Binding Points}"
-                                        Canvas.Left="{Binding UiX}"
-                                        Canvas.Top="{Binding UiY}"
                                         >
                                     </Polygon>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vmmo:MapObjectRect}">
+                                    <Rectangle
+                                        Stroke="{Binding Path=DataContext.Stroke, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        StrokeThickness="{Binding Path=DataContext.StrokeThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Fill="{Binding Path=DataContext.Fill, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Width="{Binding UiWidth}"
+                                        Height="{Binding UiHeight}"
+                                        RenderTransformOrigin="0.5,0.5"
+                                        >
+                                        <Rectangle.RenderTransform>
+                                            <RotateTransform  Angle="{Binding RotationDegree}" />
+                                        </Rectangle.RenderTransform>
+                                    </Rectangle>
+                                </DataTemplate>
+                            </ItemsControl.Resources>
                         </ItemsControl>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            
+        
         </ScrollViewer>
+        <TextBlock x:Name="MousePos" Background="Transparent" IsHitTestVisible="False">0,0</TextBlock>
     </Grid>
 </UserControl>

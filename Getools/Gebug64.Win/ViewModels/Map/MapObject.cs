@@ -9,24 +9,64 @@ namespace Gebug64.Win.ViewModels.Map
 {
     public abstract class MapObject : ViewModelBase
     {
-        public double UiX { get; private set; }
-        public double UiY { get; private set; }
-        public double UiWidth { get; set; }
-        public double UiHeight { get; set; }
+        private double _uix;
+        private double _uiy;
+        private double _uiWidth;
+        private double _uiHeight;
+
+        public double UiX
+        {
+            get => _uix;
+            set
+            {
+                if (_uix != value)
+                {
+                    _uix = value;
+                    OnPropertyChanged(nameof(UiX));
+                }
+            }
+        }
+
+        public double UiY
+        {
+            get => _uiy;
+            set
+            {
+                if (_uiy != value)
+                {
+                    _uiy = value;
+                    OnPropertyChanged(nameof(UiY));
+                }
+            }
+        }
+
+        public double UiWidth
+        {
+            get => _uiWidth;
+            set
+            {
+                if (_uiWidth != value)
+                {
+                    _uiWidth = value;
+                    OnPropertyChanged(nameof(UiWidth));
+                }
+            }
+        }
+
+        public double UiHeight
+        {
+            get => _uiHeight;
+            set
+            {
+                if (_uiHeight != value)
+                {
+                    _uiHeight = value;
+                    OnPropertyChanged(nameof(UiHeight));
+                }
+            }
+        }
 
         public bool IsVisible { get; set; }
-
-        public void SetUiX(double d)
-        {
-            UiX = d;
-            OnPropertyChanged(nameof(UiX));
-        }
-
-        public void SetUiY(double d)
-        {
-            UiY = d;
-            OnPropertyChanged(nameof(UiY));
-        }
 
         public MapObject()
         {
@@ -34,8 +74,8 @@ namespace Gebug64.Win.ViewModels.Map
 
         public MapObject(double x, double y)
         {
-            UiX = x;
-            UiY = y;
+            _uix = x;
+            _uiy = y;
         }
     }
 }

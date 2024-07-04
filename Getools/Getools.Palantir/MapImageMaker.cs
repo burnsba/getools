@@ -17,6 +17,7 @@ using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Setup.Ai;
 using Getools.Lib.Game.Asset.SetupObject;
 using Getools.Lib.Game.Asset.Stan;
+using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.Enums;
 using Getools.Palantir.Render;
 using Microsoft.Win32.SafeHandles;
@@ -708,7 +709,7 @@ namespace Getools.Palantir
                 }
 
                 // Points are scaled later, depending on type
-                var propPosition = new PropPosition()
+                var propPosition = new PropPointPosition()
                 {
                     OrderIndex = setupObjectIndex,
                     PadId = usePresetId,
@@ -772,7 +773,7 @@ namespace Getools.Palantir
                 }
                 else
                 {
-                    var polygonCollection = new List<PropPosition>();
+                    var polygonCollection = new List<PropPointPosition>();
                     polygonCollection.Add(propPosition);
                     context.SetupPolygonsCollection.Add(setupObject.Type, polygonCollection);
                 }
@@ -850,7 +851,7 @@ namespace Getools.Palantir
                     throw new NullReferenceException();
                 }
 
-                context.PresetPolygons.Add(new RenderPosition()
+                context.PresetPolygons.Add(new PointPosition()
                 {
                     OrderIndex = index,
                     Room = roomId,
@@ -929,7 +930,7 @@ namespace Getools.Palantir
                     throw new NullReferenceException();
                 }
 
-                context.PresetPolygons.Add(new RenderPosition()
+                context.PresetPolygons.Add(new PointPosition()
                 {
                     OrderIndex = index,
                     PadId = index + 10000, // back to bound3d id convention
@@ -1019,7 +1020,7 @@ namespace Getools.Palantir
                     continue;
                 }
 
-                var hullpoints = new RenderPosition()
+                var hullpoints = new PointPosition()
                 {
                     OrderIndex = index,
                     Room = roomId,

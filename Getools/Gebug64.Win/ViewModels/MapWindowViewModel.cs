@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -16,15 +17,22 @@ using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.ViewModels.Map;
 using Gebug64.Win.Windows.Mdi;
+using Gebug64.Win.Wpf;
 using Getools.Lib.Converters;
+using Getools.Lib.Extensions;
+using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Bg;
 using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Stan;
+using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.EnumModel;
+using Getools.Lib.Game.Enums;
 using Getools.Palantir;
+using Getools.Palantir.Render;
 using Getools.Utility.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using SvgLib;
 
 namespace Gebug64.Win.ViewModels
 {
@@ -42,6 +50,9 @@ namespace Gebug64.Win.ViewModels
         private double _mapScaledHeight = 0;
 
         private LevelIdX _selectedStage = LevelIdX.DefaultUnkown;
+
+        private object _lock = new object();
+        private bool _isLoading = false;
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -133,10 +144,18 @@ namespace Gebug64.Win.ViewModels
                     return;
                 }
 
+                lock (_lock)
+                {
+                    if (_isLoading)
+                    {
+                        return;
+                    }
+                }
+
                 _selectedStage = value;
                 OnPropertyChanged(nameof(SelectedStage));
 
-                LoadStage(_selectedStage);
+                LoadStageEntry(_selectedStage);
             }
         }
 
@@ -246,6 +265,29 @@ namespace Gebug64.Win.ViewModels
             _appConfig.ClearIsDirty();
         }
 
+        private void LoadStageEntry(LevelIdX stageid)
+        {
+            lock (_lock)
+            {
+                if (_isLoading)
+                {
+                    return;
+                }
+
+                _isLoading = true;
+            }
+
+            // Fighting with the dispatcher and dependency source object creation on the
+            // right thread is not really making this any faster, so just going to block
+            // the main thread.
+            LoadStage(stageid);
+
+            lock (_lock)
+            {
+                _isLoading = false;
+            }
+        }
+
         private void LoadStage(LevelIdX stageid)
         {
             if (!LevelIdX.SinglePlayerStages.Contains(stageid))
@@ -271,8 +313,6 @@ namespace Gebug64.Win.ViewModels
                 _logger.LogError($"{nameof(LoadStage)}: bg bin folder not set");
                 return;
             }
-
-            //_logger.LogInformation($"Map viewer: start load {stageid.Name}");
 
             StageSetupFile? setup = null;
             StandFile? stan = null;
@@ -304,8 +344,6 @@ namespace Gebug64.Win.ViewModels
                 return;
             }
 
-            //_logger.LogInformation($"Map viewer: reading binary files");
-
             setup = SetupConverters.ReadFromBinFile(setupFilePath);
             stan = StanConverters.ReadFromBinFile(stanFilePath, "ignore");
             bg = BgConverters.ReadFromBinFile(bgFilePath);
@@ -334,13 +372,20 @@ namespace Gebug64.Win.ViewModels
             var outputVeiwboxWidth = Math.Abs(rawStage.ScaledMax.X - rawStage.ScaledMin.X);
             var outputViewboxHeight = Math.Abs(rawStage.ScaledMax.Z - rawStage.ScaledMin.Z);
 
+            // the map area will be a 3x3 grid, move the main content into the center cell.
+            adjustx += outputVeiwboxWidth;
+            adjusty += outputViewboxHeight;
+
             ClearMap();
 
             AddBgLayer(rawStage, adjustx, adjusty);
             AddStanLayer(rawStage, adjustx, adjusty);
 
-            MapScaledWidth = outputVeiwboxWidth;
-            MapScaledHeight = outputViewboxHeight;
+            AddDoorLayer(rawStage, adjustx, adjusty, levelScale);
+
+            // Create a 3x3 grid to render the map, to be able to pan around/past the edge.
+            MapScaledWidth = outputVeiwboxWidth * 3;
+            MapScaledHeight = outputViewboxHeight * 3;
 
             _logger.LogInformation($"Map viewer: done loading {stageid.Name}");
         }
@@ -366,16 +411,19 @@ namespace Gebug64.Win.ViewModels
             foreach (var poly in rawStage.RoomPolygons)
             {
                 var pc = new PointCollection();
+
+                var first = poly.Points!.First();
+
                 foreach (var p in poly.Points!)
                 {
                     pc.Add(new Point(p.X + adjustx, p.Y + adjusty));
                 }
 
-                mo = new MapObjectPoly(poly.ScaledMin.X + adjustx, poly.ScaledMin.Z + adjusty)
+                pc = pc.AbsoluteToRelative();
+
+                mo = new MapObjectPoly(first.X + adjustx, first.Y + adjusty)
                 {
                     Points = pc,
-                    UiWidth = Math.Abs(poly.ScaledMax.X - poly.ScaledMin.X),
-                    UiHeight = Math.Abs(poly.ScaledMax.Z - poly.ScaledMin.Z),
                 };
 
                 layer.Entities.Add(mo);
@@ -397,22 +445,62 @@ namespace Gebug64.Win.ViewModels
             foreach (var poly in rawStage.TilePolygons)
             {
                 var pc = new PointCollection();
+
+                var first = poly.Points!.First();
+
                 foreach (var p in poly.Points!)
                 {
                     pc.Add(new Point(p.X + adjustx, p.Y + adjusty));
                 }
 
-                mo = new MapObjectPoly(poly.ScaledMin.X + adjustx, poly.ScaledMin.Z + adjusty)
+                pc = pc.AbsoluteToRelative();
+
+                mo = new MapObjectPoly(first.X + adjustx, first.Y + adjusty)
                 {
                     Points = pc,
-                    UiWidth = Math.Abs(poly.ScaledMax.X - poly.ScaledMin.X),
-                    UiHeight = Math.Abs(poly.ScaledMax.Z - poly.ScaledMin.Z),
                 };
 
                 layer.Entities.Add(mo);
             }
 
             Layers.Add(layer);
+        }
+
+        private void AddDoorLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+            MapObject mo;
+
+            var collection = rawStage.SetupPolygonsCollection[PropDef.Door];
+
+            layer = new MapLayerViewModel();
+            layer.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#8d968e")!;
+            layer.StrokeThickness = 2;
+            layer.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#e1ffdb")!;
+
+            foreach (var setupObj in collection)
+            {
+                mo = GetPropDefaultModelBbox_door(setupObj, adjustx, adjusty, levelScale);
+
+                layer.Entities.Add(mo);
+            }
+
+            Layers.Add(layer);
+        }
+
+        private MapObject GetPropDefaultModelBbox_door(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_door(pp, levelScale);
+
+            var mor = new MapObjectRect(
+                stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
+                stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.RotationDegree = stagePosition.RotationDegrees;
+            mor.UiWidth = stagePosition.ModelSize.X;
+            mor.UiHeight = stagePosition.ModelSize.Z;
+
+            return mor;
         }
     }
 }

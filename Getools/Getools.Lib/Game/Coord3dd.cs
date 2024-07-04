@@ -62,6 +62,11 @@ namespace Getools.Lib.Game
             return new Coord3dd(p.X * d, p.Y * d, p.Z * d);
         }
 
+        public static Coord3dd operator /(Coord3dd p, double d)
+        {
+            return new Coord3dd(p.X / d, p.Y / d, p.Z / d);
+        }
+
         public Coord3dd Clone()
         {
             return new Coord3dd(X, Y, Z);

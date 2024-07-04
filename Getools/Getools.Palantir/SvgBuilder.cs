@@ -15,6 +15,7 @@ using Getools.Lib.Game.Asset.Setup;
 using Getools.Lib.Game.Asset.Setup.Ai;
 using Getools.Lib.Game.Asset.SetupObject;
 using Getools.Lib.Game.Asset.Stan;
+using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.Enums;
 using Getools.Palantir.Render;
 using SvgLib;
@@ -227,7 +228,7 @@ namespace Getools.Palantir
             return svg;
         }
 
-        private void AddSetupGroupToSvgDoc(Dictionary<PropDef, List<PropPosition>> collection, PropDef key, SvgDocument svg, string groupId, string itemFormatString)
+        private void AddSetupGroupToSvgDoc(Dictionary<PropDef, List<PropPointPosition>> collection, PropDef key, SvgDocument svg, string groupId, string itemFormatString)
         {
             if (collection.ContainsKey(key))
             {
@@ -330,7 +331,7 @@ namespace Getools.Palantir
             }
         }
 
-        private void AddPadGroupToSvgDoc(SvgDocument svg, List<RenderPosition> presetPolygons)
+        private void AddPadGroupToSvgDoc(SvgDocument svg, List<PointPosition> presetPolygons)
         {
             if (presetPolygons.Any())
             {
@@ -404,7 +405,7 @@ namespace Getools.Palantir
             }
         }
 
-        private void AddIntroGroupToSvgDoc(SvgDocument svg, List<RenderPosition> introPolygons)
+        private void AddIntroGroupToSvgDoc(SvgDocument svg, List<PointPosition> introPolygons)
         {
             if (introPolygons.Any())
             {
@@ -557,7 +558,7 @@ namespace Getools.Palantir
         /// </summary>
         /// <param name="container">SVG element to add attributes on.</param>
         /// <param name="prop">Prop containing setup object.</param>
-        private void AddPropAttributes(SvgContainer container, PropPosition prop)
+        private void AddPropAttributes(SvgContainer container, PropPointPosition prop)
         {
             if (object.ReferenceEquals(null, prop.SetupObject))
             {

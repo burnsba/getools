@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Getools.Lib.Extensions;
 using Getools.Lib.Game;
+using Getools.Lib.Game.Engine;
 using Getools.Palantir.Render;
 using SvgLib;
 
@@ -26,7 +27,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="rp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
+        internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, PointPosition rp, double levelScale)
         {
             double scaleFactor = 1 / levelScale;
 

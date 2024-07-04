@@ -146,9 +146,9 @@ namespace Gebug64.Win.Controls
             {
                 newScale /= 1.25;
 
-                if (newScale < 0.01)
+                if (newScale < 0.0001)
                 {
-                    newScale = 0.01;
+                    newScale = 0.0001;
                 }
             }
 
@@ -157,7 +157,7 @@ namespace Gebug64.Win.Controls
             var transform = new ScaleTransform
             {
                 ScaleX = newScale,
-                ScaleY = newScale
+                ScaleY = newScale,
             };
 
             MainContent.LayoutTransform = transform;
@@ -178,6 +178,12 @@ namespace Gebug64.Win.Controls
             this.UpdateLayout();
 
             e.Handled = true;
+        }
+
+        private void UserControl_MouseMove(object sender, MouseEventArgs e)
+        {
+            var mousePos = Mouse.GetPosition(MapWindowZ);
+            MousePos.Text = $"{mousePos.X}, {mousePos.Y}";
         }
     }
 }

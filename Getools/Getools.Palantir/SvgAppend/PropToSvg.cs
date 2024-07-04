@@ -9,9 +9,11 @@ using Getools.Lib.Extensions;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Model;
 using Getools.Lib.Game.Asset.SetupObject;
+using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.Enums;
 using Getools.Lib.Math;
 using Getools.Palantir.Render;
+using Newtonsoft.Json.Serialization;
 using SvgLib;
 using static System.Formats.Asn1.AsnWriter;
 
@@ -32,16 +34,16 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="rp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, RenderPosition rp, double levelScale)
+        internal static SvgContainer? SetupObjectToSvgAppend(SvgGroup appendTo, PointPosition rp, double levelScale)
         {
             if (object.ReferenceEquals(null, rp))
             {
                 throw new NullReferenceException($"{nameof(rp)}");
             }
 
-            if (rp is PropPosition)
+            if (rp is PropPointPosition)
             {
-                var pp = (PropPosition)rp;
+                var pp = (PropPointPosition)rp;
 
                 if (object.ReferenceEquals(null, pp.SetupObject))
                 {
@@ -169,101 +171,103 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="strokeWidth">Border edge thickness.</param>
         /// <param name="fill">Fill color.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
+        private static SvgGroup SvgAppendPropDefaultModelBbox_door(SvgGroup group, PropPointPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
             {
                 throw new NullReferenceException();
             }
 
-            var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
-            var scaleLower = pp.SetupObject.Scale & 0xff;
-            double setupScale = scaleUpper + ((double)scaleLower / 256D);
+            //var scaleUpper = (pp.SetupObject.Scale & 0xff00) >> 8;
+            //var scaleLower = pp.SetupObject.Scale & 0xff;
+            //double setupScale = scaleUpper + ((double)scaleLower / 256D);
 
-            if (object.ReferenceEquals(null, pp.Bbox))
-            {
-                throw new NullReferenceException($"{nameof(pp.Bbox)} is null, doors require 3d bounding box");
-            }
+            //if (object.ReferenceEquals(null, pp.Bbox))
+            //{
+            //    throw new NullReferenceException($"{nameof(pp.Bbox)} is null, doors require 3d bounding box");
+            //}
 
-            // The game does some weird translation.
-            var bb2 = new BoundingBoxd();
-            bb2.MaxZ = pp.Bbox.MinX;
-            bb2.MinZ = pp.Bbox.MaxX;
-            bb2.MaxY = pp.Bbox.MinY;
-            bb2.MinY = pp.Bbox.MaxY;
-            bb2.MaxX = pp.Bbox.MinZ;
-            bb2.MinX = pp.Bbox.MaxZ;
+            //// The game does some weird translation.
+            //var bb2 = new BoundingBoxd();
+            //bb2.MaxZ = pp.Bbox.MinX;
+            //bb2.MinZ = pp.Bbox.MaxX;
+            //bb2.MaxY = pp.Bbox.MinY;
+            //bb2.MinY = pp.Bbox.MaxY;
+            //bb2.MaxX = pp.Bbox.MinZ;
+            //bb2.MinX = pp.Bbox.MaxZ;
 
-            var modelData = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelDataFromPropId(pp.Prop);
+            //var modelData = Getools.Lib.Game.Asset.Model.ModelDataResolver.GetModelDataFromPropId(pp.Prop);
 
-            // The axes don't match, but this is what the game does.
-            double xscale = (bb2.MinY - bb2.MaxY) / (modelData.BboxMaxX - modelData.BboxMinX);
-            double yscale = (bb2.MinX - bb2.MaxX) / (modelData.BboxMaxY - modelData.BboxMinY);
-            double zscale = (bb2.MinZ - bb2.MaxZ) / (modelData.BboxMaxZ - modelData.BboxMinZ);
+            //// The axes don't match, but this is what the game does.
+            //double xscale = (bb2.MinY - bb2.MaxY) / (modelData.BboxMaxX - modelData.BboxMinX);
+            //double yscale = (bb2.MinX - bb2.MaxX) / (modelData.BboxMaxY - modelData.BboxMinY);
+            //double zscale = (bb2.MinZ - bb2.MaxZ) / (modelData.BboxMaxZ - modelData.BboxMinZ);
 
-            if ((xscale <= 0.000001f) || (yscale <= 0.000001f) || (zscale <= 0.000001f))
-            {
-                xscale =
-                    yscale =
-                    zscale = 1.0f;
-            }
+            //if ((xscale <= 0.000001f) || (yscale <= 0.000001f) || (zscale <= 0.000001f))
+            //{
+            //    xscale =
+            //        yscale =
+            //        zscale = 1.0f;
+            //}
 
-            double modelScale = xscale;
+            //double modelScale = xscale;
 
-            if (modelScale < yscale)
-            {
-                modelScale = yscale;
-            }
+            //if (modelScale < yscale)
+            //{
+            //    modelScale = yscale;
+            //}
 
-            if (modelScale < zscale)
-            {
-                modelScale = zscale;
-            }
+            //if (modelScale < zscale)
+            //{
+            //    modelScale = zscale;
+            //}
 
-            var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox).Scale(1.0 / levelScale);
+            //var pos = Getools.Lib.Math.Pad.GetCenter(pp.Origin, pp.Up, pp.Look, pp.Bbox).Scale(1.0 / levelScale);
 
-            //// if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
+            ////// if (!(pp.SetupObject->flags & 0x1000)) // prop flag PROPFLAG_00001000 "Absolute Position"
 
-            double modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
-            double modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
-            double modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
+            //double modelSizeX = modelData.BboxMaxX - modelData.BboxMinX;
+            //double modelSizeY = modelData.BboxMaxY - modelData.BboxMinY;
+            //double modelSizeZ = modelData.BboxMaxZ - modelData.BboxMinZ;
 
-            modelSizeX *= setupScale * xscale / levelScale;
-            modelSizeY *= setupScale * yscale / levelScale;
-            modelSizeZ *= setupScale * zscale / levelScale;
+            //modelSizeX *= setupScale * xscale / levelScale;
+            //modelSizeY *= setupScale * yscale / levelScale;
+            //modelSizeZ *= setupScale * zscale / levelScale;
 
-            double halfw = modelSizeX / 2;
-            double halfh = modelSizeZ / 2;
+            //double halfw = modelSizeX / 2;
+            //double halfh = modelSizeZ / 2;
 
-            double rotAngleRad = System.Math.Atan2(pp.Up.Z, pp.Up.X);
-            rotAngleRad *= -1;
+            //double rotAngleRad = System.Math.Atan2(pp.Up.Z, pp.Up.X);
+            //rotAngleRad *= -1;
 
-            if (pp.Look.Y > 0.9)
-            {
-                rotAngleRad = System.Math.Atan2(pp.Up.X, pp.Up.Z);
-                rotAngleRad *= -1;
-                rotAngleRad += System.Math.PI / 2;
-            }
+            //if (pp.Look.Y > 0.9)
+            //{
+            //    rotAngleRad = System.Math.Atan2(pp.Up.X, pp.Up.Z);
+            //    rotAngleRad *= -1;
+            //    rotAngleRad += System.Math.PI / 2;
+            //}
 
-            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+            //double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_door(pp, levelScale);
 
             var container = group.AddGroup();
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({Format.DoubleToStringFormat(pos.X - halfw, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(pos.Z - halfh, StandardDoubleToStringFormat)})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(stagePosition.Origin.X - stagePosition.HalfModelSize.X, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(stagePosition.Origin.Z - stagePosition.HalfModelSize.Z, StandardDoubleToStringFormat)})";
 
-            if (rotAngle != 0)
+            if (stagePosition.RotationDegrees != 0)
             {
-                container.Transform += $" rotate({Format.DoubleToStringFormat(rotAngle, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfw, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(halfh, StandardDoubleToStringFormat)})";
+                container.Transform += $" rotate({Format.DoubleToStringFormat(stagePosition.RotationDegrees, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(stagePosition.HalfModelSize.X, StandardDoubleToStringFormat)} {Format.DoubleToStringFormat(stagePosition.HalfModelSize.Z, StandardDoubleToStringFormat)})";
             }
 
             var rect = container.AddRect();
 
             rect.X = 0;
             rect.Y = 0;
-            rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
-            rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
+            rect.SetWidth(stagePosition.ModelSize.X, StandardDoubleToStringFormat);
+            rect.SetHeight(stagePosition.ModelSize.Z, StandardDoubleToStringFormat);
             rect.Stroke = stroke;
             rect.StrokeWidth = strokeWidth;
             rect.Fill = fill;
@@ -281,7 +285,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="strokeWidth">Border edge thickness.</param>
         /// <param name="fill">Fill color.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
+        private static SvgGroup SvgAppendPropDefaultModelBbox_prop(SvgGroup group, PropPointPosition pp, double levelScale, string stroke, double strokeWidth, string fill)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
             {
@@ -451,7 +455,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="pp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgAppendPropDefaultModelBbox_chr(SvgGroup group, PropPosition pp, double levelScale)
+        private static SvgGroup SvgAppendPropDefaultModelBbox_chr(SvgGroup group, PropPointPosition pp, double levelScale)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
             {
@@ -571,7 +575,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="pp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgGroupAppendKey(SvgGroup group, PropPosition pp, double levelScale)
+        private static SvgGroup SvgGroupAppendKey(SvgGroup group, PropPointPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
@@ -603,7 +607,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="pp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgGroupAppendCctv(SvgGroup group, PropPosition pp, double levelScale)
+        private static SvgGroup SvgGroupAppendCctv(SvgGroup group, PropPointPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
@@ -714,7 +718,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="pp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgAppendPadlock(SvgGroup group, PropPosition pp, double levelScale)
+        private static SvgGroup SvgAppendPadlock(SvgGroup group, PropPointPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
@@ -767,7 +771,7 @@ namespace Getools.Palantir.SvgAppend
         /// <param name="pp">Object information for item to be added to SVG.</param>
         /// <param name="levelScale">Stage scale factor.</param>
         /// <returns>New item that was appended.</returns>
-        private static SvgGroup SvgAppendHeavyGun(SvgGroup group, PropPosition pp, double levelScale)
+        private static SvgGroup SvgAppendHeavyGun(SvgGroup group, PropPointPosition pp, double levelScale)
         {
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
