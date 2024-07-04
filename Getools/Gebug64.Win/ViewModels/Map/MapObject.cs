@@ -9,6 +9,7 @@ namespace Gebug64.Win.ViewModels.Map
 {
     public abstract class MapObject : ViewModelBase
     {
+        private bool _isVisible;
         private double _uix;
         private double _uiy;
         private double _uiWidth;
@@ -66,7 +67,24 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
-        public bool IsVisible { get; set; }
+        public bool IsVisible
+        {
+            get => _isVisible;
+            set
+            {
+                if (_isVisible != value)
+                {
+                    _isVisible = value;
+                    OnPropertyChanged(nameof(IsVisible));
+                }
+            }
+        }
+
+        public System.Windows.Media.Brush Stroke { get; set; }
+
+        public double StrokeThickness { get; set; }
+
+        public System.Windows.Media.Brush Fill { get; set; }
 
         public MapObject()
         {

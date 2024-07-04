@@ -52,9 +52,9 @@
                             <ItemsControl.Resources>
                                 <DataTemplate DataType="{x:Type vmmo:MapObjectPoly}">
                                     <Polygon
-                                        Stroke="{Binding Path=DataContext.Stroke, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        StrokeThickness="{Binding Path=DataContext.StrokeThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        Fill="{Binding Path=DataContext.Fill, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Stroke="{Binding Path=Stroke}"
+                                        StrokeThickness="{Binding Path=StrokeThickness}"
+                                        Fill="{Binding Path=Fill}"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Points="{Binding Points}"
@@ -63,9 +63,9 @@
                                 </DataTemplate>
                                 <DataTemplate DataType="{x:Type vmmo:MapObjectRect}">
                                     <Rectangle
-                                        Stroke="{Binding Path=DataContext.Stroke, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        StrokeThickness="{Binding Path=DataContext.StrokeThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        Fill="{Binding Path=DataContext.Fill, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Stroke="{Binding Path=Stroke}"
+                                        StrokeThickness="{Binding Path=StrokeThickness}"
+                                        Fill="{Binding Path=Fill}"
                                         Width="{Binding UiWidth}"
                                         Height="{Binding UiHeight}"
                                         RenderTransformOrigin="0.5,0.5"
@@ -74,6 +74,18 @@
                                             <RotateTransform  Angle="{Binding RotationDegree}" />
                                         </Rectangle.RenderTransform>
                                     </Rectangle>
+                                </DataTemplate>
+                                <DataTemplate DataType="{x:Type vmmo:MapObjectResourceImage}">
+                                    <Image
+                                        Source="{Binding ResourcePath}"
+                                        Width="{Binding UiWidth}"
+                                        Height="{Binding UiHeight}"
+                                        RenderTransformOrigin="0.5,0.5"
+                                        >
+                                        <Image.RenderTransform>
+                                            <RotateTransform  Angle="{Binding RotationDegree}" />
+                                        </Image.RenderTransform>
+                                    </Image>
                                 </DataTemplate>
                             </ItemsControl.Resources>
                         </ItemsControl>

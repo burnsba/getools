@@ -8,12 +8,6 @@ namespace Gebug64.Win.ViewModels.Map
 {
     public class MapLayerViewModel
     {
-        public System.Windows.Media.Brush Stroke { get; set; }
-
-        public double StrokeThickness { get; set; }
-
-        public System.Windows.Media.Brush Fill { get; set; }
-
         public List<MapObject> Entities { get; set; } = new List<MapObject>();
 
         public MapLayerViewModel()

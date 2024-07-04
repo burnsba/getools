@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,6 +24,7 @@ using Getools.Lib.Extensions;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Asset.Bg;
 using Getools.Lib.Game.Asset.Setup;
+using Getools.Lib.Game.Asset.SetupObject;
 using Getools.Lib.Game.Asset.Stan;
 using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.EnumModel;
@@ -30,6 +32,7 @@ using Getools.Lib.Game.Enums;
 using Getools.Palantir;
 using Getools.Palantir.Render;
 using Getools.Utility.Logging;
+using GzipSharpLib;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SvgLib;
@@ -378,10 +381,42 @@ namespace Gebug64.Win.ViewModels
 
             ClearMap();
 
-            AddBgLayer(rawStage, adjustx, adjusty);
             AddStanLayer(rawStage, adjustx, adjusty);
 
-            AddDoorLayer(rawStage, adjustx, adjusty, levelScale);
+            // room boundaries need to be above the tiles.
+            AddBgLayer(rawStage, adjustx, adjusty);
+
+            //AddPadGroupToSvgDoc(svg, _context.PresetPolygons);
+
+            // draw path waypoints on top of pads
+            //AddPathWaypointGroupToSvgDoc(svg, _context.PathWaypointLines);
+
+            // draw patrol paths on top of pads and waypoints
+            //AddPatrolPathGroupToSvgDoc(svg, _context.PatrolPathLines);
+
+            AddSetupLayer(rawStage, PropDef.AmmoBox, adjustx, adjusty, levelScale);
+
+            // safe should be under door z layer.
+            AddSetupLayer(rawStage, PropDef.Safe, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Door, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Alarm, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Cctv, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Drone, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Aircraft, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Tank, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.StandardProp, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.SingleMonitor, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Collectable, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Armour, adjustx, adjusty, levelScale);
+
+            // keys should be on top of tables (StandardProp)
+            AddSetupLayer(rawStage, PropDef.Key, adjustx, adjusty, levelScale);
+
+            // guards should be one of the highest z layers
+            AddSetupLayer(rawStage, PropDef.Guard, adjustx, adjusty, levelScale);
+
+            // Intro star should be above other layers
+            AddIntroLayer(rawStage, adjustx, adjusty, levelScale);
 
             // Create a 3x3 grid to render the map, to be able to pan around/past the edge.
             MapScaledWidth = outputVeiwboxWidth * 3;
@@ -404,9 +439,6 @@ namespace Gebug64.Win.ViewModels
             MapObject mo;
 
             layer = new MapLayerViewModel();
-            layer.Stroke = Brushes.Blue;
-            layer.StrokeThickness = 12;
-            layer.Fill = Brushes.Transparent;
 
             foreach (var poly in rawStage.RoomPolygons)
             {
@@ -424,6 +456,9 @@ namespace Gebug64.Win.ViewModels
                 mo = new MapObjectPoly(first.X + adjustx, first.Y + adjusty)
                 {
                     Points = pc,
+                    Stroke = Brushes.Blue,
+                    StrokeThickness = 12,
+                    Fill = Brushes.Transparent,
                 };
 
                 layer.Entities.Add(mo);
@@ -438,9 +473,6 @@ namespace Gebug64.Win.ViewModels
             MapObject mo;
 
             layer = new MapLayerViewModel();
-            layer.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#9e87a3")!;
-            layer.StrokeThickness = 4;
-            layer.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#fdf5ff")!;
 
             foreach (var poly in rawStage.TilePolygons)
             {
@@ -458,6 +490,9 @@ namespace Gebug64.Win.ViewModels
                 mo = new MapObjectPoly(first.X + adjustx, first.Y + adjusty)
                 {
                     Points = pc,
+                    Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#9e87a3")!,
+                    StrokeThickness = 4,
+                    Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#fdf5ff")!,
                 };
 
                 layer.Entities.Add(mo);
@@ -466,26 +501,197 @@ namespace Gebug64.Win.ViewModels
             Layers.Add(layer);
         }
 
-        private void AddDoorLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        private void AddIntroLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
         {
             MapLayerViewModel layer;
             MapObject mo;
 
-            var collection = rawStage.SetupPolygonsCollection[PropDef.Door];
-
             layer = new MapLayerViewModel();
-            layer.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#8d968e")!;
-            layer.StrokeThickness = 2;
-            layer.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#e1ffdb")!;
 
-            foreach (var setupObj in collection)
+            foreach (var pp in rawStage.IntroPolygons)
             {
-                mo = GetPropDefaultModelBbox_door(setupObj, adjustx, adjusty, levelScale);
+                mo = GetPropDefaultBbox_intro(pp, adjustx, adjusty, levelScale);
 
                 layer.Entities.Add(mo);
             }
 
             Layers.Add(layer);
+        }
+
+        private void AddSetupLayer(ProcessedStageData rawStage, PropDef setupLayerKey, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+            MapObject mo;
+
+            layer = new MapLayerViewModel();
+
+            if (!rawStage.SetupPolygonsCollection.ContainsKey(setupLayerKey))
+            {
+                Layers.Add(layer);
+                return;
+            }
+
+            var collection = rawStage.SetupPolygonsCollection[setupLayerKey];
+
+            foreach (var pp in collection)
+            {
+                if (object.ReferenceEquals(null, pp.SetupObject))
+                {
+                    throw new NullReferenceException($"{nameof(pp.SetupObject)}");
+                }
+
+                // guard does not implement SetupObjectGenericBase
+                SetupObjectGenericBase? baseObject = pp.SetupObject as SetupObjectGenericBase;
+
+                switch (pp.SetupObject.Type)
+                {
+                    case PropDef.Door:
+                    mo = GetPropDefaultModelBbox_door(pp, adjustx, adjusty, levelScale);
+                    break;
+
+                    case PropDef.Guard:
+                    mo = GetPropDefaultModelBbox_chr(pp, adjustx, adjusty, levelScale);
+                    break;
+
+                    case PropDef.AmmoBox:
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#274d23", 4, "#66ed58");
+                    break;
+
+                    case PropDef.Alarm:
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale / 3, "#cccccc", 4, "#ff0000");
+                    break;
+
+                    case PropDef.Armour:
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#0c1c63", 4, "#0000ff");
+                    break;
+
+                    case PropDef.Key:
+                    mo = GetPropDefaultBbox_key(pp, adjustx, adjusty, levelScale);
+                    break;
+
+                    case PropDef.Cctv:
+                    mo = GetPropDefaultBbox_cctv(pp, adjustx, adjusty, levelScale);
+                    break;
+
+                    case PropDef.Aircraft:
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#808018", 4, "#dbdb60");
+                    break;
+
+                    case PropDef.Collectable: // fallthrough
+                    case PropDef.Drone:
+                    case PropDef.Safe:
+                    case PropDef.SingleMonitor:
+                    case PropDef.StandardProp:
+                    {
+                        if (object.ReferenceEquals(null, baseObject))
+                        {
+                            throw new NullReferenceException();
+                        }
+
+                        switch ((PropId)baseObject.ObjectId)
+                        {
+                            // hat
+                            case PropId.PROP_HATFURRY:
+                            case PropId.PROP_HATFURRYBROWN:
+                            case PropId.PROP_HATFURRYBLACK:
+                            case PropId.PROP_HATTBIRD:
+                            case PropId.PROP_HATTBIRDBROWN:
+                            case PropId.PROP_HATHELMET:
+                            case PropId.PROP_HATHELMETGREY:
+                            case PropId.PROP_HATMOON:
+                            case PropId.PROP_HATBERET:
+                            case PropId.PROP_HATBERETBLUE:
+                            case PropId.PROP_HATBERETRED:
+                            case PropId.PROP_HATPEAKED:
+                                // skip
+                                continue;
+
+                            case PropId.PROP_PADLOCK:
+                                mo = GetPropDefaultBbox_lock(pp, adjustx, adjusty, levelScale);
+                                break;
+
+                            case PropId.PROP_GUN_RUNWAY1:
+                            case PropId.PROP_ROOFGUN:
+                            case PropId.PROP_GROUNDGUN:
+                                mo = GetPropDefaultBbox_heavygun(pp, adjustx, adjusty, levelScale);
+                                break;
+
+                            case PropId.PROP_CHRGOLDENEYEKEY:
+                                mo = GetPropDefaultBbox_key(pp, adjustx, adjusty, levelScale);
+                                break;
+
+                            case PropId.PROP_MAINFRAME1:
+                            case PropId.PROP_MAINFRAME2:
+                            case PropId.PROP_DOOR_MF:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#666666", 4, "#94dff2");
+                                break;
+
+                            case PropId.PROP_AMMO_CRATE1:
+                            case PropId.PROP_AMMO_CRATE2:
+                            case PropId.PROP_AMMO_CRATE3:
+                            case PropId.PROP_AMMO_CRATE4:
+                            case PropId.PROP_AMMO_CRATE5:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#274d23", 4, "#66ed58");
+                                break;
+
+                            case PropId.PROP_CHRCIRCUITBOARD:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#009900", 4, "#00ff00");
+                                break;
+
+                            case PropId.PROP_CHRVIDEOTAPE:
+                            case PropId.PROP_CHRDOSSIERRED:
+                            case PropId.PROP_CHRSTAFFLIST:
+                            case PropId.PROP_CHRCLIPBOARD:
+                            case PropId.PROP_DISK_DRIVE1:
+                            case PropId.PROP_CHRDATTAPE:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#ff0000", 4, "#ff0000");
+                                break;
+
+                            case PropId.PROP_TIGER:
+                            case PropId.PROP_MILCOPTER:
+                            case PropId.PROP_HELICOPTER:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#808018", 4, "#dbdb60");
+                                break;
+
+                            default:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#916b2a", 4, "#ffdfa8");
+                                break;
+                        }
+
+                        break;
+                    }
+
+                    case PropDef.Tank:
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#255c25", 4, "#00ff00");
+                    break;
+
+                    default:
+                    throw new NotImplementedException();
+                }
+
+                layer.Entities.Add(mo);
+            }
+
+            Layers.Add(layer);
+        }
+
+        private MapObject GetPropDefaultModelBbox_prop(PropPointPosition pp, double adjustx, double adjusty, double levelScale, string stroke, double strokeWidth, string fill)
+        {
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_prop(pp, levelScale);
+
+            var mor = new MapObjectRect(
+                stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
+                stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom(stroke)!;
+            mor.StrokeThickness = strokeWidth;
+            mor.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom(fill)!;
+
+            mor.RotationDegree = stagePosition.RotationDegrees;
+            mor.UiWidth = stagePosition.ModelSize.X;
+            mor.UiHeight = stagePosition.ModelSize.Z;
+
+            return mor;
         }
 
         private MapObject GetPropDefaultModelBbox_door(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
@@ -496,9 +702,155 @@ namespace Gebug64.Win.ViewModels
                 stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
                 stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
 
+            mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#8d968e")!;
+            mor.StrokeThickness = 2;
+            mor.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#e1ffdb")!;
+
             mor.RotationDegree = stagePosition.RotationDegrees;
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultModelBbox_chr(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_chr(pp, levelScale);
+
+            var mor = new MapObjectResourceImage(
+                stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
+                stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/chr.png";
+
+            mor.RotationDegree = stagePosition.RotationDegrees;
+            mor.UiWidth = stagePosition.ModelSize.X;
+            mor.UiHeight = stagePosition.ModelSize.Z;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultBbox_key(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            double w = 34;
+            double h = 112;
+            double hw = w / 2;
+            double hh = h / 2;
+
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
+
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var mor = new MapObjectResourceImage(
+                pos.X - hw + adjustx,
+                pos.Z - hh + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/key.png";
+
+            mor.RotationDegree = rotAngle;
+            mor.UiWidth = w;
+            mor.UiHeight = h;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultBbox_cctv(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            double w = 90;
+            double h = 90;
+            double hw = w / 2;
+            double hh = h / 2;
+
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
+
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var mor = new MapObjectResourceImage(
+                pos.X - hw + adjustx,
+                pos.Z - hh + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/cctv.png";
+
+            mor.RotationDegree = rotAngle;
+            mor.UiWidth = w;
+            mor.UiHeight = h;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultBbox_lock(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            double w = 34;
+            double h = 112;
+            double hw = w / 2;
+            double hh = h / 2;
+
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
+
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var mor = new MapObjectResourceImage(
+                pos.X - hw + adjustx,
+                pos.Z - hh + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/lock.png";
+
+            mor.RotationDegree = rotAngle;
+            mor.UiWidth = w;
+            mor.UiHeight = h;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultBbox_heavygun(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            double w = 140;
+            double h = 140;
+            double hw = w / 2;
+            double hh = h / 2;
+
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
+
+            double rotAngleRad = System.Math.Atan2(pp.Look.X, pp.Look.Z);
+            rotAngleRad *= -1;
+            double rotAngle = rotAngleRad * 180 / System.Math.PI;
+
+            var mor = new MapObjectResourceImage(
+                pos.X - hw + adjustx,
+                pos.Z - hh + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/heavy_gun.png";
+
+            mor.RotationDegree = rotAngle;
+            mor.UiWidth = w;
+            mor.UiHeight = h;
+
+            return mor;
+        }
+
+        private MapObject GetPropDefaultBbox_intro(PointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            double w = 90;
+            double h = 90;
+            double hw = w / 2;
+            double hh = h / 2;
+
+            Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
+
+            var mor = new MapObjectResourceImage(
+                pos.X - hw + adjustx,
+                pos.Z - hh + adjusty);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/star.png";
+
+            mor.UiWidth = w;
+            mor.UiHeight = h;
 
             return mor;
         }
