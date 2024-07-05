@@ -29,37 +29,44 @@ namespace Getools.Palantir.SvgAppend
         /// <returns>New item that was appended.</returns>
         internal static SvgContainer? PadToSvgAppend(SvgGroup appendTo, PointPosition rp, double levelScale)
         {
-            double scaleFactor = 1 / levelScale;
+            // TODO: REMOVE
 
-            Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
+            //double scaleFactor = 1 / levelScale;
 
-            // If this is a pad3d, need to calculate orientation, then translate by the
-            // 3d bounds.
-            if (rp.Bbox != null && rp.Up.Y > 0)
-            {
-                double angle = -1.0 * System.Math.Atan2(rp.Look.X, rp.Look.Z);
-                var cos = System.Math.Cos(angle);
-                var sin = System.Math.Sin(angle);
+            //Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
 
-                // Find the center point of the x and z bounds.
-                double bbx = (rp.Bbox.MinX + rp.Bbox.MaxX) / 2;
-                double bbz = (rp.Bbox.MinZ + rp.Bbox.MaxZ) / 2;
+            //// If this is a pad3d, need to calculate orientation, then translate by the
+            //// 3d bounds.
+            //if (rp.Bbox != null && rp.Up.Y > 0)
+            //{
+            //    double angle = -1.0 * System.Math.Atan2(rp.Look.X, rp.Look.Z);
+            //    var cos = System.Math.Cos(angle);
+            //    var sin = System.Math.Sin(angle);
 
-                // Rotate offset by the angle described by Look
-                double xoffset = (bbx * cos) - (bbz * sin);
-                double zoffset = (bbx * sin) + (bbz * cos);
+            //    // Find the center point of the x and z bounds.
+            //    double bbx = (rp.Bbox.MinX + rp.Bbox.MaxX) / 2;
+            //    double bbz = (rp.Bbox.MinZ + rp.Bbox.MaxZ) / 2;
 
-                pos.X += xoffset * scaleFactor;
-                pos.Z += zoffset * scaleFactor;
-            }
+            //    // Rotate offset by the angle described by Look
+            //    double xoffset = (bbx * cos) - (bbz * sin);
+            //    double zoffset = (bbx * sin) + (bbz * cos);
 
-            double modelSizeX = 36;
-            double modelSizeZ = 36;
-            double halfw = modelSizeX / 2;
-            double halfh = modelSizeZ / 2;
+            //    pos.X += xoffset * scaleFactor;
+            //    pos.Z += zoffset * scaleFactor;
+            //}
 
-            double translateX = pos.X - halfw;
-            double translateY = pos.Z - halfh;
+            //double modelSizeX = 36;
+            //double modelSizeZ = 36;
+            //double halfw = modelSizeX / 2;
+            //double halfh = modelSizeZ / 2;
+
+            //double translateX = pos.X - halfw;
+            //double translateY = pos.Z - halfh;
+
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPadBbox(rp, levelScale);
+
+            double translateX = stagePosition.Origin.X - stagePosition.HalfModelSize.X;
+            double translateY = stagePosition.Origin.Z - stagePosition.HalfModelSize.Z;
 
             var container = appendTo.AddGroup();
 
@@ -71,8 +78,8 @@ namespace Getools.Palantir.SvgAppend
 
             rect.X = 0;
             rect.Y = 0;
-            rect.SetWidth(modelSizeX, StandardDoubleToStringFormat);
-            rect.SetHeight(modelSizeZ, StandardDoubleToStringFormat);
+            rect.SetWidth(stagePosition.ModelSize.X, StandardDoubleToStringFormat);
+            rect.SetHeight(stagePosition.ModelSize.Z, StandardDoubleToStringFormat);
 
             return container;
         }

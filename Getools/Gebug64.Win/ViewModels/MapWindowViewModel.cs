@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -36,6 +37,7 @@ using GzipSharpLib;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SvgLib;
+using static System.Windows.Forms.AxHost;
 
 namespace Gebug64.Win.ViewModels
 {
@@ -386,13 +388,13 @@ namespace Gebug64.Win.ViewModels
             // room boundaries need to be above the tiles.
             AddBgLayer(rawStage, adjustx, adjusty);
 
-            //AddPadGroupToSvgDoc(svg, _context.PresetPolygons);
+            AddPadLayer(rawStage, adjustx, adjusty, levelScale);
 
             // draw path waypoints on top of pads
-            //AddPathWaypointGroupToSvgDoc(svg, _context.PathWaypointLines);
+            AddPathWaypointLayer(rawStage, adjustx, adjusty, levelScale);
 
             // draw patrol paths on top of pads and waypoints
-            //AddPatrolPathGroupToSvgDoc(svg, _context.PatrolPathLines);
+            AddPatrolPathLayer(rawStage, adjustx, adjusty, levelScale);
 
             AddSetupLayer(rawStage, PropDef.AmmoBox, adjustx, adjusty, levelScale);
 
@@ -675,6 +677,94 @@ namespace Gebug64.Win.ViewModels
             Layers.Add(layer);
         }
 
+        private void AddPadLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+            MapObject mo;
+
+            layer = new MapLayerViewModel();
+
+            var collection = rawStage.PresetPolygons;
+
+            foreach (var pp in collection)
+            {
+                mo = GetPadBbox(pp, adjustx, adjusty, levelScale);
+                layer.Entities.Add(mo);
+            }
+
+            Layers.Add(layer);
+        }
+
+        private void AddPathWaypointLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+            MapObject mo;
+
+            layer = new MapLayerViewModel();
+
+            var collection = rawStage.PathWaypointLines;
+
+            foreach (var renderLine in collection)
+            {
+                var p1 = renderLine.P1.Scale(1.0 / levelScale);
+                var p2 = renderLine.P2.Scale(1.0 / levelScale);
+
+                double uix = p1.X + adjustx;
+                double uiy = p1.Z + adjusty;
+
+                double uix2 = p2.X - p1.X;
+                double uiy2 = p2.Z - p1.Z;
+
+                mo = new MapObjectLine(uix, uiy)
+                {
+                    P1 = new Point(0, 0),
+                    P2 = new Point(uix2, uiy2),
+                    StrokeThickness = 12,
+                    Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#ff80ff")!,
+                };
+
+                layer.Entities.Add(mo);
+            }
+
+            Layers.Add(layer);
+        }
+
+        private void AddPatrolPathLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+            MapObject mo;
+
+            layer = new MapLayerViewModel();
+
+            var collection = rawStage.PatrolPathLines;
+
+            foreach (var pathset in collection)
+            {
+                var pc = new PointCollection();
+
+                var scaledPoints = pathset.Points.Select(x => x.Scale(1.0 / levelScale).To2DXZ());
+                var first = scaledPoints.First();
+
+                foreach (var p in scaledPoints)
+                {
+                    pc.Add(new Point(p.X + adjustx, p.Y + adjusty));
+                }
+
+                pc = pc.AbsoluteToRelative();
+
+                mo = new MapObjectPolyLine(first.X + adjustx, first.Y + adjusty)
+                {
+                    Points = pc,
+                    Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#3fb049")!,
+                    StrokeThickness = 18,
+                };
+
+                layer.Entities.Add(mo);
+            }
+
+            Layers.Add(layer);
+        }
+
         private MapObject GetPropDefaultModelBbox_prop(PropPointPosition pp, double adjustx, double adjusty, double levelScale, string stroke, double strokeWidth, string fill)
         {
             var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_prop(pp, levelScale);
@@ -851,6 +941,25 @@ namespace Gebug64.Win.ViewModels
 
             mor.UiWidth = w;
             mor.UiHeight = h;
+
+            return mor;
+        }
+
+        private MapObject GetPadBbox(PointPosition rp, double adjustx, double adjusty, double levelScale)
+        {
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPadBbox(rp, levelScale);
+
+            var mor = new MapObjectRect(
+                stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
+                stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#9c009e")!;
+            mor.StrokeThickness = 4;
+            mor.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#ff00ff")!;
+
+            mor.RotationDegree = stagePosition.RotationDegrees;
+            mor.UiWidth = stagePosition.ModelSize.X;
+            mor.UiHeight = stagePosition.ModelSize.Z;
 
             return mor;
         }

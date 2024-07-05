@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -284,6 +285,49 @@ namespace Getools.Lib.Game.Engine
                 RotationDegrees = rotAngle,
                 ModelSize = new Coord3dd(modelSizeX, modelSizeY, modelSizeZ),
                 HalfModelSize = new Coord3dd(modelSizeX / 2.0, modelSizeY / 2.0, modelSizeZ / 2.0),
+                Origin = pos.Clone(),
+            };
+
+            return result;
+        }
+
+        public static RuntimePosition GetPadBbox(PointPosition rp, double levelScale)
+        {
+            double scaleFactor = 1 / levelScale;
+
+            Coord3dd pos = rp.Origin.Clone().Scale(scaleFactor);
+
+            // If this is a pad3d, need to calculate orientation, then translate by the
+            // 3d bounds.
+            if (rp.Bbox != null && rp.Up.Y > 0)
+            {
+                double angle = -1.0 * System.Math.Atan2(rp.Look.X, rp.Look.Z);
+                var cos = System.Math.Cos(angle);
+                var sin = System.Math.Sin(angle);
+
+                // Find the center point of the x and z bounds.
+                double bbx = (rp.Bbox.MinX + rp.Bbox.MaxX) / 2;
+                double bbz = (rp.Bbox.MinZ + rp.Bbox.MaxZ) / 2;
+
+                // Rotate offset by the angle described by Look
+                double xoffset = (bbx * cos) - (bbz * sin);
+                double zoffset = (bbx * sin) + (bbz * cos);
+
+                pos.X += xoffset * scaleFactor;
+                pos.Z += zoffset * scaleFactor;
+            }
+
+            // this is arbitrary ...
+            double modelSizeX = 36;
+            double modelSizeY = 36;
+            double modelSizeZ = 36;
+            double half = modelSizeX / 2;
+
+            var result = new RuntimePosition()
+            {
+                RotationDegrees = 0,
+                ModelSize = new Coord3dd(modelSizeX, modelSizeY, modelSizeZ),
+                HalfModelSize = new Coord3dd(half, half, half),
                 Origin = pos.Clone(),
             };
 

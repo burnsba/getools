@@ -75,6 +75,25 @@
                                         </Rectangle.RenderTransform>
                                     </Rectangle>
                                 </DataTemplate>
+                                <DataTemplate DataType="{x:Type vmmo:MapObjectLine}">
+                                    <Line
+                                        Stroke="{Binding Path=Stroke}"
+                                        StrokeThickness="{Binding Path=StrokeThickness}"
+                                        X1="{Binding Path=P1.X}"
+                                        Y1="{Binding Path=P1.Y}"
+                                        X2="{Binding Path=P2.X}"
+                                        Y2="{Binding Path=P2.Y}"
+                                        >
+                                    </Line>
+                                </DataTemplate>
+                                <DataTemplate DataType="{x:Type vmmo:MapObjectPolyLine}">
+                                    <Polyline
+                                        Stroke="{Binding Path=Stroke}"
+                                        StrokeThickness="{Binding Path=StrokeThickness}"
+                                        Points="{Binding Points}"
+                                        >
+                                    </Polyline>
+                                </DataTemplate>
                                 <DataTemplate DataType="{x:Type vmmo:MapObjectResourceImage}">
                                     <Image
                                         Source="{Binding ResourcePath}"
