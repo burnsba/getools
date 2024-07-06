@@ -20,6 +20,12 @@ namespace Getools.Lib.Game
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Coord3dd"/> class.
+        /// </summary>
+        /// <param name="x">X.</param>
+        /// <param name="y">Y.</param>
+        /// <param name="z">Z.</param>
         public Coord3dd(double x, double y, double z)
         {
             X = x;
@@ -27,6 +33,12 @@ namespace Getools.Lib.Game
             Z = z;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Coord3dd"/> class.
+        /// </summary>
+        /// <param name="x">X.</param>
+        /// <param name="y">Y.</param>
+        /// <param name="z">Z.</param>
         public Coord3dd(Single x, Single y, Single z)
         {
             X = x;
@@ -34,10 +46,19 @@ namespace Getools.Lib.Game
             Z = z;
         }
 
+        /// <summary>
+        /// Zero constant point.
+        /// </summary>
         public static Coord3dd Zero => new Coord3dd(0, 0, 0);
 
+        /// <summary>
+        /// Max value point.
+        /// </summary>
         public static Coord3dd MaxValue => new Coord3dd(double.MaxValue, double.MaxValue, double.MaxValue);
 
+        /// <summary>
+        /// Min value point.
+        /// </summary>
         public static Coord3dd MinValue => new Coord3dd(double.MinValue, double.MinValue, double.MinValue);
 
         /// <summary>
@@ -55,6 +76,9 @@ namespace Getools.Lib.Game
         /// </summary>
         public double Z { get; set; }
 
+        /// <summary>
+        /// True if <see cref="X"/>, <see cref="Y"/>, and <see cref="Z"/> are all finite.
+        /// </summary>
         public bool IsFinite => double.IsFinite(X) && double.IsFinite(Y) && double.IsFinite(Z);
 
         public static Coord3dd operator *(Coord3dd p, double d)
@@ -67,6 +91,10 @@ namespace Getools.Lib.Game
             return new Coord3dd(p.X / d, p.Y / d, p.Z / d);
         }
 
+        /// <summary>
+        /// Creates a copy of the point.
+        /// </summary>
+        /// <returns>Copy.</returns>
         public Coord3dd Clone()
         {
             return new Coord3dd(X, Y, Z);
@@ -78,6 +106,11 @@ namespace Getools.Lib.Game
             return $"{FloatingPoint.ToFloatString(X)}, {FloatingPoint.ToFloatString(Y)}, {FloatingPoint.ToFloatString(Z)}";
         }
 
+        /// <summary>
+        /// Compare object.
+        /// </summary>
+        /// <param name="obj">Other.</param>
+        /// <returns>Compares <see cref="X"/>, <see cref="Y"/>, and <see cref="Z"/> of both points. If all are equivalent or all are non-finite or NaN the points are considered requal.</returns>
         public override bool Equals(object? obj)
         {
             var other = obj as Coord3dd;
@@ -150,21 +183,37 @@ namespace Getools.Lib.Game
             return xequals && yequals && zequals;
         }
 
+        /// <summary>
+        /// Project to 2d.
+        /// </summary>
+        /// <returns>XY point.</returns>
         public Coord2dd To2DXY()
         {
             return new Coord2dd(X, Y);
         }
 
+        /// <summary>
+        /// Project to 2d.
+        /// </summary>
+        /// <returns>XZ point.</returns>
         public Coord2dd To2DXZ()
         {
             return new Coord2dd(X, Z);
         }
 
+        /// <summary>
+        /// Project to 2d.
+        /// </summary>
+        /// <returns>YZ point.</returns>
         public Coord2dd To2DYZ()
         {
             return new Coord2dd(Y, Z);
         }
 
+        /// <summary>
+        /// Hash code.
+        /// </summary>
+        /// <returns>Hash code.</returns>
         public override int GetHashCode()
         {
             return X.GetHashCode() ^ (Y.GetHashCode() + 100) ^ (Z.GetHashCode() + 10000);

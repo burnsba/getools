@@ -7,10 +7,14 @@ using System.Threading.Tasks;
 namespace Getools.Lib.Game.Engine
 {
     /// <summary>
-    /// object position in scaled units with bounding box and rotation.
+    /// Object position in scaled units with bounding box and rotation.
+    /// This class should be used to draw/render an object on screen.
     /// </summary>
     public class RuntimePosition
     {
+        /// <summary>
+        /// Rotation to apply to object, in context of screen.
+        /// </summary>
         public double RotationDegrees { get; set; }
 
         /// <summary>
@@ -23,6 +27,9 @@ namespace Getools.Lib.Game.Engine
         /// </summary>
         public Coord3dd HalfModelSize { get; set; } = new Coord3dd(0, 0, 0);
 
-        public Coord3dd Origin { get; set; }
+        /// <summary>
+        /// Origin point.
+        /// </summary>
+        public Coord3dd Origin { get; set; } = new Coord3dd(0, 0, 0);
     }
 }

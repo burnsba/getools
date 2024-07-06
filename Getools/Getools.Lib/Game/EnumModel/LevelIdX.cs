@@ -15,6 +15,9 @@ namespace Getools.Lib.Game.EnumModel
     /// </remarks>
     public record LevelIdX : EnumModelBase
     {
+        /// <summary>
+        /// Default / unknown / unset.
+        /// </summary>
         public static LevelIdX DefaultUnkown { get; } = new LevelIdX()
         {
             Id = 0,
@@ -22,6 +25,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = string.Empty,
         };
 
+        /// <summary>
+        /// Dam.
+        /// </summary>
         public static LevelIdX Dam { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Dam,
@@ -29,6 +35,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Dam",
         };
 
+        /// <summary>
+        /// Facility.
+        /// </summary>
         public static LevelIdX Facility { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Facility,
@@ -36,6 +45,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Facility",
         };
 
+        /// <summary>
+        /// Runway.
+        /// </summary>
         public static LevelIdX Runway { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Runway,
@@ -43,6 +55,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Runway",
         };
 
+        /// <summary>
+        /// Surface 1.
+        /// </summary>
         public static LevelIdX Surface1 { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Surface,
@@ -50,6 +65,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Surface 1",
         };
 
+        /// <summary>
+        /// Bunker 1.
+        /// </summary>
         public static LevelIdX Bunker1 { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Bunker1,
@@ -57,6 +75,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Bunker 1",
         };
 
+        /// <summary>
+        /// Silo.
+        /// </summary>
         public static LevelIdX Silo { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Silo,
@@ -64,6 +85,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Silo",
         };
 
+        /// <summary>
+        /// Frigate.
+        /// </summary>
         public static LevelIdX Frigate { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Frigate,
@@ -71,6 +95,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Frigate",
         };
 
+        /// <summary>
+        /// Surface 2.
+        /// </summary>
         public static LevelIdX Surface2 { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Surface2,
@@ -78,6 +105,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Surface 2",
         };
 
+        /// <summary>
+        /// Bunker 2.
+        /// </summary>
         public static LevelIdX Bunker2 { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Bunker2,
@@ -85,6 +115,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Bunker 2",
         };
 
+        /// <summary>
+        /// Statue.
+        /// </summary>
         public static LevelIdX Statue { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Statue,
@@ -92,6 +125,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Statue",
         };
 
+        /// <summary>
+        /// Archives.
+        /// </summary>
         public static LevelIdX Archives { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Archives,
@@ -99,6 +135,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Archives",
         };
 
+        /// <summary>
+        /// Streets.
+        /// </summary>
         public static LevelIdX Streets { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Streets,
@@ -106,6 +145,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Streets",
         };
 
+        /// <summary>
+        /// Depot.
+        /// </summary>
         public static LevelIdX Depot { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Depot,
@@ -113,6 +155,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Depot",
         };
 
+        /// <summary>
+        /// Train.
+        /// </summary>
         public static LevelIdX Train { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Train,
@@ -120,6 +165,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Train",
         };
 
+        /// <summary>
+        /// Jungle.
+        /// </summary>
         public static LevelIdX Jungle { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Jungle,
@@ -127,6 +175,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Jungle",
         };
 
+        /// <summary>
+        /// Control.
+        /// </summary>
         public static LevelIdX Control { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Control,
@@ -134,6 +185,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Control",
         };
 
+        /// <summary>
+        /// Caverns.
+        /// </summary>
         public static LevelIdX Caverns { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Caverns,
@@ -141,6 +195,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Caverns",
         };
 
+        /// <summary>
+        /// Cradle.
+        /// </summary>
         public static LevelIdX Cradle { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Cradle,
@@ -148,6 +205,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Cradle",
         };
 
+        /// <summary>
+        /// Aztec.
+        /// </summary>
         public static LevelIdX Aztec { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Aztec,
@@ -155,6 +215,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Aztec",
         };
 
+        /// <summary>
+        /// Egypt.
+        /// </summary>
         public static LevelIdX Egypt { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Egypt,
@@ -162,6 +225,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Egypt",
         };
 
+        /// <summary>
+        /// Cuba / credits.
+        /// </summary>
         public static LevelIdX Cuba { get; } = new LevelIdX()
         {
             Id = (int)LevelId.Cuba,
@@ -169,6 +235,9 @@ namespace Getools.Lib.Game.EnumModel
             Name = "Credits",
         };
 
+        /// <summary>
+        /// List of single player stages in order.
+        /// </summary>
         public static List<LevelIdX> SinglePlayerStages { get; } = new List<LevelIdX>()
         {
             Dam,

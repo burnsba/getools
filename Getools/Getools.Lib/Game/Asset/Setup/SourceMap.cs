@@ -10,8 +10,18 @@ using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
+    /// <summary>
+    /// Filenames embedded in retail version of game.
+    /// </summary>
     public class SourceMap
     {
+        /// <summary>
+        /// Gets file info relative to root asset/obseg/setup location.
+        /// </summary>
+        /// <param name="version">Region version.</param>
+        /// <param name="levelId">Level.</param>
+        /// <returns>File info.</returns>
+        /// <exception cref="NotImplementedException">Thrown on invalid level id.</exception>
         public static FileMap GetFileMap(Enums.Version version, int levelId)
         {
             switch (levelId)

@@ -8,8 +8,17 @@ using Getools.Lib.Game.Enums;
 
 namespace Getools.Lib.Game.Asset.Stan
 {
+    /// <summary>
+    /// Filenames embedded in retail version of game.
+    /// </summary>
     public class SourceMap
     {
+        /// <summary>
+        /// Gets file info relative to root asset/obseg/stan location.
+        /// </summary>
+        /// <param name="levelId">Level.</param>
+        /// <returns>File info.</returns>
+        /// <exception cref="NotImplementedException">Thrown on invalid level id.</exception>
         public static FileMap GetFileMap(int levelId)
         {
             switch (levelId)

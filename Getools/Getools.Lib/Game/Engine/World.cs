@@ -9,8 +9,21 @@ using Getools.Lib.Game.Asset.SetupObject;
 
 namespace Getools.Lib.Game.Engine
 {
+    /// <summary>
+    /// Methods for resolving position and orientation information according to the
+    /// retail logic of the game.
+    /// </summary>
     public static class World
     {
+        /// <summary>
+        /// For a given prop, gets the runtime position and bounding box size for drawing on some type of screen.
+        /// </summary>
+        /// <param name="pp">Prop point source.</param>
+        /// <param name="levelScale">Level scale.</param>
+        /// <returns>Door size and position information.</returns>
+        /// <exception cref="NullReferenceException">
+        /// <see cref="PointPosition.Bbox"/> and <see cref="PointPosition.SetupObject"/> are required.
+        /// </exception>
         public static RuntimePropPosition GetPropDefaultModelBbox_door(PropPointPosition pp, double levelScale)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
@@ -98,6 +111,15 @@ namespace Getools.Lib.Game.Engine
             return result;
         }
 
+        /// <summary>
+        /// For a given prop, gets the runtime position and bounding box size for drawing on some type of screen.
+        /// </summary>
+        /// <param name="pp">Prop point source.</param>
+        /// <param name="levelScale">Level scale.</param>
+        /// <returns>Character size and position information.</returns>
+        /// <exception cref="NullReferenceException">
+        /// <see cref="PointPosition.SetupObject"/> is required.
+        /// </exception>
         public static RuntimePropPosition GetPropDefaultModelBbox_chr(PropPointPosition pp, double levelScale)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
@@ -140,6 +162,15 @@ namespace Getools.Lib.Game.Engine
             return result;
         }
 
+        /// <summary>
+        /// For a given prop, gets the runtime position and bounding box size for drawing on some type of screen.
+        /// </summary>
+        /// <param name="pp">Prop point source.</param>
+        /// <param name="levelScale">Level scale.</param>
+        /// <returns>Prop size and position information.</returns>
+        /// <exception cref="NullReferenceException">
+        /// <see cref="PointPosition.SetupObject"/> is required.
+        /// </exception>
         public static RuntimePropPosition GetPropDefaultModelBbox_prop(PropPointPosition pp, double levelScale)
         {
             if (object.ReferenceEquals(null, pp.SetupObject))
@@ -291,6 +322,12 @@ namespace Getools.Lib.Game.Engine
             return result;
         }
 
+        /// <summary>
+        /// Gets the pad or pad3d bounding box.
+        /// </summary>
+        /// <param name="rp">Pad point source.</param>
+        /// <param name="levelScale">Level scale.</param>
+        /// <returns>Pad size and position information.</returns>
         public static RuntimePosition GetPadBbox(PointPosition rp, double levelScale)
         {
             double scaleFactor = 1 / levelScale;

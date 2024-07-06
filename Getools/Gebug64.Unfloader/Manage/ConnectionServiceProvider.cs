@@ -222,10 +222,12 @@ namespace Gebug64.Unfloader.Manage
             var multiPackets = msg.ToSendPackets(Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
             foreach (var p in multiPackets)
             {
-                //if (msg is GebugRamromReplayFromXpakMessage)
-                //{
-                //    _logger.Log(LogLevel.Information, $"PC: packet={p.PacketNumber.Value} / {p.TotalNumberPackets.Value} ; {p.Body.Length} - {p.Body[0]:X2} {p.Body[1]:X2} {p.Body[2]:X2} {p.Body[3]:X2} {p.Body[4]:X2} {p.Body[5]:X2} ... {p.Body[p.Body.Length - 4]:X2} {p.Body[p.Body.Length - 3]:X2} {p.Body[p.Body.Length - 2]:X2} {p.Body[p.Body.Length - 1]:X2}");
-                //}
+                /***
+                * if (msg is GebugRamromReplayFromXpakMessage)
+                * {
+                *     _logger.Log(LogLevel.Information, $"PC: packet={p.PacketNumber.Value} / {p.TotalNumberPackets.Value} ; {p.Body.Length} - {p.Body[0]:X2} {p.Body* [1]:X2} {p.Body[2]:X2} {p.Body[3]:X2} {p.Body[4]:X2} {p.Body[5]:X2} ... {p.Body[p.Body.Length - 4]:X2} {p.Body[p.Body.Length - 3]:X2} {p.Body* [p.Body.Length - 2]:X2} {p.Body[p.Body.Length - 1]:X2}");
+                * }
+                */
 
                 IUnfloaderPacket unfpacket = new BinaryPacket(p.ToByteArray());
                 _sendQueue.Enqueue(unfpacket);

@@ -41,6 +41,10 @@ using static System.Windows.Forms.AxHost;
 
 namespace Gebug64.Win.ViewModels
 {
+    /// <summary>
+    /// Viewmodel for main map control and UI state.
+    /// This is for drawing a map in 2d (top down projection).
+    /// </summary>
     public class MapWindowViewModel : ViewModelBase
     {
         private readonly ILogger _logger;
@@ -70,9 +74,54 @@ namespace Gebug64.Win.ViewModels
         protected AppConfigViewModel _appConfig;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="MapWindowViewModel"/> class.
+        /// </summary>
+        /// <param name="logger">App logger.</param>
+        /// <param name="deviceManagerResolver">Device resolver.</param>
+        /// <param name="appConfig">App config.</param>
+        public MapWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
+        {
+            _ignoreAppSettingsChange = true;
+
+            _logger = logger;
+            _dispatcher = Dispatcher.CurrentDispatcher;
+            _connectionServiceResolver = deviceManagerResolver;
+            _appConfig = appConfig;
+
+            SetSetupBinFolderCommand = new CommandHandler(
+                () => Workspace.Instance.SetDirectoryCommandHandler(
+                    this,
+                    nameof(SetupBinFolder),
+                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
+                () => true);
+
+            SetStanBinFolderCommand = new CommandHandler(
+                () => Workspace.Instance.SetDirectoryCommandHandler(
+                    this,
+                    nameof(StanBinFolder),
+                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
+                () => true);
+
+            SetBgBinFolderCommand = new CommandHandler(
+                () => Workspace.Instance.SetDirectoryCommandHandler(
+                    this,
+                    nameof(BgBinFolder),
+                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
+                () => true);
+
+            _setupBinFolder = _appConfig.Map.SetupBinFolder;
+            _stanBinFolder = _appConfig.Map.StanBinFolder;
+            _bgBinFolder = _appConfig.Map.BgBinFolder;
+
+            LevelIdX.SinglePlayerStages.ForEach(x => AvailableStages.Add(x));
+
+            _ignoreAppSettingsChange = false;
+        }
+
+        /// <summary>
         /// Folder containing setup files.
         /// </summary>
-        public string SetupBinFolder
+        public string? SetupBinFolder
         {
             get => _setupBinFolder;
             set
@@ -94,7 +143,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// Folder containing stan files.
         /// </summary>
-        public string StanBinFolder
+        public string? StanBinFolder
         {
             get => _stanBinFolder;
             set
@@ -116,7 +165,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// Folder containing stan files.
         /// </summary>
-        public string BgBinFolder
+        public string? BgBinFolder
         {
             get => _bgBinFolder;
             set
@@ -169,6 +218,9 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public ObservableCollection<LevelIdX> AvailableStages { get; set; } = new ObservableCollection<LevelIdX>();
 
+        /// <summary>
+        /// Collection of layers in the map.
+        /// </summary>
         public ObservableCollection<MapLayerViewModel> Layers { get; set; } = new ObservableCollection<MapLayerViewModel>();
 
         /// <summary>
@@ -186,6 +238,9 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public ICommand SetBgBinFolderCommand { get; set; }
 
+        /// <summary>
+        /// Width of the map for the level in scaled in-game units.
+        /// </summary>
         public double MapScaledWidth
         {
             get => _mapScaledWidth;
@@ -201,6 +256,9 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// (screen) Height of the map for the level in scaled in-game units.
+        /// </summary>
         public double MapScaledHeight
         {
             get => _mapScaledHeight;
@@ -214,45 +272,6 @@ namespace Gebug64.Win.ViewModels
                 _mapScaledHeight = value;
                 OnPropertyChanged(nameof(MapScaledHeight));
             }
-        }
-
-        public MapWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
-        {
-            _ignoreAppSettingsChange = true;
-
-            _logger = logger;
-            _dispatcher = Dispatcher.CurrentDispatcher;
-            _connectionServiceResolver = deviceManagerResolver;
-            _appConfig = appConfig;
-
-            SetSetupBinFolderCommand = new CommandHandler(
-                () => Workspace.Instance.SetDirectoryCommandHandler(
-                    this,
-                    nameof(SetupBinFolder),
-                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
-                () => true);
-
-            SetStanBinFolderCommand = new CommandHandler(
-                () => Workspace.Instance.SetDirectoryCommandHandler(
-                    this,
-                    nameof(StanBinFolder),
-                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
-                () => true);
-
-            SetBgBinFolderCommand = new CommandHandler(
-                () => Workspace.Instance.SetDirectoryCommandHandler(
-                    this,
-                    nameof(BgBinFolder),
-                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
-                () => true);
-
-            _setupBinFolder = _appConfig.Map.SetupBinFolder;
-            _stanBinFolder = _appConfig.Map.StanBinFolder;
-            _bgBinFolder = _appConfig.Map.BgBinFolder;
-
-            LevelIdX.SinglePlayerStages.ForEach(x => AvailableStages.Add(x));
-
-            _ignoreAppSettingsChange = false;
         }
 
         /// <summary>
@@ -324,12 +343,56 @@ namespace Gebug64.Win.ViewModels
             BgFile? bg = null;
 
             var setupFileMap = Getools.Lib.Game.Asset.Setup.SourceMap.GetFileMap(Getools.Lib.Game.Enums.Version.Ntsc, stageid.Id);
-            var stanFileMap = Getools.Lib.Game.Asset.Stan.SourceMap.GetFileMap(stageid.Id);
-            var bgFileMap = Getools.Lib.Game.Asset.Bg.SourceMap.GetFileMap(Getools.Lib.Game.Enums.Version.Ntsc, stageid.Id);
+            if (string.IsNullOrEmpty(setupFileMap.Filename))
+            {
+                _logger.LogError($"{nameof(LoadStage)}: Could not resolve setup relative path");
+                return;
+            }
 
-            var setupFilePath = Path.Combine(_setupBinFolder, setupFileMap.Dir, setupFileMap.Filename + ".bin");
-            var stanFilePath = Path.Combine(_stanBinFolder, stanFileMap.Dir, stanFileMap.Filename + ".bin");
-            var bgFilePath = Path.Combine(_bgBinFolder, bgFileMap.Dir, bgFileMap.Filename + ".bin");
+            var stanFileMap = Getools.Lib.Game.Asset.Stan.SourceMap.GetFileMap(stageid.Id);
+            if (string.IsNullOrEmpty(stanFileMap.Filename))
+            {
+                _logger.LogError($"{nameof(LoadStage)}: Could not resolve stan relative path");
+                return;
+            }
+
+            var bgFileMap = Getools.Lib.Game.Asset.Bg.SourceMap.GetFileMap(Getools.Lib.Game.Enums.Version.Ntsc, stageid.Id);
+            if (string.IsNullOrEmpty(bgFileMap.Filename))
+            {
+                _logger.LogError($"{nameof(LoadStage)}: Could not resolve bg relative path");
+                return;
+            }
+
+            string setupFilePath;
+            string stanFilePath;
+            string bgFilePath;
+
+            if (string.IsNullOrEmpty(setupFileMap.Dir))
+            {
+                setupFilePath = Path.Combine(_setupBinFolder, setupFileMap.Filename + ".bin");
+            }
+            else
+            {
+                setupFilePath = Path.Combine(_setupBinFolder, setupFileMap.Dir, setupFileMap.Filename + ".bin");
+            }
+
+            if (string.IsNullOrEmpty(stanFileMap.Dir))
+            {
+                stanFilePath = Path.Combine(_setupBinFolder, stanFileMap.Filename + ".bin");
+            }
+            else
+            {
+                stanFilePath = Path.Combine(_setupBinFolder, stanFileMap.Dir, stanFileMap.Filename + ".bin");
+            }
+
+            if (string.IsNullOrEmpty(bgFileMap.Dir))
+            {
+                bgFilePath = Path.Combine(_setupBinFolder, bgFileMap.Filename + ".bin");
+            }
+            else
+            {
+                bgFilePath = Path.Combine(_setupBinFolder, bgFileMap.Dir, bgFileMap.Filename + ".bin");
+            }
 
             if (!File.Exists(setupFilePath))
             {

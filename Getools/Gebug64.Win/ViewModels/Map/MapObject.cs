@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Gebug64.Win.Mvvm;
+﻿using Gebug64.Win.Mvvm;
 
 namespace Gebug64.Win.ViewModels.Map
 {
+    /// <summary>
+    /// Base class for an object to be drawn on screen.
+    /// </summary>
     public abstract class MapObject : ViewModelBase
     {
         private bool _isVisible;
@@ -15,6 +13,27 @@ namespace Gebug64.Win.ViewModels.Map
         private double _uiWidth;
         private double _uiHeight;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MapObject"/> class.
+        /// </summary>
+        public MapObject()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MapObject"/> class.
+        /// </summary>
+        /// <param name="x"><see cref="UiX"/>.</param>
+        /// <param name="y"><see cref="UiY"/>.</param>
+        public MapObject(double x, double y)
+        {
+            _uix = x;
+            _uiy = y;
+        }
+
+        /// <summary>
+        /// X position for drawing on screen.
+        /// </summary>
         public double UiX
         {
             get => _uix;
@@ -28,6 +47,9 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Y position for drawing on screen.
+        /// </summary>
         public double UiY
         {
             get => _uiy;
@@ -41,6 +63,9 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Width for drawing on screen.
+        /// </summary>
         public double UiWidth
         {
             get => _uiWidth;
@@ -54,6 +79,9 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Height for drawing on screen.
+        /// </summary>
         public double UiHeight
         {
             get => _uiHeight;
@@ -67,6 +95,9 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Whether or not to draw on screen.
+        /// </summary>
         public bool IsVisible
         {
             get => _isVisible;
@@ -80,20 +111,19 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
-        public System.Windows.Media.Brush Stroke { get; set; }
+        /// <summary>
+        /// Stroke.
+        /// </summary>
+        public System.Windows.Media.Brush? Stroke { get; set; }
 
-        public double StrokeThickness { get; set; }
+        /// <summary>
+        /// Stroke thickness.
+        /// </summary>
+        public double? StrokeThickness { get; set; }
 
-        public System.Windows.Media.Brush Fill { get; set; }
-
-        public MapObject()
-        {
-        }
-
-        public MapObject(double x, double y)
-        {
-            _uix = x;
-            _uiy = y;
-        }
+        /// <summary>
+        /// Object fill.
+        /// </summary>
+        public System.Windows.Media.Brush? Fill { get; set; }
     }
 }

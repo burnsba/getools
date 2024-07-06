@@ -32,25 +32,18 @@ namespace Gebug64.Win.Controls
 
         private double _uiScale = 1.0;
 
-        private MapViewModel _vm;
-        private bool _init = false;
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MapView"/> class.
+        /// </summary>
         public MapView()
         {
             InitializeComponent();
-
-            // DataCont
 
             _content = this;
             _scrollViewer = MainScrollViewer;
         }
 
-        private void _vm_NotifyChildChangedEvent(object? sender, EventArgs e)
-        {
-            MainContent.Items.Refresh();
-        }
-
-        private void scrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void ScrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (!MainScrollViewer.IsMouseOver)
             {
@@ -76,7 +69,7 @@ namespace Gebug64.Win.Controls
             _vOff = _scrollViewer.VerticalOffset;
         }
 
-        private void scrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void ScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             // If somehow the mouseup event was missed, fix the state.
             if (e.LeftButton == MouseButtonState.Released)
@@ -98,7 +91,7 @@ namespace Gebug64.Win.Controls
             _scrollViewer.ScrollToHorizontalOffset(newOffsetX);
         }
 
-        private void scrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void ScrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             _content.ReleaseMouseCapture();
             _mouseCaptured = false;
@@ -163,10 +156,8 @@ namespace Gebug64.Win.Controls
             MainContent.LayoutTransform = transform;
 
             var startPoint = startTransform.Transform(new Point(startMousePosition.X, startMousePosition.Y));
-            //System.Diagnostics.Debug.WriteLine($"{startPoint.X}, {startPoint.Y}");
 
             var endPoint = transform.Transform(new Point(startMousePosition.X, startMousePosition.Y));
-            //System.Diagnostics.Debug.WriteLine($"{endPoint.X}, {endPoint.Y}");
 
             // Find the amount the mouse pixel has shifted due to change in scale.
             var shift = endPoint - startPoint;

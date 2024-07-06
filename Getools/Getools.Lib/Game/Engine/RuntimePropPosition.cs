@@ -11,6 +11,9 @@ namespace Getools.Lib.Game.Engine
     /// </summary>
     public class RuntimePropPosition : RuntimePosition
     {
-        public PropPointPosition Source { get; set; }
+        /// <summary>
+        /// Source for prop info.
+        /// </summary>
+        public PropPointPosition? Source { get; set; }
     }
 }
