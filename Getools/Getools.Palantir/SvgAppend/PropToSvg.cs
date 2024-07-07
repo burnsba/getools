@@ -65,7 +65,7 @@ namespace Getools.Palantir.SvgAppend
                         return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#274d23", 4, "#66ed58");
 
                     case PropDef.Alarm:
-                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale / 3, "#cccccc", 4, "#ff0000");
+                        return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#cccccc", 1, "#ff0000");
 
                     case PropDef.Armour:
                         return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#0c1c63", 4, "#0000ff");
@@ -144,6 +144,10 @@ namespace Getools.Palantir.SvgAppend
                             case PropId.PROP_MILCOPTER:
                             case PropId.PROP_HELICOPTER:
                                 return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#808018", 4, "#dbdb60");
+
+                            case PropId.PROP_ALARM1:
+                            case PropId.PROP_ALARM2:
+                                return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#cccccc", 1, "#ff0000");
 
                             default:
                                 return SvgAppendPropDefaultModelBbox_prop(appendTo, pp, levelScale, "#916b2a", 4, "#ffdfa8");

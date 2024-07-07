@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:Gebug64.Win.Controls"
              xmlns:vm="clr-namespace:Gebug64.Win.ViewModels"
              xmlns:vmmo="clr-namespace:Gebug64.Win.ViewModels.Map"
+             xmlns:cv="clr-namespace:Gebug64.Win.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance vm:MapWindowViewModel}"
@@ -17,6 +18,9 @@
              Name="MapWindowZ"
              MouseMove="UserControl_MouseMove"
              >
+    <UserControl.Resources>
+        <cv:BoolToVisibilityConverter x:Key="BoolToVis"></cv:BoolToVisibilityConverter>
+    </UserControl.Resources>
     <Grid>
         <ScrollViewer
             x:Name="MainScrollViewer"
@@ -34,7 +38,9 @@
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <ItemsControl ItemsSource="{Binding Entities}">
+                        <ItemsControl
+                            Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
+                            ItemsSource="{Binding Entities}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas />

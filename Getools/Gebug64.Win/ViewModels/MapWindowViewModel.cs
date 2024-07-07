@@ -15,6 +15,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Win.Controls;
+using Gebug64.Win.Enum;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.ViewModels.Map;
@@ -107,6 +108,10 @@ namespace Gebug64.Win.ViewModels
                     this,
                     nameof(BgBinFolder),
                     () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
+                () => true);
+
+            ToggleLayerVisibilityCommand = new CommandHandler(
+                x => ToggleLayerVisibility((UiMapLayer)x!),
                 () => true);
 
             _setupBinFolder = _appConfig.Map.SetupBinFolder;
@@ -237,6 +242,8 @@ namespace Gebug64.Win.ViewModels
         /// Command to set the <see cref="BgBinFolder"/>.
         /// </summary>
         public ICommand SetBgBinFolderCommand { get; set; }
+
+        public ICommand ToggleLayerVisibilityCommand { get; set; }
 
         /// <summary>
         /// Width of the map for the level in scaled in-game units.
@@ -378,20 +385,20 @@ namespace Gebug64.Win.ViewModels
 
             if (string.IsNullOrEmpty(stanFileMap.Dir))
             {
-                stanFilePath = Path.Combine(_setupBinFolder, stanFileMap.Filename + ".bin");
+                stanFilePath = Path.Combine(_stanBinFolder, stanFileMap.Filename + ".bin");
             }
             else
             {
-                stanFilePath = Path.Combine(_setupBinFolder, stanFileMap.Dir, stanFileMap.Filename + ".bin");
+                stanFilePath = Path.Combine(_stanBinFolder, stanFileMap.Dir, stanFileMap.Filename + ".bin");
             }
 
             if (string.IsNullOrEmpty(bgFileMap.Dir))
             {
-                bgFilePath = Path.Combine(_setupBinFolder, bgFileMap.Filename + ".bin");
+                bgFilePath = Path.Combine(_bgBinFolder, bgFileMap.Filename + ".bin");
             }
             else
             {
-                bgFilePath = Path.Combine(_setupBinFolder, bgFileMap.Dir, bgFileMap.Filename + ".bin");
+                bgFilePath = Path.Combine(_bgBinFolder, bgFileMap.Dir, bgFileMap.Filename + ".bin");
             }
 
             if (!File.Exists(setupFilePath))
@@ -498,12 +505,23 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        private void ToggleLayerVisibility(UiMapLayer layerId)
+        {
+            var layer = Layers.FirstOrDefault(x => x.LayerId == layerId);
+            if (object.ReferenceEquals(null, layer))
+            {
+                return;
+            }
+
+            layer.IsVisible = !layer.IsVisible;
+        }
+
         private void AddBgLayer(ProcessedStageData rawStage, double adjustx, double adjusty)
         {
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.Bg);
 
             foreach (var poly in rawStage.RoomPolygons)
             {
@@ -537,7 +555,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.Stan);
 
             foreach (var poly in rawStage.TilePolygons)
             {
@@ -571,7 +589,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupIntro);
 
             foreach (var pp in rawStage.IntroPolygons)
             {
@@ -588,7 +606,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(PropDefToUiLayer(setupLayerKey));
 
             if (!rawStage.SetupPolygonsCollection.ContainsKey(setupLayerKey))
             {
@@ -623,7 +641,7 @@ namespace Gebug64.Win.ViewModels
                     break;
 
                     case PropDef.Alarm:
-                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale / 3, "#cccccc", 4, "#ff0000");
+                    mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#cccccc", 1, "#ff0000");
                     break;
 
                     case PropDef.Armour:
@@ -718,6 +736,11 @@ namespace Gebug64.Win.ViewModels
                                 mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#808018", 4, "#dbdb60");
                                 break;
 
+                            case PropId.PROP_ALARM1:
+                            case PropId.PROP_ALARM2:
+                                mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#cccccc", 1, "#ff0000");
+                                break;
+
                             default:
                                 mo = GetPropDefaultModelBbox_prop(pp, adjustx, adjusty, levelScale, "#916b2a", 4, "#ffdfa8");
                                 break;
@@ -745,7 +768,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPad);
 
             var collection = rawStage.PresetPolygons;
 
@@ -763,7 +786,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPathWaypoint);
 
             var collection = rawStage.PathWaypointLines;
 
@@ -797,7 +820,7 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel();
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPatrolPath);
 
             var collection = rawStage.PatrolPathLines;
 
@@ -1025,6 +1048,29 @@ namespace Gebug64.Win.ViewModels
             mor.UiHeight = stagePosition.ModelSize.Z;
 
             return mor;
+        }
+
+        private Enum.UiMapLayer PropDefToUiLayer(PropDef pd)
+        {
+            switch (pd)
+            {
+                case PropDef.Alarm: return Enum.UiMapLayer.SetupAlarm;
+                case PropDef.AmmoBox: return Enum.UiMapLayer.SetupAmmo;
+                case PropDef.Aircraft: return Enum.UiMapLayer.SetupAircraft;
+                case PropDef.Armour: return Enum.UiMapLayer.SetupBodyArmor;
+                case PropDef.Guard: return Enum.UiMapLayer.SetupGuard;
+                case PropDef.Cctv: return Enum.UiMapLayer.SetupCctv;
+                case PropDef.Collectable: return Enum.UiMapLayer.SetupCollectable;
+                case PropDef.Door: return Enum.UiMapLayer.SetupDoor;
+                case PropDef.Drone: return Enum.UiMapLayer.SetupDrone;
+                case PropDef.Key: return Enum.UiMapLayer.SetupKey;
+                case PropDef.Safe: return Enum.UiMapLayer.SetupSafe;
+                case PropDef.SingleMonitor: return Enum.UiMapLayer.SetupSingleMontior;
+                case PropDef.StandardProp: return Enum.UiMapLayer.SetupStandardProp;
+                case PropDef.Tank: return Enum.UiMapLayer.SetupTank;
+            }
+
+            throw new NotSupportedException();
         }
     }
 }
