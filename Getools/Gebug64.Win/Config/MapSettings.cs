@@ -12,6 +12,17 @@ namespace Gebug64.Win.Config
     public class MapSettings
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="MapSettings"/> class.
+        /// </summary>
+        public MapSettings()
+        {
+            ShowMapLayer = System.Enum.GetValues<Enum.UiMapLayer>()
+                .Where(x => x > Enum.UiMapLayer.DefaultUnknown)
+                .OrderBy(x => x)
+                .ToDictionary(key => key, val => true);
+        }
+
+        /// <summary>
         /// Folder containing setup files.
         /// </summary>
         public string? SetupBinFolder { get; set; }
@@ -25,5 +36,10 @@ namespace Gebug64.Win.Config
         /// Folder containing bg files.
         /// </summary>
         public string? BgBinFolder { get; set; }
+
+        /// <summary>
+        /// Flags to show or hide map layer.
+        /// </summary>
+        public Dictionary<Enum.UiMapLayer, bool> ShowMapLayer { get; set; }
     }
 }

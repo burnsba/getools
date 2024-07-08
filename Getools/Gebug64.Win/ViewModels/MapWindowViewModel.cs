@@ -63,6 +63,7 @@ namespace Gebug64.Win.ViewModels
 
         private object _lock = new object();
         private bool _isLoading = false;
+        private bool _isMapLoaded = false;
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -243,6 +244,9 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public ICommand SetBgBinFolderCommand { get; set; }
 
+        /// <summary>
+        /// Click handler for checkbox layer visibility.
+        /// </summary>
         public ICommand ToggleLayerVisibilityCommand { get; set; }
 
         /// <summary>
@@ -278,6 +282,22 @@ namespace Gebug64.Win.ViewModels
 
                 _mapScaledHeight = value;
                 OnPropertyChanged(nameof(MapScaledHeight));
+            }
+        }
+
+        /// <summary>
+        /// Flag to indicate whether or not there is a stage loaded.
+        /// </summary>
+        public bool IsMapLoaded
+        {
+            get => _isMapLoaded;
+            set
+            {
+                if (_isMapLoaded != value)
+                {
+                    _isMapLoaded = value;
+                    OnPropertyChanged(nameof(IsMapLoaded));
+                }
             }
         }
 
@@ -495,6 +515,8 @@ namespace Gebug64.Win.ViewModels
             MapScaledHeight = outputViewboxHeight * 3;
 
             _logger.LogInformation($"Map viewer: done loading {stageid.Name}");
+
+            IsMapLoaded = true;
         }
 
         private void ClearMap()
@@ -514,6 +536,8 @@ namespace Gebug64.Win.ViewModels
             }
 
             layer.IsVisible = !layer.IsVisible;
+
+            _appConfig.Map.SetMapLayerVisibility(layerId, layer.IsVisible);
         }
 
         private void AddBgLayer(ProcessedStageData rawStage, double adjustx, double adjusty)
@@ -521,7 +545,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.Bg);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.Bg)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bg],
+            };
 
             foreach (var poly in rawStage.RoomPolygons)
             {
@@ -555,7 +582,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.Stan);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.Stan)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Stan],
+            };
 
             foreach (var poly in rawStage.TilePolygons)
             {
@@ -589,7 +619,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupIntro);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupIntro)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupIntro],
+            };
 
             foreach (var pp in rawStage.IntroPolygons)
             {
@@ -606,7 +639,12 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(PropDefToUiLayer(setupLayerKey));
+            var uilayerid = PropDefToUiLayer(setupLayerKey);
+
+            layer = new MapLayerViewModel(uilayerid)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[uilayerid],
+            };
 
             if (!rawStage.SetupPolygonsCollection.ContainsKey(setupLayerKey))
             {
@@ -768,7 +806,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPad);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPad)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPad],
+            };
 
             var collection = rawStage.PresetPolygons;
 
@@ -786,7 +827,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPathWaypoint);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPathWaypoint)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPathWaypoint],
+            };
 
             var collection = rawStage.PathWaypointLines;
 
@@ -820,7 +864,10 @@ namespace Gebug64.Win.ViewModels
             MapLayerViewModel layer;
             MapObject mo;
 
-            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPatrolPath);
+            layer = new MapLayerViewModel(Enum.UiMapLayer.SetupPatrolPath)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPatrolPath],
+            };
 
             var collection = rawStage.PatrolPathLines;
 

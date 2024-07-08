@@ -124,26 +124,26 @@
 
                         <TextBlock Style="{StaticResource LeftHeader}">Layers</TextBlock>
 
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Bg}">bg</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Stan}">stan</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPad}">setup: pad</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPathWaypoint}">setup: path waypoint</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPatrolPath}">setup: patrol path</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAlarm}">setup: alarm</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAmmo}">setup: ammo</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAircraft}">setup: aircraft</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupBodyArmor}">setup: body armor</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupGuard}">setup: guard</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupCctv}">setup: cctv</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupCollectable}">setup: collectable</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupDoor}">setup: door</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupDrone}">setup: drone</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupKey}">setup: key</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupSafe}">setup: safe</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupSingleMontior}">setup: single montior</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupStandardProp}">setup: standard prop</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupTank}">setup: tank</CheckBox>
-                        <CheckBox IsChecked="True" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupIntro}">setup: intro (spawn)</CheckBox>
+                        <CheckBox Name="CheckBg" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Bg}">bg</CheckBox>
+                        <CheckBox Name="CheckStan" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Stan}">stan</CheckBox>
+                        <CheckBox Name="CheckSetupPad" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPad}">setup: pad</CheckBox>
+                        <CheckBox Name="CheckSetupPathWaypoint" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPathWaypoint}">setup: path waypoint</CheckBox>
+                        <CheckBox Name="CheckSetupPatrolPath" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPatrolPath}">setup: patrol path</CheckBox>
+                        <CheckBox Name="CheckSetupAlarm" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAlarm}">setup: alarm</CheckBox>
+                        <CheckBox Name="CheckSetupAmmo" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAmmo}">setup: ammo</CheckBox>
+                        <CheckBox Name="CheckSetupAircraft" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupAircraft}">setup: aircraft</CheckBox>
+                        <CheckBox Name="CheckSetupBodyArmor" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupBodyArmor}">setup: body armor</CheckBox>
+                        <CheckBox Name="CheckSetupGuard" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupGuard}">setup: guard</CheckBox>
+                        <CheckBox Name="CheckSetupCctv" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupCctv}">setup: cctv</CheckBox>
+                        <CheckBox Name="CheckSetupCollectable" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupCollectable}">setup: collectable</CheckBox>
+                        <CheckBox Name="CheckSetupDoor" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupDoor}">setup: door</CheckBox>
+                        <CheckBox Name="CheckSetupDrone" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupDrone}">setup: drone</CheckBox>
+                        <CheckBox Name="CheckSetupKey" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupKey}">setup: key</CheckBox>
+                        <CheckBox Name="CheckSetupSafe" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupSafe}">setup: safe</CheckBox>
+                        <CheckBox Name="CheckSetupSingleMontior" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupSingleMontior}">setup: single montior</CheckBox>
+                        <CheckBox Name="CheckSetupStandardProp" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupStandardProp}">setup: standard prop</CheckBox>
+                        <CheckBox Name="CheckSetupTank" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupTank}">setup: tank</CheckBox>
+                        <CheckBox Name="CheckSetupIntro" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupIntro}">setup: intro (spawn)</CheckBox>
 
                         <Separator Style="{StaticResource LeftLine}"/>
 

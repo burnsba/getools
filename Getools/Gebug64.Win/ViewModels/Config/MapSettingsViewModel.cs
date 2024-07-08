@@ -15,12 +15,17 @@ namespace Gebug64.Win.ViewModels.Config
         private string? _setupBinFolder;
         private string? _stanBinFolder;
         private string? _bgBinFolder;
+        private Dictionary<Enum.UiMapLayer, bool> _showUiLayer = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapSettingsViewModel"/> class.
         /// </summary>
         public MapSettingsViewModel()
         {
+            _showUiLayer = System.Enum.GetValues<Enum.UiMapLayer>()
+                .Where(x => x > Enum.UiMapLayer.DefaultUnknown)
+                .OrderBy(x => x)
+                .ToDictionary(key => key, val => true);
         }
 
         /// <summary>
@@ -73,6 +78,38 @@ namespace Gebug64.Win.ViewModels.Config
                 if (_bgBinFolder != value)
                 {
                     IsDirty = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Property to manage map layer visibility.
+        /// Used in auto mapper construction.
+        /// Use <see cref="SetMapLayerVisibility"/> to set values at runtime.
+        /// </summary>
+        public Dictionary<Enum.UiMapLayer, bool> ShowMapLayer
+        {
+            get => _showUiLayer;
+            set
+            {
+                _showUiLayer = value;
+            }
+        }
+
+        /// <summary>
+        /// Sets the UI layer visibility to the given value.
+        /// </summary>
+        /// <param name="key">Layer.</param>
+        /// <param name="val">Visibility.</param>
+        public void SetMapLayerVisibility(Enum.UiMapLayer key, bool val)
+        {
+            if (_showUiLayer.ContainsKey(key))
+            {
+                if (_showUiLayer[key] != val)
+                {
+                    _showUiLayer[key] = val;
+
+                    Workspace.Instance.SaveAppSettings();
                 }
             }
         }
