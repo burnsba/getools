@@ -14,6 +14,7 @@ namespace Gebug64.Win.ViewModels.Map
     public class MapLayerViewModel : ViewModelBase
     {
         private bool _isVisible;
+        private UiMapLayerZSliceCompare _zSliceCompare;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapLayerViewModel"/> class.
@@ -23,12 +24,50 @@ namespace Gebug64.Win.ViewModels.Map
         {
             LayerId = layerId;
             _isVisible = true;
+
+            // Set the comparison method based on the layer type.
+            switch (layerId)
+            {
+                case UiMapLayer.Bg:
+                case UiMapLayer.Stan:
+                case UiMapLayer.SetupPathWaypoint:
+                case UiMapLayer.SetupPatrolPath:
+                    _zSliceCompare = UiMapLayerZSliceCompare.Bbox;
+                    break;
+
+                case UiMapLayer.SetupPad:
+                case UiMapLayer.SetupAlarm:
+                case UiMapLayer.SetupAmmo:
+                case UiMapLayer.SetupAircraft:
+                case UiMapLayer.SetupBodyArmor:
+                case UiMapLayer.SetupGuard:
+                case UiMapLayer.SetupCctv:
+                case UiMapLayer.SetupCollectable:
+                case UiMapLayer.SetupDoor:
+                case UiMapLayer.SetupDrone:
+                case UiMapLayer.SetupKey:
+                case UiMapLayer.SetupSafe:
+                case UiMapLayer.SetupSingleMontior:
+                case UiMapLayer.SetupStandardProp:
+                case UiMapLayer.SetupTank:
+                case UiMapLayer.SetupIntro:
+                    _zSliceCompare = UiMapLayerZSliceCompare.OriginPoint;
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
         }
 
         /// <summary>
         /// Type of layer
         /// </summary>
         public UiMapLayer LayerId { get; private set; }
+
+        /// <summary>
+        /// Explains how map objects in the layer should be compared to the Z min/max range.
+        /// </summary>
+        public UiMapLayerZSliceCompare ZSliceCompare => _zSliceCompare;
 
         /// <summary>
         /// Whether or not to draw on screen.

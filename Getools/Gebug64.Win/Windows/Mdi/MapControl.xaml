@@ -158,7 +158,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource LeftRowText}">min:</TextBlock>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
-                            <TextBox Grid.Column="2">123456789.123</TextBox>
+                            <TextBox Grid.Column="2" Text="{Binding MapSelectedMinVerticalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+
                         </Grid>
 
                         <Separator Style="{StaticResource LeftRowSpaceSmaller}"/>
@@ -171,12 +172,17 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource LeftRowText}">max:</TextBlock>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
-                            <TextBox Grid.Column="2">123456789.123</TextBox>
+                            <TextBox Grid.Column="2" Text="{Binding MapSelectedMaxVerticalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
                         </Grid>
 
                         <Separator Style="{StaticResource LeftRowSpaceSmaller}"/>
 
-                        <Slider></Slider>
+                        <ctl:RangeSlider
+                            Minimum="{Binding MapMinVertical}"
+                            Maximum="{Binding MapMaxVertical}"
+                            LowerValue="{Binding MapSelectedMinVertical, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            UpperValue="{Binding MapSelectedMaxVertical, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                ></ctl:RangeSlider>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -186,7 +192,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource LeftRowText}">stage min:</TextBlock>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
-                            <TextBlock Grid.Column="2">123456789</TextBlock>
+                            <TextBlock Grid.Column="2" Text="{Binding MapMinVerticalText}"></TextBlock>
                         </Grid>
                         
                         <Separator Style="{StaticResource LeftRowSpaceSmaller}"/>
@@ -199,7 +205,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource LeftRowText}">stage max:</TextBlock>
                             <Separator Grid.Column="1" Width="12" Background="Transparent"/>
-                            <TextBlock Grid.Column="2">123456789</TextBlock>
+                            <TextBlock Grid.Column="2" Text="{Binding MapMaxVerticalText}"></TextBlock>
                         </Grid>
 
                         <Separator Style="{StaticResource LeftLine}"/>

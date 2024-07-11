@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Getools.Lib.Game
 {
+    /// <summary>
+    /// Bounding box, of type <see cref="double"/>.
+    /// </summary>
     public class BoundingBoxd
     {
         /// <summary>

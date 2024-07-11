@@ -4,10 +4,14 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Policy;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -39,6 +43,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SvgLib;
 using static System.Windows.Forms.AxHost;
+using static Antlr4.Runtime.Atn.SemanticContext;
 
 namespace Gebug64.Win.ViewModels
 {
@@ -48,6 +53,8 @@ namespace Gebug64.Win.ViewModels
     /// </summary>
     public class MapWindowViewModel : ViewModelBase
     {
+        private const int _mapResliceDelay = 200; // ms
+
         private readonly ILogger _logger;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
         private readonly Dispatcher _dispatcher;
@@ -58,12 +65,20 @@ namespace Gebug64.Win.ViewModels
 
         private double _mapScaledWidth = 0;
         private double _mapScaledHeight = 0;
+        private double _mapMinVertical = 0;
+        private double _mapMaxVertical = 0;
+        private double _mapSelectedMinVertical = 0;
+        private double _mapSelectedMaxVertical = 0;
 
         private LevelIdX _selectedStage = LevelIdX.DefaultUnkown;
 
         private object _lock = new object();
         private bool _isLoading = false;
         private bool _isMapLoaded = false;
+
+        private object _timerLock = new object();
+        private bool _mapZSliceTimerActive = false;
+        private System.Timers.Timer _mapZSliceTimer;
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -84,6 +99,12 @@ namespace Gebug64.Win.ViewModels
         public MapWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
         {
             _ignoreAppSettingsChange = true;
+
+            _mapZSliceTimer = new System.Timers.Timer();
+            _mapZSliceTimer.Interval = _mapResliceDelay; // ms
+            _mapZSliceTimer.Enabled = false;
+            _mapZSliceTimer.AutoReset = false;
+            _mapZSliceTimer.Elapsed += MapZSliceTimerElapsed;
 
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
@@ -297,6 +318,158 @@ namespace Gebug64.Win.ViewModels
                 {
                     _isMapLoaded = value;
                     OnPropertyChanged(nameof(IsMapLoaded));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Map minimum vertical point in scaled units.
+        /// </summary>
+        public double MapMinVertical
+        {
+            get => _mapMinVertical;
+            set
+            {
+                if (_mapMinVertical != value)
+                {
+                    _mapMinVertical = value;
+                    OnPropertyChanged(nameof(MapMinVertical));
+                    OnPropertyChanged(nameof(MapMinVerticalText));
+
+                    if (_mapSelectedMinVertical < _mapMinVertical)
+                    {
+                        MapSelectedMinVertical = _mapMinVertical;
+                    }
+
+                    if (_mapSelectedMaxVertical < _mapMinVertical)
+                    {
+                        MapSelectedMaxVertical = _mapMinVertical;
+                    }
+
+                    StartExtendMapZSliceTimer();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="MapMinVertical"/> as string.
+        /// </summary>
+        public string MapMinVerticalText => _mapMinVertical.ToString("0.0000");
+
+        /// <summary>
+        /// Map maximum vertical point in scaled units.
+        /// </summary>
+        public double MapMaxVertical
+        {
+            get => _mapMaxVertical;
+            set
+            {
+                if (_mapMaxVertical != value)
+                {
+                    _mapMaxVertical = value;
+                    OnPropertyChanged(nameof(MapMaxVertical));
+                    OnPropertyChanged(nameof(MapMaxVerticalText));
+
+                    if (_mapSelectedMaxVertical > _mapMaxVertical)
+                    {
+                        MapSelectedMaxVertical = _mapMaxVertical;
+                    }
+
+                    if (_mapSelectedMinVertical > _mapMaxVertical)
+                    {
+                        MapSelectedMinVertical = _mapMaxVertical;
+                    }
+
+                    StartExtendMapZSliceTimer();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="MapMaxVertical"/> as string.
+        /// </summary>
+        public string MapMaxVerticalText => _mapMaxVertical.ToString("0.0000");
+
+        /// <summary>
+        /// User selected lower boundary vertical point in scaled units.
+        /// </summary>
+        public double MapSelectedMinVertical
+        {
+            get => _mapSelectedMinVertical;
+            set
+            {
+                if (_mapSelectedMinVertical != value && value >= _mapMinVertical && value <= _mapMaxVertical && value <= _mapSelectedMaxVertical)
+                {
+                    _mapSelectedMinVertical = value;
+                    OnPropertyChanged(nameof(MapSelectedMinVertical));
+                    OnPropertyChanged(nameof(MapSelectedMinVerticalText));
+
+                    StartExtendMapZSliceTimer();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="MapSelectedMinVertical"/> as string.
+        /// </summary>
+        public string MapSelectedMinVerticalText
+        {
+            get => _mapSelectedMinVertical.ToString("0.0000");
+            set
+            {
+                double d;
+                if (double.TryParse(value, out d))
+                {
+                    if (_mapSelectedMinVertical != d && d >= _mapMinVertical && d <= _mapMaxVertical && d <= _mapSelectedMaxVertical)
+                    {
+                        _mapSelectedMinVertical = d;
+                        OnPropertyChanged(nameof(MapSelectedMinVerticalText));
+                        OnPropertyChanged(nameof(MapSelectedMinVertical));
+
+                        StartExtendMapZSliceTimer();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// User selected upper boundary vertical point in scaled units.
+        /// </summary>
+        public double MapSelectedMaxVertical
+        {
+            get => _mapSelectedMaxVertical;
+            set
+            {
+                if (_mapSelectedMaxVertical != value && value >= _mapMinVertical && value <= _mapMaxVertical && value >= _mapSelectedMinVertical)
+                {
+                    _mapSelectedMaxVertical = value;
+                    OnPropertyChanged(nameof(MapSelectedMaxVertical));
+                    OnPropertyChanged(nameof(MapSelectedMaxVerticalText));
+
+                    StartExtendMapZSliceTimer();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="MapSelectedMaxVertical"/> as string.
+        /// </summary>
+        public string MapSelectedMaxVerticalText
+        {
+            get => _mapSelectedMaxVertical.ToString("0.0000");
+            set
+            {
+                double d;
+                if (double.TryParse(value, out d))
+                {
+                    if (_mapSelectedMaxVertical != d && d >= _mapMinVertical && d <= _mapMaxVertical && d >= _mapSelectedMinVertical)
+                    {
+                        _mapSelectedMaxVertical = d;
+                        OnPropertyChanged(nameof(MapSelectedMaxVerticalText));
+                        OnPropertyChanged(nameof(MapSelectedMaxVertical));
+
+                        StartExtendMapZSliceTimer();
+                    }
                 }
             }
         }
@@ -517,6 +690,10 @@ namespace Gebug64.Win.ViewModels
             _logger.LogInformation($"Map viewer: done loading {stageid.Name}");
 
             IsMapLoaded = true;
+            MapMinVertical = rawStage.ScaledMin.Y;
+            MapMaxVertical = rawStage.ScaledMax.Y;
+            MapSelectedMinVertical = rawStage.ScaledMin.Y;
+            MapSelectedMaxVertical = rawStage.ScaledMax.Y;
         }
 
         private void ClearMap()
@@ -571,6 +748,9 @@ namespace Gebug64.Win.ViewModels
                     Fill = Brushes.Transparent,
                 };
 
+                mo.ScaledMin = poly.ScaledMin.Clone();
+                mo.ScaledMax = poly.ScaledMax.Clone();
+
                 layer.Entities.Add(mo);
             }
 
@@ -608,6 +788,9 @@ namespace Gebug64.Win.ViewModels
                     Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#fdf5ff")!,
                 };
 
+                mo.ScaledMin = poly.ScaledMin.Clone();
+                mo.ScaledMax = poly.ScaledMax.Clone();
+
                 layer.Entities.Add(mo);
             }
 
@@ -627,6 +810,8 @@ namespace Gebug64.Win.ViewModels
             foreach (var pp in rawStage.IntroPolygons)
             {
                 mo = GetPropDefaultBbox_intro(pp, adjustx, adjusty, levelScale);
+
+                mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
                 layer.Entities.Add(mo);
             }
@@ -795,6 +980,8 @@ namespace Gebug64.Win.ViewModels
                     throw new NotImplementedException();
                 }
 
+                mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
                 layer.Entities.Add(mo);
             }
 
@@ -816,6 +1003,9 @@ namespace Gebug64.Win.ViewModels
             foreach (var pp in collection)
             {
                 mo = GetPadBbox(pp, adjustx, adjusty, levelScale);
+
+                mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
                 layer.Entities.Add(mo);
             }
 
@@ -852,6 +1042,15 @@ namespace Gebug64.Win.ViewModels
                     StrokeThickness = 12,
                     Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#ff80ff")!,
                 };
+
+                var scaledPos = renderLine.Bbox.Scale(1 / levelScale);
+
+                mo.ScaledMin.X = scaledPos.MinX;
+                mo.ScaledMin.Y = scaledPos.MinY;
+                mo.ScaledMin.Z = scaledPos.MinZ;
+                mo.ScaledMax.X = scaledPos.MaxX;
+                mo.ScaledMax.Y = scaledPos.MaxY;
+                mo.ScaledMax.Z = scaledPos.MaxZ;
 
                 layer.Entities.Add(mo);
             }
@@ -892,6 +1091,15 @@ namespace Gebug64.Win.ViewModels
                     StrokeThickness = 18,
                 };
 
+                var scaledPos = pathset.Bbox.Scale(1 / levelScale);
+
+                mo.ScaledMin.X = scaledPos.MinX;
+                mo.ScaledMin.Y = scaledPos.MinY;
+                mo.ScaledMin.Z = scaledPos.MinZ;
+                mo.ScaledMax.X = scaledPos.MaxX;
+                mo.ScaledMax.Y = scaledPos.MaxY;
+                mo.ScaledMax.Z = scaledPos.MaxZ;
+
                 layer.Entities.Add(mo);
             }
 
@@ -905,6 +1113,8 @@ namespace Gebug64.Win.ViewModels
             var mor = new MapObjectRect(
                 stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
                 stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
             mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom(stroke)!;
             mor.StrokeThickness = strokeWidth;
@@ -925,6 +1135,8 @@ namespace Gebug64.Win.ViewModels
                 stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
                 stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
 
+            mor.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
             mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#8d968e")!;
             mor.StrokeThickness = 2;
             mor.Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#e1ffdb")!;
@@ -943,6 +1155,8 @@ namespace Gebug64.Win.ViewModels
             var mor = new MapObjectResourceImage(
                 stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
                 stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/chr.png";
 
@@ -970,6 +1184,8 @@ namespace Gebug64.Win.ViewModels
                 pos.X - hw + adjustx,
                 pos.Z - hh + adjusty);
 
+            mor.ScaledOrigin = pos;
+
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/key.png";
 
             mor.RotationDegree = rotAngle;
@@ -995,6 +1211,8 @@ namespace Gebug64.Win.ViewModels
             var mor = new MapObjectResourceImage(
                 pos.X - hw + adjustx,
                 pos.Z - hh + adjusty);
+
+            mor.ScaledOrigin = pos;
 
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/cctv.png";
 
@@ -1022,6 +1240,8 @@ namespace Gebug64.Win.ViewModels
                 pos.X - hw + adjustx,
                 pos.Z - hh + adjusty);
 
+            mor.ScaledOrigin = pos;
+
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/lock.png";
 
             mor.RotationDegree = rotAngle;
@@ -1048,6 +1268,8 @@ namespace Gebug64.Win.ViewModels
                 pos.X - hw + adjustx,
                 pos.Z - hh + adjusty);
 
+            mor.ScaledOrigin = pos;
+
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/heavy_gun.png";
 
             mor.RotationDegree = rotAngle;
@@ -1070,6 +1292,8 @@ namespace Gebug64.Win.ViewModels
                 pos.X - hw + adjustx,
                 pos.Z - hh + adjusty);
 
+            mor.ScaledOrigin = pos;
+
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/star.png";
 
             mor.UiWidth = w;
@@ -1085,6 +1309,8 @@ namespace Gebug64.Win.ViewModels
             var mor = new MapObjectRect(
                 stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
                 stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.ScaledOrigin = rp.Origin.Clone().Scale(1 / levelScale);
 
             mor.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#9c009e")!;
             mor.StrokeThickness = 4;
@@ -1118,6 +1344,60 @@ namespace Gebug64.Win.ViewModels
             }
 
             throw new NotSupportedException();
+        }
+
+        private void MapZSliceTimerElapsed(object? sender, ElapsedEventArgs e)
+        {
+            lock (_timerLock)
+            {
+                _mapZSliceTimerActive = false;
+            }
+
+            foreach (var layer in Layers)
+            {
+                foreach (var entity in layer.Entities)
+                {
+                    if (layer.ZSliceCompare == UiMapLayerZSliceCompare.Bbox)
+                    {
+                        if ((entity.ScaledMax.Y >= _mapSelectedMinVertical && entity.ScaledMax.Y <= _mapSelectedMaxVertical)
+                            || (entity.ScaledMin.Y >= _mapSelectedMinVertical && entity.ScaledMin.Y <= _mapSelectedMaxVertical))
+                        {
+                            entity.IsVisible = true;
+                        }
+                        else
+                        {
+                            entity.IsVisible = false;
+                        }
+                    }
+                    else if (layer.ZSliceCompare == UiMapLayerZSliceCompare.OriginPoint)
+                    {
+                        if (entity.ScaledOrigin.Y >= _mapSelectedMinVertical && entity.ScaledOrigin.Y <= _mapSelectedMaxVertical)
+                        {
+                            entity.IsVisible = true;
+                        }
+                        else
+                        {
+                            entity.IsVisible = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void StartExtendMapZSliceTimer()
+        {
+            lock (_timerLock)
+            {
+                if (!_mapZSliceTimerActive)
+                {
+                    _mapZSliceTimerActive = true;
+                    _mapZSliceTimer.Start();
+                    return;
+                }
+
+                _mapZSliceTimer.Stop();
+                _mapZSliceTimer.Start();
+            }
         }
     }
 }

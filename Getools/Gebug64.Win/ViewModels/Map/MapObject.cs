@@ -1,4 +1,5 @@
 ﻿using Gebug64.Win.Mvvm;
+using Getools.Lib.Game;
 
 namespace Gebug64.Win.ViewModels.Map
 {
@@ -125,5 +126,20 @@ namespace Gebug64.Win.ViewModels.Map
         /// Object fill.
         /// </summary>
         public System.Windows.Media.Brush? Fill { get; set; }
+
+        /// <summary>
+        /// Gets or sets the origin (associated pad origin).
+        /// </summary>
+        public Coord3dd ScaledOrigin { get; set; } = Coord3dd.Zero.Clone();
+
+        /// <summary>
+        /// Stage scaled coordinate value.
+        /// </summary>
+        public Coord3dd ScaledMin { get; set; } = Coord3dd.Zero.Clone();
+
+        /// <summary>
+        /// Stage scaled coordinate value.
+        /// </summary>
+        public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
     }
 }

@@ -63,6 +63,7 @@
                                         Fill="{Binding Path=Fill}"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
+                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
                                         Points="{Binding Points}"
                                         >
                                     </Polygon>
@@ -72,6 +73,7 @@
                                         Stroke="{Binding Path=Stroke}"
                                         StrokeThickness="{Binding Path=StrokeThickness}"
                                         Fill="{Binding Path=Fill}"
+                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
                                         Width="{Binding UiWidth}"
                                         Height="{Binding UiHeight}"
                                         RenderTransformOrigin="0.5,0.5"
@@ -85,6 +87,7 @@
                                     <Line
                                         Stroke="{Binding Path=Stroke}"
                                         StrokeThickness="{Binding Path=StrokeThickness}"
+                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
                                         X1="{Binding Path=P1.X}"
                                         Y1="{Binding Path=P1.Y}"
                                         X2="{Binding Path=P2.X}"
@@ -96,6 +99,7 @@
                                     <Polyline
                                         Stroke="{Binding Path=Stroke}"
                                         StrokeThickness="{Binding Path=StrokeThickness}"
+                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
                                         Points="{Binding Points}"
                                         >
                                     </Polyline>
@@ -105,6 +109,7 @@
                                         Source="{Binding ResourcePath}"
                                         Width="{Binding UiWidth}"
                                         Height="{Binding UiHeight}"
+                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
                                         RenderTransformOrigin="0.5,0.5"
                                         >
                                         <Image.RenderTransform>
