@@ -48,9 +48,9 @@ namespace Gebug64.Win.ViewModels
         /// <param name="e">Event args.</param>
         public void ResizeChildHandler(object sender, RoutedEventArgs e)
         {
-            var args = (ResizeEventArgs)e;
+            // var args = (ResizeEventArgs)e;
 
-            System.Diagnostics.Debug.WriteLine("Resize child");
+            // System.Diagnostics.Debug.WriteLine("Resize child");
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace Gebug64.Win.ViewModels
         /// <param name="e">Event args.</param>
         public void MoveChildHandler(object sender, RoutedEventArgs e)
         {
-            var args = (MoveEventArgs)e;
+            // var args = (MoveEventArgs)e;
 
-            System.Diagnostics.Debug.WriteLine("Move child");
+            // System.Diagnostics.Debug.WriteLine("Move child");
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Gebug64.Win.ViewModels
         /// <param name="e">Event args.</param>
         public void CloseChildHandler(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("Close child");
+            // System.Diagnostics.Debug.WriteLine("Close child");
         }
 
         private void BuildViewWindowList()

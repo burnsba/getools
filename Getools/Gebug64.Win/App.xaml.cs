@@ -183,6 +183,7 @@ namespace Gebug64.Win
         private void ShowUnhandledStartupException(string message)
         {
             System.Windows.MessageBox.Show(message);
+            Logger.Instance!.Shutdown();
             Environment.Exit(1);
         }
     }

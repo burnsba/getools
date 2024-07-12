@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Interop;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +22,10 @@ namespace Gebug64.Win
 
         private static object _singleton = new object();
 
+        private Thread _logThread;
+        private ConcurrentQueue<LogQueueItem> _logMessageQueue = new ConcurrentQueue<LogQueueItem>();
+
+        private bool _shutdown = false;
         private bool _consoleAdded = false;
         private List<Action<LogLevel, string>> _callbacks = new List<Action<LogLevel, string>>();
 
@@ -27,6 +34,9 @@ namespace Gebug64.Win
         /// </summary>
         private Logger()
         {
+            _logThread = new Thread(ThreadLogMain);
+            _logThread.IsBackground = true;
+            _logThread.Start();
         }
 
         /// <summary>
@@ -62,6 +72,14 @@ namespace Gebug64.Win
                     _instance = new Logger();
                 }
             }
+        }
+
+        /// <summary>
+        /// Stops logger thread.
+        /// </summary>
+        public void Shutdown()
+        {
+            _shutdown = true;
         }
 
         /// <inheritdoc />
@@ -121,6 +139,11 @@ namespace Gebug64.Win
         /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
+            if (_shutdown)
+            {
+                throw new InvalidOperationException("Logger thread has terminated");
+            }
+
             string msg = formatter?.Invoke(state, exception) ?? string.Empty;
 
             if (PrefixTimestamp)
@@ -129,10 +152,11 @@ namespace Gebug64.Win
                 msg = prefix + msg;
             }
 
-            foreach (var callback in _callbacks)
+            _logMessageQueue.Enqueue(new LogQueueItem()
             {
-                callback(logLevel, msg);
-            }
+                Message = msg,
+                Level = logLevel,
+            });
         }
 
         private void ConsoleLogger(LogLevel logLevel, string msg)
@@ -149,6 +173,34 @@ namespace Gebug64.Win
             {
                 Console.Error.WriteLine(msg);
             }
+        }
+
+        private void ThreadLogMain()
+        {
+            while (!_shutdown)
+            {
+                LogQueueItem next;
+
+                while (_logMessageQueue.Any())
+                {
+                    if (_logMessageQueue.TryDequeue(out next))
+                    {
+                        foreach (var callback in _callbacks)
+                        {
+                            callback(next.Level, next.Message);
+                        }
+                    }
+                }
+
+                Thread.Sleep(10);
+            }
+        }
+
+        private struct LogQueueItem
+        {
+            public string Message { get; set; }
+
+            public LogLevel Level { get; set; }
         }
     }
 }
