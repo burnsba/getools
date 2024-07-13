@@ -14,6 +14,7 @@ using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.SerialPort;
 using Gebug64.Win.Config;
 using Gebug64.Win.Controls;
+using Gebug64.Win.Extensions;
 using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.CategoryTabs;
@@ -33,6 +34,7 @@ namespace Gebug64.Win
     public partial class App : Application
     {
         private ILogger? _theLogger;
+        private AppConfigViewModel? _appConfigViewModel = null;
 
         private void App_Startup(object sender, StartupEventArgs e)
         {
@@ -107,6 +109,15 @@ namespace Gebug64.Win
             MainControl main = (MainControl)Workspace.Instance.ServiceProvider.GetService(typeof(MainControl))!;
             host.AddPermanentMdiChild(main, Gebug64.Win.Ui.Lang.Window_MessageCenterTitle);
 
+            // restore position and state.
+            host.TryLoadWindowLayoutState(_appConfigViewModel!);
+
+            // Load children from appconfig.
+            host.LoadSavedChildLayout();
+
+            // Enable events to write UI state updates to appconfig file.
+            host.DoneInit();
+
             host.Show();
 
             _theLogger.Log(LogLevel.Information, "Application started");
@@ -121,9 +132,9 @@ namespace Gebug64.Win
             services.AddSingleton(typeof(IConfiguration), configuration);
 
             var appSettings = new AppConfigSettings(configuration);
-            var mainConfig = mapper.Map<AppConfigViewModel>(appSettings);
+            _appConfigViewModel = mapper.Map<AppConfigViewModel>(appSettings);
 
-            services.AddSingleton<AppConfigViewModel>(mainConfig);
+            services.AddSingleton<AppConfigViewModel>(_appConfigViewModel);
 
             services.AddSingleton<ILogger>(_theLogger!);
 
@@ -149,7 +160,7 @@ namespace Gebug64.Win
             services.AddSingleton<MdiHostViewModel>();
 
             // Parent MDI window
-            services.AddTransient<MdiHostWindow>();
+            services.AddSingleton<MdiHostWindow>();
 
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
             var tabViewmodelTypes = assemblyTypes.Where(x =>

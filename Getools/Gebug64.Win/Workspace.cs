@@ -12,6 +12,7 @@ using System.Xml;
 using AutoMapper;
 using Gebug64.Win.Config;
 using Gebug64.Win.Controls;
+using Gebug64.Win.Extensions;
 using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.Config;
@@ -322,6 +323,62 @@ namespace Gebug64.Win
 
             string json = JsonConvert.SerializeObject(container, Newtonsoft.Json.Formatting.Indented);
             File.WriteAllText(AppConfigSettings.DefaultFilename, json);
+        }
+
+        /// <summary>
+        /// Collect current UI state information and update runtime appconfig.
+        /// If state has changed, call <see cref="SaveAppSettings"/>.
+        /// </summary>
+        public void SaveUiState()
+        {
+            var appConfig = (AppConfigViewModel)ServiceProvider.GetService(typeof(AppConfigViewModel))!;
+
+            // Make a copy of the existing UI state for comparison.
+            var oldLayoutList = new List<UiWindowState>();
+            foreach (var x in appConfig.LayoutState.Windows)
+            {
+                oldLayoutList.Add(x with { });
+            }
+
+            appConfig.LayoutState.Windows.Clear();
+
+            var host = (MdiHostWindow)ServiceProvider.GetService(typeof(MdiHostWindow))!;
+
+            // Collect the current UI state.
+            _dispatcher.Invoke(() =>
+            {
+                appConfig.LayoutState.Windows.Add(host.GetWindowLayoutState());
+
+                foreach (var child in host.Container.Children)
+                {
+                    appConfig.LayoutState.Windows.Add(child.GetWindowLayoutState());
+                }
+            });
+
+            bool needToSave = false;
+
+            // If the current UI state is the same as the starting state, no need to save.
+            if (appConfig.LayoutState.Windows.Count == oldLayoutList.Count)
+            {
+                var len = oldLayoutList.Count;
+                for (int i = 0; i < len; i++)
+                {
+                    if (appConfig.LayoutState.Windows[i] != oldLayoutList[i])
+                    {
+                        needToSave = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                needToSave = true;
+            }
+
+            if (needToSave)
+            {
+                SaveAppSettings();
+            }
         }
 
         /// <summary>

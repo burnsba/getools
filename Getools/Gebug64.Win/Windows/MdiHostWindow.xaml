@@ -6,7 +6,11 @@
         xmlns:local="clr-namespace:Gebug64.Win.Windows"
         xmlns:mdi="clr-namespace:WPF.MDI;assembly=WPF.MDI"
         mc:Ignorable="d"
-        Title="Gebug64" Height="500" Width="900">
+        Title="Gebug64" Height="500" Width="900"
+        SizeChanged="Window_SizeChanged"
+        LocationChanged="Window_LocationChanged"
+        StateChanged="Window_StateChanged"
+        >
 
     <Window.Resources>
         <ResourceDictionary>

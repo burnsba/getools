@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,7 +13,12 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Gebug64.Win.Controls;
+using Gebug64.Win.Extensions;
 using Gebug64.Win.ViewModels;
+using Gebug64.Win.ViewModels.CategoryTabs;
+using Gebug64.Win.ViewModels.Config;
+using Gebug64.Win.Windows.Mdi;
+using Microsoft.Extensions.DependencyInjection;
 using WPF.MDI;
 
 namespace Gebug64.Win.Windows
@@ -20,9 +26,20 @@ namespace Gebug64.Win.Windows
     /// <summary>
     /// Interaction logic for MdiHostWindow.xaml
     /// </summary>
-    public partial class MdiHostWindow : Window
+    public partial class MdiHostWindow : Window, ILayoutWindow
     {
+        private const int _saveUiStateDelay = 1000; // ms
+
+        private readonly string _typeName;
+
         private MdiHostViewModel _vm;
+        private AppConfigViewModel _appConfig;
+
+        private bool _ready = false;
+
+        private object _timerLock = new object();
+        private bool _saveUiStateTimerActive = false;
+        private System.Timers.Timer _saveUiStateTimer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MdiHostWindow"/> class.
@@ -30,7 +47,17 @@ namespace Gebug64.Win.Windows
         /// <param name="vm">Main host viewmodel.</param>
         public MdiHostWindow(MdiHostViewModel vm)
         {
+            _typeName = GetType().FullName!;
+
             InitializeComponent();
+
+            _appConfig = (AppConfigViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(AppConfigViewModel))!;
+
+            _saveUiStateTimer = new System.Timers.Timer();
+            _saveUiStateTimer.Interval = _saveUiStateDelay; // ms
+            _saveUiStateTimer.Enabled = false;
+            _saveUiStateTimer.AutoReset = false;
+            _saveUiStateTimer.Elapsed += NotifySaveUiState;
 
             _vm = vm;
 
@@ -42,6 +69,9 @@ namespace Gebug64.Win.Windows
 
             Menu_RefreshWindows();
         }
+
+        /// <inheritdoc />
+        public string TypeName => _typeName;
 
         /// <summary>
         /// Helper method to focus on a child control, or create it if it doesn't exist.
@@ -66,6 +96,11 @@ namespace Gebug64.Win.Windows
                 Content = control,
                 Title = title,
             };
+
+            if (typeof(ILayoutWindow).IsAssignableFrom(controlType))
+            {
+                newChild.TryLoadWindowLayoutState(_appConfig);
+            }
 
             newChild.Resize += _vm.ResizeChildHandler;
             newChild.Move += _vm.MoveChildHandler;
@@ -108,11 +143,48 @@ namespace Gebug64.Win.Windows
 
             child.CloseBox = false;
 
+            if (typeof(ILayoutWindow).IsAssignableFrom(content.GetType()))
+            {
+                child.TryLoadWindowLayoutState(_appConfig);
+            }
+
             child.Resize += _vm.ResizeChildHandler;
             child.Move += _vm.MoveChildHandler;
             child.Closed += _vm.CloseChildHandler;
 
             Container.Children.Add(child);
+        }
+
+        /// <summary>
+        /// Sets a flag to allow UI state changes to write to the appconfig file.
+        /// (That is, startup/setup is ignored and won't write to appconfig).
+        /// </summary>
+        public void DoneInit()
+        {
+            _ready = true;
+            _vm.DoneInit();
+        }
+
+        /// <summary>
+        /// Load any saved child windows from the appconfig and restore them to the prior
+        /// position and window state.
+        /// </summary>
+        public void LoadSavedChildLayout()
+        {
+            var configWindowTypeNames = _appConfig.LayoutState.Windows.Select(x => x.TypeName);
+
+            // Closeable windows should be tagged with ITransientChild.
+            var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
+            var mdiChildTypesToLoad = assemblyTypes.Where(x =>
+                typeof(ITransientChild).IsAssignableFrom(x)
+                && !x.IsAbstract
+                && x.IsClass
+                && configWindowTypeNames.Contains(x.FullName));
+
+            foreach (var child in mdiChildTypesToLoad)
+            {
+                FocusCreateChild(child, Gebug64.Win.Ui.Lang.GetDefaultWindowTitle(child));
+            }
         }
 
         /// <summary>
@@ -151,6 +223,65 @@ namespace Gebug64.Win.Windows
                     Container.Children.Remove(child);
                 }
             };
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            StartExtendNotifySaveUiTimer();
+        }
+
+        private void Window_LocationChanged(object sender, EventArgs e)
+        {
+            StartExtendNotifySaveUiTimer();
+        }
+
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            StartExtendNotifySaveUiTimer();
+        }
+
+        /// <summary>
+        /// Assuming <see cref="DoneInit"/> has already been called, timer event handler
+        /// to save UI state to appconfig.
+        /// </summary>
+        /// <param name="sender">Event sender.</param>
+        /// <param name="e">Event args.</param>
+        private void NotifySaveUiState(object? sender, ElapsedEventArgs e)
+        {
+            _saveUiStateTimerActive = false;
+
+            if (!_ready)
+            {
+                return;
+            }
+
+            Workspace.Instance.SaveUiState();
+        }
+
+        /// <summary>
+        /// Event handler called when window changes state, moves, or resizes.
+        /// Starts a timer to call <see cref="NotifySaveUiState"/>, or if the timer
+        /// is already running stops it and restarts it to extend the timeout.
+        /// </summary>
+        private void StartExtendNotifySaveUiTimer()
+        {
+            if (!_ready)
+            {
+                return;
+            }
+
+            lock (_timerLock)
+            {
+                if (!_saveUiStateTimerActive)
+                {
+                    _saveUiStateTimerActive = true;
+                    _saveUiStateTimer.Start();
+                    return;
+                }
+
+                _saveUiStateTimer.Stop();
+                _saveUiStateTimer.Start();
+            }
         }
     }
 }

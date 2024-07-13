@@ -42,6 +42,11 @@ namespace Gebug64.Win.ViewModels.Config
         public MapSettingsViewModel Map { get; set; }
 
         /// <summary>
+        /// UI layout state.
+        /// </summary>
+        public UiLayoutStateViewModel LayoutState { get; set; }
+
+        /// <summary>
         /// Path to save framebuffer grabs to.
         /// </summary>
         public string FramebufferGrabSavePath { get; set; }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,8 +20,9 @@ namespace Gebug64.Win.Windows.Mdi
     /// <summary>
     /// MDI Child window for log.
     /// </summary>
-    public partial class LogControl : UserControl
+    public partial class LogControl : UserControl, ILayoutWindow, ITransientChild
     {
+        private readonly string _typeName;
         private readonly MainWindowViewModel _vm;
 
         /// <summary>
@@ -29,6 +31,8 @@ namespace Gebug64.Win.Windows.Mdi
         /// <param name="vm">Reference to main viewmodel.</param>
         public LogControl(MainWindowViewModel vm)
         {
+            _typeName = GetType().FullName!;
+
             InitializeComponent();
 
             _vm = vm;
@@ -45,5 +49,8 @@ namespace Gebug64.Win.Windows.Mdi
                 }
             };
         }
+
+        /// <inheritdoc />
+        public string TypeName => _typeName;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,8 +20,9 @@ namespace Gebug64.Win.Windows.Mdi
     /// <summary>
     /// MDI Child main message window.
     /// </summary>
-    public partial class MainControl : UserControl
+    public partial class MainControl : UserControl, ILayoutWindow, IPermanentChild
     {
+        private readonly string _typeName;
         private readonly MainWindowViewModel _vm;
 
         /// <summary>
@@ -29,11 +31,16 @@ namespace Gebug64.Win.Windows.Mdi
         /// <param name="vm">Main app viewmodel.</param>
         public MainControl(MainWindowViewModel vm)
         {
+            _typeName = GetType().FullName!;
+
             InitializeComponent();
 
             _vm = vm;
 
             DataContext = _vm;
         }
+
+        /// <inheritdoc />
+        public string TypeName => _typeName;
     }
 }

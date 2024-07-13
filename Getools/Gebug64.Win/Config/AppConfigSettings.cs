@@ -53,6 +53,11 @@ namespace Gebug64.Win.Config
                 Map = new();
             }
 
+            if (LayoutState == null)
+            {
+                LayoutState = new();
+            }
+
             if (string.IsNullOrEmpty(FramebufferGrabSavePath))
             {
                 FramebufferGrabSavePath = _currentLocation;
@@ -86,6 +91,11 @@ namespace Gebug64.Win.Config
                 Map = new();
             }
 
+            if (LayoutState == null)
+            {
+                LayoutState = new();
+            }
+
             FramebufferGrabSavePath = _currentLocation;
         }
 
@@ -113,6 +123,11 @@ namespace Gebug64.Win.Config
         /// Map settings.
         /// </summary>
         public MapSettings Map { get; set; }
+
+        /// <summary>
+        /// Current user interface layout.
+        /// </summary>
+        public UiLayoutState LayoutState { get; set; }
 
         /// <summary>
         /// Gets the default (empty) settings.
