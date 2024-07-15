@@ -275,6 +275,37 @@ Sets `g_MainStageNum` to the supplied value.
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  1            | LevelId      |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
 
+## `Bond` Category
+
+`Bond` category is for managing / viewing data related to Bond.
+
+`Bond` commands are as follows
+
+```
+public enum GebugCmdBond
+{
+    DefaultUnknown = 0,
+
+    SendPosition = 14,
+}
+```
+
+### `Bond SendPosition` Command
+
+Read Bond stan, room, position, and rotation from console and send to pc.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | RoomId        |  2           | `ConsoleToPc` | Bond's current room, or zero. |
+|  2            | StanId        |  2           | `ConsoleToPc` | Bond's current stan, or zero. |
+|  3            | PosX          |  4           | `ConsoleToPc` | X value from `bondviewGetCurrentPlayersPosition()`. |
+|  4            | PosY          |  4           | `ConsoleToPc` | Y value from `bondviewGetCurrentPlayersPosition()`. |
+|  5            | PosZ          |  4           | `ConsoleToPc` | Z value from `bondviewGetCurrentPlayersPosition()`. |
+|  6            | VVTheta       |  4           | `ConsoleToPc` | `g_CurrentPlayer->vv_theta` or zero. |
+
+
 ## `Vi` Category
 
 The `Vi` category handles video related methods such as found in `fr.c`, `vi.c`, `viewport.c`, etc.

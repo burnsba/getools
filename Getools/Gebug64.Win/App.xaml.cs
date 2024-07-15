@@ -11,6 +11,7 @@ using AutoMapper;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
+using Gebug64.Unfloader.Protocol.Gebug;
 using Gebug64.Unfloader.SerialPort;
 using Gebug64.Win.Config;
 using Gebug64.Win.Controls;
@@ -35,6 +36,7 @@ namespace Gebug64.Win
     {
         private ILogger? _theLogger;
         private AppConfigViewModel? _appConfigViewModel = null;
+        private MessageBus<IGebugMessage>? _appGebugMessageBus;
 
         private void App_Startup(object sender, StartupEventArgs e)
         {
@@ -172,6 +174,9 @@ namespace Gebug64.Win
             {
                 services.AddTransient(t);
             }
+
+            _appGebugMessageBus = new MessageBus<IGebugMessage>();
+            services.AddSingleton<MessageBus<IGebugMessage>>(_appGebugMessageBus);
         }
 
         /// <summary>

@@ -12,6 +12,8 @@ namespace Gebug64.Win.ViewModels.Map
     /// </summary>
     public class MapObjectResourceImage : MapObject
     {
+        private double _rotationDegree = 0.0;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MapObjectResourceImage"/> class.
         /// </summary>
@@ -44,6 +46,33 @@ namespace Gebug64.Win.ViewModels.Map
         /// <summary>
         /// How much to rotate the image.
         /// </summary>
-        public double RotationDegree { get; set; } = 0.0;
+        public double RotationDegree
+        {
+            get => _rotationDegree;
+            set
+            {
+                if (_rotationDegree != value)
+                {
+                    _rotationDegree = value;
+                    OnPropertyChanged(nameof(RotationDegree));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates object to new position, offset by half the width and height.
+        /// </summary>
+        /// <param name="uix">New x.</param>
+        /// <param name="uiy">New y.</param>
+        /// <param name="rotation">New rotation.</param>
+        public void SetPositionLessHalf(double uix, double uiy, double rotation)
+        {
+            _uix = uix - (_uiWidth / 2.0);
+            _uiy = uiy - (_uiHeight / 2.0);
+            _rotationDegree = rotation;
+            OnPropertyChanged(nameof(UiX));
+            OnPropertyChanged(nameof(UiY));
+            OnPropertyChanged(nameof(RotationDegree));
+        }
     }
 }

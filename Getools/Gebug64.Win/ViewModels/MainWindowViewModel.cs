@@ -89,6 +89,7 @@ namespace Gebug64.Win.ViewModels
         private readonly ILogger _logger;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
         private readonly Dispatcher _dispatcher;
+        private readonly MessageBus<IGebugMessage>? _appGebugMessageBus;
 
         /// <summary>
         /// Size in bytes of attached ROM memory.
@@ -230,7 +231,11 @@ namespace Gebug64.Win.ViewModels
         /// <param name="logger">Logger.</param>
         /// <param name="deviceManagerResolver">Device manager.</param>
         /// <param name="appConfig">Main app config.</param>
-        public MainWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
+        public MainWindowViewModel(
+            ILogger logger,
+            IConnectionServiceProviderResolver deviceManagerResolver,
+            AppConfigViewModel appConfig,
+            MessageBus<IGebugMessage> appGebugMessageBus)
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             _ignoreAppSettingsChange = true;
@@ -262,6 +267,8 @@ namespace Gebug64.Win.ViewModels
             BuildMenuSendRom();
 
             StartThread();
+
+            _appGebugMessageBus = appGebugMessageBus;
 
             _ignoreAppSettingsChange = false;
         }
@@ -1459,6 +1466,8 @@ namespace Gebug64.Win.ViewModels
 
                 _logger.Log(LogLevel.Information, "Receive " + msg.ToString());
                 ////System.Diagnostics.Debug.WriteLine("Receive " + msg.ToString());
+
+                _appGebugMessageBus!.Publish(msg);
             });
         }
 

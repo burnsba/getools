@@ -122,11 +122,6 @@ namespace Getools.Lib.Game.Engine
         /// </exception>
         public static RuntimePropPosition GetPropDefaultModelBbox_chr(PropPointPosition pp, double levelScale)
         {
-            if (object.ReferenceEquals(null, pp.SetupObject))
-            {
-                throw new NullReferenceException($"{nameof(pp.SetupObject)} is null");
-            }
-
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
             // I don't know.

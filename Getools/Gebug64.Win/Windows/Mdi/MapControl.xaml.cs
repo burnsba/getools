@@ -45,6 +45,7 @@ namespace Gebug64.Win.Windows.Mdi
 
             CheckBg.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bg];
             CheckStan.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Stan];
+            CheckBond.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bond];
             CheckSetupPad.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPad];
             CheckSetupPathWaypoint.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPathWaypoint];
             CheckSetupPatrolPath.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupPatrolPath];

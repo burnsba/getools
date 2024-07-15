@@ -345,6 +345,12 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                             bodyOffset += 4;
                             pa.Property.SetValue(instance, val32);
                         }
+                        else if (pa.Property.PropertyType == typeof(float))
+                        {
+                            Single val32 = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                            bodyOffset += 4;
+                            pa.Property.SetValue(instance, val32);
+                        }
                         else
                         {
                             uint val32 = (uint)BitUtility.Read32Big(fullBody, bodyOffset);

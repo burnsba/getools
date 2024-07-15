@@ -62,7 +62,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         Fog = 50,
 
         /// <summary>
-        /// Gebug moethds to manage the stage.
+        /// Gebug methods to manage the stage.
         /// </summary>
         Stage = 55,
 

@@ -35,7 +35,11 @@ namespace Gebug64.Win.ViewModels.Map
                     _zSliceCompare = UiMapLayerZSliceCompare.Bbox;
                     break;
 
-                case UiMapLayer.SetupPad:
+                case UiMapLayer.Bond: // Bond: special case, just use origin point.
+                    _zSliceCompare = UiMapLayerZSliceCompare.OriginPoint;
+                    break;
+
+                case UiMapLayer.SetupPad: // fallthrough
                 case UiMapLayer.SetupAlarm:
                 case UiMapLayer.SetupAmmo:
                 case UiMapLayer.SetupAircraft:

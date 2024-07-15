@@ -9,10 +9,10 @@ namespace Gebug64.Win.ViewModels.Map
     public abstract class MapObject : ViewModelBase
     {
         private bool _isVisible;
-        private double _uix;
-        private double _uiy;
-        private double _uiWidth;
-        private double _uiHeight;
+        protected double _uix;
+        protected double _uiy;
+        protected double _uiWidth;
+        protected double _uiHeight;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapObject"/> class.
@@ -141,5 +141,18 @@ namespace Gebug64.Win.ViewModels.Map
         /// Stage scaled coordinate value.
         /// </summary>
         public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
+
+        /// <summary>
+        /// Updates object to new position, offset by half the width and height.
+        /// </summary>
+        /// <param name="uix">New x.</param>
+        /// <param name="uiy">New y.</param>
+        public void SetPositionLessHalf(double uix, double uiy)
+        {
+            _uix = uix - (_uiWidth / 2.0);
+            _uiy = uiy - (_uiHeight / 2.0);
+            OnPropertyChanged(nameof(UiX));
+            OnPropertyChanged(nameof(UiY));
+        }
     }
 }

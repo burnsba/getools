@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
 {
     /// <summary>
-    /// Gebug methods to manage the stage.
+    /// Gebug methods for Bond.
     /// </summary>
-    public enum GebugCmdStage
+    public enum GebugCmdBond
     {
         /// <summary>
         /// Unset / unknown.
@@ -17,8 +17,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         DefaultUnknown = 0,
 
         /// <summary>
-        /// Sets `g_MainStageNum` to the supplied value.
+        /// Sends Bond position from console to pc.
         /// </summary>
-        SetStage = 10,
+        SendPosition = 14,
     }
 }

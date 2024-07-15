@@ -22,6 +22,11 @@ namespace Gebug64.Win.Enum
         Bg,
 
         /// <summary>
+        /// Bond layer.
+        /// </summary>
+        Bond,
+
+        /// <summary>
         /// Stan layer.
         /// </summary>
         Stan,

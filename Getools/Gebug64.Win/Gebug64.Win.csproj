@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <None Remove="Font\Ac437_IBM_EGA_9x14.ttf" />
+    <None Remove="Resource\Image\bond.png" />
     <None Remove="Resource\Image\cctv.png" />
     <None Remove="Resource\Image\chr.png" />
     <None Remove="Resource\Image\heavy_gun.png" />
@@ -48,6 +49,7 @@
     <Resource Include="Font\Ac437_IBM_EGA_9x14.ttf">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Resource\Image\bond.png" />
     <Resource Include="Resource\Image\cctv.png" />
     <Resource Include="Resource\Image\chr.png" />
     <Resource Include="Resource\Image\heavy_gun.png" />

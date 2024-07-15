@@ -126,6 +126,7 @@
 
                         <CheckBox Name="CheckBg" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Bg}">bg</CheckBox>
                         <CheckBox Name="CheckStan" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Stan}">stan</CheckBox>
+                        <CheckBox Name="CheckBond" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.Bond}">Bond</CheckBox>
                         <CheckBox Name="CheckSetupPad" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPad}">setup: pad</CheckBox>
                         <CheckBox Name="CheckSetupPathWaypoint" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPathWaypoint}">setup: path waypoint</CheckBox>
                         <CheckBox Name="CheckSetupPatrolPath" IsEnabled="{Binding IsMapLoaded}" Command="{Binding Path=ToggleLayerVisibilityCommand}" CommandParameter="{x:Static enum:UiMapLayer.SetupPatrolPath}">setup: patrol path</CheckBox>

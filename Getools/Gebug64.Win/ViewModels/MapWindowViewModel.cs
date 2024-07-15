@@ -17,7 +17,11 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
+using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Enum;
 using Gebug64.Win.Mvvm;
@@ -40,6 +44,7 @@ using Getools.Palantir.Render;
 using Getools.Utility.Logging;
 using GzipSharpLib;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SvgLib;
 using static System.Windows.Forms.AxHost;
@@ -58,6 +63,8 @@ namespace Gebug64.Win.ViewModels
         private readonly ILogger _logger;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
         private readonly Dispatcher _dispatcher;
+        private readonly MessageBus<IGebugMessage>? _appGebugMessageBus;
+        private readonly Guid _mapGebugMessageSubscription;
 
         private string? _setupBinFolder;
         private string? _stanBinFolder;
@@ -69,6 +76,8 @@ namespace Gebug64.Win.ViewModels
         private double _mapMaxVertical = 0;
         private double _mapSelectedMinVertical = 0;
         private double _mapSelectedMaxVertical = 0;
+        private double _adjustx = 0;
+        private double _adjusty = 0;
 
         private LevelIdX _selectedStage = LevelIdX.DefaultUnkown;
 
@@ -79,6 +88,11 @@ namespace Gebug64.Win.ViewModels
         private object _timerLock = new object();
         private bool _mapZSliceTimerActive = false;
         private System.Timers.Timer _mapZSliceTimer;
+
+        /// <summary>
+        /// This variable holds the last intro coordinates read. Used to set Bond's initial position on stage load.
+        /// </summary>
+        private Coord3dd _lastIntroPosition = Coord3dd.Zero.Clone();
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -96,7 +110,12 @@ namespace Gebug64.Win.ViewModels
         /// <param name="logger">App logger.</param>
         /// <param name="deviceManagerResolver">Device resolver.</param>
         /// <param name="appConfig">App config.</param>
-        public MapWindowViewModel(ILogger logger, IConnectionServiceProviderResolver deviceManagerResolver, AppConfigViewModel appConfig)
+        /// <param name="appGebugMessageBus">Message bus to listen for <see cref="IGebugMessage"/> messages from console.</param>
+        public MapWindowViewModel(
+            ILogger logger,
+            IConnectionServiceProviderResolver deviceManagerResolver,
+            AppConfigViewModel appConfig,
+            MessageBus<IGebugMessage> appGebugMessageBus)
         {
             _ignoreAppSettingsChange = true;
 
@@ -143,6 +162,9 @@ namespace Gebug64.Win.ViewModels
             LevelIdX.SinglePlayerStages.ForEach(x => AvailableStages.Add(x));
 
             _ignoreAppSettingsChange = false;
+
+            _appGebugMessageBus = appGebugMessageBus;
+            _mapGebugMessageSubscription = _appGebugMessageBus!.Subscribe(MessageBusMapGebugCallback);
         }
 
         /// <summary>
@@ -475,6 +497,11 @@ namespace Gebug64.Win.ViewModels
         }
 
         /// <summary>
+        /// Pointer for Bond's current position data, in the current map.
+        /// </summary>
+        public MapObject? Bond { get; private set; }
+
+        /// <summary>
         /// Pass through to <see cref="Workspace.Instance.SaveAppSettings"/>.
         /// </summary>
         protected void SaveAppSettings()
@@ -631,8 +658,8 @@ namespace Gebug64.Win.ViewModels
             var rawStage = mim.GetFullRawStage();
 
             // Find offset to zero axis.
-            var adjustx = 0 - rawStage.ScaledMin.X;
-            var adjusty = 0 - rawStage.ScaledMin.Z;
+            _adjustx = 0 - rawStage.ScaledMin.X;
+            _adjusty = 0 - rawStage.ScaledMin.Z;
 
             // The resulting output should cover the range of the level.
             // This will be the "view box". It might have to scale to accomodate
@@ -641,47 +668,50 @@ namespace Gebug64.Win.ViewModels
             var outputViewboxHeight = Math.Abs(rawStage.ScaledMax.Z - rawStage.ScaledMin.Z);
 
             // the map area will be a 3x3 grid, move the main content into the center cell.
-            adjustx += outputVeiwboxWidth;
-            adjusty += outputViewboxHeight;
+            _adjustx += outputVeiwboxWidth;
+            _adjusty += outputViewboxHeight;
 
             ClearMap();
 
-            AddStanLayer(rawStage, adjustx, adjusty);
+            AddStanLayer(rawStage, _adjustx, _adjusty);
 
             // room boundaries need to be above the tiles.
-            AddBgLayer(rawStage, adjustx, adjusty);
+            AddBgLayer(rawStage, _adjustx, _adjusty);
 
-            AddPadLayer(rawStage, adjustx, adjusty, levelScale);
+            AddPadLayer(rawStage, _adjustx, _adjusty, levelScale);
 
             // draw path waypoints on top of pads
-            AddPathWaypointLayer(rawStage, adjustx, adjusty, levelScale);
+            AddPathWaypointLayer(rawStage, _adjustx, _adjusty, levelScale);
 
             // draw patrol paths on top of pads and waypoints
-            AddPatrolPathLayer(rawStage, adjustx, adjusty, levelScale);
+            AddPatrolPathLayer(rawStage, _adjustx, _adjusty, levelScale);
 
-            AddSetupLayer(rawStage, PropDef.AmmoBox, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.AmmoBox, _adjustx, _adjusty, levelScale);
 
             // safe should be under door z layer.
-            AddSetupLayer(rawStage, PropDef.Safe, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Door, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Alarm, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Cctv, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Drone, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Aircraft, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Tank, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.StandardProp, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.SingleMonitor, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Collectable, adjustx, adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Armour, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Safe, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Door, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Alarm, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Cctv, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Drone, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Aircraft, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Tank, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.StandardProp, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.SingleMonitor, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Collectable, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Armour, _adjustx, _adjusty, levelScale);
 
             // keys should be on top of tables (StandardProp)
-            AddSetupLayer(rawStage, PropDef.Key, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Key, _adjustx, _adjusty, levelScale);
 
             // guards should be one of the highest z layers
-            AddSetupLayer(rawStage, PropDef.Guard, adjustx, adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Guard, _adjustx, _adjusty, levelScale);
 
             // Intro star should be above other layers
-            AddIntroLayer(rawStage, adjustx, adjusty, levelScale);
+            AddIntroLayer(rawStage, _adjustx, _adjusty, levelScale);
+
+            // Create a reference for Bond and place in a new layer, on top of everything else.
+            AddBondLayer(rawStage, _adjustx, _adjusty, levelScale);
 
             // Create a 3x3 grid to render the map, to be able to pan around/past the edge.
             MapScaledWidth = outputVeiwboxWidth * 3;
@@ -813,8 +843,31 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
+                _lastIntroPosition = mo.ScaledOrigin.Clone();
+
                 layer.Entities.Add(mo);
             }
+
+            Layers.Add(layer);
+        }
+
+        private void AddBondLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
+        {
+            MapLayerViewModel layer;
+
+            layer = new MapLayerViewModel(Enum.UiMapLayer.Bond)
+            {
+                IsVisible = _appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bond],
+            };
+
+            Bond = GetPropDefaultBond(new PropPointPosition(), adjustx, adjusty, levelScale);
+
+            // set Bond's position to (last) intro
+            Bond.ScaledOrigin.X = _lastIntroPosition.X;
+            Bond.ScaledOrigin.Y = _lastIntroPosition.Y;
+            Bond.ScaledOrigin.Z = _lastIntroPosition.Z;
+
+            layer.Entities.Add(Bond);
 
             Layers.Add(layer);
         }
@@ -1167,6 +1220,25 @@ namespace Gebug64.Win.ViewModels
             return mor;
         }
 
+        private MapObject GetPropDefaultBond(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
+        {
+            var stagePosition = Getools.Lib.Game.Engine.World.GetPropDefaultModelBbox_chr(pp, levelScale);
+
+            var mor = new MapObjectResourceImage(
+                stagePosition.Origin.X - stagePosition.HalfModelSize.X + adjustx,
+                stagePosition.Origin.Z - stagePosition.HalfModelSize.Z + adjusty);
+
+            mor.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
+            mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/bond.png";
+
+            mor.RotationDegree = stagePosition.RotationDegrees;
+            mor.UiWidth = stagePosition.ModelSize.X;
+            mor.UiHeight = stagePosition.ModelSize.Z;
+
+            return mor;
+        }
+
         private MapObject GetPropDefaultBbox_key(PropPointPosition pp, double adjustx, double adjusty, double levelScale)
         {
             double w = 34;
@@ -1397,6 +1469,28 @@ namespace Gebug64.Win.ViewModels
 
                 _mapZSliceTimer.Stop();
                 _mapZSliceTimer.Start();
+            }
+        }
+
+        /// <summary>
+        /// Callback to monitor incoming messages from the console.
+        /// </summary>
+        /// <param name="msg">Message.</param>
+        private void MessageBusMapGebugCallback(IGebugMessage msg)
+        {
+            // If a map is loaded and Bond's position is received, update the local Bond mapobject.
+            if (_isMapLoaded
+                && !object.ReferenceEquals(null, Bond)
+                && msg.Category == GebugMessageCategory.Bond
+                && msg.Command == (int)GebugCmdBond.SendPosition)
+            {
+                var posMessage = (GebugBondSendPositionMessage)msg;
+                if (!object.ReferenceEquals(null, posMessage))
+                {
+                    var bondimg = (MapObjectResourceImage)Bond;
+                    bondimg.ScaledOrigin.Y = posMessage.PosY;
+                    bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
+                }
             }
         }
     }
