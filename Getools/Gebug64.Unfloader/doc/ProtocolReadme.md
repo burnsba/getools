@@ -305,6 +305,47 @@ Read Bond stan, room, position, and rotation from console and send to pc.
 |  5            | PosZ          |  4           | `ConsoleToPc` | Z value from `bondviewGetCurrentPlayersPosition()`. |
 |  6            | VVTheta       |  4           | `ConsoleToPc` | `g_CurrentPlayer->vv_theta` or zero. |
 
+## `Chr` Category
+
+`Chr` category is for managing / viewing data related to guards and other characters.
+
+`Chr` commands are as follows
+
+```
+public enum GebugCmdChr
+{
+    DefaultUnknown = 0,
+
+    SendAllGuardInfo = 10,
+}
+```
+
+### `Chr SendAllGuardInfo` Command
+
+Send all position information for all current/loaded characters (chr with a non-null model).
+
+`GuardInfo` is an array of the following type:
+```
+struct RmonGuardInfo {
+    s16 chrnum;
+    s8 headnum; // arbitrary extra info that is one byte
+    s8 actiontype; // ACT_TYPE
+    struct coord3d prop_pos;
+    struct coord3d target_pos;
+    f32 subroty;
+    f32 damage;
+    f32 maxdamage;
+    f32 shotbondsum;
+};
+```
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Count         |  2           | `ConsoleToPc` | Number of items in chr list. |
+|  2            | GuardInfo     |  variable    | `ConsoleToPc` | List of all guard position data. |
+
 
 ## `Vi` Category
 

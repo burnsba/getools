@@ -1,4 +1,6 @@
-﻿using Gebug64.Win.Mvvm;
+﻿using System.Collections.Generic;
+using System.Windows.Documents;
+using Gebug64.Win.Mvvm;
 using Getools.Lib.Game;
 
 namespace Gebug64.Win.ViewModels.Map
@@ -13,6 +15,20 @@ namespace Gebug64.Win.ViewModels.Map
         protected double _uiy;
         protected double _uiWidth;
         protected double _uiHeight;
+
+        protected MapObject(MapObject src)
+        {
+            _isVisible = src._isVisible;
+            _uix = src._uix;
+            _uiy = src._uiy;
+            _uiWidth = src._uiWidth;
+            _uiHeight = src._uiHeight;
+            ScaledOrigin = src.ScaledOrigin.Clone();
+            ScaledMin = src.ScaledMin.Clone();
+            ScaledMax = src.ScaledMax.Clone();
+            LayerInstanceId = src.LayerInstanceId;
+            LayerIndexId = src.LayerIndexId;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapObject"/> class.
@@ -141,6 +157,21 @@ namespace Gebug64.Win.ViewModels.Map
         /// Stage scaled coordinate value.
         /// </summary>
         public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
+
+        /// <summary>
+        /// Associated "primary key" for the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
+        /// </summary>
+        public int LayerInstanceId { get; set; } = -1;
+
+        /// <summary>
+        /// The index of the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
+        /// </summary>
+        public int LayerIndexId { get; set; } = -1;
+
+        /// <summary>
+        /// Related child objects to show on the map.
+        /// </summary>
+        public List<MapObject> Children { get; set; } = new List<MapObject>();
 
         /// <summary>
         /// Updates object to new position, offset by half the width and height.

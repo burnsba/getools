@@ -14,6 +14,12 @@ namespace Gebug64.Win.ViewModels.Map
     {
         private double _rotationDegree = 0.0;
 
+        private MapObjectResourceImage(MapObjectResourceImage src)
+            : base(src)
+        {
+            _rotationDegree = src._rotationDegree;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MapObjectResourceImage"/> class.
         /// </summary>
@@ -57,6 +63,11 @@ namespace Gebug64.Win.ViewModels.Map
                     OnPropertyChanged(nameof(RotationDegree));
                 }
             }
+        }
+
+        public MapObjectResourceImage Clone()
+        {
+            return new MapObjectResourceImage(this);
         }
 
         /// <summary>

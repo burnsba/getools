@@ -29,6 +29,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
                 case GebugMessageCategory.Ramrom: return ((GebugCmdRamrom)command).ToString();
                 case GebugMessageCategory.Stage: return ((GebugCmdStage)command).ToString();
                 case GebugMessageCategory.Bond: return ((GebugCmdBond)command).ToString();
+                case GebugMessageCategory.Chr: return ((GebugCmdChr)command).ToString();
                 case GebugMessageCategory.Vi: return ((GebugCmdVi)command).ToString();
             }
 

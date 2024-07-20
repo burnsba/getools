@@ -11,7 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -20,6 +22,7 @@ using System.Windows.Threading;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Controls;
@@ -85,9 +88,12 @@ namespace Gebug64.Win.ViewModels
         private bool _isLoading = false;
         private bool _isMapLoaded = false;
 
+        private object _guardLayerLock = new object();
         private object _timerLock = new object();
         private bool _mapZSliceTimerActive = false;
         private System.Timers.Timer _mapZSliceTimer;
+
+        private MapLayerViewModel? _guardLayer = null;
 
         /// <summary>
         /// This variable holds the last intro coordinates read. Used to set Bond's initial position on stage load.
@@ -706,6 +712,7 @@ namespace Gebug64.Win.ViewModels
 
             // guards should be one of the highest z layers
             AddSetupLayer(rawStage, PropDef.Guard, _adjustx, _adjusty, levelScale);
+            _guardLayer = Layers.First(x => x.LayerId == UiMapLayer.SetupGuard);
 
             // Intro star should be above other layers
             AddIntroLayer(rawStage, _adjustx, _adjusty, levelScale);
@@ -892,6 +899,10 @@ namespace Gebug64.Win.ViewModels
 
             var collection = rawStage.SetupPolygonsCollection[setupLayerKey];
 
+            var layerTypeIndexLookup = global::System.Enum.GetValues(typeof(PropDef))
+                .Cast<PropDef>()
+                .ToDictionary(key => key, val => 0);
+
             foreach (var pp in collection)
             {
                 if (object.ReferenceEquals(null, pp.SetupObject))
@@ -899,7 +910,7 @@ namespace Gebug64.Win.ViewModels
                     throw new NullReferenceException($"{nameof(pp.SetupObject)}");
                 }
 
-                // guard does not implement SetupObjectGenericBase
+                // msgGuard does not implement SetupObjectGenericBase
                 SetupObjectGenericBase? baseObject = pp.SetupObject as SetupObjectGenericBase;
 
                 switch (pp.SetupObject.Type)
@@ -910,6 +921,11 @@ namespace Gebug64.Win.ViewModels
 
                     case PropDef.Guard:
                     mo = GetPropDefaultModelBbox_chr(pp, adjustx, adjusty, levelScale);
+
+                    // Set chr id from setup file
+                    var guard = (SetupObjectGuard)pp.SetupObject;
+                    mo.LayerInstanceId = (int)guard.ObjectId;
+
                     break;
 
                     case PropDef.AmmoBox:
@@ -1034,6 +1050,9 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
+                mo.LayerIndexId = layerTypeIndexLookup[pp.SetupObject.Type];
+                layerTypeIndexLookup[pp.SetupObject.Type] = mo.LayerIndexId + 1;
 
                 layer.Entities.Add(mo);
             }
@@ -1490,6 +1509,73 @@ namespace Gebug64.Win.ViewModels
                     var bondimg = (MapObjectResourceImage)Bond;
                     bondimg.ScaledOrigin.Y = posMessage.PosY;
                     bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
+                }
+            }
+
+            if (_isMapLoaded
+                && msg.Category == GebugMessageCategory.Chr
+                && msg.Command == (int)GebugCmdChr.SendAllGuardInfo)
+            {
+                var guarddata = ((GebugChrSendAllGuardInfoMessage)msg).ParseGuardPositions();
+                foreach (var msgGuard in guarddata)
+                {
+                    MapObjectResourceImage? mapGuard = null;
+
+                    lock (_guardLayerLock)
+                    {
+                        mapGuard = _guardLayer!.Entities.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
+                    }
+
+                    if (!object.ReferenceEquals(null, mapGuard))
+                    {
+                        mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
+                        mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
+
+                        AddOrSetGuardTargetPosMapObject(mapGuard, msgGuard);
+                    }
+                }
+            }
+        }
+
+        private void AddOrSetGuardTargetPosMapObject(MapObjectResourceImage mapGuard, RmonGuardPosition msgGuard)
+        {
+            if (msgGuard.ActionType == GuardActType.ActGoPos
+                || msgGuard.ActionType == GuardActType.ActPatrol
+                || msgGuard.ActionType == GuardActType.ActRunPos)
+            {
+                bool addNew = false;
+
+                MapObjectResourceImage? existingTargetMapObject = mapGuard.Children.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
+
+                if (object.ReferenceEquals(null, existingTargetMapObject))
+                {
+                    existingTargetMapObject = mapGuard.Clone();
+                    existingTargetMapObject.ResourcePath = "/Gebug64.Win;component/Resource/Image/targetpos.png";
+                    addNew = true;
+                }
+
+                var sourcePos = msgGuard.TargetPos;
+                existingTargetMapObject.ScaledOrigin.Y = sourcePos.Y;
+                existingTargetMapObject.SetPositionLessHalf(sourcePos.X + _adjustx, sourcePos.Z + _adjusty, msgGuard.ModelRotationDegrees);
+                existingTargetMapObject.IsVisible = true;
+
+                if (addNew)
+                {
+                    mapGuard.Children.Add(existingTargetMapObject);
+
+                    lock (_guardLayerLock)
+                    {
+                        _dispatcher.BeginInvoke(() => _guardLayer!.Entities.Add(existingTargetMapObject));
+                    }
+                }
+            }
+            else
+            {
+                MapObjectResourceImage? existingTargetMapObject = mapGuard.Children.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
+
+                if (!object.ReferenceEquals(null, existingTargetMapObject))
+                {
+                    //existingTargetMapObject.IsVisible = false;
                 }
             }
         }

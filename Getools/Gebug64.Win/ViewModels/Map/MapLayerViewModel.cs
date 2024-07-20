@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -92,6 +93,6 @@ namespace Gebug64.Win.ViewModels.Map
         /// <summary>
         /// Collection of entities in the layer.
         /// </summary>
-        public List<MapObject> Entities { get; set; } = new List<MapObject>();
+        public ObservableCollection<MapObject> Entities { get; set; } = new ObservableCollection<MapObject>();
     }
 }

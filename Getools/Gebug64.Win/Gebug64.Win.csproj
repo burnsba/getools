@@ -16,6 +16,7 @@
     <None Remove="Resource\Image\key.png" />
     <None Remove="Resource\Image\lock.png" />
     <None Remove="Resource\Image\star.png" />
+    <None Remove="Resource\Image\targetpos.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +57,7 @@
     <Resource Include="Resource\Image\key.png" />
     <Resource Include="Resource\Image\lock.png" />
     <Resource Include="Resource\Image\star.png" />
+    <Resource Include="Resource\Image\targetpos.png" />
   </ItemGroup>
 
   <ItemGroup>
