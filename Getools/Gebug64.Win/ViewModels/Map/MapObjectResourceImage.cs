@@ -14,8 +14,10 @@ namespace Gebug64.Win.ViewModels.Map
     {
         private double _rotationDegree = 0.0;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         private MapObjectResourceImage(MapObjectResourceImage src)
             : base(src)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             _rotationDegree = src._rotationDegree;
         }
@@ -65,6 +67,11 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Create a copy of the current object.
+        /// Does not copy <see cref="MapObject.DataSource"/>.
+        /// </summary>
+        /// <returns>Copy.</returns>
         public MapObjectResourceImage Clone()
         {
             return new MapObjectResourceImage(this);

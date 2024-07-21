@@ -235,6 +235,7 @@ namespace Gebug64.Win.ViewModels
         /// <param name="logger">Logger.</param>
         /// <param name="deviceManagerResolver">Device manager.</param>
         /// <param name="appConfig">Main app config.</param>
+        /// <param name="appGebugMessageBus">Message bus to track communications with console.</param>
         public MainWindowViewModel(
             ILogger logger,
             IConnectionServiceProviderResolver deviceManagerResolver,

@@ -27,6 +27,7 @@ using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Enum;
+using Gebug64.Win.Game;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.ViewModels.Map;
@@ -792,6 +793,8 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
+                mo.DataSource = new Game.GameObject();
+
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
@@ -832,6 +835,8 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
+                mo.DataSource = new Game.GameObject();
+
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
@@ -853,6 +858,8 @@ namespace Gebug64.Win.ViewModels
                 mo = GetPropDefaultBbox_intro(pp, adjustx, adjusty, levelScale);
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
+                mo.DataSource = new Game.GameObject();
 
                 _lastIntroPosition = mo.ScaledOrigin.Clone();
 
@@ -928,7 +935,7 @@ namespace Gebug64.Win.ViewModels
 
                     // Set chr id from setup file
                     var guard = (SetupObjectGuard)pp.SetupObject;
-                    mo.LayerInstanceId = (int)guard.ObjectId;
+                    mo.DataSource!.LayerInstanceId = (int)guard.ObjectId;
 
                     break;
 
@@ -1055,8 +1062,8 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                mo.LayerIndexId = layerTypeIndexLookup[pp.SetupObject.Type];
-                layerTypeIndexLookup[pp.SetupObject.Type] = mo.LayerIndexId + 1;
+                mo.DataSource!.LayerIndexId = layerTypeIndexLookup[pp.SetupObject.Type];
+                layerTypeIndexLookup[pp.SetupObject.Type] = mo.DataSource!.LayerIndexId + 1;
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1081,6 +1088,8 @@ namespace Gebug64.Win.ViewModels
                 mo = GetPadBbox(pp, adjustx, adjusty, levelScale);
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
+
+                mo.DataSource = new Game.GameObject();
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1127,6 +1136,8 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.X = scaledPos.MaxX;
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
+
+                mo.DataSource = new Game.GameObject();
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1176,6 +1187,8 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
 
+                mo.DataSource = new Game.GameObject();
+
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
@@ -1200,6 +1213,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
 
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1221,6 +1239,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
 
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1240,6 +1263,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
 
+            mor.DataSource = new Game.Chr()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1258,6 +1286,11 @@ namespace Gebug64.Win.ViewModels
             mor.RotationDegree = stagePosition.RotationDegrees;
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
+
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
 
             return mor;
         }
@@ -1287,6 +1320,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1314,6 +1352,11 @@ namespace Gebug64.Win.ViewModels
             mor.RotationDegree = rotAngle;
             mor.UiWidth = w;
             mor.UiHeight = h;
+
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
 
             return mor;
         }
@@ -1343,6 +1386,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1371,6 +1419,11 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
+
             return mor;
         }
 
@@ -1393,6 +1446,11 @@ namespace Gebug64.Win.ViewModels
 
             mor.UiWidth = w;
             mor.UiHeight = h;
+
+            mor.DataSource = new Game.Prop()
+            {
+                PropPos = mor.ScaledOrigin.Clone(),
+            };
 
             return mor;
         }
@@ -1539,7 +1597,13 @@ namespace Gebug64.Win.ViewModels
                 var mesgGuardIndexIds = guarddata.Select(x => (int)x.ChrSlotIndex).ToHashSet();
 
                 var nonMatchingGuards = _guardLayer!.GetEntities()
-                    .Where(x => x.Parent == null && !mesgGuardIndexIds.Contains(x.AltId))
+                    .Where(x =>
+                        //// "targetpos" items will have parent set, so filter those out
+                        x.Parent == null
+                        //// only want guard items
+                        && x.DataSource != null
+                        && x.DataSource is Chr
+                        && !mesgGuardIndexIds.Contains(((Chr)x.DataSource).ChrSlotIndex))
                     .ToList();
 
                 _guardLayer.DispatchRemoveRange(_dispatcher, nonMatchingGuards);
@@ -1549,12 +1613,6 @@ namespace Gebug64.Win.ViewModels
         private void MessageCallbackGuardDead(RmonGuardPosition msgGuard)
         {
             MapObjectResourceImage? mapGuard = null;
-            //List<MapObject> guardEntities;
-
-            //lock (_guardLayerLock)
-            //{
-            //    guardEntities = _guardLayer!.Entities.ToList();
-            //}
 
             mapGuard = FindMapObjectGuardInLayer(msgGuard);
 
@@ -1562,43 +1620,17 @@ namespace Gebug64.Win.ViewModels
             {
                 // Don't clear children in this thread, the dispatcher thread hasn't processed the children list yet.
                 _guardLayer!.DispatchRemoveEntityAndChildren(_dispatcher, mapGuard);
-                //mapGuard.Children.Clear();
-
-                //lock (_guardLayerLock)
-                //{
-                //    _dispatcher.BeginInvoke(() =>
-                //    {
-                //foreach (var child in mapGuard.Children)
-                //        {
-                //            _guardLayer!.Entities.Remove(child);
-                //        }
-
-                //        mapGuard.Children.Clear();
-                //        _guardLayer!.Entities.Remove(mapGuard);
-                //    });
-                //}
             }
         }
 
         private void MessageCallbackGuardUpdatePosition(RmonGuardPosition msgGuard)
         {
             MapObjectResourceImage? mapGuard = null;
-            //List<MapObject> guardEntities;
-
-            //lock (_guardLayerLock)
-            //{
-            //    guardEntities = _guardLayer!.Entities.ToList();
-            //}
 
             mapGuard = FindMapObjectGuardInLayer(msgGuard);
 
             if (!object.ReferenceEquals(null, mapGuard))
             {
-                if (mapGuard.AltId < 0)
-                {
-                    mapGuard.AltId = msgGuard.ChrSlotIndex;
-                }
-
                 mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
                 mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
 
@@ -1608,17 +1640,13 @@ namespace Gebug64.Win.ViewModels
             {
                 var pp = new PropPointPosition();
                 mapGuard = (MapObjectResourceImage)GetPropDefaultModelBbox_chr(pp, _adjustx, _adjusty, _levelScale);
-                mapGuard.LayerInstanceId = msgGuard.Chrnum;
-                mapGuard.AltId = msgGuard.ChrSlotIndex;
+
+                mapGuard.DataSource = new Chr(msgGuard);
+
                 mapGuard.IsVisible = true;
                 mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
                 mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
 
-                //lock (_guardLayerLock)
-                //{
-                //    _dispatcher.BeginInvoke(() => _guardLayer!.DispatchAddEntity(_dispatcher, mapGuard));
-                //}
-                //_guardLayer!.DispatchAddEntity(_dispatcher, mapGuard);
                 _guardLayer!.DispatchAddEntity(_dispatcher, mapGuard);
             }
         }
@@ -1635,12 +1663,21 @@ namespace Gebug64.Win.ViewModels
 
                 if (object.ReferenceEquals(null, existingTargetMapObject))
                 {
+                    // does not copy data source.
                     existingTargetMapObject = mapGuard.Clone();
                     existingTargetMapObject.ResourcePath = "/Gebug64.Win;component/Resource/Image/targetpos.png";
                     existingTargetMapObject.IsVisible = true;
-                    existingTargetMapObject.LayerInstanceId = -1;
-                    existingTargetMapObject.LayerIndexId = -1;
-                    existingTargetMapObject.AltId = -1;
+
+                    // If the existing datasource is set, copy that.
+                    if (mapGuard.DataSource != null && mapGuard.DataSource is Chr cc)
+                    {
+                        existingTargetMapObject.DataSource = new Chr(cc);
+                    }
+                    else
+                    {
+                        // Otherwise just pull from the message.
+                        existingTargetMapObject.DataSource = new Chr(msgGuard);
+                    }
 
                     addNew = true;
                 }
@@ -1654,11 +1691,6 @@ namespace Gebug64.Win.ViewModels
                     existingTargetMapObject.Parent = mapGuard;
                     mapGuard.Children.Add(existingTargetMapObject);
 
-                    //lock (_guardLayerLock)
-                    //{
-                    //    _dispatcher.BeginInvoke(() => _guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject));
-                    //}
-                    //_guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject);
                     _guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject);
                 }
             }
@@ -1668,19 +1700,12 @@ namespace Gebug64.Win.ViewModels
         {
             MapObjectResourceImage? result = null;
 
-            //if (msgGuard.Chrnum > 0)
-            //{
-            //    result = _guardLayer!.SafeFirstOrDefault(_dispatcher, x =>
-            //        x is MapObjectResourceImage
-            //        && ((MapObjectResourceImage)x).LayerInstanceId == msgGuard.Chrnum)
-            //    as MapObjectResourceImage;
-            //}
-
             if (result == null && msgGuard.ChrSlotIndex >= 0)
             {
-                result = _guardLayer!.SafeFirstOrDefault(_dispatcher, x =>
-                    x is MapObjectResourceImage
-                    && ((MapObjectResourceImage)x).AltId == msgGuard.ChrSlotIndex)
+                result = _guardLayer!.SafeFirstOrDefault(x =>
+                    x.DataSource != null
+                    && x.DataSource is Chr
+                    && ((Chr)x.DataSource).ChrSlotIndex == msgGuard.ChrSlotIndex)
                 as MapObjectResourceImage;
             }
 

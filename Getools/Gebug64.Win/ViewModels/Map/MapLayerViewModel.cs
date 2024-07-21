@@ -104,6 +104,10 @@ namespace Gebug64.Win.ViewModels.Map
         /// </summary>
         public ObservableCollection<MapObject> ObservableEntities { get; set; }
 
+        /// <summary>
+        /// Gets a read only collection of the underlying layer entities that is safe to enumerate.
+        /// </summary>
+        /// <returns>Layer entities.</returns>
         public ReadOnlyCollection<MapObject> GetEntities()
         {
             lock (_entityLock)
@@ -112,6 +116,11 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Mutates the underlying entity collection and adds the item to the list.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        /// <param name="entity">Item to add.</param>
         public void DispatchAddEntity(Dispatcher dispatcher, MapObject entity)
         {
             lock (_entityLock)
@@ -121,6 +130,11 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Mutates the underlying entity collection and adds the items to the list.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        /// <param name="entities">Items to add.</param>
         public void DispatchAddRange(Dispatcher dispatcher, IEnumerable<MapObject> entities)
         {
             lock (_entityLock)
@@ -140,6 +154,12 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Mutates the underlying entity collection and removes the item from the list.
+        /// <see cref="MapObject.Children"/> is ignored.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        /// <param name="entity">Item to remove.</param>
         public void DispatchRemoveEntity(Dispatcher dispatcher, MapObject entity)
         {
             lock (_entityLock)
@@ -150,6 +170,13 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Mutates the underlying entity collection and removes the item from the list.
+        /// If the <see cref="MapObject.Children"/> list is populated, those are
+        /// removed as well.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        /// <param name="entity">Item to remove.</param>
         public void DispatchRemoveEntityAndChildren(Dispatcher dispatcher, MapObject entity)
         {
             lock (_entityLock)
@@ -173,6 +200,12 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
+        /// <summary>
+        /// Mutates the underlying entity collection and removes the items from the list.
+        /// <see cref="MapObject.Children"/> is ignored.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        /// <param name="entities">Items to remove.</param>
         public void DispatchRemoveRange(Dispatcher dispatcher, IEnumerable<MapObject> entities)
         {
             lock (_entityLock)
@@ -192,7 +225,12 @@ namespace Gebug64.Win.ViewModels.Map
             }
         }
 
-        public MapObject? SafeFirstOrDefault(Dispatcher dispatcher, Func<MapObject, bool> fod)
+        /// <summary>
+        /// Iterates the collection without threading conflicts.
+        /// </summary>
+        /// <param name="fod">Search clause.</param>
+        /// <returns>Item if found, otherwise null.</returns>
+        public MapObject? SafeFirstOrDefault(Func<MapObject, bool> fod)
         {
             lock (_entityLock)
             {

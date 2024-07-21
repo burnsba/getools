@@ -10,6 +10,7 @@ namespace Getools.Lib.Game.Enums
     /// ACT_TYPE.
     /// Action Type to be performed by chr (canonical names).
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1602:Enumeration items should be documented", Justification = "<Justification>")]
     public enum GuardActType
     {
         ActInit,

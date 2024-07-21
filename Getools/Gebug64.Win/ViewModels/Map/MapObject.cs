@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Documents;
+using Gebug64.Win.Game;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game;
 
@@ -11,11 +12,31 @@ namespace Gebug64.Win.ViewModels.Map
     public abstract class MapObject : ViewModelBase
     {
         private bool _isVisible;
+
+        /// <summary>
+        /// Backer field: X position for drawing on screen.
+        /// </summary>
         protected double _uix;
+
+        /// <summary>
+        /// Backer field: Y position for drawing on screen.
+        /// </summary>
         protected double _uiy;
+
+        /// <summary>
+        /// Backer field: Width for drawing on screen.
+        /// </summary>
         protected double _uiWidth;
+
+        /// <summary>
+        /// Backer field: Height for drawing on screen.
+        /// </summary>
         protected double _uiHeight;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MapObject"/> class.
+        /// </summary>
+        /// <param name="src">Object to copy.</param>
         protected MapObject(MapObject src)
         {
             _isVisible = src._isVisible;
@@ -26,9 +47,6 @@ namespace Gebug64.Win.ViewModels.Map
             ScaledOrigin = src.ScaledOrigin.Clone();
             ScaledMin = src.ScaledMin.Clone();
             ScaledMax = src.ScaledMax.Clone();
-            LayerInstanceId = src.LayerInstanceId;
-            LayerIndexId = src.LayerIndexId;
-            AltId = src.AltId;
         }
 
         /// <summary>
@@ -160,22 +178,18 @@ namespace Gebug64.Win.ViewModels.Map
         public Coord3dd ScaledMax { get; set; } = Coord3dd.Zero.Clone();
 
         /// <summary>
-        /// Associated "primary key" for the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
+        /// Backer or reference object that is being drawn on the map.
         /// </summary>
-        public int LayerInstanceId { get; set; } = -1;
-
-        /// <summary>
-        /// The index of the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
-        /// </summary>
-        public int LayerIndexId { get; set; } = -1;
-
-        public int AltId { get; set; } = -1;
+        public GameObject? DataSource { get; set; }
 
         /// <summary>
         /// Related child objects to show on the map.
         /// </summary>
         public List<MapObject> Children { get; set; } = new List<MapObject>();
 
+        /// <summary>
+        /// Optional parent of this instance.
+        /// </summary>
         public MapObject? Parent { get; set; }
 
         /// <summary>
