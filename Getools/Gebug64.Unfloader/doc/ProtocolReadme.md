@@ -347,6 +347,33 @@ struct RmonGuardInfo {
 |  2            | GuardInfo     |  variable    | `ConsoleToPc` | List of all guard position data. |
 
 
+## `File` Category
+
+`File` category is for methods in file.c and file2.c.
+
+`File` commands are as follows
+
+```
+public enum GebugCmdBond
+{
+    DefaultUnknown = 0,
+
+    UnlockStageDifficulty = 10,
+}
+```
+
+### `File UnlockStageDifficulty` Command
+
+Pass through to call `fileUnlockStageInFolderAtDifficulty`.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Stage         |  1           | `PcToConsole` | enum LEVEL_SOLO_SEQUENCE |
+|  2            | Difficulty    |  1           | `PcToConsole` | enum DIFFICULTY |
+
+
 ## `Vi` Category
 
 The `Vi` category handles video related methods such as found in `fr.c`, `vi.c`, `viewport.c`, etc.

@@ -81,6 +81,7 @@ namespace Gebug64.Win.ViewModels
         private double _mapSelectedMaxVertical = 0;
         private double _adjustx = 0;
         private double _adjusty = 0;
+        private double _levelScale = 1.0;
 
         private LevelIdX _selectedStage = LevelIdX.DefaultUnkown;
 
@@ -547,6 +548,8 @@ namespace Gebug64.Win.ViewModels
 
         private void LoadStage(LevelIdX stageid)
         {
+            IsMapLoaded = false;
+
             if (!LevelIdX.SinglePlayerStages.Contains(stageid))
             {
                 _logger.LogError($"{nameof(LoadStage)}: id {stageid} not supported");
@@ -649,14 +652,14 @@ namespace Gebug64.Win.ViewModels
             stan = StanConverters.ReadFromBinFile(stanFilePath, "ignore");
             bg = BgConverters.ReadFromBinFile(bgFilePath);
 
-            double levelScale = Getools.Lib.Game.Asset.StageScale.GetStageScale(stageid.Id);
+            _levelScale = Getools.Lib.Game.Asset.StageScale.GetStageScale(stageid.Id);
 
             var stage = new Getools.Palantir.Stage()
             {
                 Bg = bg,
                 Setup = setup,
                 Stan = stan,
-                LevelScale = levelScale,
+                LevelScale = _levelScale,
             };
 
             var mim = new Getools.Palantir.MapImageMaker(stage);
@@ -684,41 +687,41 @@ namespace Gebug64.Win.ViewModels
             // room boundaries need to be above the tiles.
             AddBgLayer(rawStage, _adjustx, _adjusty);
 
-            AddPadLayer(rawStage, _adjustx, _adjusty, levelScale);
+            AddPadLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
             // draw path waypoints on top of pads
-            AddPathWaypointLayer(rawStage, _adjustx, _adjusty, levelScale);
+            AddPathWaypointLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
             // draw patrol paths on top of pads and waypoints
-            AddPatrolPathLayer(rawStage, _adjustx, _adjusty, levelScale);
+            AddPatrolPathLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
-            AddSetupLayer(rawStage, PropDef.AmmoBox, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.AmmoBox, _adjustx, _adjusty, _levelScale);
 
             // safe should be under door z layer.
-            AddSetupLayer(rawStage, PropDef.Safe, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Door, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Alarm, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Cctv, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Drone, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Aircraft, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Tank, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.StandardProp, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.SingleMonitor, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Collectable, _adjustx, _adjusty, levelScale);
-            AddSetupLayer(rawStage, PropDef.Armour, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Safe, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Door, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Alarm, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Cctv, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Drone, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Aircraft, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Tank, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.StandardProp, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.SingleMonitor, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Collectable, _adjustx, _adjusty, _levelScale);
+            AddSetupLayer(rawStage, PropDef.Armour, _adjustx, _adjusty, _levelScale);
 
             // keys should be on top of tables (StandardProp)
-            AddSetupLayer(rawStage, PropDef.Key, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Key, _adjustx, _adjusty, _levelScale);
 
             // guards should be one of the highest z layers
-            AddSetupLayer(rawStage, PropDef.Guard, _adjustx, _adjusty, levelScale);
+            AddSetupLayer(rawStage, PropDef.Guard, _adjustx, _adjusty, _levelScale);
             _guardLayer = Layers.First(x => x.LayerId == UiMapLayer.SetupGuard);
 
             // Intro star should be above other layers
-            AddIntroLayer(rawStage, _adjustx, _adjusty, levelScale);
+            AddIntroLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
             // Create a reference for Bond and place in a new layer, on top of everything else.
-            AddBondLayer(rawStage, _adjustx, _adjusty, levelScale);
+            AddBondLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
             // Create a 3x3 grid to render the map, to be able to pan around/past the edge.
             MapScaledWidth = outputVeiwboxWidth * 3;
@@ -1532,6 +1535,20 @@ namespace Gebug64.Win.ViewModels
                         mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
 
                         AddOrSetGuardTargetPosMapObject(mapGuard, msgGuard);
+                    }
+                    else
+                    {
+                        var pp = new PropPointPosition();
+                        mapGuard = (MapObjectResourceImage)GetPropDefaultModelBbox_chr(pp, _adjustx, _adjusty, _levelScale);
+                        mapGuard.LayerInstanceId = msgGuard.Chrnum;
+
+                        mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
+                        mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
+
+                        lock (_guardLayerLock)
+                        {
+                            _dispatcher.BeginInvoke(() => _guardLayer!.Entities.Add(mapGuard));
+                        }
                     }
                 }
             }
