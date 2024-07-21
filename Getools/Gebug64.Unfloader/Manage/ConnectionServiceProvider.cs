@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.Protocol.Flashcart.Message;
 using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Parse;
@@ -84,6 +85,8 @@ namespace Gebug64.Unfloader.Manage
         /// Message bus for incoming <see cref="IUnfloaderPacket"/>.
         /// </summary>
         private MessageBus<IUnfloaderPacket> _messageBusUnfloader = new();
+
+        private HashSet<MessageCategoryCommand> _excludeLogFilter = new HashSet<MessageCategoryCommand>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionServiceProvider"/> class.
@@ -289,6 +292,16 @@ namespace Gebug64.Unfloader.Manage
             _messageBusUnfloader.Unsubscribe(id);
         }
 
+        public void AddLogExclusion(MessageCategoryCommand filter)
+        {
+            _excludeLogFilter.Add(filter);
+        }
+
+        public void RemoveLogExclusion(MessageCategoryCommand filter)
+        {
+            _excludeLogFilter.Remove(filter);
+        }
+
         /// <summary>
         /// Main worker thread.
         /// The work is divided into three phases.
@@ -386,7 +399,11 @@ namespace Gebug64.Unfloader.Manage
                             if (packet!.TotalNumberPackets > 1)
                             {
                                 string commandName = CommandResolver.ResolveCommand(packet.Category, packet.Command);
-                                _logger.Log(LogLevel.Information, $"Receive message {packet.Category} {commandName} fragment {packet.PacketNumber} of {packet.TotalNumberPackets}");
+
+                                if (!_excludeLogFilter.Contains(new MessageCategoryCommand(packet)))
+                                {
+                                    _logger.Log(LogLevel.Information, $"Receive message {packet.Category} {commandName} fragment {packet.PacketNumber} of {packet.TotalNumberPackets}");
+                                }
 
                                 if (packet.PacketNumber < packet.TotalNumberPackets)
                                 {

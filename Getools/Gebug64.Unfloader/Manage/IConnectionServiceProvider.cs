@@ -1,4 +1,5 @@
 ﻿using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Unfloader;
 
 namespace Gebug64.Unfloader.Manage
@@ -115,5 +116,8 @@ namespace Gebug64.Unfloader.Manage
         /// Used to test connection level.
         /// </remarks>
         bool TestInRom();
+
+        void AddLogExclusion(MessageCategoryCommand filter);
+        void RemoveLogExclusion(MessageCategoryCommand filter);
     }
 }

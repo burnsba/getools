@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -25,6 +26,7 @@ using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
 using Gebug64.Unfloader.Protocol.Gebug;
+using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Unfloader;
@@ -224,6 +226,8 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private OnlyOneChecked<MenuItemViewModel, Guid> _menuSerialPortGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
 
+        private HashSet<MessageCategoryCommand> _excludeLogFilter = new HashSet<MessageCategoryCommand>();
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
@@ -271,6 +275,10 @@ namespace Gebug64.Win.ViewModels
             _appGebugMessageBus = appGebugMessageBus;
 
             _ignoreAppSettingsChange = false;
+
+            // TODO: move to UI
+            _excludeLogFilter.Add(new MessageCategoryCommand(GebugMessageCategory.Bond, GebugCmdBond.SendPosition));
+            _excludeLogFilter.Add(new MessageCategoryCommand(GebugMessageCategory.Chr, GebugCmdChr.SendAllGuardInfo));
         }
 
         /// <summary>
@@ -965,10 +973,15 @@ namespace Gebug64.Win.ViewModels
                 OnPropertyChanged(nameof(CanSendRom));
 
                 _connectionServiceResolver.CreateOnceDeviceManager(CurrentFlashcart, _logger);
-                _connectionServiceManager = _connectionServiceResolver.GetDeviceManager();
+                _connectionServiceManager = _connectionServiceResolver.GetDeviceManager()!;
 
-                _messageBusGebugLogSubscription = _connectionServiceManager!.Subscribe(MessageBusLogGebugCallback);
-                _messageBusUnfloaderLogSubscription = _connectionServiceManager!.Subscribe(MessageBusLogUnfloaderCallback);
+                foreach (var filter in _excludeLogFilter)
+                {
+                    _connectionServiceManager.AddLogExclusion(filter);
+                }
+
+                _messageBusGebugLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogGebugCallback);
+                _messageBusUnfloaderLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogUnfloaderCallback);
 
                 _connectionServiceManager.Start(CurrentSerialPort!);
 
@@ -1464,8 +1477,11 @@ namespace Gebug64.Win.ViewModels
                     }
                 }
 
-                _logger.Log(LogLevel.Information, "Receive " + msg.ToString());
-                ////System.Diagnostics.Debug.WriteLine("Receive " + msg.ToString());
+                if (!_excludeLogFilter.Contains(new MessageCategoryCommand(msg)))
+                {
+                    _logger.Log(LogLevel.Information, "Receive " + msg.ToString());
+                    ////System.Diagnostics.Debug.WriteLine("Receive " + msg.ToString());
+                }
 
                 _appGebugMessageBus!.Publish(msg);
             });
