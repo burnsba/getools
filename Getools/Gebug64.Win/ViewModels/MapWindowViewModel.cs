@@ -51,6 +51,7 @@ using Microsoft.VisualBasic;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SvgLib;
 using static System.Windows.Forms.AxHost;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using static Antlr4.Runtime.Atn.SemanticContext;
 
 namespace Gebug64.Win.ViewModels
@@ -791,7 +792,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -831,7 +832,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -855,7 +856,7 @@ namespace Gebug64.Win.ViewModels
 
                 _lastIntroPosition = mo.ScaledOrigin.Clone();
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -877,7 +878,7 @@ namespace Gebug64.Win.ViewModels
             Bond.ScaledOrigin.Y = _lastIntroPosition.Y;
             Bond.ScaledOrigin.Z = _lastIntroPosition.Z;
 
-            layer.Entities.Add(Bond);
+            layer.DispatchAddEntity(_dispatcher, Bond);
 
             Layers.Add(layer);
         }
@@ -1057,7 +1058,7 @@ namespace Gebug64.Win.ViewModels
                 mo.LayerIndexId = layerTypeIndexLookup[pp.SetupObject.Type];
                 layerTypeIndexLookup[pp.SetupObject.Type] = mo.LayerIndexId + 1;
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -1081,7 +1082,7 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -1127,7 +1128,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -1175,7 +1176,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
 
-                layer.Entities.Add(mo);
+                layer.DispatchAddEntity(_dispatcher, mo);
             }
 
             Layers.Add(layer);
@@ -1449,7 +1450,7 @@ namespace Gebug64.Win.ViewModels
 
             foreach (var layer in Layers)
             {
-                foreach (var entity in layer.Entities)
+                foreach (var entity in layer.GetEntities())
                 {
                     if (layer.ZSliceCompare == UiMapLayerZSliceCompare.Bbox)
                     {
@@ -1520,37 +1521,105 @@ namespace Gebug64.Win.ViewModels
                 && msg.Command == (int)GebugCmdChr.SendAllGuardInfo)
             {
                 var guarddata = ((GebugChrSendAllGuardInfoMessage)msg).ParseGuardPositions();
+
                 foreach (var msgGuard in guarddata)
                 {
-                    MapObjectResourceImage? mapGuard = null;
-
-                    lock (_guardLayerLock)
+                    switch (msgGuard.ActionType)
                     {
-                        mapGuard = _guardLayer!.Entities.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
-                    }
+                        case GuardActType.ActDead:
+                            MessageCallbackGuardDead(msgGuard);
+                            break;
 
-                    if (!object.ReferenceEquals(null, mapGuard))
-                    {
-                        mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
-                        mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
-
-                        AddOrSetGuardTargetPosMapObject(mapGuard, msgGuard);
-                    }
-                    else
-                    {
-                        var pp = new PropPointPosition();
-                        mapGuard = (MapObjectResourceImage)GetPropDefaultModelBbox_chr(pp, _adjustx, _adjusty, _levelScale);
-                        mapGuard.LayerInstanceId = msgGuard.Chrnum;
-
-                        mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
-                        mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
-
-                        lock (_guardLayerLock)
-                        {
-                            _dispatcher.BeginInvoke(() => _guardLayer!.Entities.Add(mapGuard));
-                        }
+                        default:
+                            MessageCallbackGuardUpdatePosition(msgGuard);
+                            break;
                     }
                 }
+
+                var mesgGuardIndexIds = guarddata.Select(x => (int)x.ChrSlotIndex).ToHashSet();
+
+                var nonMatchingGuards = _guardLayer!.GetEntities()
+                    .Where(x => x.Parent == null && !mesgGuardIndexIds.Contains(x.AltId))
+                    .ToList();
+
+                _guardLayer.DispatchRemoveRange(_dispatcher, nonMatchingGuards);
+            }
+        }
+
+        private void MessageCallbackGuardDead(RmonGuardPosition msgGuard)
+        {
+            MapObjectResourceImage? mapGuard = null;
+            //List<MapObject> guardEntities;
+
+            //lock (_guardLayerLock)
+            //{
+            //    guardEntities = _guardLayer!.Entities.ToList();
+            //}
+
+            mapGuard = FindMapObjectGuardInLayer(msgGuard);
+
+            if (!object.ReferenceEquals(null, mapGuard))
+            {
+                // Don't clear children in this thread, the dispatcher thread hasn't processed the children list yet.
+                _guardLayer!.DispatchRemoveEntityAndChildren(_dispatcher, mapGuard);
+                //mapGuard.Children.Clear();
+
+                //lock (_guardLayerLock)
+                //{
+                //    _dispatcher.BeginInvoke(() =>
+                //    {
+                //foreach (var child in mapGuard.Children)
+                //        {
+                //            _guardLayer!.Entities.Remove(child);
+                //        }
+
+                //        mapGuard.Children.Clear();
+                //        _guardLayer!.Entities.Remove(mapGuard);
+                //    });
+                //}
+            }
+        }
+
+        private void MessageCallbackGuardUpdatePosition(RmonGuardPosition msgGuard)
+        {
+            MapObjectResourceImage? mapGuard = null;
+            //List<MapObject> guardEntities;
+
+            //lock (_guardLayerLock)
+            //{
+            //    guardEntities = _guardLayer!.Entities.ToList();
+            //}
+
+            mapGuard = FindMapObjectGuardInLayer(msgGuard);
+
+            if (!object.ReferenceEquals(null, mapGuard))
+            {
+                if (mapGuard.AltId < 0)
+                {
+                    mapGuard.AltId = msgGuard.ChrSlotIndex;
+                }
+
+                mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
+                mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
+
+                AddOrSetGuardTargetPosMapObject(mapGuard, msgGuard);
+            }
+            else
+            {
+                var pp = new PropPointPosition();
+                mapGuard = (MapObjectResourceImage)GetPropDefaultModelBbox_chr(pp, _adjustx, _adjusty, _levelScale);
+                mapGuard.LayerInstanceId = msgGuard.Chrnum;
+                mapGuard.AltId = msgGuard.ChrSlotIndex;
+                mapGuard.IsVisible = true;
+                mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
+                mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
+
+                //lock (_guardLayerLock)
+                //{
+                //    _dispatcher.BeginInvoke(() => _guardLayer!.DispatchAddEntity(_dispatcher, mapGuard));
+                //}
+                //_guardLayer!.DispatchAddEntity(_dispatcher, mapGuard);
+                _guardLayer!.DispatchAddEntity(_dispatcher, mapGuard);
             }
         }
 
@@ -1562,39 +1631,60 @@ namespace Gebug64.Win.ViewModels
             {
                 bool addNew = false;
 
-                MapObjectResourceImage? existingTargetMapObject = mapGuard.Children.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
+                MapObjectResourceImage? existingTargetMapObject = mapGuard.Children.FirstOrDefault(x => x is MapObjectResourceImage) as MapObjectResourceImage;
 
                 if (object.ReferenceEquals(null, existingTargetMapObject))
                 {
                     existingTargetMapObject = mapGuard.Clone();
                     existingTargetMapObject.ResourcePath = "/Gebug64.Win;component/Resource/Image/targetpos.png";
+                    existingTargetMapObject.IsVisible = true;
+                    existingTargetMapObject.LayerInstanceId = -1;
+                    existingTargetMapObject.LayerIndexId = -1;
+                    existingTargetMapObject.AltId = -1;
+
                     addNew = true;
                 }
 
                 var sourcePos = msgGuard.TargetPos;
                 existingTargetMapObject.ScaledOrigin.Y = sourcePos.Y;
                 existingTargetMapObject.SetPositionLessHalf(sourcePos.X + _adjustx, sourcePos.Z + _adjusty, msgGuard.ModelRotationDegrees);
-                existingTargetMapObject.IsVisible = true;
 
                 if (addNew)
                 {
+                    existingTargetMapObject.Parent = mapGuard;
                     mapGuard.Children.Add(existingTargetMapObject);
 
-                    lock (_guardLayerLock)
-                    {
-                        _dispatcher.BeginInvoke(() => _guardLayer!.Entities.Add(existingTargetMapObject));
-                    }
+                    //lock (_guardLayerLock)
+                    //{
+                    //    _dispatcher.BeginInvoke(() => _guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject));
+                    //}
+                    //_guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject);
+                    _guardLayer!.DispatchAddEntity(_dispatcher, existingTargetMapObject);
                 }
             }
-            else
-            {
-                MapObjectResourceImage? existingTargetMapObject = mapGuard.Children.FirstOrDefault(x => x.LayerInstanceId == msgGuard.Chrnum) as MapObjectResourceImage;
+        }
 
-                if (!object.ReferenceEquals(null, existingTargetMapObject))
-                {
-                    //existingTargetMapObject.IsVisible = false;
-                }
+        private MapObjectResourceImage? FindMapObjectGuardInLayer(RmonGuardPosition msgGuard)
+        {
+            MapObjectResourceImage? result = null;
+
+            //if (msgGuard.Chrnum > 0)
+            //{
+            //    result = _guardLayer!.SafeFirstOrDefault(_dispatcher, x =>
+            //        x is MapObjectResourceImage
+            //        && ((MapObjectResourceImage)x).LayerInstanceId == msgGuard.Chrnum)
+            //    as MapObjectResourceImage;
+            //}
+
+            if (result == null && msgGuard.ChrSlotIndex >= 0)
+            {
+                result = _guardLayer!.SafeFirstOrDefault(_dispatcher, x =>
+                    x is MapObjectResourceImage
+                    && ((MapObjectResourceImage)x).AltId == msgGuard.ChrSlotIndex)
+                as MapObjectResourceImage;
             }
+
+            return result;
         }
     }
 }

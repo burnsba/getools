@@ -20,10 +20,9 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
         public UInt16 Chrnum { get; set; }
 
         /// <summary>
-        /// Character head.
-        /// Arbitrary extra data that is one byte.
+        /// Index source from g_ChrSlots.
         /// </summary>
-        public byte HeadNum { get; set; }
+        public byte ChrSlotIndex { get; set; }
 
         /// <summary>
         /// Guard current action.

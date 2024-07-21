@@ -56,7 +56,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
                 ushort chrnum = (ushort)BitUtility.Read16Big(fullBody, bodyOffset);
                 bodyOffset += 2;
 
-                byte headnum = fullBody[bodyOffset++];
+                byte chrSlotIndex = fullBody[bodyOffset++];
 
                 GuardActType action = (GuardActType)fullBody[bodyOffset++];
                 if (!Enum.IsDefined(typeof(GuardActType), action))
@@ -101,7 +101,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
                 var guard = new RmonGuardPosition()
                 {
                     Chrnum = chrnum,
-                    HeadNum = headnum,
+                    ChrSlotIndex = chrSlotIndex,
                     ActionType = action,
                     PropPos = propPos,
                     TargetPos = targetPos,

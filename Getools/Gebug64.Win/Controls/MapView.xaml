@@ -40,7 +40,7 @@
                     <DataTemplate>
                         <ItemsControl
                             Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
-                            ItemsSource="{Binding Entities}">
+                            ItemsSource="{Binding ObservableEntities}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <Canvas />

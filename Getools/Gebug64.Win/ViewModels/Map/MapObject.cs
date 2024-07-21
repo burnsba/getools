@@ -28,6 +28,7 @@ namespace Gebug64.Win.ViewModels.Map
             ScaledMax = src.ScaledMax.Clone();
             LayerInstanceId = src.LayerInstanceId;
             LayerIndexId = src.LayerIndexId;
+            AltId = src.AltId;
         }
 
         /// <summary>
@@ -168,10 +169,14 @@ namespace Gebug64.Win.ViewModels.Map
         /// </summary>
         public int LayerIndexId { get; set; } = -1;
 
+        public int AltId { get; set; } = -1;
+
         /// <summary>
         /// Related child objects to show on the map.
         /// </summary>
         public List<MapObject> Children { get; set; } = new List<MapObject>();
+
+        public MapObject? Parent { get; set; }
 
         /// <summary>
         /// Updates object to new position, offset by half the width and height.
