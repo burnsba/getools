@@ -13,7 +13,7 @@ namespace Getools.Lib.Game.Asset.Setup
     /// <remarks>
     /// TODO: see LookupPadLink() on <see cref="StandTile"/>.
     /// </remarks>
-    public class Pad : IBinData, IGetoolsLibObject
+    public class Pad : IBinData, IGetoolsLibObject, ISetupListItem
     {
         /// <summary>
         /// C file, type name. Should match known struct type.
@@ -67,6 +67,9 @@ namespace Getools.Lib.Game.Asset.Setup
         /// Gets or sets the variable name used in source file.
         /// </summary>
         public string? VariableName { get; set; }
+
+        /// <inheritdoc />
+        public int ListIndex { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]

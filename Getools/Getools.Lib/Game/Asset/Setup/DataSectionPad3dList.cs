@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Getools.Lib.BinPack;
 using Newtonsoft.Json;
+using static Getools.Lib.Kaitai.Gen.Setup;
 
 namespace Getools.Lib.Game.Asset.Setup
 {
@@ -75,7 +76,11 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void DeserializeFix(int startingIndex = 0)
         {
-            // nothing to do
+            // 3dpads have a natural "index" offset starting at 10,000.
+            for (int i = 0; i < Pad3dList.Count; i++)
+            {
+                Pad3dList[i].ListIndex = startingIndex + i + 10000;
+            }
         }
 
         /// <inheritdoc />

@@ -75,7 +75,10 @@ namespace Getools.Lib.Game.Asset.Setup
         /// <inheritdoc />
         public override void DeserializeFix(int startingIndex = 0)
         {
-            // nothing to do
+            for (int i = 0; i < PadList.Count; i++)
+            {
+                PadList[i].ListIndex = startingIndex + i;
+            }
         }
 
         /// <inheritdoc />

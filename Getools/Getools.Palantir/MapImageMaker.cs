@@ -854,6 +854,7 @@ namespace Getools.Palantir
                 context.PresetPolygons.Add(new PointPosition()
                 {
                     OrderIndex = index,
+                    PadId = pad.ListIndex,
                     Room = roomId,
                     Origin = pad.Position.ToCoord3dd(),
                     Up = pad.Up.ToCoord3dd(),
@@ -933,7 +934,7 @@ namespace Getools.Palantir
                 context.PresetPolygons.Add(new PointPosition()
                 {
                     OrderIndex = index,
-                    PadId = index + 10000, // back to bound3d id convention
+                    PadId = pad.ListIndex, // back to bound3d id convention
                     Room = roomId,
                     Origin = pad.Position.ToCoord3dd(),
                     Up = pad.Up.ToCoord3dd(),

@@ -2,7 +2,7 @@
   "profiles": {
     "Getools": {
       "commandName": "Project",
-      "commandLineArgs": "make_map --bg=\"../../../../asset/bg/bg_tra_all_p.bin\" --stan=\"../../../../asset/stan/Tbg_tra_all_p_stanZ.bin\" --setup=\"../../../../asset/setup/u/UsetuptraZ.bin\" --output-file=\"../../../../asset/test/Train.svg\" --scale=0.15019713"
+      "commandLineArgs": "make_map --bg=\"../../../../asset/bg/bg_run_all_p.bin\" --stan=\"../../../../asset/stan/Tbg_run_all_p_stanZ.bin\" --setup=\"../../../../asset/setup/UsetuprunZ.bin\" --output-file=\"../../../../asset/test/Runway.svg\" --scale=0.089571431"
     }
   }
 }
