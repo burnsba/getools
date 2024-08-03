@@ -61,17 +61,17 @@ namespace Gebug64.Win.Game
         /// <summary>
         /// In-game chrnum id.
         /// </summary>
-        public int Chrnum { get; set; }
+        public int Chrnum { get; set; } = -1;
 
         /// <summary>
         /// Index source from g_ChrSlots.
         /// </summary>
-        public int ChrSlotIndex { get; set; }
+        public int ChrSlotIndex { get; set; } = -1;
 
         /// <summary>
         /// Guard current action.
         /// </summary>
-        public GuardActType ActionType { get; set; }
+        public GuardActType ActionType { get; set; } = GuardActType.ActInvalidData;
 
         /// <summary>
         /// Prop->pos property.
