@@ -69,12 +69,12 @@ namespace Gebug64.Win.Windows.Mdi
             CheckSetupIntro.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupIntro];
         }
 
-        private void MapRenderControl_NotifyMouseOverGameObject(object sender, NotifyMouseOverGameObjectEventArgs e)
-        {
-            _vm.SetMouseOverObjects(e.MouseOverObjects);
-        }
-
         /// <inheritdoc />
         public string TypeName => _typeName;
+
+        private void MapRenderControl_NotifyMouseOverGameObject(object sender, NotifyMouseOverGameObjectEventArgs e)
+        {
+            _vm.NotifyMouseOverObjectsChanged(e.MouseOverObjects);
+        }
     }
 }

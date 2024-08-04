@@ -19,13 +19,27 @@
              MouseMove="UserControl_MouseMove"
              >
     <UserControl.Resources>
-        <cv:BoolToVisibilityConverter x:Key="BoolToVis"></cv:BoolToVisibilityConverter>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Gebug64.Win;component/Xaml/ResourceDictionary/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        
+            <cv:BoolToVisibilityConverter x:Key="BoolToVis"></cv:BoolToVisibilityConverter>
+
+            <ContextMenu x:Key="contextMenu" IsOpen="{Binding ContextMenuIsOpen, Mode=OneWayToSource}">
+
+                <MenuItem Header="Select..." Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding ContextMenuSelectList}">
+                </MenuItem>
+            
+            </ContextMenu>
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
         <ScrollViewer
             x:Name="MainScrollViewer"
             HorizontalScrollBarVisibility="Visible"
             VerticalScrollBarVisibility="Visible"
+            ContextMenu="{StaticResource contextMenu}"
             >
 
             <ItemsControl

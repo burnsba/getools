@@ -43,6 +43,7 @@ using Getools.Lib.Game.Asset.Stan;
 using Getools.Lib.Game.Engine;
 using Getools.Lib.Game.EnumModel;
 using Getools.Lib.Game.Enums;
+using Getools.Lib.Kaitai.Gen;
 using Getools.Palantir;
 using Getools.Palantir.Render;
 using Getools.Utility.Logging;
@@ -98,6 +99,8 @@ namespace Gebug64.Win.ViewModels
         private System.Timers.Timer _mapZSliceTimer;
 
         private MapLayerViewModel? _guardLayer = null;
+
+        private List<GameObject> _mouseOverItems = new List<GameObject>();
 
         /// <summary>
         /// This variable holds the last intro coordinates read. Used to set Bond's initial position on stage load.
@@ -529,6 +532,17 @@ namespace Gebug64.Win.ViewModels
         }
 
         /// <summary>
+        /// Right click context menu, "Select..." child item list.
+        /// </summary>
+        public ObservableCollection<MenuItemViewModel> ContextMenuSelectList { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
+        /// <summary>
+        /// Flag to indicate whether context menu is currently opened or not.
+        /// One way binding from user interface to the view model.
+        /// </summary>
+        public bool ContextMenuIsOpen { get; set; }
+
+        /// <summary>
         /// Pass through to <see cref="Workspace.Instance.SaveAppSettings"/>.
         /// </summary>
         protected void SaveAppSettings()
@@ -547,96 +561,12 @@ namespace Gebug64.Win.ViewModels
         /// External method to be called when mouse over object list is updated.
         /// </summary>
         /// <param name="items">Current mouseover items.</param>
-        public void SetMouseOverObjects(List<GameObject> items)
+        public void NotifyMouseOverObjectsChanged(List<GameObject> items)
         {
-            List<int> bgs = new List<int>();
-            List<int> stans = new List<int>();
-            List<int> pads = new List<int>();
-            List<int> chrs = new List<int>();
+            _mouseOverItems = items;
 
-            List<string> sectionTexts = new List<string>();
-
-            Dictionary<PropDef, List<int>> setupProps = new Dictionary<PropDef, List<int>>();
-
-            foreach (var item in items)
-            {
-                if (item is Game.Prop p)
-                {
-                    if (p.PropDefType != null)
-                    {
-                        if (setupProps.ContainsKey(p.PropDefType.Value))
-                        {
-                            setupProps[p.PropDefType.Value].Add(item.LayerIndexId);
-                        }
-                        else
-                        {
-                            var listy = new List<int>();
-                            listy.Add(item.LayerIndexId);
-                            setupProps.Add(p.PropDefType.Value, listy);
-                        }
-                    }
-                    else
-                    {
-                        // Bond
-                        // guard target position
-                        // ...
-                    }
-                }
-                else if (item is Game.Chr c)
-                {
-                    chrs.Add(item.LayerIndexId);
-                }
-                else if (item is Game.Pad pad)
-                {
-                    pads.Add(item.LayerIndexId);
-                }
-                else if (item is Game.Stan stan)
-                {
-                    stans.Add(item.LayerIndexId);
-                }
-                else if (item is Game.Bg bg)
-                {
-                    bgs.Add(item.LayerIndexId);
-                }
-            }
-
-            if (bgs.Any())
-            {
-                var idText = string.Join(", ", bgs);
-                sectionTexts.Add($"bg: {idText}");
-            }
-
-            if (stans.Any())
-            {
-                var idText = string.Join(", ", stans);
-                sectionTexts.Add($"stan: {idText}");
-            }
-
-            if (pads.Any())
-            {
-                var idText = string.Join(", ", pads);
-                sectionTexts.Add($"pad: {idText}");
-            }
-
-            if (chrs.Any())
-            {
-                var idText = string.Join(", ", chrs);
-                sectionTexts.Add($"chr: {idText}");
-            }
-
-            if (setupProps.Any())
-            {
-                foreach (var kvp in setupProps)
-                {
-                    string label = Getools.Lib.Formatters.EnumFormat.PropDefFriendlyName(kvp.Key);
-                    var idText = string.Join(", ", kvp.Value);
-                    sectionTexts.Add($"{label}: {idText}");
-                }
-            }
-
-            var totalString = string.Join(", ", sectionTexts);
-            /////System.Diagnostics.Debug.WriteLine(string.Join(", ", total));
-            StatusBarText = totalString;
+            UpdateMouseOverStatusText();
+            UpdateContextMenuSelect();
         }
 
         private void LoadStageEntry(LevelIdX stageid)
@@ -1830,6 +1760,162 @@ namespace Gebug64.Win.ViewModels
             }
 
             return result;
+        }
+
+        private void UpdateMouseOverStatusText()
+        {
+            var items = _mouseOverItems;
+
+            List<int> bgs = new List<int>();
+            List<int> stans = new List<int>();
+            List<int> pads = new List<int>();
+            List<int> chrs = new List<int>();
+
+            List<string> sectionTexts = new List<string>();
+
+            Dictionary<PropDef, List<int>> setupProps = new Dictionary<PropDef, List<int>>();
+
+            foreach (var item in items)
+            {
+                if (item is Game.Prop p)
+                {
+                    if (p.PropDefType != null)
+                    {
+                        if (setupProps.ContainsKey(p.PropDefType.Value))
+                        {
+                            setupProps[p.PropDefType.Value].Add(item.LayerIndexId);
+                        }
+                        else
+                        {
+                            var listy = new List<int>();
+                            listy.Add(item.LayerIndexId);
+                            setupProps.Add(p.PropDefType.Value, listy);
+                        }
+                    }
+                    else
+                    {
+                        // Bond
+                        // guard target position
+                        // ...
+                    }
+                }
+                else if (item is Game.Chr c)
+                {
+                    chrs.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Pad pad)
+                {
+                    pads.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Stan stan)
+                {
+                    stans.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Bg bg)
+                {
+                    bgs.Add(item.LayerIndexId);
+                }
+            }
+
+            if (bgs.Any())
+            {
+                var idText = string.Join(", ", bgs);
+                sectionTexts.Add($"bg: {idText}");
+            }
+
+            if (stans.Any())
+            {
+                var idText = string.Join(", ", stans);
+                sectionTexts.Add($"stan: {idText}");
+            }
+
+            if (pads.Any())
+            {
+                var idText = string.Join(", ", pads);
+                sectionTexts.Add($"pad: {idText}");
+            }
+
+            if (chrs.Any())
+            {
+                var idText = string.Join(", ", chrs);
+                sectionTexts.Add($"chr: {idText}");
+            }
+
+            if (setupProps.Any())
+            {
+                foreach (var kvp in setupProps)
+                {
+                    string label = Getools.Lib.Formatters.EnumFormat.PropDefFriendlyName(kvp.Key);
+                    var idText = string.Join(", ", kvp.Value);
+                    sectionTexts.Add($"{label}: {idText}");
+                }
+            }
+
+            var totalString = string.Join(", ", sectionTexts);
+            /////System.Diagnostics.Debug.WriteLine(string.Join(", ", total));
+            StatusBarText = totalString;
+        }
+
+        private void UpdateContextMenuSelect()
+        {
+            if (ContextMenuIsOpen)
+            {
+                return;
+            }
+
+            var items = _mouseOverItems;
+
+            ContextMenuSelectList.Clear();
+
+            //Action<object?> dddd = x => SendSelectedRom((MenuItemViewModel)x!);
+
+            MenuItemViewModel mivm;
+            string menuLabel;
+
+            foreach (var item in items)
+            {
+                if (item is Game.Prop p)
+                {
+                    if (p.PropDefType != null)
+                    {
+                        string label = Getools.Lib.Formatters.EnumFormat.PropDefFriendlyName(p.PropDefType.Value);
+                        menuLabel = $"{label}: {item.LayerIndexId}";
+                    }
+                    else
+                    {
+                        // Bond
+                        // guard target position
+                        // ...
+                        continue;
+                    }
+                }
+                else if (item is Game.Chr c)
+                {
+                    menuLabel = $"chr: {item.LayerIndexId}";
+                }
+                else if (item is Game.Pad pad)
+                {
+                    menuLabel = $"pad: {item.LayerIndexId}";
+                }
+                else if (item is Game.Stan stan)
+                {
+                    menuLabel = $"stan: {item.LayerIndexId}";
+                }
+                else if (item is Game.Bg bg)
+                {
+                    menuLabel = $"bg: {item.LayerIndexId}";
+                }
+                else
+                {
+                    continue;
+                }
+
+                mivm = new MenuItemViewModel() { Header = menuLabel };
+                //mivm.Command = new CommandHandler(dddd, () => CanSendRom);
+                mivm.Value = item;
+
+                ContextMenuSelectList.Add(mivm);
+            }
         }
     }
 }
