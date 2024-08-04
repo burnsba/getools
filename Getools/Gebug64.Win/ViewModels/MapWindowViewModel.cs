@@ -74,6 +74,7 @@ namespace Gebug64.Win.ViewModels
         private string? _setupBinFolder;
         private string? _stanBinFolder;
         private string? _bgBinFolder;
+        private string? _statusBarText;
 
         private double _mapScaledWidth = 0;
         private double _mapScaledHeight = 0;
@@ -511,6 +512,23 @@ namespace Gebug64.Win.ViewModels
         public MapObject? Bond { get; private set; }
 
         /// <summary>
+        /// Status bar display text.
+        /// </summary>
+        public string? StatusBarText
+        {
+            get => _statusBarText;
+
+            set
+            {
+                if (_statusBarText != value)
+                {
+                    _statusBarText = value;
+                    OnPropertyChanged(nameof(StatusBarText));
+                }
+            }
+        }
+
+        /// <summary>
         /// Pass through to <see cref="Workspace.Instance.SaveAppSettings"/>.
         /// </summary>
         protected void SaveAppSettings()
@@ -523,6 +541,102 @@ namespace Gebug64.Win.ViewModels
             Workspace.Instance.SaveAppSettings();
 
             _appConfig.ClearIsDirty();
+        }
+
+        /// <summary>
+        /// External method to be called when mouse over object list is updated.
+        /// </summary>
+        /// <param name="items">Current mouseover items.</param>
+        public void SetMouseOverObjects(List<GameObject> items)
+        {
+            List<int> bgs = new List<int>();
+            List<int> stans = new List<int>();
+            List<int> pads = new List<int>();
+            List<int> chrs = new List<int>();
+
+            List<string> sectionTexts = new List<string>();
+
+            Dictionary<PropDef, List<int>> setupProps = new Dictionary<PropDef, List<int>>();
+
+            foreach (var item in items)
+            {
+                if (item is Game.Prop p)
+                {
+                    if (p.PropDefType != null)
+                    {
+                        if (setupProps.ContainsKey(p.PropDefType.Value))
+                        {
+                            setupProps[p.PropDefType.Value].Add(item.LayerIndexId);
+                        }
+                        else
+                        {
+                            var listy = new List<int>();
+                            listy.Add(item.LayerIndexId);
+                            setupProps.Add(p.PropDefType.Value, listy);
+                        }
+                    }
+                    else
+                    {
+                        // Bond
+                        // guard target position
+                        // ...
+                    }
+                }
+                else if (item is Game.Chr c)
+                {
+                    chrs.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Pad pad)
+                {
+                    pads.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Stan stan)
+                {
+                    stans.Add(item.LayerIndexId);
+                }
+                else if (item is Game.Bg bg)
+                {
+                    bgs.Add(item.LayerIndexId);
+                }
+            }
+
+            if (bgs.Any())
+            {
+                var idText = string.Join(", ", bgs);
+                sectionTexts.Add($"bg: {idText}");
+            }
+
+            if (stans.Any())
+            {
+                var idText = string.Join(", ", stans);
+                sectionTexts.Add($"stan: {idText}");
+            }
+
+            if (pads.Any())
+            {
+                var idText = string.Join(", ", pads);
+                sectionTexts.Add($"pad: {idText}");
+            }
+
+            if (chrs.Any())
+            {
+                var idText = string.Join(", ", chrs);
+                sectionTexts.Add($"chr: {idText}");
+            }
+
+            if (setupProps.Any())
+            {
+                foreach (var kvp in setupProps)
+                {
+                    string label = Getools.Lib.Formatters.EnumFormat.PropDefFriendlyName(kvp.Key);
+                    var idText = string.Join(", ", kvp.Value);
+                    sectionTexts.Add($"{label}: {idText}");
+                }
+            }
+
+            var totalString = string.Join(", ", sectionTexts);
+            /////System.Diagnostics.Debug.WriteLine(string.Join(", ", total));
+            StatusBarText = totalString;
         }
 
         private void LoadStageEntry(LevelIdX stageid)
@@ -793,7 +907,10 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.Bg()
+                {
+                    LayerIndexId = poly.Room,
+                };
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -835,7 +952,10 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.Stan()
+                {
+                    LayerIndexId = poly.OrderIndex,
+                };
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -909,10 +1029,6 @@ namespace Gebug64.Win.ViewModels
             }
 
             var collection = rawStage.SetupPolygonsCollection[setupLayerKey];
-
-            var layerTypeIndexLookup = global::System.Enum.GetValues(typeof(PropDef))
-                .Cast<PropDef>()
-                .ToDictionary(key => key, val => 0);
 
             foreach (var pp in collection)
             {
@@ -1062,8 +1178,8 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                mo.DataSource!.LayerIndexId = layerTypeIndexLookup[pp.SetupObject.Type];
-                layerTypeIndexLookup[pp.SetupObject.Type] = mo.DataSource!.LayerIndexId + 1;
+                mo.DataSource!.PropDefType = pp.SetupObject.Type;
+                mo.DataSource!.LayerIndexId = pp.SetupObject.SetupSectionTypeIndex;
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1089,7 +1205,10 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.Pad()
+                {
+                    LayerIndexId = pp.PadId,
+                };
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }

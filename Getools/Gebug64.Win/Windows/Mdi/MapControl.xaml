@@ -45,6 +45,23 @@
         </Grid.RowDefinitions>
 
         <StatusBar Grid.Row="1" >
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <!--<ColumnDefinition Width="Auto" MinWidth="60"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>-->
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0" >
+                <TextBlock Text="{Binding StatusBarText}"/>
+            </StatusBarItem>
+            <Separator Grid.Column="1"  />
         </StatusBar>
 
         <Grid Grid.Row="0">
@@ -290,7 +307,7 @@
                 Margin="0"
                 Padding="0"
                 >
-                <ctl:MapView></ctl:MapView>
+                <ctl:MapView x:Name="MapRenderControl"></ctl:MapView>
             </Border>
         </Grid>
     </Grid>

@@ -17,6 +17,9 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// </summary>
         public const string CTypeName = "s32";
 
+        /// <summary>
+        /// Number of bytes for object.
+        /// </summary>
         public const int BaseSizeOf = 4;
 
         /// <summary>
@@ -49,6 +52,12 @@ namespace Getools.Lib.Game.Asset.SetupObject
                 TypeRaw = (byte)value;
             }
         }
+
+        /// <inheritdoc/>
+        public int SetupIndex { get; set; }
+
+        /// <inheritdoc/>
+        public int SetupSectionTypeIndex { get; set; }
 
         /// <summary>
         /// Gets Getools.Lib reference id for the section/filler section.

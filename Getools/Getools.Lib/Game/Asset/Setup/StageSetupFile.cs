@@ -7,6 +7,7 @@ using Getools.Lib.BinPack;
 using Getools.Lib.Error;
 using Getools.Lib.Game.Asset.Intro;
 using Getools.Lib.Game.Asset.SetupObject;
+using Getools.Lib.Game.Enums;
 using Newtonsoft.Json;
 
 namespace Getools.Lib.Game.Asset.Setup
@@ -520,6 +521,33 @@ namespace Getools.Lib.Game.Asset.Setup
             foreach (var section in remainingSections)
             {
                 section.DeserializeFix();
+            }
+        }
+
+        /// <summary>
+        /// Iterate items in the setup file and assign overal index ids for the object section,
+        /// and subsection ids for guards, ammo boxes, etc.
+        /// </summary>
+        internal void AssignIndexIds()
+        {
+            if (SectionObjects != null)
+            {
+                int setupObjectIndex = 0;
+
+                var layerTypeIndexLookup = global::System.Enum.GetValues(typeof(PropDef))
+                    .Cast<PropDef>()
+                    .ToDictionary(key => key, val => 0);
+
+                foreach (var iso in SectionObjects.Objects)
+                {
+                    iso.SetupIndex = setupObjectIndex;
+                    iso.SetupSectionTypeIndex = setupObjectIndex;
+
+                    iso.SetupSectionTypeIndex = layerTypeIndexLookup[iso.Type];
+                    layerTypeIndexLookup[iso.Type] = iso.SetupSectionTypeIndex + 1;
+
+                    setupObjectIndex++;
+                }
             }
         }
 

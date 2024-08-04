@@ -14,6 +14,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Gebug64.Win.Event;
+using Gebug64.Win.Game;
 using Gebug64.Win.ViewModels.Map;
 
 namespace Gebug64.Win.Controls
@@ -30,6 +32,8 @@ namespace Gebug64.Win.Controls
         private double _vOff = 1;
         private bool _mouseCaptured = false;
 
+        private List<DependencyObject> _mouseHitResultList = new List<DependencyObject>();
+
         private double _uiScale = 1.0;
 
         /// <summary>
@@ -42,6 +46,18 @@ namespace Gebug64.Win.Controls
             _content = this;
             _scrollViewer = MainScrollViewer;
         }
+
+        /// <summary>
+        /// Delegate to describe the method to handle notifications when the mouse is over game objects.
+        /// </summary>
+        /// <param name="sender">Sender.</param>
+        /// <param name="e">Args.</param>
+        public delegate void NotifyMouseOverGameObjectHandler(object sender, NotifyMouseOverGameObjectEventArgs e);
+
+        /// <summary>
+        /// Event for notifications when mouse is over game objects.
+        /// </summary>
+        public event NotifyMouseOverGameObjectHandler? NotifyMouseOverGameObject;
 
         private void ScrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -175,6 +191,62 @@ namespace Gebug64.Win.Controls
         {
             var mousePos = Mouse.GetPosition(MapWindowZ);
             MousePos.Text = $"{mousePos.X}, {mousePos.Y}";
+
+            // Retrieve the coordinate of the mouse position.
+            Point pt = e.GetPosition((UIElement)sender);
+
+            // Clear the contents of the list used for hit test results.
+            _mouseHitResultList.Clear();
+
+            // Set up a callback to receive the hit test result enumeration.
+            VisualTreeHelper.HitTest(
+                MainScrollViewer,
+                new HitTestFilterCallback(MyHitTestFilter),
+                new HitTestResultCallback(MyHitTestResult),
+                new PointHitTestParameters(pt));
+
+            // Perform actions on the hit test results list.
+            if (_mouseHitResultList.Count > 0)
+            {
+                // MyHitTestFilter filters the objects, so these casts should always succeed.
+                var gameObjects = _mouseHitResultList.Select(x => ((MapObject)((FrameworkElement)x).DataContext).DataSource!).ToList();
+
+                NotifyMouseOverGameObject?.Invoke(this, new NotifyMouseOverGameObjectEventArgs()
+                {
+                    MouseOverObjects = gameObjects,
+                });
+            }
+        }
+
+        private HitTestResultBehavior MyHitTestResult(HitTestResult result)
+        {
+            // Add the hit test result to the list that will be processed after the enumeration.
+            _mouseHitResultList.Add(result.VisualHit);
+
+            // Set the behavior to return visuals at all z-order levels.
+            return HitTestResultBehavior.Continue;
+        }
+
+        private HitTestFilterBehavior MyHitTestFilter(DependencyObject o)
+        {
+            // Test for the object value you want to filter.
+            FrameworkElement? fe = o as FrameworkElement;
+            if (fe != null)
+            {
+                if (fe.DataContext != null)
+                {
+                    MapObject? mapObject = fe.DataContext as MapObject;
+                    {
+                        if (mapObject != null && mapObject.DataSource != null && mapObject.DataSource.LayerIndexId > -1)
+                        {
+                            // Visual object is part of hit test results enumeration.
+                            return HitTestFilterBehavior.Continue;
+                        }
+                    }
+                }
+            }
+
+            return HitTestFilterBehavior.ContinueSkipSelf;
         }
     }
 }

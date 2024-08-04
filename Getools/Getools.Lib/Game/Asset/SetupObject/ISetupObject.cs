@@ -15,5 +15,15 @@ namespace Getools.Lib.Game.Asset.SetupObject
         /// Gets or sets object type.
         /// </summary>
         PropDef Type { get; set; }
+
+        /// <summary>
+        /// Index into the setup section (padlist, propdeflist, ailist, etc).
+        /// </summary>
+        int SetupIndex { get; set; }
+
+        /// <summary>
+        /// Index in subsection for setup section that has subtypes (guard index, prop index, etc).
+        /// </summary>
+        int SetupSectionTypeIndex { get; set; }
     }
 }

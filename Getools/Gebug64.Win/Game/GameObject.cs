@@ -19,6 +19,8 @@ namespace Gebug64.Win.Game
         {
         }
 
+        public PropDef? PropDefType { get; set; } = null;
+
         /// <summary>
         /// Associated "primary key" for the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
         /// </summary>

@@ -30,6 +30,7 @@ namespace Getools.Lib.Converters
             var setup = Kaitai.SetupParser.ParseBin(path);
 
             setup.DeserializeFix();
+            setup.AssignIndexIds();
 
             return setup;
         }

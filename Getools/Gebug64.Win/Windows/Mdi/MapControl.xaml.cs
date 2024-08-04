@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Gebug64.Win.Event;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.Config;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,8 @@ namespace Gebug64.Win.Windows.Mdi
 
             DataContext = _vm;
 
+            MapRenderControl.NotifyMouseOverGameObject += MapRenderControl_NotifyMouseOverGameObject;
+
             var appConfig = (AppConfigViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(AppConfigViewModel))!;
 
             CheckBg.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bg];
@@ -64,6 +67,11 @@ namespace Gebug64.Win.Windows.Mdi
             CheckSetupStandardProp.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupStandardProp];
             CheckSetupTank.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupTank];
             CheckSetupIntro.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupIntro];
+        }
+
+        private void MapRenderControl_NotifyMouseOverGameObject(object sender, NotifyMouseOverGameObjectEventArgs e)
+        {
+            _vm.SetMouseOverObjects(e.MouseOverObjects);
         }
 
         /// <inheritdoc />
