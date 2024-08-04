@@ -59,7 +59,8 @@ namespace Gebug64.Unfloader.Manage
         /// Connects the flashcart to the given port.
         /// </summary>
         /// <param name="port">Serial port to connect to.</param>
-        void Start(string port);
+        /// <returns>True if not immediate connection error, false otherwise.</returns>
+        bool Start(string port);
 
         /// <summary>
         /// Attempts to stop the background worker thread

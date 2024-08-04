@@ -984,9 +984,27 @@ namespace Gebug64.Win.ViewModels
                 _messageBusGebugLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogGebugCallback);
                 _messageBusUnfloaderLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogUnfloaderCallback);
 
-                _connectionServiceManager.Start(CurrentSerialPort!);
+                bool success = _connectionServiceManager.Start(CurrentSerialPort!);
 
-                var testResult = _connectionServiceManager.TestInMenu();
+                if (!success)
+                {
+                    _isConnected = false;
+                    _isConnecting = false;
+                    OnPropertyChanged(nameof(IsConnected));
+                    OnPropertyChanged(nameof(CanConnect));
+                    OnPropertyChanged(nameof(CanSendRom));
+
+                    OnPropertyChanged(nameof(StatusConnectedText));
+                    OnPropertyChanged(nameof(StatusConnectionLevelText));
+                    OnPropertyChanged(nameof(StatusSerialPort));
+
+                    Disconnect();
+                    return;
+                }
+
+                bool testResult = false;
+
+                testResult = _connectionServiceManager.TestInMenu();
 
                 _logger.Log(LogLevel.Information, $"Connection level test, checking if in flashcart menu: {testResult}");
 

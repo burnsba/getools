@@ -38,7 +38,8 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         /// Connects the flashcart to the given port.
         /// </summary>
         /// <param name="port">Serial port to connect to.</param>
-        void Connect(string port);
+        /// <returns>True if no immediate connection error, false otherwise.</returns>
+        bool Connect(string port);
 
         /// <summary>
         /// Gracefully disconnect the flashcart from the

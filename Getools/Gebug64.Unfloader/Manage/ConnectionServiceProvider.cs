@@ -112,7 +112,7 @@ namespace Gebug64.Unfloader.Manage
         public TimeSpan SinceRomMessageReceived => _flashcart?.SinceFlashcartPacketReceived ?? TimeSpan.MaxValue;
 
         /// <inheritdoc />
-        public void Start(string port)
+        public bool Start(string port)
         {
             if (_flashcart.IsConnected)
             {
@@ -122,7 +122,14 @@ namespace Gebug64.Unfloader.Manage
             // Allow background thread to work.
             _stop = false;
 
-            _flashcart.Connect(port);
+            bool success = _flashcart.Connect(port);
+
+            if (!success)
+            {
+                _stop = true;
+                _logger.LogError("Could not open connection to flashcart.");
+                return false;
+            }
 
             // There's no pause/resume, so make sure existing queues
             // are clear on connect.
@@ -134,6 +141,8 @@ namespace Gebug64.Unfloader.Manage
             _thread = new Thread(ThreadMain);
             _thread.IsBackground = true;
             _thread.Start();
+
+            return true;
         }
 
         /// <inheritdoc />

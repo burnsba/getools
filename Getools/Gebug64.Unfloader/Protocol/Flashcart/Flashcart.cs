@@ -117,7 +117,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         }
 
         /// <inheritdoc />
-        public void Connect(string port)
+        public bool Connect(string port)
         {
             if (IsConnected)
             {
@@ -128,7 +128,20 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             _serialPort.DataReceived += DataReceived;
             _serialPort.ReadTimeout = 1000;
             _serialPort.WriteTimeout = 1000;
-            _serialPort.Open();
+
+            try
+            {
+                _serialPort.Open();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error opening serial port {port} : {ex.Message}");
+
+                _serialPort.DataReceived -= DataReceived;
+                _serialPort = null;
+                return false;
+            }
         }
 
         /// <inheritdoc />
