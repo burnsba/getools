@@ -19,6 +19,9 @@ namespace Gebug64.Win.Game
         {
         }
 
+        /// <summary>
+        /// Optional setup object propdef type.
+        /// </summary>
         public PropDef? PropDefType { get; set; } = null;
 
         /// <summary>

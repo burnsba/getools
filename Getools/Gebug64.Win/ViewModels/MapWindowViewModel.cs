@@ -1750,6 +1750,17 @@ namespace Gebug64.Win.ViewModels
 
             if (!object.ReferenceEquals(null, mapGuard))
             {
+                // If the existing datasource is set, copy that.
+                if (mapGuard.DataSource != null && mapGuard.DataSource is Chr cc)
+                {
+                    ((Chr)mapGuard.DataSource).UpdateFrom(msgGuard);
+                }
+                else
+                {
+                    // Otherwise just pull from the message.
+                    mapGuard.DataSource = new Chr(msgGuard);
+                }
+
                 mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
                 mapGuard.SetPositionLessHalf(msgGuard.PropPos.X + _adjustx, msgGuard.PropPos.Z + _adjusty, msgGuard.ModelRotationDegrees);
 
@@ -1784,19 +1795,9 @@ namespace Gebug64.Win.ViewModels
                 {
                     // does not copy data source.
                     existingTargetMapObject = mapGuard.Clone();
+                    existingTargetMapObject.DataSource = new Chr((Chr)mapGuard.DataSource!);
                     existingTargetMapObject.ResourcePath = "/Gebug64.Win;component/Resource/Image/targetpos.png";
                     existingTargetMapObject.IsVisible = true;
-
-                    // If the existing datasource is set, copy that.
-                    if (mapGuard.DataSource != null && mapGuard.DataSource is Chr cc)
-                    {
-                        existingTargetMapObject.DataSource = new Chr(cc);
-                    }
-                    else
-                    {
-                        // Otherwise just pull from the message.
-                        existingTargetMapObject.DataSource = new Chr(msgGuard);
-                    }
 
                     addNew = true;
                 }

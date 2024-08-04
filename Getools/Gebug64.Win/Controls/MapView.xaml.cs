@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using AutoMapper.Features;
 using Gebug64.Win.Event;
 using Gebug64.Win.Game;
 using Gebug64.Win.ViewModels.Map;
@@ -233,11 +234,30 @@ namespace Gebug64.Win.Controls
             FrameworkElement? fe = o as FrameworkElement;
             if (fe != null)
             {
+                // If a layer is disabled, no need to continue.
+                if (fe is System.Windows.Controls.ItemsControl ic)
+                {
+                    if (ic.Visibility != Visibility.Visible)
+                    {
+                        return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
+                    }
+                }
+
+                // Only concerned about mapobject items.
+                if (fe is System.Windows.Shapes.Shape || fe is System.Windows.Controls.Image)
+                {
+                    // maybe
+                }
+                else
+                {
+                    return HitTestFilterBehavior.ContinueSkipSelf;
+                }
+
                 if (fe.DataContext != null)
                 {
                     MapObject? mapObject = fe.DataContext as MapObject;
                     {
-                        if (mapObject != null && mapObject.DataSource != null && mapObject.DataSource.LayerIndexId > -1)
+                        if (mapObject != null && mapObject.DataSource != null && mapObject.DataSource.LayerIndexId > -1 && mapObject.IsVisible)
                         {
                             // Visual object is part of hit test results enumeration.
                             return HitTestFilterBehavior.Continue;

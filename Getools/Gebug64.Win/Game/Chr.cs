@@ -30,6 +30,7 @@ namespace Gebug64.Win.Game
             : base()
         {
             this.Chrnum = msgGuard.Chrnum;
+            PropDefType = PropDef.Guard;
             ChrSlotIndex = msgGuard.ChrSlotIndex;
             ActionType = msgGuard.ActionType;
             PropPos = msgGuard.PropPos.Clone();
@@ -135,5 +136,37 @@ namespace Gebug64.Win.Game
         /// Gets rotation of model in degrees.
         /// </summary>
         public double ModelRotationDegrees => Subroty * 180.0 / Math.PI;
+
+        /// <summary>
+        /// Copies non-id values.
+        /// </summary>
+        /// <param name="chr">Object to copy from.</param>
+        public void UpdateFrom(Chr chr)
+        {
+            ChrSlotIndex = chr.ChrSlotIndex;
+            ActionType = chr.ActionType;
+            PropPos = chr.PropPos.Clone();
+            TargetPos = chr.TargetPos.Clone();
+            Subroty = chr.Subroty;
+            Damage = chr.Damage;
+            MaxDamage = chr.MaxDamage;
+            Intolerance = chr.Intolerance;
+        }
+
+        /// <summary>
+        /// Copies non-id values.
+        /// </summary>
+        /// <param name="chr">Object to copy from.</param>
+        public void UpdateFrom(RmonGuardPosition chr)
+        {
+            ChrSlotIndex = chr.ChrSlotIndex;
+            ActionType = chr.ActionType;
+            PropPos = chr.PropPos.Clone();
+            TargetPos = chr.TargetPos.Clone();
+            Subroty = chr.Subroty;
+            Damage = chr.Damage;
+            MaxDamage = chr.MaxDamage;
+            Intolerance = chr.Intolerance;
+        }
     }
 }
