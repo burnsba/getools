@@ -90,6 +90,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
         /// <summary>
         /// Gets rotation of model in degrees.
         /// </summary>
-        public double ModelRotationDegrees => Subroty * 180.0 / Math.PI;
+        public double ModelRotationDegrees => WpfRotationTransform(Subroty * 180.0 / Math.PI);
+
+        private double WpfRotationTransform(double degrees)
+        {
+            return -1 * degrees;
+        }
     }
 }
