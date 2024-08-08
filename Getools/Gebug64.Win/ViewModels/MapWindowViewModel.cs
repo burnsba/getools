@@ -27,6 +27,7 @@ using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Enum;
+using Gebug64.Win.Event;
 using Gebug64.Win.Game;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
@@ -75,7 +76,8 @@ namespace Gebug64.Win.ViewModels
         private string? _setupBinFolder;
         private string? _stanBinFolder;
         private string? _bgBinFolder;
-        private string? _statusBarText;
+        private string? _statusBarTextMouseOver;
+        private string? _statusBarTextPosition = "0, 0";
 
         private double _mapScaledWidth = 0;
         private double _mapScaledHeight = 0;
@@ -86,6 +88,10 @@ namespace Gebug64.Win.ViewModels
         private double _adjustx = 0;
         private double _adjusty = 0;
         private double _levelScale = 1.0;
+        private double _currentMouseGamePositionX = 0.0;
+        private double _currentMouseGamePositionY = 0.0;
+        private double _currentContextMenuMouseGamePositionX = 0.0;
+        private double _currentContextMenuMouseGamePositionY = 0.0;
 
         private LevelIdX _selectedStage = LevelIdX.DefaultUnkown;
 
@@ -101,6 +107,7 @@ namespace Gebug64.Win.ViewModels
         private MapLayerViewModel? _guardLayer = null;
 
         private List<GameObject> _mouseOverItems = new List<GameObject>();
+        private List<GameObject> _contextMenuItems = new List<GameObject>();
 
         /// <summary>
         /// This variable holds the last intro coordinates read. Used to set Bond's initial position on stage load.
@@ -167,6 +174,10 @@ namespace Gebug64.Win.ViewModels
             ToggleLayerVisibilityCommand = new CommandHandler(
                 x => ToggleLayerVisibility((UiMapLayer)x!),
                 () => true);
+
+            TeleportToCommand = new CommandHandler(
+                TeleportToCommandHandler,
+                () => CanTeleportToMouse);
 
             _setupBinFolder = _appConfig.Map.SetupBinFolder;
             _stanBinFolder = _appConfig.Map.StanBinFolder;
@@ -515,18 +526,35 @@ namespace Gebug64.Win.ViewModels
         public MapObject? Bond { get; private set; }
 
         /// <summary>
-        /// Status bar display text.
+        /// Status bar display text for mouse over items.
         /// </summary>
-        public string? StatusBarText
+        public string? StatusBarTextMouseOver
         {
-            get => _statusBarText;
+            get => _statusBarTextMouseOver;
 
             set
             {
-                if (_statusBarText != value)
+                if (_statusBarTextMouseOver != value)
                 {
-                    _statusBarText = value;
-                    OnPropertyChanged(nameof(StatusBarText));
+                    _statusBarTextMouseOver = value;
+                    OnPropertyChanged(nameof(StatusBarTextMouseOver));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Status bar display text for mouse position.
+        /// </summary>
+        public string? StatusBarTextPosition
+        {
+            get => _statusBarTextPosition;
+
+            set
+            {
+                if (_statusBarTextPosition != value)
+                {
+                    _statusBarTextPosition = value;
+                    OnPropertyChanged(nameof(StatusBarTextPosition));
                 }
             }
         }
@@ -541,6 +569,23 @@ namespace Gebug64.Win.ViewModels
         /// One way binding from user interface to the view model.
         /// </summary>
         public bool ContextMenuIsOpen { get; set; }
+
+        public ICommand TeleportToCommand { get; set; }
+
+        public bool CanTeleportToMouse
+        {
+            get
+            {
+                return true;
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
 
         /// <summary>
         /// Pass through to <see cref="Workspace.Instance.SaveAppSettings"/>.
@@ -561,12 +606,44 @@ namespace Gebug64.Win.ViewModels
         /// External method to be called when mouse over object list is updated.
         /// </summary>
         /// <param name="items">Current mouseover items.</param>
-        public void NotifyMouseOverObjectsChanged(List<GameObject> items)
+        public void NotifyMouseOverObjectsChanged(NotifyMouseOverGameObjectEventArgs e)
         {
+            List<GameObject> items = e.MouseOverObjects;
+
             _mouseOverItems = items;
 
             UpdateMouseOverStatusText();
             UpdateContextMenuSelect();
+        }
+
+        public void NotifyContextMenuObjectsChanged(NotifyMouseOverGameObjectEventArgs e)
+        {
+            List<GameObject> items = e.MouseOverObjects;
+
+            _contextMenuItems = items;
+        }
+
+        /// <summary>
+        /// Callback to handle when the mouse is moved in the map control.
+        /// </summary>
+        /// <param name="p">Mouse position in scaled game units. The map control has been shifted
+        /// by the min map values such that the smallest possible point is (0,0).</param>
+        public void NotifyMouseMove(NotifyMouseMoveTranslatedPositionEventArgs e)
+        {
+            var p = e.Position;
+
+            _currentMouseGamePositionX = p.X - _adjustx;
+            _currentMouseGamePositionY = p.Y - _adjusty;
+
+            StatusBarTextPosition = $"{_currentMouseGamePositionX:0.0000}, {_currentMouseGamePositionY:0.0000}";
+        }
+
+        public void NotifyContextMenuPosition(NotifyMouseMoveTranslatedPositionEventArgs e)
+        {
+            var p = e.Position;
+
+            _currentContextMenuMouseGamePositionX = p.X - _adjustx;
+            _currentContextMenuMouseGamePositionY = p.Y - _adjusty;
         }
 
         private void LoadStageEntry(LevelIdX stageid)
@@ -722,10 +799,6 @@ namespace Gebug64.Win.ViewModels
             var outputVeiwboxWidth = Math.Abs(rawStage.ScaledMax.X - rawStage.ScaledMin.X);
             var outputViewboxHeight = Math.Abs(rawStage.ScaledMax.Z - rawStage.ScaledMin.Z);
 
-            // the map area will be a 3x3 grid, move the main content into the center cell.
-            _adjustx += outputVeiwboxWidth;
-            _adjusty += outputViewboxHeight;
-
             ClearMap();
 
             AddStanLayer(rawStage, _adjustx, _adjusty);
@@ -769,9 +842,8 @@ namespace Gebug64.Win.ViewModels
             // Create a reference for Bond and place in a new layer, on top of everything else.
             AddBondLayer(rawStage, _adjustx, _adjusty, _levelScale);
 
-            // Create a 3x3 grid to render the map, to be able to pan around/past the edge.
-            MapScaledWidth = outputVeiwboxWidth * 3;
-            MapScaledHeight = outputViewboxHeight * 3;
+            MapScaledWidth = outputVeiwboxWidth;
+            MapScaledHeight = outputViewboxHeight;
 
             _logger.LogInformation($"Map viewer: done loading {stageid.Name}");
 
@@ -1853,7 +1925,7 @@ namespace Gebug64.Win.ViewModels
 
             var totalString = string.Join(", ", sectionTexts);
             /////System.Diagnostics.Debug.WriteLine(string.Join(", ", total));
-            StatusBarText = totalString;
+            StatusBarTextMouseOver = totalString;
         }
 
         private void UpdateContextMenuSelect()
@@ -1916,6 +1988,17 @@ namespace Gebug64.Win.ViewModels
 
                 ContextMenuSelectList.Add(mivm);
             }
+        }
+
+        private void TeleportToCommandHandler()
+        {
+            var stan = _contextMenuItems.FirstOrDefault(x => x is Game.Stan);
+            if (!object.ReferenceEquals(null, stan))
+            {
+                _logger.Log(LogLevel.Information, $"Teleport to {_currentContextMenuMouseGamePositionX}, {_currentContextMenuMouseGamePositionY}, stan: {stan.LayerIndexId}");
+            }
+
+            _logger.Log(LogLevel.Information, $"TeleportToCommandHandler click");
         }
     }
 }

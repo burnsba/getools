@@ -18,6 +18,7 @@ using AutoMapper.Features;
 using Gebug64.Win.Event;
 using Gebug64.Win.Game;
 using Gebug64.Win.ViewModels.Map;
+using Getools.Lib.Game;
 
 namespace Gebug64.Win.Controls
 {
@@ -56,9 +57,36 @@ namespace Gebug64.Win.Controls
         public delegate void NotifyMouseOverGameObjectHandler(object sender, NotifyMouseOverGameObjectEventArgs e);
 
         /// <summary>
+        /// Delegate to describe handler for <see cref="NotifyMouseMoveGamePosition"/>.
+        /// </summary>
+        /// <param name="sender">Sender.</param>
+        /// <param name="e">Args.</param>
+        public delegate void NotifyMouseMoveGamePositionHandler(object sender, NotifyMouseMoveTranslatedPositionEventArgs e);
+
+        /// <summary>
         /// Event for notifications when mouse is over game objects.
         /// </summary>
         public event NotifyMouseOverGameObjectHandler? NotifyMouseOverGameObject;
+
+        /// <summary>
+        /// Event for notifying the current mouse position in scaled but translated game position.
+        /// This is translated by the min value of the level such that
+        /// the smallest possible position is (0,0).
+        /// </summary>
+        public event NotifyMouseMoveGamePositionHandler? NotifyMouseMoveGamePosition;
+
+        /// <summary>
+        /// When right click context menu is opened, notify what game objects are below the mouse.
+        /// </summary>
+        public event NotifyMouseOverGameObjectHandler? NotifyContextMenuGameObject;
+
+        /// <summary>
+        /// When right click context menu is opened, notify the current mouse position in
+        /// scaled but translated game position.
+        /// This is translated by the min value of the level such that
+        /// the smallest possible position is (0,0).
+        /// </summary>
+        public event NotifyMouseMoveGamePositionHandler? NotifyContextMenuGamePosition;
 
         private void ScrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -129,6 +157,12 @@ namespace Gebug64.Win.Controls
                 return;
             }
 
+            // disable mouse events if the context menu is open
+            if (MainScrollViewer.ContextMenu.IsOpen)
+            {
+                return;
+            }
+
             double startScale = _uiScale;
             double newScale = _uiScale;
             var startTransform = new ScaleTransform(startScale, startScale);
@@ -156,9 +190,9 @@ namespace Gebug64.Win.Controls
             {
                 newScale /= 1.25;
 
-                if (newScale < 0.0001)
+                if (newScale < 0.001)
                 {
-                    newScale = 0.0001;
+                    newScale = 0.001;
                 }
             }
 
@@ -190,8 +224,20 @@ namespace Gebug64.Win.Controls
 
         private void UserControl_MouseMove(object sender, MouseEventArgs e)
         {
-            var mousePos = Mouse.GetPosition(MapWindowZ);
-            MousePos.Text = $"{mousePos.X}, {mousePos.Y}";
+            // disable mouse events if the context menu is open
+            if (MainScrollViewer.ContextMenu.IsOpen)
+            {
+                return;
+            }
+
+            Point gamePosition = new(
+                e.GetPosition(MainContent).X,
+                e.GetPosition(MainContent).Y);
+
+            NotifyMouseMoveGamePosition?.Invoke(this, new NotifyMouseMoveTranslatedPositionEventArgs()
+            {
+                Position = gamePosition,
+            });
 
             // Retrieve the coordinate of the mouse position.
             Point pt = e.GetPosition((UIElement)sender);
@@ -267,6 +313,41 @@ namespace Gebug64.Win.Controls
             }
 
             return HitTestFilterBehavior.ContinueSkipSelf;
+        }
+
+        private void ContextMenu_ToolTipOpening(object sender, RoutedEventArgs e)
+        {
+            var gamePosition = Mouse.GetPosition(MainContent);
+
+            NotifyContextMenuGamePosition?.Invoke(this, new NotifyMouseMoveTranslatedPositionEventArgs()
+            {
+                Position = gamePosition,
+            });
+
+            // Retrieve the coordinate of the mouse position.
+            Point pt = Mouse.GetPosition(this);
+
+            // Clear the contents of the list used for hit test results.
+            _mouseHitResultList.Clear();
+
+            // Set up a callback to receive the hit test result enumeration.
+            VisualTreeHelper.HitTest(
+                MainScrollViewer,
+                new HitTestFilterCallback(MyHitTestFilter),
+                new HitTestResultCallback(MyHitTestResult),
+                new PointHitTestParameters(pt));
+
+            // Perform actions on the hit test results list.
+            if (_mouseHitResultList.Count > 0)
+            {
+                // MyHitTestFilter filters the objects, so these casts should always succeed.
+                var gameObjects = _mouseHitResultList.Select(x => ((MapObject)((FrameworkElement)x).DataContext).DataSource!).ToList();
+
+                NotifyContextMenuGameObject?.Invoke(this, new NotifyMouseOverGameObjectEventArgs()
+                {
+                    MouseOverObjects = gameObjects,
+                });
+            }
         }
     }
 }

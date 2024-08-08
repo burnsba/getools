@@ -43,6 +43,9 @@ namespace Gebug64.Win.Windows.Mdi
             DataContext = _vm;
 
             MapRenderControl.NotifyMouseOverGameObject += MapRenderControl_NotifyMouseOverGameObject;
+            MapRenderControl.NotifyMouseMoveGamePosition += MapRenderControl_NotifyMouseMoveGamePosition;
+            MapRenderControl.NotifyContextMenuGameObject += MapRenderControl_NotifyContextMenuGameObject;
+            MapRenderControl.NotifyContextMenuGamePosition += MapRenderControl_NotifyContextMenuGamePosition;
 
             var appConfig = (AppConfigViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(AppConfigViewModel))!;
 
@@ -74,7 +77,22 @@ namespace Gebug64.Win.Windows.Mdi
 
         private void MapRenderControl_NotifyMouseOverGameObject(object sender, NotifyMouseOverGameObjectEventArgs e)
         {
-            _vm.NotifyMouseOverObjectsChanged(e.MouseOverObjects);
+            _vm.NotifyMouseOverObjectsChanged(e);
+        }
+
+        private void MapRenderControl_NotifyMouseMoveGamePosition(object sender, NotifyMouseMoveTranslatedPositionEventArgs e)
+        {
+            _vm.NotifyMouseMove(e);
+        }
+
+        private void MapRenderControl_NotifyContextMenuGameObject(object sender, NotifyMouseOverGameObjectEventArgs e)
+        {
+            _vm.NotifyContextMenuObjectsChanged(e);
+        }
+
+        private void MapRenderControl_NotifyContextMenuGamePosition(object sender, NotifyMouseMoveTranslatedPositionEventArgs e)
+        {
+            _vm.NotifyContextMenuPosition(e);
         }
     }
 }

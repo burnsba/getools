@@ -26,7 +26,12 @@
         
             <cv:BoolToVisibilityConverter x:Key="BoolToVis"></cv:BoolToVisibilityConverter>
 
-            <ContextMenu x:Key="contextMenu" IsOpen="{Binding ContextMenuIsOpen, Mode=OneWayToSource}">
+            <ContextMenu x:Key="contextMenu" IsOpen="{Binding ContextMenuIsOpen, Mode=OneWayToSource}" Opened="ContextMenu_ToolTipOpening" >
+
+                <MenuItem Header="Teleport to" Command="{Binding TeleportToCommand}">
+                </MenuItem>
+
+                <Separator />
 
                 <MenuItem Header="Select..." Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding ContextMenuSelectList}">
                 </MenuItem>
@@ -138,6 +143,5 @@
             </ItemsControl>
         
         </ScrollViewer>
-        <TextBlock x:Name="MousePos" Background="Transparent" IsHitTestVisible="False">0,0</TextBlock>
     </Grid>
 </UserControl>

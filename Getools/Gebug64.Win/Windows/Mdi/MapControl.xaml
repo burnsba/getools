@@ -54,14 +54,20 @@
                             <ColumnDefinition Width="Auto"></ColumnDefinition>-->
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                     </Grid>
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem Grid.Column="0" >
-                <TextBlock Text="{Binding StatusBarText}"/>
+                <TextBlock Text="{Binding StatusBarTextPosition}"/>
             </StatusBarItem>
             <Separator Grid.Column="1"  />
+            <StatusBarItem Grid.Column="2" >
+                <TextBlock Text="{Binding StatusBarTextMouseOver}"/>
+            </StatusBarItem>
+            <Separator Grid.Column="3"  />
         </StatusBar>
 
         <Grid Grid.Row="0">
