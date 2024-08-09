@@ -125,11 +125,7 @@ namespace Getools.Lib.Game.Engine
             Coord3dd pos = pp.Origin.Clone().Scale(1.0 / levelScale);
 
             // I don't know.
-            double scaleFactor = 6;
-            if (levelScale < 0.6 || levelScale > 1)
-            {
-                scaleFactor *= 2;
-            }
+            double scaleFactor = 7;
 
             double modelSizeX = 12 * scaleFactor;
             double modelSizeY = 5 * scaleFactor;

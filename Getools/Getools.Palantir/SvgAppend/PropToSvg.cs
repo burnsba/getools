@@ -229,7 +229,7 @@ namespace Getools.Palantir.SvgAppend
 
             container.AddClass("svg-logical-item");
 
-            container.Transform = $"translate({Format.DoubleToStringFormat(stagePosition.Origin.X - stagePosition.HalfModelSize.X, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(stagePosition.Origin.Z - stagePosition.HalfModelSize.X, StandardDoubleToStringFormat)})";
+            container.Transform = $"translate({Format.DoubleToStringFormat(stagePosition.Origin.X - stagePosition.HalfModelSize.X, StandardDoubleToStringFormat)}, {Format.DoubleToStringFormat(stagePosition.Origin.Z - stagePosition.HalfModelSize.Z, StandardDoubleToStringFormat)})";
 
             if (stagePosition.RotationDegrees != 0)
             {
