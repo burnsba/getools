@@ -28,9 +28,9 @@ using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Win.Controls;
 using Gebug64.Win.Enum;
 using Gebug64.Win.Event;
-using Gebug64.Win.Game;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
+using Gebug64.Win.ViewModels.Game;
 using Gebug64.Win.ViewModels.Map;
 using Gebug64.Win.Windows.Mdi;
 using Gebug64.Win.Wpf;
@@ -66,6 +66,13 @@ namespace Gebug64.Win.ViewModels
     public class MapWindowViewModel : ViewModelBase
     {
         private const int _mapResliceDelay = 200; // ms
+
+        /// <summary>
+        /// Lot of magic fine tuning constants to get the guards to look approximately correct.
+        /// Right now the SVG map looks ok, so changing the underlying model size code will
+        /// break that. Therefore, apply an adjustment to the image here.
+        /// </summary>
+        private const double _wpfGuardModelScaleFactor = 1.5;
 
         private readonly ILogger _logger;
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
@@ -105,6 +112,8 @@ namespace Gebug64.Win.ViewModels
         private System.Timers.Timer _mapZSliceTimer;
 
         private MapLayerViewModel? _guardLayer = null;
+
+        private GameObject? _selectedMapObject = null;
 
         private List<GameObject> _mouseOverItems = new List<GameObject>();
         private List<GameObject> _contextMenuItems = new List<GameObject>();
@@ -400,7 +409,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// <see cref="MapMinVertical"/> as string.
         /// </summary>
-        public string MapMinVerticalText => _mapMinVertical.ToString("0.0000");
+        public string MapMinVerticalText => _mapMinVertical.ToString(Gebug64.Win.Config.Constants.DefaultDecimalFormat);
 
         /// <summary>
         /// Map maximum vertical point in scaled units.
@@ -434,7 +443,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// <see cref="MapMaxVertical"/> as string.
         /// </summary>
-        public string MapMaxVerticalText => _mapMaxVertical.ToString("0.0000");
+        public string MapMaxVerticalText => _mapMaxVertical.ToString(Gebug64.Win.Config.Constants.DefaultDecimalFormat);
 
         /// <summary>
         /// User selected lower boundary vertical point in scaled units.
@@ -460,7 +469,7 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public string MapSelectedMinVerticalText
         {
-            get => _mapSelectedMinVertical.ToString("0.0000");
+            get => _mapSelectedMinVertical.ToString(Gebug64.Win.Config.Constants.DefaultDecimalFormat);
             set
             {
                 double d;
@@ -502,7 +511,7 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public string MapSelectedMaxVerticalText
         {
-            get => _mapSelectedMaxVertical.ToString("0.0000");
+            get => _mapSelectedMaxVertical.ToString(Gebug64.Win.Config.Constants.DefaultDecimalFormat);
             set
             {
                 double d;
@@ -560,6 +569,24 @@ namespace Gebug64.Win.ViewModels
         }
 
         /// <summary>
+        /// Gets or sets the currently selected <see cref="GameObject"/>/<see cref="MapObject"/>
+        /// in the main map control.
+        /// </summary>
+        public GameObject? SelectedMapObject
+        {
+            get => _selectedMapObject;
+
+            set
+            {
+                if (_selectedMapObject != value)
+                {
+                    _selectedMapObject = value;
+                    OnPropertyChanged(nameof(SelectedMapObject));
+                }
+            }
+        }
+
+        /// <summary>
         /// Right click context menu, "Select..." child item list.
         /// </summary>
         public ObservableCollection<MenuItemViewModel> ContextMenuSelectList { get; set; } = new ObservableCollection<MenuItemViewModel>();
@@ -570,13 +597,19 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         public bool ContextMenuIsOpen { get; set; }
 
+        /// <summary>
+        /// Command to invoke from the right click context menu.
+        /// Teleport Bond to location.
+        /// </summary>
         public ICommand TeleportToCommand { get; set; }
 
+        /// <summary>
+        /// Whether <see cref="TeleportToCommand"/> can execute.
+        /// </summary>
         public bool CanTeleportToMouse
         {
             get
             {
-                return true;
                 IConnectionServiceProvider? connectionServiceProvider = _connectionServiceResolver.GetDeviceManager();
                 if (object.ReferenceEquals(null, connectionServiceProvider))
                 {
@@ -605,7 +638,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// External method to be called when mouse over object list is updated.
         /// </summary>
-        /// <param name="items">Current mouseover items.</param>
+        /// <param name="e">Current mouseover items.</param>
         public void NotifyMouseOverObjectsChanged(NotifyMouseOverGameObjectEventArgs e)
         {
             List<GameObject> items = e.MouseOverObjects;
@@ -616,6 +649,10 @@ namespace Gebug64.Win.ViewModels
             UpdateContextMenuSelect();
         }
 
+        /// <summary>
+        /// External method to be called when context menu is opened.
+        /// </summary>
+        /// <param name="e">Current mouseover items.</param>
         public void NotifyContextMenuObjectsChanged(NotifyMouseOverGameObjectEventArgs e)
         {
             List<GameObject> items = e.MouseOverObjects;
@@ -626,7 +663,7 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// Callback to handle when the mouse is moved in the map control.
         /// </summary>
-        /// <param name="p">Mouse position in scaled game units. The map control has been shifted
+        /// <param name="e">Mouse position in scaled game units. The map control has been shifted
         /// by the min map values such that the smallest possible point is (0,0).</param>
         public void NotifyMouseMove(NotifyMouseMoveTranslatedPositionEventArgs e)
         {
@@ -638,6 +675,11 @@ namespace Gebug64.Win.ViewModels
             StatusBarTextPosition = $"{_currentMouseGamePositionX:0.0000}, {_currentMouseGamePositionY:0.0000}";
         }
 
+        /// <summary>
+        /// External method to be called when context menu is opened.
+        /// </summary>
+        /// <param name="e">Mouse position in scaled game units. The map control has been shifted
+        /// by the min map values such that the smallest possible point is (0,0).</param>
         public void NotifyContextMenuPosition(NotifyMouseMoveTranslatedPositionEventArgs e)
         {
             var p = e.Position;
@@ -1381,8 +1423,8 @@ namespace Gebug64.Win.ViewModels
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/chr.png";
 
             mor.RotationDegree = stagePosition.RotationDegrees;
-            mor.UiWidth = stagePosition.ModelSize.X;
-            mor.UiHeight = stagePosition.ModelSize.Z;
+            mor.UiWidth = stagePosition.ModelSize.X * _wpfGuardModelScaleFactor;
+            mor.UiHeight = stagePosition.ModelSize.Z * _wpfGuardModelScaleFactor;
 
             mor.DataSource = new Game.Chr()
             {
@@ -1405,8 +1447,8 @@ namespace Gebug64.Win.ViewModels
             mor.ResourcePath = "/Gebug64.Win;component/Resource/Image/bond.png";
 
             mor.RotationDegree = stagePosition.RotationDegrees;
-            mor.UiWidth = stagePosition.ModelSize.X;
-            mor.UiHeight = stagePosition.ModelSize.Z;
+            mor.UiWidth = stagePosition.ModelSize.X * _wpfGuardModelScaleFactor;
+            mor.UiHeight = stagePosition.ModelSize.Z * _wpfGuardModelScaleFactor;
 
             mor.DataSource = new Game.Prop()
             {
@@ -1855,12 +1897,12 @@ namespace Gebug64.Win.ViewModels
                     {
                         if (setupProps.ContainsKey(p.PropDefType.Value))
                         {
-                            setupProps[p.PropDefType.Value].Add(item.LayerIndexId);
+                            setupProps[p.PropDefType.Value].Add(item.PreferredId);
                         }
                         else
                         {
                             var listy = new List<int>();
-                            listy.Add(item.LayerIndexId);
+                            listy.Add(item.PreferredId);
                             setupProps.Add(p.PropDefType.Value, listy);
                         }
                     }
@@ -1873,19 +1915,19 @@ namespace Gebug64.Win.ViewModels
                 }
                 else if (item is Game.Chr c)
                 {
-                    chrs.Add(item.LayerIndexId);
+                    chrs.Add(item.PreferredId);
                 }
                 else if (item is Game.Pad pad)
                 {
-                    pads.Add(item.LayerIndexId);
+                    pads.Add(item.PreferredId);
                 }
                 else if (item is Game.Stan stan)
                 {
-                    stans.Add(item.LayerIndexId);
+                    stans.Add(item.PreferredId);
                 }
                 else if (item is Game.Bg bg)
                 {
-                    bgs.Add(item.LayerIndexId);
+                    bgs.Add(item.PreferredId);
                 }
             }
 
@@ -1928,6 +1970,11 @@ namespace Gebug64.Win.ViewModels
             StatusBarTextMouseOver = totalString;
         }
 
+        private void SelectMapObject(GameObject? go)
+        {
+            SelectedMapObject = go;
+        }
+
         private void UpdateContextMenuSelect()
         {
             if (ContextMenuIsOpen)
@@ -1939,7 +1986,7 @@ namespace Gebug64.Win.ViewModels
 
             ContextMenuSelectList.Clear();
 
-            //Action<object?> dddd = x => SendSelectedRom((MenuItemViewModel)x!);
+            Action<object?> dddd = x => SelectMapObject((GameObject?)((MenuItemViewModel)x!).Value);
 
             MenuItemViewModel mivm;
             string menuLabel;
@@ -1951,7 +1998,7 @@ namespace Gebug64.Win.ViewModels
                     if (p.PropDefType != null)
                     {
                         string label = Getools.Lib.Formatters.EnumFormat.PropDefFriendlyName(p.PropDefType.Value);
-                        menuLabel = $"{label}: {item.LayerIndexId}";
+                        menuLabel = $"{label}: {item.PreferredId}";
                     }
                     else
                     {
@@ -1963,19 +2010,19 @@ namespace Gebug64.Win.ViewModels
                 }
                 else if (item is Game.Chr c)
                 {
-                    menuLabel = $"chr: {item.LayerIndexId}";
+                    menuLabel = $"chr: {item.PreferredId}";
                 }
                 else if (item is Game.Pad pad)
                 {
-                    menuLabel = $"pad: {item.LayerIndexId}";
+                    menuLabel = $"pad: {item.PreferredId}";
                 }
                 else if (item is Game.Stan stan)
                 {
-                    menuLabel = $"stan: {item.LayerIndexId}";
+                    menuLabel = $"stan: {item.PreferredId}";
                 }
                 else if (item is Game.Bg bg)
                 {
-                    menuLabel = $"bg: {item.LayerIndexId}";
+                    menuLabel = $"bg: {item.PreferredId}";
                 }
                 else
                 {
@@ -1983,7 +2030,7 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 mivm = new MenuItemViewModel() { Header = menuLabel };
-                //mivm.Command = new CommandHandler(dddd, () => CanSendRom);
+                mivm.Command = new CommandHandler(dddd, () => true);
                 mivm.Value = item;
 
                 ContextMenuSelectList.Add(mivm);

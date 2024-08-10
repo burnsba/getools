@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.Enums;
 
-namespace Gebug64.Win.Game
+namespace Gebug64.Win.ViewModels.Game
 {
     /// <summary>
     /// Related / backer object that the <see cref="ViewModels.Map.MapObject"/> is drawing.
     /// </summary>
-    public class GameObject
+    public class GameObject : ViewModelBase
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="GameObject"/> class.
@@ -33,5 +34,27 @@ namespace Gebug64.Win.Game
         /// The index of the <see cref="Getools.Lib.Game.Enums.PropDef"/> type of object in the setup file.
         /// </summary>
         public int LayerIndexId { get; set; } = -1;
+
+        /// <summary>
+        /// Gets the preferred id to show in mouseover text or other UI elements.
+        /// </summary>
+        public virtual int PreferredId
+        {
+            get
+            {
+                return LayerIndexId;
+            }
+        }
+
+        /// <summary>
+        /// Convert <see cref="PreferredId"/> to string.
+        /// </summary>
+        public virtual string PreferredDisplayId
+        {
+            get
+            {
+                return PreferredId.ToString();
+            }
+        }
     }
 }

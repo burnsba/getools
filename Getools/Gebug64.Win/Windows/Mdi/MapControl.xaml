@@ -7,35 +7,16 @@
              xmlns:ctl="clr-namespace:Gebug64.Win.Controls"
              xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
              xmlns:enum="clr-namespace:Gebug64.Win.Enum"
+             xmlns:selectors="clr-namespace:Gebug64.Win.Xaml.Selectors"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:MapWindowViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
 
     <UserControl.Resources>
-        <Style x:Key="LeftHeader" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="FontSize" Value="36" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        
-        <Style x:Key="LeftRowText" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="FontSize" Value="24" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        
-        <Style x:Key="LeftRowSpaceSmall" TargetType="{x:Type Separator}">
-            <Setter Property="Height" Value="12" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        
-        <Style x:Key="LeftRowSpaceSmaller" TargetType="{x:Type Separator}">
-            <Setter Property="Height" Value="6" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
 
-        <Style x:Key="LeftLine" TargetType="{x:Type Separator}">
-            <Setter Property="Height" Value="24" />
-            <Setter Property="Background" Value="Blue" />
-        </Style>
+        <selectors:MapSelectedObjectContentTemplateSelector
+                    x:Key="SelectedObjectTemplateSelector"
+                    />
     </UserControl.Resources>
     
     <Grid>
@@ -75,6 +56,8 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300" MaxWidth="400"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="300" MaxWidth="400"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
@@ -83,8 +66,7 @@
                 Background="White"
                 BorderBrush="LightGray"
                 BorderThickness="1"
-                Padding="0"
-                >
+                Padding="0">
                 <ScrollViewer
                     Padding="6">
                     <StackPanel Orientation="Vertical">
@@ -307,6 +289,26 @@
 
             <Border
                 Grid.Column="2"
+                Background="White"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                Padding="0">
+                <ScrollViewer
+                    Padding="6">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Style="{StaticResource LeftHeader}">Selected</TextBlock>
+
+                        <ContentControl
+                            Content="{Binding SelectedMapObject}"
+                            ContentTemplateSelector="{StaticResource SelectedObjectTemplateSelector}">
+                        </ContentControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch"></GridSplitter>
+
+            <Border
+                Grid.Column="4"
                 Background="White"
                 BorderBrush="LightGray"
                 BorderThickness="1"

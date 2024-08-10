@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Documents;
-using Gebug64.Win.Game;
 using Gebug64.Win.Mvvm;
+using Gebug64.Win.ViewModels.Game;
 using Getools.Lib.Game;
 
 namespace Gebug64.Win.ViewModels.Map

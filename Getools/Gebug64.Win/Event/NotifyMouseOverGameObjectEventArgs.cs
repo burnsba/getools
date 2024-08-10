@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Gebug64.Win.Game;
+using Gebug64.Win.ViewModels.Game;
 
 namespace Gebug64.Win.Event
 {

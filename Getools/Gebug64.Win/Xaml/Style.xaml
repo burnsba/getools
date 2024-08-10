@@ -32,6 +32,31 @@
         <Setter Property="FontFamily" Value="pack://application:,,,/Font/#Ac437 IBM EGA 9x14"/>
     </Style>
 
+    <Style x:Key="LeftHeader" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontSize" Value="36" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="LeftRowText" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="LeftRowSpaceSmall" TargetType="{x:Type Separator}">
+        <Setter Property="Height" Value="12" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style x:Key="LeftRowSpaceSmaller" TargetType="{x:Type Separator}">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style x:Key="LeftLine" TargetType="{x:Type Separator}">
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Background" Value="Blue" />
+    </Style>
+
     <Style TargetType="CheckBox">
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>

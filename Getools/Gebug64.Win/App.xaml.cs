@@ -20,6 +20,7 @@ using Gebug64.Win.Session;
 using Gebug64.Win.ViewModels;
 using Gebug64.Win.ViewModels.CategoryTabs;
 using Gebug64.Win.ViewModels.Config;
+using Gebug64.Win.ViewModels.Map;
 using Gebug64.Win.Windows;
 using Gebug64.Win.Windows.Mdi;
 using Microsoft.Extensions.Configuration;

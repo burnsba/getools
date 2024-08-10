@@ -5,24 +5,24 @@ using System.Text;
 using System.Threading.Tasks;
 using Getools.Lib.Game;
 
-namespace Gebug64.Win.Game
+namespace Gebug64.Win.ViewModels.Game
 {
     /// <summary>
     /// Backer class for a pad or pad3d object.
     /// </summary>
-    public class Pad3d : Pad
+    public class Pad : GameObject, IMapSelectedObjectViewModel
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Pad3d"/> class.
+        /// Initializes a new instance of the <see cref="Pad"/> class.
         /// </summary>
-        public Pad3d()
+        public Pad()
             : base()
         {
         }
 
         /// <summary>
-        /// Bounding box, if pad3d.
+        /// Pos property.
         /// </summary>
-        public BoundingBoxd Bbox { get; set; } = new BoundingBoxd();
+        public Coord3dd Pos { get; set; } = Coord3dd.Zero.Clone();
     }
 }

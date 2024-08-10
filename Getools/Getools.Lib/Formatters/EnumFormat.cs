@@ -76,5 +76,50 @@ namespace Getools.Lib.Formatters
 
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// Convert GuardActType type into friendly name.
+        /// </summary>
+        /// <param name="gat">Type.</param>
+        /// <returns>String.</returns>
+        /// <exception cref="NotSupportedException">Throws if not valid enum type.</exception>
+        public static string GuardActTypeFriendlyName(GuardActType gat)
+        {
+            switch (gat)
+            {
+                case GuardActType.ActInit: return "Init";
+                case GuardActType.ActStand: return "Stand";
+                case GuardActType.ActKneel: return "Kneel";
+                case GuardActType.ActAnim: return "Anim";
+                case GuardActType.ActDie: return "Die";
+                case GuardActType.ActDead: return "Dead";
+                case GuardActType.ActArgh: return "Argh";
+                case GuardActType.ActPreargh: return "Preargh";
+                case GuardActType.ActAttack: return "Attack";
+                case GuardActType.ActAttackWalk: return "Attack Walk";
+                case GuardActType.ActAttackRoll: return "Attack Roll";
+                case GuardActType.ActSideStep: return "Side Step";
+                case GuardActType.ActJumpout: return "Jumpout";
+                case GuardActType.ActRunPos: return "Run Pos";
+                case GuardActType.ActPatrol: return "Patrol";
+                case GuardActType.ActGoPos: return "Go Pos";
+                case GuardActType.ActSurrender: return "Surrender";
+                case GuardActType.ActLookAtTarget: return "Look At Target";
+                case GuardActType.ActSurprised: return "Surprised";
+                case GuardActType.ActStartAlarm: return "Start Alarm";
+                case GuardActType.ActThrowGrenade: return "Throw Grenade";
+                case GuardActType.ActTurnDir: return "Turn Dir";
+                case GuardActType.ActTest: return "Test";
+                case GuardActType.ActBondIntro: return "Bond Intro";
+                case GuardActType.ActBondDie: return "Bond Die";
+                case GuardActType.ActBondMulti: return "Bond Multi";
+
+                case GuardActType.ActNull: /*** fallthrough */
+                case GuardActType.ActTypeMax:
+                case GuardActType.ActInvalidData: return "Invalid";
+            }
+
+            throw new NotSupportedException();
+        }
     }
 }

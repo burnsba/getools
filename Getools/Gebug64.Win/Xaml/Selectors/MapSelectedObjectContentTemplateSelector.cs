@@ -12,20 +12,20 @@ using System.Windows.Baml2006;
 using System.Windows.Controls;
 using AutoMapper.Configuration.Annotations;
 using Gebug64.Win.ViewModels.CategoryTabs;
-using Gebug64.Win.ViewModels.Map;
+using Gebug64.Win.ViewModels.Game;
 
 namespace Gebug64.Win.Xaml.Selectors
 {
     /// <summary>
-    /// Data template selector. Used in tab interface to map a viewmodel type
+    /// Data template selector. Used in the map control to render a selected object
     /// to a corresponding <see cref="DataTemplate"/>.
-    /// The viewmodel must implement <see cref="ICategoryTabViewModel"/>.
-    /// The data template filename must befine with "categorytabcontent_" (any case),
-    /// and it must have an X:Key that begins with "CategoryTabContent" (case sensitive).
-    /// The load code is designed to set a single fallback template that is type <see cref="TabViewModelBase"/>,
-    /// which does not implement <see cref="ICategoryTabViewModel"/>.
+    /// The viewmodel must implement <see cref="IMapSelectedObjectViewModel"/>.
+    /// The data template filename must befine with "mapselectedobject_" (any case),
+    /// and it must have an X:Key that begins with "MapSelectedObject" (case sensitive).
+    /// The load code is designed to set a single fallback template that is type <see cref="GameObject"/>,
+    /// which does not implement <see cref="IMapSelectedObjectViewModel"/>.
     /// </summary>
-    public class CategoryTabContentTemplateSelector : DataTemplateSelector
+    public class MapSelectedObjectContentTemplateSelector : DataTemplateSelector
     {
         private static bool _isInit = false;
 
@@ -78,7 +78,7 @@ namespace Gebug64.Win.Xaml.Selectors
                         {
                             // There are some other resources like embedded fonts which the baml parser
                             // will fail to parse, so filter to just relevant files based on the filename.
-                            if (!entry.Key.ToString()!.ToLower().Contains("/categorytabcontent_"))
+                            if (!entry.Key.ToString()!.ToLower().Contains("/mapselectedobject_"))
                             {
                                 continue;
                             }
@@ -92,8 +92,8 @@ namespace Gebug64.Win.Xaml.Selectors
 
                                 foreach (var zz in rd.Keys)
                                 {
-                                    // Look for datatemplate with X:Key that starts with "CategoryTabContent".
-                                    if (zz.ToString()!.StartsWith("CategoryTabContent"))
+                                    // Look for datatemplate with X:Key that starts with "MapSelectedObject".
+                                    if (zz.ToString()!.StartsWith("MapSelectedObject"))
                                     {
                                         var rdval = rd[zz];
 
@@ -102,8 +102,8 @@ namespace Gebug64.Win.Xaml.Selectors
                                         {
                                             var vmtype = (Type)template.DataType;
 
-                                            // A concrete viewmodel implementation should implement ICategoryTabViewModel.
-                                            if (typeof(ICategoryTabViewModel).IsAssignableFrom(vmtype))
+                                            // A concrete viewmodel implementation should implement IMapSelectedObjectViewModel.
+                                            if (typeof(IMapSelectedObjectViewModel).IsAssignableFrom(vmtype))
                                             {
                                                 if (!_vmToDataTemplateResolver.ContainsKey(vmtype))
                                                 {
@@ -113,7 +113,7 @@ namespace Gebug64.Win.Xaml.Selectors
                                             * otherwise, check if this is the fallback "Nothing" template, for
                                             * the base type, without the interface.
                                             */
-                                            else if (typeof(TabViewModelBase).IsAssignableFrom(vmtype))
+                                            else if (typeof(GameObject).IsAssignableFrom(vmtype))
                                             {
                                                 _fallbackTemplate = template;
                                             }

@@ -16,7 +16,6 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AutoMapper.Features;
 using Gebug64.Win.Event;
-using Gebug64.Win.Game;
 using Gebug64.Win.ViewModels.Map;
 using Getools.Lib.Game;
 
@@ -303,7 +302,7 @@ namespace Gebug64.Win.Controls
                 {
                     MapObject? mapObject = fe.DataContext as MapObject;
                     {
-                        if (mapObject != null && mapObject.DataSource != null && mapObject.DataSource.LayerIndexId > -1 && mapObject.IsVisible)
+                        if (mapObject != null && mapObject.DataSource != null && mapObject.IsVisible)
                         {
                             // Visual object is part of hit test results enumeration.
                             return HitTestFilterBehavior.Continue;
