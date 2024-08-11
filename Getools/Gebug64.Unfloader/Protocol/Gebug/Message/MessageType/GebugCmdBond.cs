@@ -20,5 +20,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         /// Sends Bond position from console to pc.
         /// </summary>
         SendPosition = 14,
+
+        /// <summary>
+        /// Teleport Bond to position.
+        /// </summary>
+        TeleportToPosition = 17,
     }
 }

@@ -39,6 +39,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[]? Data { get; set; }
 
+        /// <summary>
+        /// Processes the <see cref="Data"/> property intro strongly typed guard info.
+        /// </summary>
+        /// <returns>Guard info.</returns>
         public List<RmonGuardPosition> ParseGuardPositions()
         {
             if (object.ReferenceEquals(null, Data))

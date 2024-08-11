@@ -287,6 +287,7 @@ public enum GebugCmdBond
     DefaultUnknown = 0,
 
     SendPosition = 14,
+    TeleportToPosition = 17,
 }
 ```
 
@@ -305,6 +306,20 @@ Read Bond stan, room, position, and rotation from console and send to pc.
 |  5            | PosZ          |  4           | `ConsoleToPc` | Z value from `bondviewGetCurrentPlayersPosition()`. |
 |  6            | VVTheta       |  4           | `ConsoleToPc` | `g_CurrentPlayer->vv_theta` or zero. |
 
+### `Bond TeleportToPosition` Command
+
+Teleport Bond to position.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | PosX          |  4           | `ConsoleToPc` | 32 bit float, target x position. |
+|  2            | PosZ          |  4           | `ConsoleToPc` | 32 bit float, target z position. |
+|  3            | StanId        |  4           | `ConsoleToPc` | Stan "name" id, which is only 24 bits, but sent as 32 bits. |
+
+
+
 ## `Chr` Category
 
 `Chr` category is for managing / viewing data related to guards and other characters.
@@ -317,6 +332,8 @@ public enum GebugCmdChr
     DefaultUnknown = 0,
 
     SendAllGuardInfo = 10,
+    GhostHp = 21,
+    MaxHp = 22,
 }
 ```
 
@@ -345,6 +362,30 @@ struct RmonGuardInfo {
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  1            | Count         |  2           | `ConsoleToPc` | Number of items in chr list. |
 |  2            | GuardInfo     |  variable    | `ConsoleToPc` | List of all guard position data. |
+
+
+### `Chr GhostHp` Command
+
+Remove all body armor and all but 0.01 HP from guard.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ChrNum        |  2           | `ConsoleToPc` | In-game chrnum id. |
+|  2            | ChrSlotIndex  |  1           | `ConsoleToPc` | Index source from g_ChrSlots. |
+
+
+### `Chr MaxHp` Command
+
+Set guard HP to zero. This removes any current body armor.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | ChrNum        |  2           | `ConsoleToPc` | In-game chrnum id. |
+|  2            | ChrSlotIndex  |  1           | `ConsoleToPc` | Index source from g_ChrSlots. |
 
 
 ## `File` Category

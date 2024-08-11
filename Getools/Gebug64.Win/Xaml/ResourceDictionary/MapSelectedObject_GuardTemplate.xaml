@@ -49,6 +49,9 @@
             <TextBlock Style="{StaticResource LeftRowText}">Intolerance:</TextBlock>
             <TextBox Text="{Binding IntoleranceText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
             <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GhostHpCommand}" HorizontalAlignment="Left">Ghost HP</Button>
+            <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=MaxHpCommand}" HorizontalAlignment="Left">Max HP (remove BA)</Button>
         </StackPanel>
     </DataTemplate>
     

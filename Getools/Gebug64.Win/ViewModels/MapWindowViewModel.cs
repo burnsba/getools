@@ -111,6 +111,9 @@ namespace Gebug64.Win.ViewModels
         private bool _mapZSliceTimerActive = false;
         private System.Timers.Timer _mapZSliceTimer;
 
+        /// <summary>
+        /// Keep a reference to the guard layer.
+        /// </summary>
         private MapLayerViewModel? _guardLayer = null;
 
         private GameObject? _selectedMapObject = null;
@@ -951,7 +954,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                mo.DataSource = new Game.Bg()
+                mo.DataSource = new Game.Bg(_logger, _connectionServiceResolver)
                 {
                     LayerIndexId = poly.Room,
                 };
@@ -996,9 +999,10 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMin = poly.ScaledMin.Clone();
                 mo.ScaledMax = poly.ScaledMax.Clone();
 
-                mo.DataSource = new Game.Stan()
+                mo.DataSource = new Game.Stan(_logger, _connectionServiceResolver)
                 {
                     LayerIndexId = poly.OrderIndex,
+                    LayerInstanceId = poly.StanNameId,
                 };
 
                 layer.DispatchAddEntity(_dispatcher, mo);
@@ -1023,7 +1027,7 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.GameObject(_logger, _connectionServiceResolver);
 
                 _lastIntroPosition = mo.ScaledOrigin.Clone();
 
@@ -1249,7 +1253,7 @@ namespace Gebug64.Win.ViewModels
 
                 mo.ScaledOrigin = pp.Origin.Clone().Scale(1 / levelScale);
 
-                mo.DataSource = new Game.Pad()
+                mo.DataSource = new Game.Pad(_logger, _connectionServiceResolver)
                 {
                     LayerIndexId = pp.PadId,
                 };
@@ -1300,7 +1304,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.GameObject(_logger, _connectionServiceResolver);
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1350,7 +1354,7 @@ namespace Gebug64.Win.ViewModels
                 mo.ScaledMax.Y = scaledPos.MaxY;
                 mo.ScaledMax.Z = scaledPos.MaxZ;
 
-                mo.DataSource = new Game.GameObject();
+                mo.DataSource = new Game.GameObject(_logger, _connectionServiceResolver);
 
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
@@ -1376,7 +1380,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1402,7 +1406,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X;
             mor.UiHeight = stagePosition.ModelSize.Z;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1426,7 +1430,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X * _wpfGuardModelScaleFactor;
             mor.UiHeight = stagePosition.ModelSize.Z * _wpfGuardModelScaleFactor;
 
-            mor.DataSource = new Game.Chr()
+            mor.DataSource = new Game.Chr(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1450,7 +1454,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = stagePosition.ModelSize.X * _wpfGuardModelScaleFactor;
             mor.UiHeight = stagePosition.ModelSize.Z * _wpfGuardModelScaleFactor;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1483,7 +1487,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1516,7 +1520,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1549,7 +1553,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1582,7 +1586,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1610,7 +1614,7 @@ namespace Gebug64.Win.ViewModels
             mor.UiWidth = w;
             mor.UiHeight = h;
 
-            mor.DataSource = new Game.Prop()
+            mor.DataSource = new Game.Prop(_logger, _connectionServiceResolver)
             {
                 PropPos = mor.ScaledOrigin.Clone(),
             };
@@ -1802,7 +1806,7 @@ namespace Gebug64.Win.ViewModels
                 else
                 {
                     // Otherwise just pull from the message.
-                    mapGuard.DataSource = new Chr(msgGuard);
+                    mapGuard.DataSource = new Chr(_logger, _connectionServiceResolver, msgGuard);
                 }
 
                 mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
@@ -1815,7 +1819,7 @@ namespace Gebug64.Win.ViewModels
                 var pp = new PropPointPosition();
                 mapGuard = (MapObjectResourceImage)GetPropDefaultModelBbox_chr(pp, _adjustx, _adjusty, _levelScale);
 
-                mapGuard.DataSource = new Chr(msgGuard);
+                mapGuard.DataSource = new Chr(_logger, _connectionServiceResolver, msgGuard);
 
                 mapGuard.IsVisible = true;
                 mapGuard.ScaledOrigin.Y = msgGuard.PropPos.Y;
@@ -1839,7 +1843,7 @@ namespace Gebug64.Win.ViewModels
                 {
                     // does not copy data source.
                     existingTargetMapObject = mapGuard.Clone();
-                    existingTargetMapObject.DataSource = new Chr((Chr)mapGuard.DataSource!);
+                    existingTargetMapObject.DataSource = new Chr(_logger, _connectionServiceResolver, (Chr)mapGuard.DataSource!);
                     existingTargetMapObject.ResourcePath = "/Gebug64.Win;component/Resource/Image/targetpos.png";
                     existingTargetMapObject.IsVisible = true;
 
@@ -1939,7 +1943,7 @@ namespace Gebug64.Win.ViewModels
 
             if (stans.Any())
             {
-                var idText = string.Join(", ", stans);
+                var idText = string.Join(", ", stans.Select(x => "0x" + x.ToString("X6")));
                 sectionTexts.Add($"stan: {idText}");
             }
 
@@ -1966,7 +1970,6 @@ namespace Gebug64.Win.ViewModels
             }
 
             var totalString = string.Join(", ", sectionTexts);
-            /////System.Diagnostics.Debug.WriteLine(string.Join(", ", total));
             StatusBarTextMouseOver = totalString;
         }
 
@@ -2018,7 +2021,7 @@ namespace Gebug64.Win.ViewModels
                 }
                 else if (item is Game.Stan stan)
                 {
-                    menuLabel = $"stan: {item.PreferredId}";
+                    menuLabel = $"stan: {item.PreferredDisplayId}";
                 }
                 else if (item is Game.Bg bg)
                 {
@@ -2039,13 +2042,35 @@ namespace Gebug64.Win.ViewModels
 
         private void TeleportToCommandHandler()
         {
-            var stan = _contextMenuItems.FirstOrDefault(x => x is Game.Stan);
-            if (!object.ReferenceEquals(null, stan))
-            {
-                _logger.Log(LogLevel.Information, $"Teleport to {_currentContextMenuMouseGamePositionX}, {_currentContextMenuMouseGamePositionY}, stan: {stan.LayerIndexId}");
-            }
+            Game.Stan? stan = (Game.Stan?)_contextMenuItems.FirstOrDefault(x => x is Game.Stan);
 
-            _logger.Log(LogLevel.Information, $"TeleportToCommandHandler click");
+            // stan.LayerInstanceId is set to Getools.Lib.Game.Asset.Stan.StandTile.InternalName .
+            if (!object.ReferenceEquals(null, stan) && stan.LayerInstanceId >= 0)
+            {
+                ////_logger.Log(LogLevel.Information, $"Teleport to {_currentContextMenuMouseGamePositionX}, {_currentContextMenuMouseGamePositionY}, stan: {stan.LayerIndexId}");
+
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceResolver.GetDeviceManager();
+
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return;
+                }
+
+                var msg = new GebugBondTeleportToPositionMessage()
+                {
+                    PosX = (Single)_currentContextMenuMouseGamePositionX,
+                    PosZ = (Single)_currentContextMenuMouseGamePositionY,
+                    StanId = stan.LayerInstanceId,
+                };
+
+                _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+                connectionServiceProvider.SendMessage(msg);
+            }
+            else
+            {
+                _logger.Log(LogLevel.Information, $"TeleportTo: invalid stan");
+            }
         }
     }
 }

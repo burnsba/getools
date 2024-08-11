@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Manage;
 using Getools.Lib.Game;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.Game
 {
@@ -15,8 +17,10 @@ namespace Gebug64.Win.ViewModels.Game
         /// <summary>
         /// Initializes a new instance of the <see cref="Bg"/> class.
         /// </summary>
-        public Bg()
-            : base()
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public Bg(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(logger, connectionServiceProviderResolver)
         {
         }
     }

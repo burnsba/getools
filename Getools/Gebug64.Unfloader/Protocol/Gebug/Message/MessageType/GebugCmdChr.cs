@@ -20,5 +20,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         /// Sends all "active" character positions and some light info from console to pc (active means the model is not null).
         /// </summary>
         SendAllGuardInfo = 10,
+
+        /// <summary>
+        /// Remove all body armor and all but 0.01 HP from guard.
+        /// </summary>
+        GhostHp = 21,
+
+        /// <summary>
+        /// Set guard HP to zero. This removes any current body armor.
+        /// </summary>
+        MaxHp = 22,
     }
 }

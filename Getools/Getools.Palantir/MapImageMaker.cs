@@ -486,6 +486,7 @@ namespace Getools.Palantir
                     Room = tile.Room,
                     Points = svgScaledPoints,
                     Source = Enums.PolygonSource.Stan,
+                    StanNameId = tile.InternalName,
                 };
 
                 if (tileNativeMin.X < double.MaxValue)

@@ -20,6 +20,12 @@ namespace Getools.Palantir.Render
         public int OrderIndex { get; set; }
 
         /// <summary>
+        /// If there is a stan associated with it, this is the 24 bit "name" field.
+        /// See <see cref="Getools.Lib.Game.Asset.Stan.StandTile.InternalName"/>.
+        /// </summary>
+        public int StanNameId { get; set; } = -1;
+
+        /// <summary>
         /// Gets or sets the room of the item.
         /// </summary>
         public int Room { get; set; }

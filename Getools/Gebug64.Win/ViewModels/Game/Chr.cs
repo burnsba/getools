@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Gebug.Dto;
+using Gebug64.Unfloader.Protocol.Gebug.Message;
+using Gebug64.Win.Mvvm;
 using Getools.Lib.Game;
 using Getools.Lib.Game.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.Game
 {
@@ -24,17 +29,23 @@ namespace Gebug64.Win.ViewModels.Game
         /// <summary>
         /// Initializes a new instance of the <see cref="Chr"/> class.
         /// </summary>
-        public Chr()
-            : base()
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public Chr(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
+            : base(logger, connectionServiceProviderResolver)
         {
+            GhostHpCommand = new CommandHandler(GhostHpCommandHandler, () => CanGhostHpCommand);
+            MaxHpCommand = new CommandHandler(MaxHpCommandHandler, () => CanMaxHpCommand);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Chr"/> class.
         /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
         /// <param name="msgGuard">Mesg source to copy.</param>
-        public Chr(RmonGuardPosition msgGuard)
-            : base()
+        public Chr(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver, RmonGuardPosition msgGuard)
+            : this(logger, connectionServiceProviderResolver)
         {
             _chrNum = msgGuard.Chrnum;
             PropDefType = PropDef.Guard;
@@ -51,9 +62,11 @@ namespace Gebug64.Win.ViewModels.Game
         /// <summary>
         /// Initializes a new instance of the <see cref="Chr"/> class.
         /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
         /// <param name="chr">Cource to copy.</param>
-        public Chr(Chr chr)
-            : base()
+        public Chr(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver, Chr chr)
+            : this(logger, connectionServiceProviderResolver)
         {
             _chrNum = chr._chrNum;
             _chrSlotIndex = chr._chrSlotIndex;
@@ -267,6 +280,50 @@ namespace Gebug64.Win.ViewModels.Game
         /// </summary>
         public double ModelRotationDegrees => Subroty * 180.0 / Math.PI;
 
+        /// <summary>
+        /// Remove all body armor and all but 0.01 HP from guard.
+        /// </summary>
+        public ICommand GhostHpCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="GhostHpCommand"/> can execute.
+        /// </summary>
+        public bool CanGhostHpCommand
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
+        /// <summary>
+        /// Set guard HP to zero. This removes any current body armor.
+        /// </summary>
+        public ICommand MaxHpCommand { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="MaxHpCommand"/> can execute.
+        /// </summary>
+        public bool CanMaxHpCommand
+        {
+            get
+            {
+                IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+                if (object.ReferenceEquals(null, connectionServiceProvider))
+                {
+                    return false;
+                }
+
+                return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
         /// <inheritdoc />
         public override int PreferredId
         {
@@ -311,6 +368,46 @@ namespace Gebug64.Win.ViewModels.Game
             Damage = chr.Damage;
             MaxDamage = chr.MaxDamage;
             Intolerance = chr.Intolerance;
+        }
+
+        private void GhostHpCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugChrGhostHpMessage()
+            {
+                ChrNum = (UInt16)_chrNum,
+                ChrSlotIndex = (byte)_chrSlotIndex,
+            };
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
+        }
+
+        private void MaxHpCommandHandler()
+        {
+            IConnectionServiceProvider? connectionServiceProvider = _connectionServiceProviderResolver.GetDeviceManager();
+
+            if (object.ReferenceEquals(null, connectionServiceProvider))
+            {
+                return;
+            }
+
+            var msg = new GebugChrMaxHpMessage()
+            {
+                ChrNum = (UInt16)_chrNum,
+                ChrSlotIndex = (byte)_chrSlotIndex,
+            };
+
+            _logger.Log(LogLevel.Information, "Send: " + msg.ToString());
+
+            connectionServiceProvider.SendMessage(msg);
         }
     }
 }

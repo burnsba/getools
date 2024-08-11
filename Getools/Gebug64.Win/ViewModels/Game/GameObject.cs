@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.Manage;
 using Gebug64.Win.Mvvm;
 using Getools.Lib.Game.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace Gebug64.Win.ViewModels.Game
 {
@@ -14,10 +16,24 @@ namespace Gebug64.Win.ViewModels.Game
     public class GameObject : ViewModelBase
     {
         /// <summary>
+        /// Logger.
+        /// </summary>
+        protected readonly ILogger _logger;
+
+        /// <summary>
+        /// Connection service provider.
+        /// </summary>
+        protected readonly IConnectionServiceProviderResolver _connectionServiceProviderResolver;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GameObject"/> class.
         /// </summary>
-        public GameObject()
+        /// <param name="logger">Logger.</param>
+        /// <param name="connectionServiceProviderResolver">Connection service provider.</param>
+        public GameObject(ILogger logger, IConnectionServiceProviderResolver connectionServiceProviderResolver)
         {
+            _logger = logger;
+            _connectionServiceProviderResolver = connectionServiceProviderResolver;
         }
 
         /// <summary>
