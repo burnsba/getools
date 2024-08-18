@@ -245,11 +245,18 @@ namespace Gebug64.Win.ViewModels.CategoryTabs
 
                 var bmp = Image.Utility.BitmapFromRaw(windowsFrameBuffer, System.Drawing.Imaging.PixelFormat.Format16bppArgb1555, viMessage.Width, viMessage.Height);
 
-                string filename = $"framegrab-{DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")}.jpg";
-                string savePath = System.IO.Path.Combine(FramebufferGrabSavePath, filename);
-                bmp.Save(savePath, ImageFormat.Jpeg);
+                if (Directory.Exists(FramebufferGrabSavePath))
+                {
+                    string filename = $"framegrab-{DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")}.jpg";
+                    string savePath = System.IO.Path.Combine(FramebufferGrabSavePath, filename);
+                    bmp.Save(savePath, ImageFormat.Jpeg);
 
-                Task.Run(() => _logger.Log(LogLevel.Information, $"Save frame buffer image: {savePath}"));
+                    Task.Run(() => _logger.Log(LogLevel.Information, $"Save frame buffer image: {savePath}"));
+                }
+                else
+                {
+                    Task.Run(() => _logger.Log(LogLevel.Information, $"Could not save frame buffer. Directory not found: {FramebufferGrabSavePath}"));
+                }
 
                 // The following assignment has to occur on the dispatcher thread.
                 // Be careful with one of the relevant streams being closed before the following completes ...

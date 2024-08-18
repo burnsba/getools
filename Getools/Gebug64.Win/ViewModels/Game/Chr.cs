@@ -334,7 +334,7 @@ namespace Gebug64.Win.ViewModels.Game
                     return LayerInstanceId;
                 }
 
-                return ChrNum;
+                return ChrSlotIndex;
             }
         }
 

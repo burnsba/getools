@@ -77,7 +77,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         Chr = 65,
 
         /// <summary>
-        /// Gebug methods for objects (romhack setup objects).
+        /// Gebug methods for objects (setup objects).
         /// </summary>
         Objects = 70,
 

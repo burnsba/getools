@@ -22,6 +22,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         SendAllGuardInfo = 10,
 
         /// <summary>
+        /// Sends all character spawn positions for this tick from console to pc.
+        /// </summary>
+        NotifyChrSpawn = 14,
+
+        /// <summary>
         /// Remove all body armor and all but 0.01 HP from guard.
         /// </summary>
         GhostHp = 21,

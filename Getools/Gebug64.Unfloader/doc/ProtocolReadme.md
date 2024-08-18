@@ -69,6 +69,16 @@ All `short`/`ushort` (16 bit) and `int`/`uint` (32 bit) values in a Gebug *packe
 
 In reality, the protocol has a bit of room to improve efficiency. However, much of the communication "cost" comes from the slow USB connection speed (on Everdrive). Increasing the USB buffer to, say, 2048 bytes would decrease transfer speed of 3MB by 1-2 sec (this would use fewer packets, therefore fewer packet header bytes). But the transfer would still take just over 10 seconds due to slow throughput. Therefore I decided it's worth the cost of a slightly more verbose protocol.
 
+## Common type info
+
+```
+struct RmonBasicPosition {
+    u16 roomid;
+    u16 stanid;
+    struct coord3d pos;
+};
+```
+
 -----
 
 # Category, Command, and Parameters
@@ -262,18 +272,42 @@ public enum GebugCmdStage
     DefaultUnknown = 0,
 
     SetStage = 10,
+    NotifyLevelSelected = 13,
+    NotifyLevelLoaded = 14,
 }
 ```
 
 ### `Stage SetStage` Command
 
-Sets `g_MainStageNum` to the supplied value.
+Sets `g_MainStageNum` to the supplied value. Currently only supports single player, so size is one byte.
 
 **Reply**: No.
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | LevelId      |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
+|  1            | LevelId       |  1           | `PcToConsole` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
+
+
+### `Stage NotifyLevelSelected` Command
+
+Send notice from console to pc that a stage has been selected. Multiplayer stage requires two bytes.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | LevelId       |  2           | `ConsoleToPc` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
+
+
+### `Stage NotifyLevelLoaded` Command
+
+Send notice from console to pc that a stage is being loaded. Multiplayer stage requires two bytes.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | LevelId       |  2           | `ConsoleToPc` | ROM enum type is `LEVEL_ID`, the C# equivalent is `LevelIdX`. |
 
 ## `Bond` Category
 
@@ -332,6 +366,7 @@ public enum GebugCmdChr
     DefaultUnknown = 0,
 
     SendAllGuardInfo = 10,
+    NotifyChrSpawn = 14,
     GhostHp = 21,
     MaxHp = 22,
 }
@@ -364,6 +399,25 @@ struct RmonGuardInfo {
 |  2            | GuardInfo     |  variable    | `ConsoleToPc` | List of all guard position data. |
 
 
+### `Chr NotifyChrSpawn` Command
+
+Sends all character spawn positions for this tick from console to pc.
+
+`Data` is an array of the following type (see "Common type info" above):
+```
+struct RmonMsgSingleChrSpawn {
+    struct RmonBasicPosition bpos;
+};
+```
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Count         |  2           | `ConsoleToPc` | Number of character spawns. |
+|  2            | Data          |  variable    | `ConsoleToPc` | List of position data. |
+
+
 ### `Chr GhostHp` Command
 
 Remove all body armor and all but 0.01 HP from guard.
@@ -386,6 +440,42 @@ Set guard HP to zero. This removes any current body armor.
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  1            | ChrNum        |  2           | `ConsoleToPc` | In-game chrnum id. |
 |  2            | ChrSlotIndex  |  1           | `ConsoleToPc` | Index source from g_ChrSlots. |
+
+
+## `Objects` Category
+
+`Objects` category is for managing / viewing data related to setup objects.
+
+`Objects` commands are as follows
+
+```
+public enum GebugCmdObjects
+{
+    DefaultUnknown = 0,
+
+    NotifyExplosionCreate = 4,
+}
+```
+
+### `Objects NotifyExplosionCreate` Command
+
+Sends notification from console to pc for all explosions created this tick.
+
+`Data` is an array of the following type (see "Common type info" above):
+```
+struct RmonMsgSingleExplosionCreate {
+    s16 explosion_type;
+    s16 unused;
+    struct RmonBasicPosition bpos;
+};
+```
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Count         |  2           | `ConsoleToPc` | Number of explosions created. |
+|  2            | Data          |  variable    | `ConsoleToPc` | List of position data. |
 
 
 ## `File` Category

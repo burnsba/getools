@@ -20,5 +20,15 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         /// Sets `g_MainStageNum` to the supplied value.
         /// </summary>
         SetStage = 10,
+
+        /// <summary>
+        /// Send notice from console to pc that a stage has been selected.
+        /// </summary>
+        NotifyLevelSelected = 13,
+
+        /// <summary>
+        /// Send notice from console to pc that a stage is being loaded.
+        /// </summary>
+        NotifyLevelLoaded = 14,
     }
 }

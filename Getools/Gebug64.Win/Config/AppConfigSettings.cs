@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 using Getools.Lib.Game;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -58,9 +59,9 @@ namespace Gebug64.Win.Config
                 LayoutState = new();
             }
 
-            if (string.IsNullOrEmpty(FramebufferGrabSavePath))
+            if (string.IsNullOrEmpty(FramebufferGrabSavePath) || !Directory.Exists(FramebufferGrabSavePath))
             {
-                FramebufferGrabSavePath = _currentLocation;
+                FramebufferGrabSavePath = System.IO.Path.GetDirectoryName(_currentLocation)!;
             }
         }
 
@@ -96,7 +97,7 @@ namespace Gebug64.Win.Config
                 LayoutState = new();
             }
 
-            FramebufferGrabSavePath = _currentLocation;
+            FramebufferGrabSavePath = System.IO.Path.GetDirectoryName(_currentLocation)!;
         }
 
         /// <summary>
