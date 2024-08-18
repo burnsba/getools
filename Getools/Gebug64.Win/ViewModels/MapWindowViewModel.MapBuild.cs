@@ -62,6 +62,12 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private Coord3dd _lastIntroPosition = Coord3dd.Zero.Clone();
 
+        /// <summary>
+        /// Queue up layers to add to the main collection, all in one batch.
+        /// This minimizes multiple calls to dispatcher.invoke.
+        /// </summary>
+        private List<MapLayerViewModel> _mapBuildLayersToAdd = new List<MapLayerViewModel>();
+
         private void LoadStageEntry(LevelIdX stageid)
         {
             lock (_lock)
@@ -74,6 +80,8 @@ namespace Gebug64.Win.ViewModels
                 _isLoading = true;
             }
 
+            _mapBuildLayersToAdd.Clear();
+
             // Fighting with the dispatcher and dependency source object creation on the
             // right thread is not really making this any faster, so just going to block
             // the main thread.
@@ -82,6 +90,11 @@ namespace Gebug64.Win.ViewModels
             // wait for the UI thread before signalling the map is ready to be used.
             _dispatcher.BeginInvoke(() =>
             {
+                foreach (var layer in _mapBuildLayersToAdd)
+                {
+                    Layers.Add(layer);
+                }
+
                 IsMapLoaded = true;
             });
 
@@ -91,6 +104,10 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Don't call this method directly, use <see cref="LoadStageEntry"/> to ensure proper locks/notifications.
+        /// </summary>
+        /// <param name="stageid">Stage to load.</param>
         private void LoadStage(LevelIdX stageid)
         {
             IsMapLoaded = false;
@@ -221,7 +238,7 @@ namespace Gebug64.Win.ViewModels
             var outputVeiwboxWidth = Math.Abs(rawStage.ScaledMax.X - rawStage.ScaledMin.X);
             var outputViewboxHeight = Math.Abs(rawStage.ScaledMax.Z - rawStage.ScaledMin.Z);
 
-            ClearMap();
+            WaitClearMap();
 
             AddStanLayer(rawStage, _adjustx, _adjusty);
 
@@ -256,7 +273,7 @@ namespace Gebug64.Win.ViewModels
 
             // guards should be one of the highest z layers
             AddSetupLayer(rawStage, PropDef.Guard, _adjustx, _adjusty, _levelScale);
-            _guardLayer = Layers.First(x => x.LayerId == UiMapLayer.SetupGuard);
+            _guardLayer = _mapBuildLayersToAdd.First(x => x.LayerId == UiMapLayer.SetupGuard);
 
             // Intro star should be above other layers
             AddIntroLayer(rawStage, _adjustx, _adjusty, _levelScale);
@@ -275,12 +292,35 @@ namespace Gebug64.Win.ViewModels
             MapSelectedMaxVertical = rawStage.ScaledMax.Y;
         }
 
-        private void ClearMap()
+        private void WaitClearMap()
         {
-            while (Layers.Any())
+            if (_dispatcher.Thread == Thread.CurrentThread)
             {
-                Layers.RemoveAt(0);
+                Layers.Clear();
             }
+            else
+            {
+                bool done = false;
+
+                _dispatcher.BeginInvoke(() =>
+                {
+                    Layers.Clear();
+                    done = true;
+                });
+
+                while (!done)
+                {
+                    Thread.Sleep(10);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes items that were added from gebug messges receieved at runtime.
+        /// </summary>
+        private void RemoveRuntimeItems()
+        {
+            _guardLayer!.DispatchRemoveAll(_dispatcher);
         }
 
         private void ToggleLayerVisibility(UiMapLayer layerId)
@@ -338,7 +378,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddStanLayer(ProcessedStageData rawStage, double adjustx, double adjusty)
@@ -384,7 +424,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddIntroLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
@@ -410,7 +450,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddBondLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
@@ -431,7 +471,7 @@ namespace Gebug64.Win.ViewModels
 
             layer.DispatchAddEntity(_dispatcher, Bond);
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddSetupLayer(ProcessedStageData rawStage, PropDef setupLayerKey, double adjustx, double adjusty, double levelScale)
@@ -448,7 +488,7 @@ namespace Gebug64.Win.ViewModels
 
             if (!rawStage.SetupPolygonsCollection.ContainsKey(setupLayerKey))
             {
-                Layers.Add(layer);
+                _mapBuildLayersToAdd.Add(layer);
                 return;
             }
 
@@ -608,7 +648,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddPadLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
@@ -637,7 +677,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddPathWaypointLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
@@ -685,7 +725,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private void AddPatrolPathLayer(ProcessedStageData rawStage, double adjustx, double adjusty, double levelScale)
@@ -735,7 +775,7 @@ namespace Gebug64.Win.ViewModels
                 layer.DispatchAddEntity(_dispatcher, mo);
             }
 
-            Layers.Add(layer);
+            _mapBuildLayersToAdd.Add(layer);
         }
 
         private MapObject GetPropDefaultModelBbox_prop(PropPointPosition pp, double adjustx, double adjusty, double levelScale, string stroke, double strokeWidth, string fill)

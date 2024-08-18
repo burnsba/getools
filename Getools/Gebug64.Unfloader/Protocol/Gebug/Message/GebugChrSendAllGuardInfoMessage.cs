@@ -36,7 +36,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// Raw result from gebug message. Contains guard positions.
         /// </summary>
-        [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 1, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[]? Data { get; set; }
 
         /// <summary>

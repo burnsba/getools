@@ -36,7 +36,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// Index source from g_ChrSlots.
         /// </summary>
-        [GebugParameter(ParameterIndex = 2, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
+        [GebugParameter(ParameterIndex = 1, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
         public byte ChrSlotIndex { get; set; }
 
         /// <inheritdoc />

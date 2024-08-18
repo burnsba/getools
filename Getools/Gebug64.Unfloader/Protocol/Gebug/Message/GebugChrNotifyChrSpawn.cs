@@ -36,8 +36,52 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// Raw result from gebug message. Contains guard positions.
         /// </summary>
-        [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 1, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[]? Data { get; set; }
+
+        /// <summary>
+        /// Processes the <see cref="Data"/> property intro strongly typed position data.
+        /// </summary>
+        /// <returns>Position info.</returns>
+        public List<RmonBasicPosition> ParsePositionData()
+        {
+            if (object.ReferenceEquals(null, Data))
+            {
+                return new List<RmonBasicPosition>();
+            }
+
+            var results = new List<RmonBasicPosition>();
+
+            int bodyOffset = 0;
+            byte[] fullBody = Data!;
+
+            for (int i = 0; i < Count; i++)
+            {
+                UInt32 packedStanId = (UInt32)BitUtility.Read32Big(fullBody, bodyOffset);
+                bodyOffset += 4;
+
+                double x = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                double y = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                double z = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                var position = new Getools.Lib.Game.Coord3dd(x, y, z);
+
+                var item = new RmonBasicPosition()
+                {
+                    PackedStanId = packedStanId,
+                    Position = position,
+                };
+
+                results.Add(item);
+            }
+
+            return results;
+        }
 
         /// <inheritdoc />
         public override string ToString()

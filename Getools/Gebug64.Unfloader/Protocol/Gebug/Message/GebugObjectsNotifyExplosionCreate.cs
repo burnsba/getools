@@ -36,8 +36,59 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// Raw result from gebug message. Contains guard positions.
         /// </summary>
-        [GebugParameter(ParameterIndex = 2, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 1, IsVariableSize = true, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public byte[]? Data { get; set; }
+
+        /// <summary>
+        /// Processes the <see cref="Data"/> property intro strongly typed position data.
+        /// </summary>
+        /// <returns>Position info.</returns>
+        public List<RmonExplosionCreatePosition> ParsePositionData()
+        {
+            if (object.ReferenceEquals(null, Data))
+            {
+                return new List<RmonExplosionCreatePosition>();
+            }
+
+            var results = new List<RmonExplosionCreatePosition>();
+
+            int bodyOffset = 0;
+            byte[] fullBody = Data!;
+
+            for (int i = 0; i < Count; i++)
+            {
+                UInt16 explosionType = (UInt16)BitUtility.Read16Big(fullBody, bodyOffset);
+                bodyOffset += 2;
+
+                // Skip unused 16 bits.
+                bodyOffset += 2;
+
+                UInt32 packedStanId = (UInt32)BitUtility.Read32Big(fullBody, bodyOffset);
+                bodyOffset += 4;
+
+                double x = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                double y = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                double z = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                bodyOffset += 4;
+
+                var position = new Getools.Lib.Game.Coord3dd(x, y, z);
+
+                var item = new RmonExplosionCreatePosition()
+                {
+                    ExplosionType = explosionType,
+                    PackedStanId = packedStanId,
+                    Position = position,
+                };
+
+                results.Add(item);
+            }
+
+            return results;
+        }
 
         /// <inheritdoc />
         public override string ToString()

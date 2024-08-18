@@ -24,40 +24,50 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         }
 
         /// <summary>
-        /// Bond's current room.
-        /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
-        public UInt16 RoomId { get; set; }
-
-        /// <summary>
         /// Bond's current stan.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 2, UseDirection = ParameterUseDirection.ConsoleToPc)]
-        public UInt16 StanId { get; set; }
+        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        public UInt32 PackedStanId { get; set; }
 
         /// <summary>
         /// Bond's global scaled coordinate x position.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 1, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public float PosX { get; set; }
 
         /// <summary>
         /// Bond's global scaled coordinate y (vertical) position.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 2, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public float PosY { get; set; }
 
         /// <summary>
         /// Bond's global scaled coordinate z position.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 3, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public float PosZ { get; set; }
 
         /// <summary>
         /// g_CurrentPlayer->vv_theta .
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
+        [GebugParameter(ParameterIndex = 4, Size = 4, UseDirection = ParameterUseDirection.ConsoleToPc)]
         public float VVTheta { get; set; }
+
+        /// <summary>
+        /// Bond's current room.
+        /// </summary>
+        /// <remarks>
+        /// Not a message parameter.
+        /// </remarks>
+        public byte RoomId => (byte)((PackedStanId & 0xFF000000) >> 24);
+
+        /// <summary>
+        /// Bond's current stan.
+        /// </summary>
+        /// <remarks>
+        /// Not a message parameter.
+        /// </remarks>
+        public UInt32 StanId => PackedStanId & 0x00FFFFFF;
 
         /// <inheritdoc />
         public override string ToString()

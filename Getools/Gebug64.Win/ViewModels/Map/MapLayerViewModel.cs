@@ -226,6 +226,20 @@ namespace Gebug64.Win.ViewModels.Map
         }
 
         /// <summary>
+        /// Mutates the underlying entity collection and removes all items from the list.
+        /// Any <see cref="MapObject.Children"/> are removed as well.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher thread to change collection on.</param>
+        public void DispatchRemoveAll(Dispatcher dispatcher)
+        {
+            lock (_entityLock)
+            {
+                _localEntities.Clear();
+                ObservableEntities.Clear();
+            }
+        }
+
+        /// <summary>
         /// Iterates the collection without threading conflicts.
         /// </summary>
         /// <param name="fod">Search clause.</param>

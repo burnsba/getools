@@ -73,8 +73,10 @@ In reality, the protocol has a bit of room to improve efficiency. However, much 
 
 ```
 struct RmonBasicPosition {
-    u16 roomid;
-    u16 stanid;
+    // 24 bit stan id, with 8 bit room id
+    // on console: (stanid & 0x00FFFFFF) | ((u32)roomid << 24)
+    u32 packed_stanid; 
+
     struct coord3d pos;
 };
 ```
@@ -333,12 +335,11 @@ Read Bond stan, room, position, and rotation from console and send to pc.
 
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
-|  1            | RoomId        |  2           | `ConsoleToPc` | Bond's current room, or zero. |
-|  2            | StanId        |  2           | `ConsoleToPc` | Bond's current stan, or zero. |
-|  3            | PosX          |  4           | `ConsoleToPc` | X value from `bondviewGetCurrentPlayersPosition()`. |
-|  4            | PosY          |  4           | `ConsoleToPc` | Y value from `bondviewGetCurrentPlayersPosition()`. |
-|  5            | PosZ          |  4           | `ConsoleToPc` | Z value from `bondviewGetCurrentPlayersPosition()`. |
-|  6            | VVTheta       |  4           | `ConsoleToPc` | `g_CurrentPlayer->vv_theta` or zero. |
+|  1            | PackedStanId  |  4           | `ConsoleToPc` | Bond's current stan (internal name/id), and room. |
+|  2            | PosX          |  4           | `ConsoleToPc` | X value from `bondviewGetCurrentPlayersPosition()`. |
+|  3            | PosY          |  4           | `ConsoleToPc` | Y value from `bondviewGetCurrentPlayersPosition()`. |
+|  4            | PosZ          |  4           | `ConsoleToPc` | Z value from `bondviewGetCurrentPlayersPosition()`. |
+|  5            | VVTheta       |  4           | `ConsoleToPc` | `g_CurrentPlayer->vv_theta` or zero. |
 
 ### `Bond TeleportToPosition` Command
 

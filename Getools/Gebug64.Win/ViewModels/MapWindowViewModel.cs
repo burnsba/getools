@@ -773,54 +773,109 @@ namespace Gebug64.Win.ViewModels
         /// <param name="msg">Message.</param>
         private void MessageBusMapGebugCallback(IGebugMessage msg)
         {
-            // If a map is loaded and Bond's position is received, update the local Bond mapobject.
-            if (_isMapLoaded
-                && !object.ReferenceEquals(null, Bond)
-                && msg.Category == GebugMessageCategory.Bond
-                && msg.Command == (int)GebugCmdBond.SendPosition)
+            if (msg.Category == GebugMessageCategory.Stage)
             {
-                var posMessage = (GebugBondSendPositionMessage)msg;
-                if (!object.ReferenceEquals(null, posMessage))
+                if (msg.Command == (int)GebugCmdStage.NotifyLevelSelected)
                 {
-                    var bondimg = (MapObjectResourceImage)Bond;
-                    bondimg.ScaledOrigin.Y = posMessage.PosY;
-                    bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
+                    var levelSelectedMsg = (GebugStageNotifyLevelSelected)msg;
+                    var xlevelId = LevelIdX.ToLevelIdXSafe((int)levelSelectedMsg.LevelId);
+                    if (xlevelId.IsSinglePlayerLevel)
+                    {
+                        _dispatcher.BeginInvoke(() =>
+                        {
+                            SelectedStage = xlevelId;
+                        });
+                    }
+                }
+                else if (msg.Command == (int)GebugCmdStage.NotifyLevelLoaded)
+                {
+                    var levelLoadedMsg = (GebugStageNotifyLevelLoaded)msg;
+                    var xlevelId = LevelIdX.ToLevelIdXSafe((int)levelLoadedMsg.LevelId);
+
+                    // If quit to title, don't clear last data.
+                    if (xlevelId.IsSinglePlayerLevel)
+                    {
+                        RemoveRuntimeItems();
+                    }
                 }
             }
 
-            if (_isMapLoaded
-                && msg.Category == GebugMessageCategory.Chr
-                && msg.Command == (int)GebugCmdChr.SendAllGuardInfo)
+            // The following messages require the map to already be loaded.
+            if (!_isMapLoaded)
             {
-                var guarddata = ((GebugChrSendAllGuardInfoMessage)msg).ParseGuardPositions();
+                return;
+            }
 
-                foreach (var msgGuard in guarddata)
+            // If a map is loaded and Bond's position is received, update the local Bond mapobject.
+            if (msg.Category == GebugMessageCategory.Bond)
+            {
+                if (!object.ReferenceEquals(null, Bond)
+                    && msg.Command == (int)GebugCmdBond.SendPosition)
                 {
-                    switch (msgGuard.ActionType)
+                    var posMessage = (GebugBondSendPositionMessage)msg;
+                    if (!object.ReferenceEquals(null, posMessage))
                     {
-                        case GuardActType.ActDead:
-                            MessageCallbackGuardDead(msgGuard);
-                            break;
-
-                        default:
-                            MessageCallbackGuardUpdatePosition(msgGuard);
-                            break;
+                        var bondimg = (MapObjectResourceImage)Bond;
+                        bondimg.ScaledOrigin.Y = posMessage.PosY;
+                        bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
                     }
                 }
+            }
+            else if (msg.Category == GebugMessageCategory.Chr)
+            {
+                if (msg.Command == (int)GebugCmdChr.SendAllGuardInfo)
+                {
+                    var guarddata = ((GebugChrSendAllGuardInfoMessage)msg).ParseGuardPositions();
 
-                var mesgGuardIndexIds = guarddata.Select(x => (int)x.ChrSlotIndex).ToHashSet();
+                    foreach (var msgGuard in guarddata)
+                    {
+                        switch (msgGuard.ActionType)
+                        {
+                            case GuardActType.ActDead:
+                                MessageCallbackGuardDead(msgGuard);
+                                break;
 
-                var nonMatchingGuards = _guardLayer!.GetEntities()
-                    .Where(x =>
-                        //// "targetpos" items will have parent set, so filter those out
-                        x.Parent == null
-                        //// only want guard items
-                        && x.DataSource != null
-                        && x.DataSource is Chr
-                        && !mesgGuardIndexIds.Contains(((Chr)x.DataSource).ChrSlotIndex))
-                    .ToList();
+                            default:
+                                MessageCallbackGuardUpdatePosition(msgGuard);
+                                break;
+                        }
+                    }
 
-                _guardLayer.DispatchRemoveRange(_dispatcher, nonMatchingGuards);
+                    var mesgGuardIndexIds = guarddata.Select(x => (int)x.ChrSlotIndex).ToHashSet();
+
+                    var nonMatchingGuards = _guardLayer!.GetEntities()
+                        .Where(x =>
+                            //// "targetpos" items will have parent set, so filter those out
+                            x.Parent == null
+                            //// only want guard items
+                            && x.DataSource != null
+                            && x.DataSource is Chr
+                            && !mesgGuardIndexIds.Contains(((Chr)x.DataSource).ChrSlotIndex))
+                        .ToList();
+
+                    _guardLayer.DispatchRemoveRange(_dispatcher, nonMatchingGuards);
+                }
+                else if (msg.Command == (int)GebugCmdChr.NotifyChrSpawn)
+                {
+                    var notifyMesg = (GebugChrNotifyChrSpawn)msg;
+                    var positionData = notifyMesg.ParsePositionData();
+                    foreach (var pdata in positionData)
+                    {
+                        _logger.Log(LogLevel.Information, $"Chr spawn at {pdata}");
+                    }
+                }
+            }
+            else if (msg.Category == GebugMessageCategory.Objects)
+            {
+                if (msg.Command == (int)GebugCmdObjects.NotifyExplosionCreate)
+                {
+                    var notifyMesg = (GebugObjectsNotifyExplosionCreate)msg;
+                    var positionData = notifyMesg.ParsePositionData();
+                    foreach (var pdata in positionData)
+                    {
+                        _logger.Log(LogLevel.Information, $"Explosion create at {pdata}");
+                    }
+                }
             }
         }
 

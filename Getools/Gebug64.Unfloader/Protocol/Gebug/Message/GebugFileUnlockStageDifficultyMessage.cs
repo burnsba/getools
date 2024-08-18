@@ -32,7 +32,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// <see cref="Getools.Lib.Game.Enums.Difficulty"/>.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
+        [GebugParameter(ParameterIndex = 1, Size = 1, UseDirection = ParameterUseDirection.PcToConsole)]
         public byte Difficulty { get; set; }
 
         /// <inheritdoc />

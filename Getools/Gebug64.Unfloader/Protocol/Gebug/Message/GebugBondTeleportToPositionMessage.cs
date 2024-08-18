@@ -32,13 +32,13 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// <summary>
         /// Teleport target z position.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.PcToConsole)]
+        [GebugParameter(ParameterIndex = 1, Size = 4, UseDirection = ParameterUseDirection.PcToConsole)]
         public Single PosZ { get; set; }
 
         /// <summary>
         /// Target stan id. This should be <see cref="Getools.Lib.Game.Asset.Stan.StandTile.InternalName"/>.
         /// </summary>
-        [GebugParameter(ParameterIndex = 0, Size = 4, UseDirection = ParameterUseDirection.PcToConsole)]
+        [GebugParameter(ParameterIndex = 2, Size = 4, UseDirection = ParameterUseDirection.PcToConsole)]
         public Int32 StanId { get; set; }
 
         /// <inheritdoc />
