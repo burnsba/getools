@@ -16,6 +16,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AutoMapper.Features;
 using Gebug64.Win.Event;
+using Gebug64.Win.ViewModels.Game;
 using Gebug64.Win.ViewModels.Map;
 using Getools.Lib.Game;
 
@@ -262,6 +263,13 @@ namespace Gebug64.Win.Controls
                     MouseOverObjects = gameObjects,
                 });
             }
+            else
+            {
+                NotifyMouseOverGameObject?.Invoke(this, new NotifyMouseOverGameObjectEventArgs()
+                {
+                    MouseOverObjects = new List<GameObject>(),
+                });
+            }
         }
 
         private HitTestResultBehavior MyHitTestResult(HitTestResult result)
@@ -345,6 +353,13 @@ namespace Gebug64.Win.Controls
                 NotifyContextMenuGameObject?.Invoke(this, new NotifyMouseOverGameObjectEventArgs()
                 {
                     MouseOverObjects = gameObjects,
+                });
+            }
+            else
+            {
+                NotifyContextMenuGameObject?.Invoke(this, new NotifyMouseOverGameObjectEventArgs()
+                {
+                    MouseOverObjects = new List<GameObject>(),
                 });
             }
         }

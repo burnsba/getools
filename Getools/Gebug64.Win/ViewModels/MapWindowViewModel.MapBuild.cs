@@ -408,7 +408,7 @@ namespace Gebug64.Win.ViewModels
                 {
                     Points = pc,
                     Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom("#9e87a3")!,
-                    StrokeThickness = 4,
+                    StrokeThickness = 2,
                     Fill = (SolidColorBrush)new BrushConverter().ConvertFrom("#fdf5ff")!,
                 };
 

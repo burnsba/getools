@@ -76,16 +76,46 @@
                             
                             <ItemsControl.Resources>
                                 <DataTemplate DataType="{x:Type vmmo:MapObjectPoly}">
-                                    <Polygon
-                                        Stroke="{Binding Path=Stroke}"
-                                        StrokeThickness="{Binding Path=StrokeThickness}"
-                                        Fill="{Binding Path=Fill}"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Top"
-                                        Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
-                                        Points="{Binding Points}"
-                                        >
-                                    </Polygon>
+
+                                    <Grid>
+                                        <Polygon
+                                            Stroke="{Binding Path=Stroke}"
+                                            StrokeThickness="{Binding Path=StrokeThickness}"
+                                            Fill="{Binding Path=Fill}"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
+                                            Points="{Binding Points}"
+                                            >
+                                        </Polygon>
+                                        <ItemsControl
+                                            ItemsSource="{Binding Points}"
+                                            Visibility="{Binding Path=IsVisible, Converter={StaticResource BoolToVis}, Mode=TwoWay}"
+                                            >
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <Canvas/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemContainerStyle>
+                                                <Style TargetType="ContentPresenter">
+                                                    <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                                    <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                                </Style>
+                                            </ItemsControl.ItemContainerStyle>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Line Stroke="HotPink"
+                                                          StrokeThickness="3"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                    
+
+                                    
                                 </DataTemplate>
                                 <DataTemplate DataType="{x:Type vmmo:MapObjectRect}">
                                     <Rectangle
