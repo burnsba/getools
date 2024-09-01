@@ -380,8 +380,8 @@ Send all position information for all current/loaded characters (chr with a non-
 `GuardInfo` is an array of the following type:
 ```
 struct RmonGuardInfo {
-    s16 chrnum;
-    s8 headnum; // arbitrary extra info that is one byte
+    s16 chrnum; // chr num (from setup)
+    u8 chrslot_index; // index into runtime list of guards
     s8 actiontype; // ACT_TYPE
     struct coord3d prop_pos;
     struct coord3d target_pos;
@@ -389,6 +389,11 @@ struct RmonGuardInfo {
     f32 damage;
     f32 maxdamage;
     f32 shotbondsum;
+    u32 anim; // untranslated animation address
+    CHRFLAG chrflags;//s32
+    u8 prop_flags;
+    u8 chr_flags2;
+    u16 chr_hidden;
 };
 ```
 

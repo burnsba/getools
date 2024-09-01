@@ -50,6 +50,26 @@
             <TextBox Text="{Binding IntoleranceText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
             <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
 
+            <TextBlock Style="{StaticResource LeftRowText}">Anim:</TextBlock>
+            <TextBox Text="{Binding AnimText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">ChrFlags:</TextBlock>
+            <TextBox Text="{Binding ChrFlagsText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">PropFlags:</TextBlock>
+            <TextBox Text="{Binding PropFlagsText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">ChrFlags2:</TextBlock>
+            <TextBox Text="{Binding ChrFlags2Text, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">ChrHidden:</TextBlock>
+            <TextBox Text="{Binding ChrHiddenText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
             <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GhostHpCommand}" HorizontalAlignment="Left">Ghost HP</Button>
             <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=MaxHpCommand}" HorizontalAlignment="Left">Max HP (remove BA)</Button>
         </StackPanel>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Gebug64.Unfloader.Protocol.Gebug.Dto;
@@ -55,65 +56,17 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
             int bodyOffset = 0;
             byte[] fullBody = Data!;
 
+            int expectedBytes = Count * RmonGuardPosition.SizeOf;
+
+            if (fullBody.Length < expectedBytes)
+            {
+                throw new EndOfStreamException($"Expected {RmonGuardPosition.SizeOf} x {Count} = {expectedBytes} bytes, but received {fullBody.Length}");
+            }
+
             for (int i = 0; i < Count; i++)
             {
-                ushort chrnum = (ushort)BitUtility.Read16Big(fullBody, bodyOffset);
-                bodyOffset += 2;
-
-                byte chrSlotIndex = fullBody[bodyOffset++];
-
-                GuardActType action = (GuardActType)fullBody[bodyOffset++];
-                if (!Enum.IsDefined(typeof(GuardActType), action))
-                {
-                    action = GuardActType.ActInvalidData;
-                }
-
-                double x = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                double y = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                double z = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                var propPos = new Getools.Lib.Game.Coord3dd(x, y, z);
-
-                x = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                y = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                z = (double)BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                var targetPos = new Getools.Lib.Game.Coord3dd(x, y, z);
-
-                Single rot = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                Single damage = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                Single maxdamage = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                Single intolerance = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                bodyOffset += 4;
-
-                var guard = new RmonGuardPosition()
-                {
-                    Chrnum = chrnum,
-                    ChrSlotIndex = chrSlotIndex,
-                    ActionType = action,
-                    PropPos = propPos,
-                    TargetPos = targetPos,
-                    Subroty = rot,
-                    Damage = damage,
-                    MaxDamage = maxdamage,
-                    Intolerance = intolerance,
-                };
+                var guard = RmonGuardPosition.TryParse(fullBody, bodyOffset);
+                bodyOffset += RmonGuardPosition.SizeOf;
 
                 results.Add(guard);
             }

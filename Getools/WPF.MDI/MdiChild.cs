@@ -352,7 +352,6 @@ namespace WPF.MDI
 		/// Dimensions of window in Normal state.
 		/// </summary>
 		private Rect originalDimension;
-		private bool _originalDimensionSet = false;
 
 		/// <summary>
 		/// Position of window in Minimized state.
@@ -897,15 +896,6 @@ namespace WPF.MDI
 			Point newPosition = (Point)e.NewValue;
 
             var oldPosition = new Point(mdiChild.Position.X, mdiChild.Position.Y);
-
-    //        if (mdiChild._originalDimensionSet == false)
-    //        {
-    //            mdiChild._originalDimensionSet = true;
-    //            mdiChild.originalDimension = new Rect(mdiChild.Position.X, mdiChild.Position.Y, mdiChild.ActualWidth, mdiChild.ActualHeight);
-
-				//mdiChild.Width = mdiChild.ActualWidth;
-				//mdiChild.Height = mdiChild.ActualHeight;
-    //        }
 
             Canvas.SetTop(mdiChild, newPosition.Y < 0 ? 0 : newPosition.Y);
 			Canvas.SetLeft(mdiChild, newPosition.X < 0 ? 0 : newPosition.X);

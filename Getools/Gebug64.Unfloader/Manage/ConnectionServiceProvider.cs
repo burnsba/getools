@@ -301,11 +301,13 @@ namespace Gebug64.Unfloader.Manage
             _messageBusUnfloader.Unsubscribe(id);
         }
 
+        /// <inheritdoc />
         public void AddLogExclusion(MessageCategoryCommand filter)
         {
             _excludeLogFilter.Add(filter);
         }
 
+        /// <inheritdoc />
         public void RemoveLogExclusion(MessageCategoryCommand filter)
         {
             _excludeLogFilter.Remove(filter);

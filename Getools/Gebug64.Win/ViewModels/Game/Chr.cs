@@ -25,6 +25,15 @@ namespace Gebug64.Win.ViewModels.Game
         private Single _damage = 0.0f;
         private Single _maxDamage = 0.0f;
         private Single _intolerance = 0.0f;
+        private UInt32 _anim = 0;
+        private UInt32 _chrFlags = 0;
+        private string _chrFlagsText = string.Empty;
+        private byte _propFlags = 0;
+        private string _propFlagsText = string.Empty;
+        private byte _chrFlags2 = 0;
+        private string _chrFlags2Text = string.Empty;
+        private UInt16 _chrHidden = 0;
+        private string _chrHiddenText = string.Empty;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Chr"/> class.
@@ -57,6 +66,7 @@ namespace Gebug64.Win.ViewModels.Game
             _damage = msgGuard.Damage;
             _maxDamage = msgGuard.MaxDamage;
             _intolerance = msgGuard.Intolerance;
+            _anim = msgGuard.Anim;
         }
 
         /// <summary>
@@ -77,6 +87,7 @@ namespace Gebug64.Win.ViewModels.Game
             _damage = chr._damage;
             _maxDamage = chr._maxDamage;
             _intolerance = chr._intolerance;
+            _anim = chr._anim;
         }
 
         /// <summary>
@@ -324,6 +335,124 @@ namespace Gebug64.Win.ViewModels.Game
             }
         }
 
+        /// <summary>
+        /// Untranslated animation (e.g., idle starts at 0x1c).
+        /// </summary>
+        public UInt32 Anim
+        {
+            get => _anim;
+
+            set
+            {
+                if (_anim != value)
+                {
+                    _anim = value;
+                    OnPropertyChanged(nameof(Anim));
+                    OnPropertyChanged(nameof(AnimText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the current <see cref="Anim"/>.
+        /// </summary>
+        public string AnimText => Getools.Lib.Game.Animation.AnimationTableData.AddressToAnim((int)_anim).Name;
+
+        /// <summary>
+        /// Bitmask of current character flags. <see cref="Getools.Lib.Game.Flags.ChrFlags"/>.
+        /// </summary>
+        public UInt32 ChrFlags
+        {
+            get => _chrFlags;
+
+            set
+            {
+                if (_chrFlags != value)
+                {
+                    _chrFlags = value;
+                    _chrFlagsText = string.Join(" | ", Getools.Lib.Formatters.FlagFormat.ResolveChrFlagFriendlyName(value));
+                    OnPropertyChanged(nameof(ChrFlags));
+                    OnPropertyChanged(nameof(ChrFlagsText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly name of all flags set in <see cref="ChrFlags"/>.
+        /// </summary>
+        public string ChrFlagsText => _chrFlagsText;
+
+        /// <summary>
+        /// Bitmask of current prop flags. <see cref="Getools.Lib.Game.Flags.PropFlag"/>.
+        /// </summary>
+        public byte PropFlags
+        {
+            get => _propFlags;
+
+            set
+            {
+                if (_propFlags != value)
+                {
+                    _propFlags = value;
+                    _propFlagsText = string.Join(" | ", Getools.Lib.Formatters.FlagFormat.ResolvePropFlagFriendlyName(value));
+                    OnPropertyChanged(nameof(PropFlags));
+                    OnPropertyChanged(nameof(PropFlagsText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly name of all flags set in <see cref="PropFlags"/>.
+        /// </summary>
+        public string PropFlagsText => _propFlagsText;
+
+        /// <summary>
+        /// Bitmask of current character flags2.
+        /// </summary>
+        public byte ChrFlags2
+        {
+            get => _chrFlags2;
+
+            set
+            {
+                if (_chrFlags2 != value)
+                {
+                    _chrFlags2 = value;
+                    OnPropertyChanged(nameof(ChrFlags2));
+                    OnPropertyChanged(nameof(ChrFlags2Text));
+                }
+            }
+        }
+
+        /// <summary>
+        /// String of <see cref="ChrFlags2"/>.
+        /// </summary>
+        public string ChrFlags2Text => "0x" + ChrFlags2.ToString("X2");
+
+        /// <summary>
+        /// Bitmask of current chr->hidden flags. <see cref="Getools.Lib.Game.Flags.ChrHidden"/>.
+        /// </summary>
+        public UInt16 ChrHidden
+        {
+            get => _chrHidden;
+
+            set
+            {
+                if (_chrHidden != value)
+                {
+                    _chrHidden = value;
+                    _chrHiddenText = string.Join(" | ", Getools.Lib.Formatters.FlagFormat.ResolveChrHiddenFriendlyName(value));
+                    OnPropertyChanged(nameof(ChrHidden));
+                    OnPropertyChanged(nameof(ChrHiddenText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly name of all flags set in <see cref="ChrHidden"/>.
+        /// </summary>
+        public string ChrHiddenText => _chrHiddenText;
+
         /// <inheritdoc />
         public override int PreferredId
         {
@@ -352,6 +481,11 @@ namespace Gebug64.Win.ViewModels.Game
             Damage = chr.Damage;
             MaxDamage = chr.MaxDamage;
             Intolerance = chr.Intolerance;
+            Anim = chr.Anim;
+            ChrFlags = chr.ChrFlags;
+            PropFlags = chr.PropFlags;
+            ChrFlags2 = chr.ChrFlags2;
+            ChrHidden = chr.ChrHidden;
         }
 
         /// <summary>
@@ -368,6 +502,11 @@ namespace Gebug64.Win.ViewModels.Game
             Damage = chr.Damage;
             MaxDamage = chr.MaxDamage;
             Intolerance = chr.Intolerance;
+            Anim = chr.Anim;
+            ChrFlags = chr.ChrFlags;
+            PropFlags = chr.PropFlags;
+            ChrFlags2 = chr.ChrFlags2;
+            ChrHidden = chr.ChrHidden;
         }
 
         private void GhostHpCommandHandler()

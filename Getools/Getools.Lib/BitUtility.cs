@@ -450,7 +450,7 @@ namespace Getools.Lib
 
             if (index + 2 > arr.Length)
             {
-                throw new EndOfStreamException("Reading 4 bytes from array exceeds array length");
+                throw new EndOfStreamException("Reading 2 bytes from array exceeds array length");
             }
 
             Int16 i = arr[index];

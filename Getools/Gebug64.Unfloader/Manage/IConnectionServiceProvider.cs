@@ -118,7 +118,16 @@ namespace Gebug64.Unfloader.Manage
         /// </remarks>
         bool TestInRom();
 
+        /// <summary>
+        /// Add command message type to ignore list, so that receiving a message of this type is no longer logged.
+        /// </summary>
+        /// <param name="filter">Message type to filter.</param>
         void AddLogExclusion(MessageCategoryCommand filter);
+
+        /// <summary>
+        /// Remove command message type from ignore list, so that receiving a message of this type is logged.
+        /// </summary>
+        /// <param name="filter">Message type to log.</param>
         void RemoveLogExclusion(MessageCategoryCommand filter);
     }
 }
