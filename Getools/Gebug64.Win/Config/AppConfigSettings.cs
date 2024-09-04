@@ -24,6 +24,8 @@ namespace Gebug64.Win.Config
         /// </summary>
         public const string DefaultFilename = "appsettings.json";
 
+        public const string AppDataLocalDirectoryName = "getools";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AppConfigSettings"/> class.
         /// </summary>
@@ -152,6 +154,30 @@ namespace Gebug64.Win.Config
         public static AppConfigSettings GetDefault()
         {
             return new AppConfigSettings();
+        }
+
+        public static void EnsureDefaultDirectory()
+        {
+            string dir = GetDefaultDirectory();
+
+            if (!System.IO.Directory.Exists(dir))
+            {
+                System.IO.Directory.CreateDirectory(dir);
+            }
+        }
+
+        public static string GetDefaultDirectory()
+        {
+            string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataLocalDirectoryName);
+
+            return dir;
+        }
+
+        public static string GetDefaultFilenameFullPath()
+        {
+            string path = System.IO.Path.Combine(GetDefaultDirectory(), DefaultFilename);
+
+            return path;
         }
 
         /// <summary>

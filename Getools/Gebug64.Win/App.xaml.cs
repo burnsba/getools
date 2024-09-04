@@ -48,10 +48,13 @@ namespace Gebug64.Win
             Logger.CreateInstance();
             _theLogger = Logger.Instance!;
 
+            AppConfigSettings.EnsureDefaultDirectory();
+            var settingsDirectory = AppConfigSettings.GetDefaultDirectory();
+
             try
             {
                 var builder = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .SetBasePath(settingsDirectory)
                     .AddJsonFile(AppConfigSettings.DefaultFilename, optional: true, reloadOnChange: false);
 
                 configuration = builder.Build();

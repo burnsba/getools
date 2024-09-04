@@ -322,7 +322,7 @@ namespace Gebug64.Win
             var container = JObject.FromObject(new { AppConfigSettings = jobj });
 
             string json = JsonConvert.SerializeObject(container, Newtonsoft.Json.Formatting.Indented);
-            File.WriteAllText(AppConfigSettings.DefaultFilename, json);
+            File.WriteAllText(AppConfigSettings.GetDefaultFilenameFullPath(), json);
         }
 
         /// <summary>
