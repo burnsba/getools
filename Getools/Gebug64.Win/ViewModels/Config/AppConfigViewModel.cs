@@ -42,6 +42,11 @@ namespace Gebug64.Win.ViewModels.Config
         public MapSettingsViewModel Map { get; set; }
 
         /// <summary>
+        /// Memory window settings.
+        /// </summary>
+        public MemorySettingsViewModel Memory { get; set; }
+
+        /// <summary>
         /// UI layout state.
         /// </summary>
         public UiLayoutStateViewModel LayoutState { get; set; }

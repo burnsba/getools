@@ -1,0 +1,93 @@
+﻿<UserControl x:Class="Gebug64.Win.Windows.Mdi.MemoryControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Gebug64.Win.Controls"
+             mc:Ignorable="d" 
+             xmlns:converters="clr-namespace:Gebug64.Win.Converters"
+             xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:MemoryWindowViewModel}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <StackPanel Orientation="Horizontal" Grid.Row="0" MinHeight="54" >
+                <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Map build file:</TextBlock>
+                <TextBox Height="32" MinWidth="200" MaxWidth="400" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding MapBuildFile}"></TextBox>
+                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto"  Command="{Binding SetMapBuildFileCommand}">...</Button>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Grid.Row="1" MinHeight="54" >
+                <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Source:</TextBlock>
+                <TextBox Height="32" MinWidth="200" MaxWidth="400" VerticalAlignment="Center" VerticalContentAlignment="Center">0x80041234</TextBox>
+                <TextBlock MinWidth="60"></TextBlock>
+                <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Size</TextBlock>
+                <TextBox Height="32" MinWidth="100" MaxWidth="100" VerticalAlignment="Center" VerticalContentAlignment="Center">1</TextBox>
+                <TextBlock MinWidth="60"></TextBlock>
+                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto">Add watch</Button>
+            </StackPanel>
+        </Grid>
+        
+        <Grid Grid.Row="1">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ListBox
+                Grid.Row="0" Margin="2"
+                ItemsSource="{Binding QueryTasks}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                >
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+
+                        <StackPanel Orientation="Horizontal">
+                            <!-- address / name source -->
+                            <TextBox>0x80041234</TextBox>
+
+                            <!-- data type -->
+                            <ComboBox>
+                                <ComboBoxItem IsSelected="True">s8</ComboBoxItem>
+                                <ComboBoxItem>u8</ComboBoxItem>
+                                <ComboBoxItem>s16</ComboBoxItem>
+                                <ComboBoxItem>u16</ComboBoxItem>
+                                <ComboBoxItem>s32</ComboBoxItem>
+                                <ComboBoxItem>u32</ComboBoxItem>
+                                <ComboBoxItem>f32</ComboBoxItem>
+                            </ComboBox>
+
+                            <!-- display format -->
+                            <ComboBox>
+                                <ComboBoxItem IsSelected="True">dec</ComboBoxItem>
+                                <ComboBoxItem>hex</ComboBoxItem>
+                                <ComboBoxItem>f 0.00</ComboBoxItem>
+                                <ComboBoxItem>f 0.0000</ComboBoxItem>
+                                <ComboBoxItem>f 0.x</ComboBoxItem>
+                            </ComboBox>
+
+                            <!-- formatted data value -->
+                            <TextBox>3</TextBox>
+                            
+                            <Button>Remove</Button>
+                        </StackPanel>
+                        
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+        </Grid>
+    </Grid>
+</UserControl>

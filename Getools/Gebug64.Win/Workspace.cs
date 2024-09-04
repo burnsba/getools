@@ -437,5 +437,66 @@ namespace Gebug64.Win
                 }
             }
         }
+
+        /// <summary>
+        /// Helper method to set a property on an object from a file picker dialog.
+        /// </summary>
+        /// <param name="instance">Object containing property.</param>
+        /// <param name="propertyName">Name of property to set. Also reads this for the starting value.</param>
+        /// <param name="getDefaultValue">If property isn't set, method to get default value.</param>
+        public void SetFileCommandHandler(object instance, string propertyName, Func<string> getDefaultValue)
+        {
+            // TODO: Use the new folder open dialog in .net 8.
+            CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
+
+            if (object.ReferenceEquals(null, instance))
+            {
+                return;
+            }
+
+            var pi = instance.GetType().GetProperty(propertyName);
+            if (object.ReferenceEquals(null, pi))
+            {
+                return;
+            }
+
+            string startDir = (string?)pi.GetValue(instance) ?? string.Empty;
+
+            if (System.IO.File.Exists(startDir))
+            {
+                startDir = System.IO.Path.GetDirectoryName(startDir)!;
+            }
+
+            if (string.IsNullOrEmpty(startDir) || !System.IO.Directory.Exists(startDir))
+            {
+                if (getDefaultValue != null)
+                {
+                    startDir = getDefaultValue();
+
+                    if (System.IO.File.Exists(startDir))
+                    {
+                        startDir = System.IO.Path.GetDirectoryName(startDir)!;
+                    }
+                }
+            }
+
+            dialog.InitialDirectory = startDir;
+            dialog.IsFolderPicker = false;
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok && !string.IsNullOrEmpty(dialog.FileName))
+            {
+                string file = dialog.FileName!;
+
+                if (System.IO.File.Exists(file))
+                {
+                    pi.SetValue(instance, file);
+                }
+            }
+        }
     }
 }

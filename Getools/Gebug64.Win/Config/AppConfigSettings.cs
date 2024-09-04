@@ -54,6 +54,11 @@ namespace Gebug64.Win.Config
                 Map = new();
             }
 
+            if (Memory == null)
+            {
+                Memory = new();
+            }
+
             if (LayoutState == null)
             {
                 LayoutState = new();
@@ -92,6 +97,11 @@ namespace Gebug64.Win.Config
                 Map = new();
             }
 
+            if (Memory == null)
+            {
+                Memory = new();
+            }
+
             if (LayoutState == null)
             {
                 LayoutState = new();
@@ -124,6 +134,11 @@ namespace Gebug64.Win.Config
         /// Map settings.
         /// </summary>
         public MapSettings Map { get; set; }
+
+        /// <summary>
+        /// Memory window settings.
+        /// </summary>
+        public MemorySettings Memory { get; set; }
 
         /// <summary>
         /// Current user interface layout.

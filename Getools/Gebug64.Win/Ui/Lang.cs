@@ -38,6 +38,11 @@ namespace Gebug64.Win.Ui
         public const string Window_QueryTaskTitle = "Query Tasks";
 
         /// <summary>
+        /// MDI Child "Memory" window title.
+        /// </summary>
+        public const string Window_MemoryTitle = "Memory";
+
+        /// <summary>
         /// Gets the default window title per the given type.
         /// </summary>
         /// <param name="windowType">Type of window or control.</param>
@@ -60,6 +65,10 @@ namespace Gebug64.Win.Ui
             else if (windowType == typeof(QueryTasksControl))
             {
                 return Window_QueryTaskTitle;
+            }
+            else if (windowType == typeof(MemoryControl))
+            {
+                return Window_MemoryTitle;
             }
 
             throw new NotSupportedException();

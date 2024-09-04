@@ -152,11 +152,13 @@ namespace Gebug64.Win
 
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<MapWindowViewModel>();
+            services.AddSingleton<MemoryWindowViewModel>();
 
             // MdiChild windows
             services.AddTransient<MainControl>();
             services.AddTransient<LogControl>();
             services.AddTransient<QueryTasksControl>();
+            services.AddTransient<MemoryControl>();
             services.AddTransient<MapControl>();
 
             // Parent MDI object

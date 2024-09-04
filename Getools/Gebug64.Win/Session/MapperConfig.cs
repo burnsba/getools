@@ -25,6 +25,7 @@ namespace Gebug64.Win.Session
             mce.CreateMap<ConnectionSectionSettings, ConnectionSectionViewModel>();
             mce.CreateMap<AppConfigSettings, AppConfigViewModel>();
             mce.CreateMap<MapSettings, MapSettingsViewModel>();
+            mce.CreateMap<MemorySettings, MemorySettingsViewModel>();
             mce.CreateMap<UiLayoutState, UiLayoutStateViewModel>();
 
             mce.CreateMap<RecentPathSectionViewModel, RecentPathSection>();
@@ -32,6 +33,7 @@ namespace Gebug64.Win.Session
             mce.CreateMap<ConnectionSectionViewModel, ConnectionSectionSettings>();
             mce.CreateMap<AppConfigViewModel, AppConfigSettings>();
             mce.CreateMap<MapSettingsViewModel, MapSettings>();
+            mce.CreateMap<MemorySettingsViewModel, MemorySettings>();
             mce.CreateMap<UiLayoutStateViewModel, UiLayoutState>();
         }
     }

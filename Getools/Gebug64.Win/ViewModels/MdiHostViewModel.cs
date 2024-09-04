@@ -124,6 +124,12 @@ namespace Gebug64.Win.ViewModels
             mivm.Command = new CommandHandler(dddd, () => true);
 
             MenuShowWindow.Add(mivm);
+
+            t = typeof(MemoryControl);
+            mivm = new MenuItemViewModel() { Header = Gebug64.Win.Ui.Lang.GetDefaultWindowTitle(t), Value = t };
+            mivm.Command = new CommandHandler(dddd, () => true);
+
+            MenuShowWindow.Add(mivm);
         }
 
         private void InvokeFocusCallback(MenuItemViewModel mivm)
