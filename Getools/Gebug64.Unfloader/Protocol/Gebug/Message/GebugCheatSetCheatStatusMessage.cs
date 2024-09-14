@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugCheatSetCheatStatusMessage"/> class.
         /// </summary>
         public GebugCheatSetCheatStatusMessage()
-          : base(GebugMessageCategory.Cheat)
+          : base()
         {
-            Command = (int)GebugCmdCheat.SetCheatStatus;
         }
 
         /// <summary>

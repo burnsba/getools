@@ -22,9 +22,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugChrGhostHpMessage"/> class.
         /// </summary>
         public GebugChrGhostHpMessage()
-          : base(GebugMessageCategory.Chr)
+          : base()
         {
-            Command = (int)GebugCmdChr.GhostHp;
         }
 
         /// <summary>

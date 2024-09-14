@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugMiscOsTimeMessage"/> class.
         /// </summary>
         public GebugMiscOsTimeMessage()
-          : base(GebugMessageCategory.Misc)
+          : base()
         {
-            Command = (int)GebugCmdMisc.OsTime;
         }
 
         /// <summary>

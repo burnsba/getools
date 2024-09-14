@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugStageNotifyLevelLoaded"/> class.
         /// </summary>
         public GebugStageNotifyLevelLoaded()
-          : base(GebugMessageCategory.Stage)
+          : base()
         {
-            Command = (int)GebugCmdStage.NotifyLevelLoaded;
         }
 
         /// <summary>

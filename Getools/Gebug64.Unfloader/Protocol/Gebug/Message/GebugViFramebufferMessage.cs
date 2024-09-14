@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugViFramebufferMessage"/> class.
         /// </summary>
         public GebugViFramebufferMessage()
-          : base(GebugMessageCategory.Vi)
+          : base()
         {
-            Command = (int)GebugCmdVi.GrabFramebuffer;
         }
 
         /// <summary>

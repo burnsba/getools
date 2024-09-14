@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugMiscOsGetMemSizeMessage"/> class.
         /// </summary>
         public GebugMiscOsGetMemSizeMessage()
-          : base(GebugMessageCategory.Misc)
+          : base()
         {
-            Command = (int)GebugCmdMisc.OsMemSize;
         }
 
         /// <summary>

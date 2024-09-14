@@ -23,9 +23,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugChrSendAllGuardInfoMessage"/> class.
         /// </summary>
         public GebugChrSendAllGuardInfoMessage()
-          : base(GebugMessageCategory.Chr)
+          : base()
         {
-            Command = (int)GebugCmdChr.SendAllGuardInfo;
         }
 
         /// <summary>

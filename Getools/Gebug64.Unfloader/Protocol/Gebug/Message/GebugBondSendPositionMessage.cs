@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugBondSendPositionMessage"/> class.
         /// </summary>
         public GebugBondSendPositionMessage()
-          : base(GebugMessageCategory.Bond)
+          : base()
         {
-            Command = (int)GebugCmdBond.SendPosition;
         }
 
         /// <summary>

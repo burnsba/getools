@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugViSetViewSizeMessage"/> class.
         /// </summary>
         public GebugViSetViewSizeMessage()
-          : base(GebugMessageCategory.Vi)
+          : base()
         {
-            Command = (int)GebugCmdVi.SetViewSize;
         }
 
         /// <summary>

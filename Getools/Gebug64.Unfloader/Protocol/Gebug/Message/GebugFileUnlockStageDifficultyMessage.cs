@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugFileUnlockStageDifficultyMessage"/> class.
         /// </summary>
         public GebugFileUnlockStageDifficultyMessage()
-          : base(GebugMessageCategory.File)
+          : base()
         {
-            Command = (int)GebugCmdFile.UnlockStageDifficulty;
         }
 
         /// <summary>

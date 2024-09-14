@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugMetaVersionMessage"/> class.
         /// </summary>
         public GebugMetaVersionMessage()
-          : base(GebugMessageCategory.Meta)
+          : base()
         {
-            Command = (int)GebugCmdMeta.Version;
         }
 
         /// <summary>

@@ -22,9 +22,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugChrNotifyChrSpawn"/> class.
         /// </summary>
         public GebugChrNotifyChrSpawn()
-          : base(GebugMessageCategory.Chr)
+          : base()
         {
-            Command = (int)GebugCmdChr.NotifyChrSpawn;
         }
 
         /// <summary>

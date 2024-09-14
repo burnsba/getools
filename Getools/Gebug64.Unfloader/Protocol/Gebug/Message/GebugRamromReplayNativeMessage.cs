@@ -19,9 +19,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugRamromReplayNativeMessage"/> class.
         /// </summary>
         public GebugRamromReplayNativeMessage()
-          : base(GebugMessageCategory.Ramrom)
+          : base()
         {
-            Command = (int)GebugCmdRamrom.ReplayNativeDemo;
         }
 
         /// <summary>

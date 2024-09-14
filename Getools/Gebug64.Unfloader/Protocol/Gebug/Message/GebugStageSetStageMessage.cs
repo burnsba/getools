@@ -18,9 +18,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugStageSetStageMessage"/> class.
         /// </summary>
         public GebugStageSetStageMessage()
-          : base(GebugMessageCategory.Stage)
+          : base()
         {
-            Command = (int)GebugCmdStage.SetStage;
         }
 
         /// <summary>

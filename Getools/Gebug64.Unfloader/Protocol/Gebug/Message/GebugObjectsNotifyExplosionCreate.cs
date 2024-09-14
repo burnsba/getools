@@ -22,9 +22,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
         /// Initializes a new instance of the <see cref="GebugObjectsNotifyExplosionCreate"/> class.
         /// </summary>
         public GebugObjectsNotifyExplosionCreate()
-          : base(GebugMessageCategory.Objects)
+          : base()
         {
-            Command = (int)GebugCmdObjects.NotifyExplosionCreate;
         }
 
         /// <summary>
