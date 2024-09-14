@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -39,6 +40,26 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         protected GebugMessage(GebugMessageCategory category)
         {
             Category = category;
+
+            MessageId = GebugPacket.GetRandomMessageId();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GebugMessage"/> class.
+        /// </summary>
+        protected GebugMessage()
+        {
+            var customAttributes = (ProtocolCommand[])this.GetType().GetCustomAttributes(typeof(ProtocolCommand), true);
+
+            if (!customAttributes.Any())
+            {
+                throw new InvalidOperationException();
+            }
+
+            var attr = customAttributes[0];
+
+            Category = attr.Category;
+            Command = attr.Command;
 
             MessageId = GebugPacket.GetRandomMessageId();
         }
@@ -248,9 +269,9 @@ namespace Gebug64.Unfloader.Protocol.Gebug
 
                 foreach (var type in types)
                 {
-                    if (Attribute.IsDefined(type, typeof(ProtocolCommandAttribute)))
+                    if (Attribute.IsDefined(type, typeof(ProtocolCommand)))
                     {
-                        var customAttributes = (ProtocolCommandAttribute[])type.GetCustomAttributes(typeof(ProtocolCommandAttribute), true);
+                        var customAttributes = (ProtocolCommand[])type.GetCustomAttributes(typeof(ProtocolCommand), true);
                         if (customAttributes.Length > 0)
                         {
                             var attr = customAttributes[0];
@@ -304,102 +325,76 @@ namespace Gebug64.Unfloader.Protocol.Gebug
                 }
             }
 
-            // sanity check
-            if (firstPacket.NumberParameters != numberConsoleParameters)
-            {
-                throw new InvalidOperationException($"Error setting properties for message. Expected {numberConsoleParameters} parameters, but message contains {firstPacket.NumberParameters} parameters.");
-            }
+            bool verifyParameterCount = true;
 
             // Iterate the incoming properties and set the values according to the
             // info defined in the property attribute.
             int bodyOffset = 0;
             foreach (var pa in propAttributes.OrderBy(x => x.Attribute.ParameterIndex))
             {
-                if (pa.Attribute.IsVariableSize == false)
+                if (pa.Attribute.IsVariableSize == false && pa.Attribute.IsVariableSizeList == true)
                 {
-                    if (pa.Attribute.Size == 1)
+                    verifyParameterCount = false;
+
+                    var type = pa.Property.PropertyType;
+
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
                     {
-                        byte val = fullBody[bodyOffset++];
-                        pa.Property.SetValue(instance, val);
-                    }
-                    else if (pa.Attribute.Size == 2)
-                    {
-                        if (pa.Property.PropertyType == typeof(short))
+                        Type itemType = type.GetGenericArguments()[0];
+
+                        var listType = typeof(List<>);
+                        var constructedListType = listType.MakeGenericType(itemType);
+
+                        IList propertyListInstance = (IList)Activator.CreateInstance(constructedListType)!;
+
+                        var itemTypePropAttributes = new List<PropAttribute>();
+
+                        var itemTypeProps = itemType.GetProperties().Where(prop => Attribute.IsDefined(prop, typeof(GebugParameter)));
+                        foreach (var prop in itemTypeProps)
                         {
-                            short val16 = (short)BitUtility.Read16Big(fullBody, bodyOffset);
-                            bodyOffset += 2;
-                            pa.Property.SetValue(instance, val16);
+                            var customAttributes = (GebugParameter[])prop.GetCustomAttributes(typeof(GebugParameter), true);
+                            if (customAttributes.Length > 0)
+                            {
+                                var attr = customAttributes[0];
+
+                                // Filter to only incoming properties.
+                                if (attr.UseDirection == ParameterUseDirection.ConsoleToPc
+                                    || attr.UseDirection == ParameterUseDirection.Both)
+                                {
+                                    itemTypePropAttributes.Add(new PropAttribute(prop, attr));
+                                }
+                            }
                         }
-                        else
+
+                        int max = instance.GetVariableSizeListCount();
+
+                        for (int i = 0; i < max; i++)
                         {
-                            ushort val16 = (ushort)BitUtility.Read16Big(fullBody, bodyOffset);
-                            bodyOffset += 2;
-                            pa.Property.SetValue(instance, val16);
+                            var subInstance = Activator.CreateInstance(itemType);
+
+                            foreach (var itempa in itemTypePropAttributes.OrderBy(x => x.Attribute.ParameterIndex))
+                            {
+                                ReadSetPropAttribute(subInstance!, fullBody, itempa, ref bodyOffset);
+                            }
+
+                            propertyListInstance.Add(subInstance);
                         }
-                    }
-                    else if (pa.Attribute.Size == 4)
-                    {
-                        if (pa.Property.PropertyType == typeof(int))
-                        {
-                            int val32 = (int)BitUtility.Read32Big(fullBody, bodyOffset);
-                            bodyOffset += 4;
-                            pa.Property.SetValue(instance, val32);
-                        }
-                        else if (pa.Property.PropertyType == typeof(float))
-                        {
-                            Single val32 = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
-                            bodyOffset += 4;
-                            pa.Property.SetValue(instance, val32);
-                        }
-                        else
-                        {
-                            uint val32 = (uint)BitUtility.Read32Big(fullBody, bodyOffset);
-                            bodyOffset += 4;
-                            pa.Property.SetValue(instance, val32);
-                        }
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Error setting property \"{pa.Property.Name}\" value. Size not supported: {pa.Attribute.Size}");
+
+                        pa.Property.SetValue(instance, propertyListInstance);
                     }
                 }
                 else
                 {
-                    byte escape = fullBody[bodyOffset++];
-                    int parameterLength = 0;
+                    ReadSetPropAttribute(instance, fullBody, pa, ref bodyOffset);
+                }
+            }
 
-                    if (escape == 0xff)
-                    {
-                        parameterLength = fullBody[bodyOffset];
-                        bodyOffset += 1;
-                    }
-                    else if (escape == 0xfe)
-                    {
-                        parameterLength = BitUtility.Read16Big(fullBody, bodyOffset);
-                        bodyOffset += 2;
-                    }
-                    else if (escape == 0xfd)
-                    {
-                        parameterLength = BitUtility.Read32Big(fullBody, bodyOffset);
-                        bodyOffset += 4;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"Error setting property \"{pa.Property.Name}\" value. Received length prefix escape value of 0x{escape:x2}");
-                    }
-
-                    if (pa.Property.PropertyType == typeof(byte[]))
-                    {
-                        var parameterValue = new byte[parameterLength];
-                        Array.Copy(fullBody, bodyOffset, parameterValue, 0, parameterLength);
-                        bodyOffset += parameterLength;
-
-                        pa.Property.SetValue(instance, parameterValue);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"Error setting property \"{pa.Property.Name}\" value. Expected typeof(byte[]) but type is \"{pa.Property.PropertyType.Name}\"");
-                    }
+            if (verifyParameterCount)
+            {
+                // sanity check
+                if (firstPacket.NumberParameters != numberConsoleParameters)
+                {
+                    throw new InvalidOperationException($"Error setting properties for message. Expected {numberConsoleParameters} parameters, but message contains {firstPacket.NumberParameters} parameters.");
                 }
             }
         }
@@ -560,6 +555,117 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         public override string ToString()
         {
             return $"{Category} {DebugCommand}";
+        }
+
+        /// <summary>
+        /// When parsing a <see cref="GebugParameter.IsVariableSizeList"/> parameter, this method
+        /// will resolve the number of elements in the list.
+        /// </summary>
+        /// <returns>Returns zero by default.</returns>
+        public virtual int GetVariableSizeListCount()
+        {
+            return 0;
+        }
+
+        /// <summary>
+        /// Helper method.
+        /// Reads value from byte array and sets property to value.
+        /// </summary>
+        /// <param name="propertyOwner">Object instance that contains the property.</param>
+        /// <param name="fullBody">Byte array that will be read.</param>
+        /// <param name="pa">Descriptiong of property.</param>
+        /// <param name="bodyOffset">Starts at current byte offset into <paramref name="fullBody"/> that
+        /// will be read. Gets updated to the next byte-to-read.</param>
+        /// <exception cref="NotSupportedException">Errors on not supported variable sized array prefix, or not supported size.</exception>
+        private static void ReadSetPropAttribute(object propertyOwner, byte[] fullBody, PropAttribute pa, ref int bodyOffset)
+        {
+            if (pa.Attribute.IsVariableSize == true)
+            {
+                byte escape = fullBody[bodyOffset++];
+                int parameterLength = 0;
+
+                if (escape == 0xff)
+                {
+                    parameterLength = fullBody[bodyOffset];
+                    bodyOffset += 1;
+                }
+                else if (escape == 0xfe)
+                {
+                    parameterLength = BitUtility.Read16Big(fullBody, bodyOffset);
+                    bodyOffset += 2;
+                }
+                else if (escape == 0xfd)
+                {
+                    parameterLength = BitUtility.Read32Big(fullBody, bodyOffset);
+                    bodyOffset += 4;
+                }
+                else
+                {
+                    throw new NotSupportedException($"Error setting property \"{pa.Property.Name}\" value. Received length prefix escape value of 0x{escape:x2}");
+                }
+
+                if (pa.Property.PropertyType == typeof(byte[]))
+                {
+                    var parameterValue = new byte[parameterLength];
+                    Array.Copy(fullBody, bodyOffset, parameterValue, 0, parameterLength);
+                    bodyOffset += parameterLength;
+
+                    pa.Property.SetValue(propertyOwner, parameterValue);
+                }
+                else
+                {
+                    throw new NotSupportedException($"Error setting property \"{pa.Property.Name}\" value. Expected typeof(byte[]) but type is \"{pa.Property.PropertyType.Name}\"");
+                }
+            }
+            else
+            {
+                // else assume a regular parameter
+                if (pa.Attribute.Size == 1)
+                {
+                    byte val = fullBody[bodyOffset++];
+                    pa.Property.SetValue(propertyOwner, val);
+                }
+                else if (pa.Attribute.Size == 2)
+                {
+                    if (pa.Property.PropertyType == typeof(short))
+                    {
+                        short val16 = (short)BitUtility.Read16Big(fullBody, bodyOffset);
+                        bodyOffset += 2;
+                        pa.Property.SetValue(propertyOwner, val16);
+                    }
+                    else
+                    {
+                        ushort val16 = (ushort)BitUtility.Read16Big(fullBody, bodyOffset);
+                        bodyOffset += 2;
+                        pa.Property.SetValue(propertyOwner, val16);
+                    }
+                }
+                else if (pa.Attribute.Size == 4)
+                {
+                    if (pa.Property.PropertyType == typeof(int))
+                    {
+                        int val32 = (int)BitUtility.Read32Big(fullBody, bodyOffset);
+                        bodyOffset += 4;
+                        pa.Property.SetValue(propertyOwner, val32);
+                    }
+                    else if (pa.Property.PropertyType == typeof(float))
+                    {
+                        Single val32 = BitUtility.CastToFloat((int)BitUtility.Read32Big(fullBody, bodyOffset));
+                        bodyOffset += 4;
+                        pa.Property.SetValue(propertyOwner, val32);
+                    }
+                    else
+                    {
+                        uint val32 = (uint)BitUtility.Read32Big(fullBody, bodyOffset);
+                        bodyOffset += 4;
+                        pa.Property.SetValue(propertyOwner, val32);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException($"Error setting property \"{pa.Property.Name}\" value. Size not supported: {pa.Attribute.Size}");
+                }
+            }
         }
 
         /// <summary>

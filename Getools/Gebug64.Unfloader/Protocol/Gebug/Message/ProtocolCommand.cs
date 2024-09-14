@@ -13,7 +13,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
     /// <remarks>
     /// Message also required <see cref="IActivatorGebugMessage"/>.
     /// </remarks>
-    internal class ProtocolCommandAttribute : Attribute
+    internal class ProtocolCommand : Attribute
     {
         /// <summary>
         /// Message category.

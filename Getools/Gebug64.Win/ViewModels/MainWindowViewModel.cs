@@ -280,6 +280,7 @@ namespace Gebug64.Win.ViewModels
             // TODO: move to UI
             _excludeLogFilter.Add(new MessageCategoryCommand(GebugMessageCategory.Bond, GebugCmdBond.SendPosition));
             _excludeLogFilter.Add(new MessageCategoryCommand(GebugMessageCategory.Chr, GebugCmdChr.SendAllGuardInfo));
+            _excludeLogFilter.Add(new MessageCategoryCommand(GebugMessageCategory.Memory, GebugCmdMemory.WatchBulkRead));
         }
 
         /// <summary>

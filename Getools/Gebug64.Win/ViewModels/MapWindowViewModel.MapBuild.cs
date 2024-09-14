@@ -320,6 +320,11 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private void RemoveRuntimeItems()
         {
+            if (object.ReferenceEquals(null, _guardLayer))
+            {
+                return;
+            }
+
             _guardLayer!.DispatchRemoveAll(_dispatcher);
         }
 

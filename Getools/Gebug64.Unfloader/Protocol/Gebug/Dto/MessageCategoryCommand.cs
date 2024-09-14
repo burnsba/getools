@@ -39,6 +39,17 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
         /// </summary>
         /// <param name="category">Category.</param>
         /// <param name="command">Command.</param>
+        public MessageCategoryCommand(GebugMessageCategory category, GebugCmdMemory command)
+        {
+            Category = category;
+            Command = (int)command;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessageCategoryCommand"/> class.
+        /// </summary>
+        /// <param name="category">Category.</param>
+        /// <param name="command">Command.</param>
         public MessageCategoryCommand(GebugMessageCategory category, GebugCmdDebug command)
         {
             Category = category;

@@ -24,6 +24,9 @@ namespace Gebug64.Win.Config
         /// </summary>
         public const string DefaultFilename = "appsettings.json";
 
+        /// <summary>
+        /// Windows local %appdata% folder to store settings in.
+        /// </summary>
         public const string AppDataLocalDirectoryName = "getools";
 
         /// <summary>
@@ -156,6 +159,9 @@ namespace Gebug64.Win.Config
             return new AppConfigSettings();
         }
 
+        /// <summary>
+        /// Checks that the default settings directory exists, and creates it if not found.
+        /// </summary>
         public static void EnsureDefaultDirectory()
         {
             string dir = GetDefaultDirectory();
@@ -166,6 +172,10 @@ namespace Gebug64.Win.Config
             }
         }
 
+        /// <summary>
+        /// Gets the directory to the default settings path.
+        /// </summary>
+        /// <returns>Path.</returns>
         public static string GetDefaultDirectory()
         {
             string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataLocalDirectoryName);
@@ -173,6 +183,10 @@ namespace Gebug64.Win.Config
             return dir;
         }
 
+        /// <summary>
+        /// Gets the filename in combination with <see cref="GetDefaultDirectory"/>.
+        /// </summary>
+        /// <returns>Path.</returns>
         public static string GetDefaultFilenameFullPath()
         {
             string path = System.IO.Path.Combine(GetDefaultDirectory(), DefaultFilename);

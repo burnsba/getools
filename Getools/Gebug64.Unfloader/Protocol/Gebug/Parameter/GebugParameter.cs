@@ -29,6 +29,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Parameter
         public bool IsVariableSize { get; set; } = false;
 
         /// <summary>
+        /// Parameter is a list of variables, and all of variable length.
+        /// </summary>
+        public bool IsVariableSizeList { get; set; } = false;
+
+        /// <summary>
         /// Direction parameter should be used in.
         /// </summary>
         public ParameterUseDirection UseDirection { get; set; } = ParameterUseDirection.Never;

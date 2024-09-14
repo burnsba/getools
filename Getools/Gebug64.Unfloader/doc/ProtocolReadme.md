@@ -262,6 +262,67 @@ Disables all runtime cheats. This is a meta method, added to the rom to disable 
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  N/A          | N/A           |  N/A         | N/A           | N/A           |
 
+## `Memory` Category
+
+The `Memory` category is for reading / writing arbitrary memory locations.
+
+`Memory` commands are as follows
+
+```
+public enum GebugCmdMemory
+{
+    DefaultUnknown = 0,
+
+    AddWatch = 14,
+    WatchBulkRead = 15,
+    RemoveWatch = 16,
+}
+```
+
+### `Memory AddWatch` Command
+
+Sends a message to console to start watching a memory address. Console has a limited number of memory watch slots available.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Id            |  1           | `PcToConsole` | Unique id among all active memory watches. (Manage on pc side). |
+|  2            | Size          |  1           | `PcToConsole` | Number of bytes to read from memory address. |
+|  3            | Unused        |  2           | `PcToConsole` | Unused padding. |
+|  4            | Address       |  4           | `PcToConsole` | Memory address between 0x80024470 and 0x80400000 inclusive. |
+
+### `Memory WatchBulkRead` Command
+
+Console sends current memory watch read values.
+
+Parameter `WatchResults` contains a list of `GebugMesgMemoryWatchItem`. 
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Count         |  1           | `ConsoleToPc` | Number of items in WatchResults parameter. |
+|  2            | WatchResults  |  *           | `ConsoleToPc` | List of memory watch read values. The number of items is given by the `Count` parameter, but the size is not known before processing the entire list. See below. |
+
+`GebugMesgMemoryWatchItem` definition:
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Id            |  1           | `ConsoleToPc` | Memory watch id. |
+|  2            | Data          |  variable    | `ConsoleToPc` | Variable length byte array. No matter the size, memory watch read value is packed into a variable length parameter. |
+
+### `Memory RemoveWatch` Command
+
+Sends a message to console to remove memory watch.
+
+**Reply**: No.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Id            |  1           | `PcToConsole` | Unique id of memory watch to remove. |
+
+
 ## `Stage` Category
 
 The `Stage` category is for changing or loading the current stage.

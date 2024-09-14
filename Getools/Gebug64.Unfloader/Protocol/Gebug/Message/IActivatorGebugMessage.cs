@@ -11,7 +11,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message
     /// instantiated by the activator.
     /// </summary>
     /// <remarks>
-    /// Message also required <see cref="ProtocolCommandAttribute"/>.
+    /// Message also required <see cref="ProtocolCommand"/>.
     /// </remarks>
     internal interface IActivatorGebugMessage
     {

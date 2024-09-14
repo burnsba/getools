@@ -3,12 +3,23 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:cv="clr-namespace:Gebug64.Win.Converters"
              xmlns:local="clr-namespace:Gebug64.Win.Controls"
+             xmlns:windows="clr-namespace:Gebug64.Win.Windows"
+             xmlns:mdicv="clr-namespace:Gebug64.Win.Windows.Mdi"
              mc:Ignorable="d" 
              xmlns:converters="clr-namespace:Gebug64.Win.Converters"
              xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
              d:DataContext="{d:DesignInstance Type=viewmodels:MemoryWindowViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <cv:MemoryDataTypeToStringConverter x:Key="MemoryDataTypeToString"></cv:MemoryDataTypeToStringConverter>
+            <cv:MemoryDisplayFormatToStringConverter x:Key="MemoryDisplayFormatToString"></cv:MemoryDisplayFormatToStringConverter>
+        </ResourceDictionary> 
+    </UserControl.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -24,29 +35,34 @@
             <StackPanel Orientation="Horizontal" Grid.Row="0" MinHeight="54" >
                 <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Map build file:</TextBlock>
                 <TextBox Height="32" MinWidth="200" MaxWidth="400" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding MapBuildFile}"></TextBox>
-                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto"  Command="{Binding SetMapBuildFileCommand}">...</Button>
+                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto" Command="{Binding SetMapBuildFileCommand}">...</Button>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Grid.Row="1" MinHeight="54" >
+            <StackPanel Grid.Row="1" Orientation="Horizontal" MinHeight="54" >
                 <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Source:</TextBlock>
-                <TextBox Height="32" MinWidth="200" MaxWidth="400" VerticalAlignment="Center" VerticalContentAlignment="Center">0x80041234</TextBox>
+                <TextBox Height="32" MinWidth="200" MaxWidth="400" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding AddWatchSourceText}"></TextBox>
                 <TextBlock MinWidth="60"></TextBlock>
                 <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Size</TextBlock>
-                <TextBox Height="32" MinWidth="100" MaxWidth="100" VerticalAlignment="Center" VerticalContentAlignment="Center">1</TextBox>
+                <TextBox Height="32" MinWidth="100" MaxWidth="100" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding AddWatchSizeText}"></TextBox>
                 <TextBlock MinWidth="60"></TextBlock>
-                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto">Add watch</Button>
+                <Button Style="{DynamicResource RoundButton}" Height="32" Width="Auto" Command="{Binding Path=AddWatchCommand}">Add watch</Button>
             </StackPanel>
+            
         </Grid>
         
         <Grid Grid.Row="1">
 
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition />
             </Grid.RowDefinitions>
 
+            <Border
+                BorderBrush="LightGray"
+                BorderThickness="1">
+            <ScrollViewer>
             <ListBox
                 Grid.Row="0" Margin="2"
-                ItemsSource="{Binding QueryTasks}"
+                ItemsSource="{Binding ActiveMemoryWatches}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -54,40 +70,68 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
 
-                        <StackPanel Orientation="Horizontal">
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
                             <!-- address / name source -->
-                            <TextBox>0x80041234</TextBox>
+                                    <TextBox Grid.Column="0" Height="32" MinWidth="200" MaxWidth="400" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding FriendlyAddress, Mode=OneWay}"></TextBox>
 
                             <!-- data type -->
-                            <ComboBox>
-                                <ComboBoxItem IsSelected="True">s8</ComboBoxItem>
-                                <ComboBoxItem>u8</ComboBoxItem>
-                                <ComboBoxItem>s16</ComboBoxItem>
-                                <ComboBoxItem>u16</ComboBoxItem>
-                                <ComboBoxItem>s32</ComboBoxItem>
-                                <ComboBoxItem>u32</ComboBoxItem>
-                                <ComboBoxItem>f32</ComboBoxItem>
+                            <ComboBox
+                                Grid.Column="2"
+                                ItemsSource="{Binding AvailableDataType}"
+                                SelectedItem="{Binding DataType}"
+                                MinWidth="100"
+                                Height="32"
+                                VerticalAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                >
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource MemoryDataTypeToString}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
                             </ComboBox>
 
                             <!-- display format -->
-                            <ComboBox>
-                                <ComboBoxItem IsSelected="True">dec</ComboBoxItem>
-                                <ComboBoxItem>hex</ComboBoxItem>
-                                <ComboBoxItem>f 0.00</ComboBoxItem>
-                                <ComboBoxItem>f 0.0000</ComboBoxItem>
-                                <ComboBoxItem>f 0.x</ComboBoxItem>
+                            <ComboBox
+                                Grid.Column="4"
+                                ItemsSource="{Binding AvailableDisplayFormat}"
+                                SelectedItem="{Binding DisplayFormat}"
+                                MinWidth="90"
+                                Height="32"
+                                VerticalAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                >
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource MemoryDisplayFormatToString}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
                             </ComboBox>
 
                             <!-- formatted data value -->
-                            <TextBox>3</TextBox>
-                            
-                            <Button>Remove</Button>
-                        </StackPanel>
+                            <TextBox Grid.Column="6" Height="32" MinWidth="200" Width="Auto" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding FriendlyDataValue, Mode=OneWay}"></TextBox>
+
+                            <Button Grid.Column="8" Style="{DynamicResource RoundButton}" Height="32" Width="Auto" Command="{Binding Path=DataContext.RemoveWatchCommand, RelativeSource={RelativeSource AncestorType=mdicv:MemoryControl}}" CommandParameter="{Binding}">Remove</Button>
+                        </Grid>
                         
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-
+            </ScrollViewer>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>
