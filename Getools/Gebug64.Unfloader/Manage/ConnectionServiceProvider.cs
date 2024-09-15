@@ -443,8 +443,16 @@ namespace Gebug64.Unfloader.Manage
                                     if (fragments.Count == packet.TotalNumberPackets)
                                     {
                                         // All packets received, convert to single message.
-                                        var gebugMessage = GebugMessage.FromPackets(fragments, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
-                                        _receiveMessages.Add(gebugMessage);
+                                        try
+                                        {
+                                            var gebugMessage = GebugMessage.FromPackets(fragments, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
+                                            _receiveMessages.Add(gebugMessage);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            _logger.Log(LogLevel.Error, $"Error parsing message {packet.Category} {commandName}");
+                                            _logger.Log(LogLevel.Error, ex.ToString());
+                                        }
 
                                         // And remove all the associated fragments.
                                         foreach (var f in fragments)

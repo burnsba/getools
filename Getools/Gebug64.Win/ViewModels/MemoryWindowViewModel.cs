@@ -12,10 +12,13 @@ using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Gebug;
 using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
+using Gebug64.Win.Converters;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.ViewModels.Game;
 using Gebug64.Win.ViewModels.Map;
+using Getools.Lib.Compiler.Map;
+using Getools.Lib.Game.Asset.Stan;
 using Getools.Lib.Game.EnumModel;
 using Getools.Lib.Game.Enums;
 using Getools.Utility.Logging;
@@ -42,6 +45,10 @@ namespace Gebug64.Win.ViewModels
         private string? _mapBuildFile;
         private string? _addWatchSourceText;
         private string? _addWatchSizeText;
+        private MapDetail _selectedWatchSource = new MapDetail();
+        private string _selectedWatchSourceComboText = string.Empty;
+
+        private MapDetailToStringConverter _mapDetailStringConverter = new MapDetailToStringConverter();
 
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
@@ -74,18 +81,22 @@ namespace Gebug64.Win.ViewModels
             _appConfig = appConfig;
 
             ActiveMemoryWatches = new ObservableCollection<MemoryWatchViewModel>();
+            AvailableMapVariables = new ObservableCollection<MapDetail>();
+            SelectedWatchSource = new MapDetail();
 
             SetMapBuildFileCommand = new CommandHandler(
-                () => Workspace.Instance.SetFileCommandHandler(
-                    this,
-                    nameof(MapBuildFile),
-                    () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!),
+                SetMapBuildFileCommandHandler,
                 () => true);
 
             AddWatchCommand = new CommandHandler(AddWatchCommandHandler, () => CanAddWatch);
             RemoveWatchCommand = new CommandHandler(RemoveWatchCommandHandler, () => true);
 
             _mapBuildFile = _appConfig.Memory.MapBuildFile;
+
+            if (System.IO.File.Exists(_mapBuildFile))
+            {
+                LoadMapVariableNames();
+            }
 
             _ignoreAppSettingsChange = false;
 
@@ -112,24 +123,6 @@ namespace Gebug64.Win.ViewModels
                 _appConfig.Memory.MapBuildFile = value;
 
                 SaveAppSettings();
-            }
-        }
-
-        /// <summary>
-        /// Memory watch source (name / address). Entered by user.
-        /// </summary>
-        public string? AddWatchSourceText
-        {
-            get => _addWatchSourceText;
-            set
-            {
-                if (_addWatchSourceText == value)
-                {
-                    return;
-                }
-
-                _addWatchSourceText = value;
-                OnPropertyChanged(nameof(AddWatchSourceText));
             }
         }
 
@@ -175,6 +168,54 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 return !connectionServiceProvider.IsShutdown;
+            }
+        }
+
+        /// <summary>
+        /// List of available/known variables.
+        /// This should be loaded from the compiler map file.
+        /// </summary>
+        public ObservableCollection<MapDetail> AvailableMapVariables { get; set; }
+
+        /// <summary>
+        /// Currently selected compiler map value.
+        /// If the user entered a memory address that doesn't map to a known variable
+        /// then a new instance will be created.
+        /// Otherwise this is an item from <see cref="AvailableMapVariables"/>.
+        /// </summary>
+        public MapDetail SelectedWatchSource
+        {
+            get => _selectedWatchSource;
+            set
+            {
+                if (_selectedWatchSource == value || object.ReferenceEquals(null, value))
+                {
+                    return;
+                }
+
+                _selectedWatchSource = value;
+                OnPropertyChanged(nameof(SelectedWatchSource));
+            }
+        }
+
+        /// <summary>
+        /// Bound to the text input of the combo box for the user to type/select
+        /// a variable or memory address.
+        /// When this value changes, the method <see cref="TrySetSelectedWatchSourceFromText"/> is called.
+        /// </summary>
+        public string SelectedWatchSourceComboText
+        {
+            get => _selectedWatchSourceComboText;
+            set
+            {
+                if (_selectedWatchSourceComboText == value)
+                {
+                    return;
+                }
+
+                _selectedWatchSourceComboText = value;
+
+                TrySetSelectedWatchSourceFromText();
             }
         }
 
@@ -274,6 +315,53 @@ namespace Gebug64.Win.ViewModels
             _activeMemoryWatchIds.Remove((byte)mwvm.Id);
         }
 
+        /// <summary>
+        /// Helper method to attempt to resolve <see cref="SelectedWatchSourceComboText"/>.
+        /// Checks if this is a selected item from <see cref="AvailableMapVariables"/>; if so, sets <see cref="SelectedWatchSource"/>.
+        /// Otherwise, compares the text to known variable names and known addresses <see cref="AvailableMapVariables"/>
+        /// and sets <see cref="SelectedWatchSource"/>.
+        /// If still can't resolve to a known item, and addresses is within range,
+        /// creates a new item and sets <see cref="SelectedWatchSource"/>.
+        /// Otherwise logs an error message.
+        /// </summary>
+        private void TrySetSelectedWatchSourceFromText()
+        {
+            var mapDetail = (MapDetail)_mapDetailStringConverter.ConvertBack(
+                _selectedWatchSourceComboText,
+                typeof(MapDetail),
+                new object(), // unused
+                System.Globalization.CultureInfo.CurrentCulture);
+
+            var mapDetailFromMap = AvailableMapVariables.FirstOrDefault(x =>
+                x.Address == mapDetail.Address
+                || string.Compare(mapDetail.Name, x.Name, StringComparison.InvariantCultureIgnoreCase) == 0);
+
+            if (!object.ReferenceEquals(null, mapDetailFromMap))
+            {
+                _selectedWatchSource = mapDetailFromMap;
+                OnPropertyChanged(nameof(SelectedWatchSource));
+            }
+            else if (mapDetail.Address > 0)
+            {
+                // Otherwise, create a new entry. Make the friendly name the address.
+                _selectedWatchSource = mapDetail;
+
+                OnPropertyChanged(nameof(SelectedWatchSource));
+            }
+            else
+            {
+                _logger.Log(LogLevel.Information, "Could not resolve memory watch to known variable or parse as address.");
+
+                _selectedWatchSource = new MapDetail()
+                {
+                    Address = 0,
+                    Name = _selectedWatchSourceComboText,
+                };
+
+                OnPropertyChanged(nameof(SelectedWatchSource));
+            }
+        }
+
         private void AddWatchCommandHandler()
         {
             IConnectionServiceProvider? connectionServiceProvider = _connectionServiceResolver.GetDeviceManager();
@@ -283,17 +371,33 @@ namespace Gebug64.Win.ViewModels
                 return;
             }
 
-            int size;
-            int id = GetNextAvailableMemoryWatchId();
-            UInt32 address = ResolveSourceAddres(AddWatchSourceText);
+            MapDetail workingMapDetail = SelectedWatchSource;
 
-            if (!int.TryParse(AddWatchSizeText, out size))
+            if (object.ReferenceEquals(null, workingMapDetail))
             {
+                _logger.Log(LogLevel.Information, "Selected memory watch source not set.");
                 return;
             }
 
-            if (address == 0)
+            int size;
+            int id = GetNextAvailableMemoryWatchId();
+            UInt32 address = workingMapDetail.Address;
+
+            if (!int.TryParse(AddWatchSizeText, out size))
             {
+                _logger.Log(LogLevel.Information, "Invalid memory watch size.");
+                return;
+            }
+
+            if (address == 0 || address < MinValidAddress || address > MaxValidAddress)
+            {
+                _logger.Log(LogLevel.Information, "Memory watch address out of range.");
+                return;
+            }
+
+            if (ActiveMemoryWatches.Any(x => x.MemoryAddress == address && x.Size == size))
+            {
+                _logger.Log(LogLevel.Information, "Memory watch already added for address+size.");
                 return;
             }
 
@@ -301,7 +405,7 @@ namespace Gebug64.Win.ViewModels
             {
                 Id = id,
                 MemoryAddress = address,
-                FriendlyAddress = AddWatchSourceText ?? string.Empty,
+                FriendlyAddress = workingMapDetail.Name,
                 DisplayFormat = Enum.MemoryDisplayFormat.Decimal,
                 Size = size,
             };
@@ -393,6 +497,48 @@ namespace Gebug64.Win.ViewModels
             }
 
             return val;
+        }
+
+        private void SetMapBuildFileCommandHandler()
+        {
+            var startFile = _mapBuildFile;
+
+            Workspace.Instance.SetFileCommandHandler(
+                this,
+                nameof(MapBuildFile),
+                () => System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory)!);
+
+            if (startFile != _mapBuildFile && System.IO.File.Exists(_mapBuildFile))
+            {
+                LoadMapVariableNames();
+            }
+        }
+
+        private void LoadMapVariableNames()
+        {
+            var parser = new IdoMapParser();
+            var parseResults = parser.ParseMapFile(_mapBuildFile!, LoadMapSegmentFilter, LoadMapAddressFilter);
+
+            AvailableMapVariables.Clear();
+            foreach (var p in parseResults)
+            {
+                AvailableMapVariables.Add(p);
+            }
+        }
+
+        private bool LoadMapSegmentFilter(string text)
+        {
+            if (text.Contains("data") || text.Contains("bss"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool LoadMapAddressFilter(UInt32 address)
+        {
+            return address >= MinValidAddress && address <= MaxValidAddress;
         }
     }
 }

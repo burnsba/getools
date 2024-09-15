@@ -17,6 +17,7 @@
         <ResourceDictionary>
             <cv:MemoryDataTypeToStringConverter x:Key="MemoryDataTypeToString"></cv:MemoryDataTypeToStringConverter>
             <cv:MemoryDisplayFormatToStringConverter x:Key="MemoryDisplayFormatToString"></cv:MemoryDisplayFormatToStringConverter>
+            <cv:MapDetailToStringConverter x:Key="MapDetailToString"></cv:MapDetailToStringConverter>
         </ResourceDictionary> 
     </UserControl.Resources>
     
@@ -40,7 +41,22 @@
 
             <StackPanel Grid.Row="1" Orientation="Horizontal" MinHeight="54" >
                 <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Source:</TextBlock>
-                <TextBox Height="32" MinWidth="200" MaxWidth="400" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding AddWatchSourceText}"></TextBox>
+                <ComboBox
+                    ItemsSource="{Binding AvailableMapVariables}"
+                    SelectedItem="{Binding SelectedWatchSource}"
+                    Text="{Binding SelectedWatchSourceComboText, UpdateSourceTrigger=LostFocus}"
+                    IsEditable="True"
+                    MinWidth="200"
+                    Height="32"
+                    VerticalAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    >
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource MapDetailToString}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <TextBlock MinWidth="60"></TextBlock>
                 <TextBlock Padding="6 0 6 0" Height="24" VerticalAlignment="Center">Size</TextBlock>
                 <TextBox Height="32" MinWidth="100" MaxWidth="100" VerticalAlignment="Center" VerticalContentAlignment="Center" Text="{Binding AddWatchSizeText}"></TextBox>
