@@ -41,5 +41,15 @@ namespace Gebug64.Win.Config
         /// Flags to show or hide map layer.
         /// </summary>
         public Dictionary<Enum.UiMapLayer, bool> ShowMapLayer { get; set; }
+
+        /// <summary>
+        /// Whether stage should chnage automatically, or user should manually change the stage.
+        /// </summary>
+        public bool AutoLoadLevel { get; set; }
+
+        /// <summary>
+        /// Whether the map should automatically scroll to Bond's position.
+        /// </summary>
+        public bool FollowBond { get; set; }
     }
 }

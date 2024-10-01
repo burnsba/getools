@@ -40,6 +40,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
+
         <ScrollViewer
             x:Name="MainScrollViewer"
             HorizontalScrollBarVisibility="Visible"

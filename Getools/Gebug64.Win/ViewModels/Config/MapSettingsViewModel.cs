@@ -16,6 +16,8 @@ namespace Gebug64.Win.ViewModels.Config
         private string? _stanBinFolder;
         private string? _bgBinFolder;
         private Dictionary<Enum.UiMapLayer, bool> _showUiLayer = new();
+        private bool _autoLoadLevel;
+        private bool _followBond;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapSettingsViewModel"/> class.
@@ -93,6 +95,42 @@ namespace Gebug64.Win.ViewModels.Config
             set
             {
                 _showUiLayer = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether stage should chnage automatically, or user should manually change the stage.
+        /// </summary>
+        public bool AutoLoadLevel
+        {
+            get => _autoLoadLevel;
+
+            set
+            {
+                _autoLoadLevel = value;
+
+                if (_autoLoadLevel != value)
+                {
+                    IsDirty = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether the map should automatically scroll to Bond's position.
+        /// </summary>
+        public bool FollowBond
+        {
+            get => _followBond;
+
+            set
+            {
+                _followBond = value;
+
+                if (_followBond != value)
+                {
+                    IsDirty = true;
+                }
             }
         }
 

@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Antlr4.Runtime.Misc;
 using AutoMapper.Features;
 using Gebug64.Win.Event;
 using Gebug64.Win.ViewModels.Game;
@@ -87,6 +88,76 @@ namespace Gebug64.Win.Controls
         /// the smallest possible position is (0,0).
         /// </summary>
         public event NotifyMouseMoveGamePositionHandler? NotifyContextMenuGamePosition;
+
+        /// <summary>
+        /// If scaled game coordinate is not in the visible map area, scroll to coord.
+        /// </summary>
+        /// <param name="arg">Position info.</param>
+        public void PanToGameCoord(NotifyBondMoveEventArgs arg)
+        {
+            double rx = (_scrollViewer.ScrollableWidth + _scrollViewer.ActualWidth) / MainContent.RenderSize.Width;
+            double ry = (_scrollViewer.ScrollableHeight + _scrollViewer.ActualHeight) / MainContent.RenderSize.Height;
+
+            double scrollMapWidth = _scrollViewer.ActualWidth / rx;
+            double scrollMapHeight = _scrollViewer.ActualHeight / ry;
+
+            var mapWindowLeft = _scrollViewer.HorizontalOffset / rx;
+            var mapWindowTop = _scrollViewer.VerticalOffset / ry;
+
+            var mapWindowRight = mapWindowLeft + scrollMapWidth;
+            var mapWindowBottom = mapWindowTop + scrollMapHeight;
+
+            var mx = _scrollViewer.HorizontalOffset;
+            var my = _scrollViewer.VerticalOffset;
+
+            string leftCondition = "in";
+            string topCondition = "in";
+
+            if (arg.Position.X < mapWindowLeft)
+            {
+                var offset = arg.Position.X * rx;
+
+                // Left: subtract half screen
+                offset -= _scrollViewer.ActualWidth / 2.0;
+
+                leftCondition = "left";
+                _scrollViewer.ScrollToHorizontalOffset(offset);
+
+            }
+            else if (arg.Position.X > mapWindowRight)
+            {
+                var offset = arg.Position.X * rx;
+
+                leftCondition = "right";
+                _scrollViewer.ScrollToHorizontalOffset(offset);
+            }
+
+            if (arg.Position.Y < mapWindowTop)
+            {
+                var offset = arg.Position.Y * ry;
+
+                // top: subtract half screen
+                offset -= _scrollViewer.ActualHeight / 2.0;
+
+                topCondition = "above";
+                _scrollViewer.ScrollToVerticalOffset(offset);
+            }
+            else if (arg.Position.Y > mapWindowBottom)
+            {
+                var offset = arg.Position.Y * ry;
+
+                topCondition = "below";
+                _scrollViewer.ScrollToVerticalOffset(offset);
+            }
+
+            /**** debug print gui:
+            var lines = new List<string>();
+            lines.Add($"L {mapWindowLeft}, T {mapWindowTop}, R {mapWindowRight}, B {mapWindowBottom}");
+            lines.Add($"{arg.Position.X}, {arg.Position.Y}");
+            lines.Add($"{leftCondition}, {topCondition}");
+            MText1.Text = string.Join("\n", lines);
+            **/
+        }
 
         private void ScrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {

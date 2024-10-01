@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:cv="clr-namespace:Gebug64.Win.Converters"
              xmlns:local="clr-namespace:Gebug64.Win.Windows.Mdi"
              xmlns:ctl="clr-namespace:Gebug64.Win.Controls"
              xmlns:viewmodels="clr-namespace:Gebug64.Win.ViewModels"
@@ -13,10 +14,14 @@
              d:DesignHeight="450" d:DesignWidth="800">
 
     <UserControl.Resources>
-
-        <selectors:MapSelectedObjectContentTemplateSelector
+        <ResourceDictionary>
+            <selectors:MapSelectedObjectContentTemplateSelector
                     x:Key="SelectedObjectTemplateSelector"
                     />
+
+            <cv:BoolRadioConverter x:Key="BoolRadioConverter" />
+            <cv:BoolRadioConverter x:Key="InverseBoolRadioConverter" Inverse="True" />
+        </ResourceDictionary>
     </UserControl.Resources>
     
     <Grid>
@@ -113,9 +118,13 @@
                         </Grid>
 
                         <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+                        <RadioButton IsChecked="{Binding AutoLoadLevel, Converter={StaticResource BoolRadioConverter}}" >Load map on stage load</RadioButton>
+                        <RadioButton IsChecked="{Binding AutoLoadLevel, Converter={StaticResource InverseBoolRadioConverter}}" >Manual</RadioButton>
                         
-                        <RadioButton>Load map on stage load</RadioButton>
-                        <RadioButton>Manual</RadioButton>
+                        <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+                        <CheckBox IsChecked="{Binding FollowBond}" >Follow Bond</CheckBox>
 
                         <ComboBox Style="{DynamicResource MonoCombo}" ItemsSource="{Binding Path=AvailableStages}" SelectedItem="{Binding Path=SelectedStage}">
                             <ComboBox.ItemTemplate>

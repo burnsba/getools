@@ -114,6 +114,9 @@ namespace Gebug64.Win.ViewModels
         private List<GameObject> _mouseOverItems = new List<GameObject>();
         private List<GameObject> _contextMenuItems = new List<GameObject>();
 
+        private bool _autoLoadLevel;
+        private bool _followBond;
+
         /// <summary>
         /// Flag to disable saving app settings. Used during startup.
         /// </summary>
@@ -123,6 +126,10 @@ namespace Gebug64.Win.ViewModels
         /// Current app settings.
         /// </summary>
         protected AppConfigViewModel _appConfig;
+
+        public delegate void NotifyBondMoveHandler(object sender, NotifyBondMoveEventArgs e);
+
+        public event NotifyBondMoveHandler BondMoveEvent;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MapWindowViewModel"/> class.
@@ -182,6 +189,9 @@ namespace Gebug64.Win.ViewModels
             _setupBinFolder = _appConfig.Map.SetupBinFolder;
             _stanBinFolder = _appConfig.Map.StanBinFolder;
             _bgBinFolder = _appConfig.Map.BgBinFolder;
+
+            _autoLoadLevel = _appConfig.Map.AutoLoadLevel;
+            _followBond = _appConfig.Map.FollowBond;
 
             LevelIdX.SinglePlayerStages.ForEach(x => AvailableStages.Add(x));
 
@@ -612,6 +622,50 @@ namespace Gebug64.Win.ViewModels
         }
 
         /// <summary>
+        /// Whether stage should chnage automatically, or user should manually change the stage.
+        /// </summary>
+        public bool AutoLoadLevel
+        {
+            get => _autoLoadLevel;
+
+            set
+            {
+                if (_autoLoadLevel == value)
+                {
+                    return;
+                }
+
+                _autoLoadLevel = value;
+
+                _appConfig.Map.AutoLoadLevel = value;
+
+                SaveAppSettings();
+            }
+        }
+
+        /// <summary>
+        /// Whether the map should automatically scroll to Bond's position.
+        /// </summary>
+        public bool FollowBond
+        {
+            get => _followBond;
+
+            set
+            {
+                if (_followBond == value)
+                {
+                    return;
+                }
+
+                _followBond = value;
+
+                _appConfig.Map.FollowBond = value;
+
+                SaveAppSettings();
+            }
+        }
+
+        /// <summary>
         /// Pass through to <see cref="Workspace.Instance.SaveAppSettings"/>.
         /// </summary>
         protected void SaveAppSettings()
@@ -777,14 +831,19 @@ namespace Gebug64.Win.ViewModels
             {
                 if (msg.Command == (int)GebugCmdStage.NotifyLevelSelected)
                 {
-                    var levelSelectedMsg = (GebugStageNotifyLevelSelected)msg;
-                    var xlevelId = LevelIdX.ToLevelIdXSafe((int)levelSelectedMsg.LevelId);
-                    if (xlevelId.IsSinglePlayerLevel)
+                    // Setting SelectedStage will automatically load the stage.
+                    // Only load the stage if the user has configured it to.
+                    if (_autoLoadLevel)
                     {
-                        _dispatcher.BeginInvoke(() =>
+                        var levelSelectedMsg = (GebugStageNotifyLevelSelected)msg;
+                        var xlevelId = LevelIdX.ToLevelIdXSafe((int)levelSelectedMsg.LevelId);
+                        if (xlevelId.IsSinglePlayerLevel)
                         {
-                            SelectedStage = xlevelId;
-                        });
+                            _dispatcher.BeginInvoke(() =>
+                            {
+                                SelectedStage = xlevelId;
+                            });
+                        }
                     }
                 }
                 else if (msg.Command == (int)GebugCmdStage.NotifyLevelLoaded)
@@ -818,6 +877,11 @@ namespace Gebug64.Win.ViewModels
                         var bondimg = (MapObjectResourceImage)Bond;
                         bondimg.ScaledOrigin.Y = posMessage.PosY;
                         bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
+
+                        BondMoveEvent?.Invoke(this, new NotifyBondMoveEventArgs()
+                        {
+                            Position = new Point(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty),
+                        });
                     }
                 }
             }

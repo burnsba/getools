@@ -47,6 +47,8 @@ namespace Gebug64.Win.Windows.Mdi
             MapRenderControl.NotifyContextMenuGameObject += MapRenderControl_NotifyContextMenuGameObject;
             MapRenderControl.NotifyContextMenuGamePosition += MapRenderControl_NotifyContextMenuGamePosition;
 
+            _vm.BondMoveEvent += _vm_BondMoveEvent;
+
             var appConfig = (AppConfigViewModel)Workspace.Instance.ServiceProvider.GetService(typeof(AppConfigViewModel))!;
 
             CheckBg.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.Bg];
@@ -70,6 +72,14 @@ namespace Gebug64.Win.Windows.Mdi
             CheckSetupStandardProp.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupStandardProp];
             CheckSetupTank.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupTank];
             CheckSetupIntro.IsChecked = appConfig.Map.ShowMapLayer[Enum.UiMapLayer.SetupIntro];
+        }
+
+        private void _vm_BondMoveEvent(object sender, NotifyBondMoveEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                MapRenderControl.PanToGameCoord(e);
+            });
         }
 
         /// <inheritdoc />
