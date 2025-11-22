@@ -25,6 +25,10 @@
 
                 <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=OsMemSizeCommand}" HorizontalAlignment="Left">OS Mem Size</Button>
                 
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GrenadeChance0Command}" HorizontalAlignment="Left">Grenade 0%</Button>
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GrenadeChance100Command}" HorizontalAlignment="Left">Grenade 100%</Button>
+                <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GrenadeChanceDefaultCommand}" HorizontalAlignment="Left">Grenade default%</Button>
+                
             </StackPanel>
         </Grid>
     </DataTemplate>

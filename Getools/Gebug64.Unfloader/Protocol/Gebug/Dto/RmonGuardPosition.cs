@@ -17,9 +17,9 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
     public class RmonGuardPosition
     {
         /// <summary>
-        /// Size of the point struct in bytes.
+        /// Size of the struct in bytes.
         /// </summary>
-        public const int SizeOf = 0x38;
+        public const int SizeOf = 0x3c;
 
         /// <summary>
         /// In-game chrnum id.
@@ -125,6 +125,21 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
         public UInt16 ChrHidden { get; set; }
 
         /// <summary>
+        /// ChrRecord->aioffset.
+        /// </summary>
+        public UInt16 AiOffset { get; set; }
+
+        /// <summary>
+        /// ChrRecord->act_attack.attacktype <see cref="ActionAttackAttackType">.
+        /// </summary>
+        public byte AttackType { get; set; }
+
+        /// <summary>
+        /// Calculated pc side.
+        /// </summary>
+        public Single DistanceToBond2D { get; set; } = 0;
+
+        /// <summary>
         /// Parses position data from <see cref="Gebug64.Unfloader.Protocol.Gebug.Message.GebugChrSendAllGuardInfoMessage"/>.
         /// </summary>
         /// <param name="fullBody">Byte array containing message data.</param>
@@ -189,6 +204,13 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
             UInt16 chrHidden = (UInt16)BitUtility.Read16Big(fullBody, bodyOffset);
             bodyOffset += 2;
 
+            UInt16 aioffset = (UInt16)BitUtility.Read16Big(fullBody, bodyOffset);
+            bodyOffset += 2;
+
+            byte attacktype = fullBody[bodyOffset++];
+
+            byte padding = fullBody[bodyOffset++];
+
             var guard = new RmonGuardPosition()
             {
                 Chrnum = chrnum,
@@ -205,6 +227,8 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Dto
                 PropFlags = propFlags,
                 ChrFlags2 = chrFlags2,
                 ChrHidden = chrHidden,
+                AttackType = attacktype,
+                AiOffset = aioffset,
             };
 
             return guard;

@@ -122,6 +122,8 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private bool _ignoreAppSettingsChange = false;
 
+        private Coord3df _bondGamePos = new Coord3df(0, 0, 0);
+
         /// <summary>
         /// Current app settings.
         /// </summary>
@@ -878,10 +880,16 @@ namespace Gebug64.Win.ViewModels
                         bondimg.ScaledOrigin.Y = posMessage.PosY;
                         bondimg.SetPositionLessHalf(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty, posMessage.VVTheta);
 
-                        BondMoveEvent?.Invoke(this, new NotifyBondMoveEventArgs()
+                        _bondGamePos.X = posMessage.PosX;
+                        _bondGamePos.Z = posMessage.PosZ;
+
+                        if (_followBond)
                         {
-                            Position = new Point(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty),
-                        });
+                            BondMoveEvent?.Invoke(this, new NotifyBondMoveEventArgs()
+                            {
+                                Position = new Point(posMessage.PosX + _adjustx, posMessage.PosZ + _adjusty),
+                            });
+                        }
                     }
                 }
             }
@@ -956,9 +964,17 @@ namespace Gebug64.Win.ViewModels
             }
         }
 
+        /// <summary>
+        /// Entry point to update guard position.
+        /// </summary>
+        /// <param name="msgGuard"></param>
         private void MessageCallbackGuardUpdatePosition(RmonGuardPosition msgGuard)
         {
             MapObjectResourceImage? mapGuard = null;
+
+            Single fdx = (Single)msgGuard.PropPos.X - _bondGamePos.X;
+            Single fdz = (Single)msgGuard.PropPos.Z - _bondGamePos.Z;
+            msgGuard.DistanceToBond2D = (Single)Math.Sqrt((fdx * fdx) + (fdz * fdz));
 
             mapGuard = FindMapObjectGuardInLayer(msgGuard);
 

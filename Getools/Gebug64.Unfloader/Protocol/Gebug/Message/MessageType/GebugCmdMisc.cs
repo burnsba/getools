@@ -25,5 +25,10 @@ namespace Gebug64.Unfloader.Protocol.Gebug.Message.MessageType
         /// Requests current ROM OS memory size in bytes.
         /// </summary>
         OsMemSize = 2,
+
+        /// <summary>
+        /// Set grenade roll chance in ROM.
+        /// </summary>
+        SetGrenadeChance = 3,
     }
 }

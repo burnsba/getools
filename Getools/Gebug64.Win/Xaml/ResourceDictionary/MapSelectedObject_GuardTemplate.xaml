@@ -70,6 +70,18 @@
             <TextBox Text="{Binding ChrHiddenText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
             <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
 
+            <TextBlock Style="{StaticResource LeftRowText}">AttackType:</TextBlock>
+            <TextBox Text="{Binding AttackTypeText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">Distance to Bond:</TextBlock>
+            <TextBox Text="{Binding DistanceToBond2DText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
+            <TextBlock Style="{StaticResource LeftRowText}">AiOffset:</TextBlock>
+            <TextBox Text="{Binding AiOffsetText, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True" VerticalAlignment="Center" TextWrapping="Wrap" AcceptsReturn="True"></TextBox>
+            <Separator Style="{StaticResource LeftRowSpaceSmall}"/>
+
             <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=GhostHpCommand}" HorizontalAlignment="Left">Ghost HP</Button>
             <Button Style="{DynamicResource RoundButton}" Height="Auto" Width="Auto" Command="{Binding Path=MaxHpCommand}" HorizontalAlignment="Left">Max HP (remove BA)</Button>
         </StackPanel>

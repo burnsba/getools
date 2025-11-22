@@ -82,6 +82,9 @@ namespace Gebug64.Win.ViewModels
 
             _mapBuildLayersToAdd.Clear();
 
+            // clear last known bond coord
+            _bondGamePos = new Coord3df(0, 0, 0);
+
             // Fighting with the dispatcher and dependency source object creation on the
             // right thread is not really making this any faster, so just going to block
             // the main thread.
@@ -96,6 +99,9 @@ namespace Gebug64.Win.ViewModels
                 }
 
                 IsMapLoaded = true;
+
+                // Clear currently selected object now that the map has changed
+                SelectedMapObject = null;
             });
 
             lock (_lock)

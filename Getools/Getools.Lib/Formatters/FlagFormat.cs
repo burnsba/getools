@@ -42,6 +42,16 @@ namespace Getools.Lib.Formatters
         }
 
         /// <summary>
+        /// Convert mask of flags into names.
+        /// </summary>
+        /// <param name="flags">Bitmask of <see cref="Game.Flags.ActionAttackAttackType"/>.</param>
+        /// <returns>Friendly names of flags set.</returns>
+        public static List<string> ResolveChrAttackTypeFriendlyName(uint flags)
+        {
+            return ResolveFlagCommon(ChrAttackTypeFriendlyName, flags);
+        }
+
+        /// <summary>
         /// Convert single flag into name.
         /// </summary>
         /// <param name="flag">Single <see cref="Game.Flags.ChrFlags"/>.</param>
@@ -176,6 +186,31 @@ namespace Getools.Lib.Formatters
 
                 case 0x80000000: return "80000000";
                 ////case 0x80000000: return "IS DOUBLE";
+
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        /// <summary>
+        /// Convert single flag into name.
+        /// </summary>
+        /// <param name="flag">Single <see cref="Game.Flags.ActionAttackAttackType"/>.</param>
+        /// <returns>Friendly name of flag.</returns>
+        public static string ChrAttackTypeFriendlyName(uint flag)
+        {
+            //// compass might need specially handling? But I don't think it's used?
+
+            switch (flag)
+            {
+                case 0: return "NONE";
+                case 0x0001: return "TARGET BOND";
+                case 0x0002: return "TARGET FRONT OF CHR";
+                case 0x0004: return "TARGET CHR";
+                case 0x0008: return "TARGET PAD";
+                case 0x0010: return "TARGET COMPASS";
+                case 0x0020: return "TARGET AIM ONLY";
+                case 0x0040: return "TARGET DONTTURN";
 
                 default:
                     return "UNKNOWN";

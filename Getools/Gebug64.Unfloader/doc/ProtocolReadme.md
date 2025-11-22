@@ -71,6 +71,8 @@ In reality, the protocol has a bit of room to improve efficiency. However, much 
 
 ## Common type info
 
+Several messages re-use the same type. These are listed below.
+
 ```
 struct RmonBasicPosition {
     // 24 bit stan id, with 8 bit room id
@@ -455,6 +457,9 @@ struct RmonGuardInfo {
     u8 prop_flags;
     u8 chr_flags2;
     u16 chr_hidden;
+    u16 aioffset;
+    u8 attacktype;
+    u8 padding;
 };
 ```
 
@@ -693,6 +698,7 @@ public enum GebugCmdMisc
 
     OsTime = 1,
     OsMemSize = 2,
+    SetGrenadeChance = 3,
 }
 ```
 
@@ -717,3 +723,17 @@ Requests available memory size.
 | Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
 | ------------- | ------------- | ------------ | ------------- | ------------- |
 |  1            | Size          |  4 (u32)     | `ConsoleToPc` | `osGetMemSize()` |
+
+
+### `Misc SetGrenadeChance` Command
+
+A variable has been added to the gebug rom to control grenade roll chance.  
+0 = use rom default.  
+1 = grenade roll always fails.  
+2 = grenade roll always suceeds.  
+
+**Reply**: no.
+
+| Parameter No. | Name          | Size (bytes) | UseDirection  | Description   |
+| ------------- | ------------- | ------------ | ------------- | ------------- |
+|  1            | Option        |  1 (u8)      | `ConsoleToPc` | `Set g_GrenadeChanceOption` |

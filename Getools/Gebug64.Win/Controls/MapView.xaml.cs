@@ -122,7 +122,6 @@ namespace Gebug64.Win.Controls
 
                 leftCondition = "left";
                 _scrollViewer.ScrollToHorizontalOffset(offset);
-
             }
             else if (arg.Position.X > mapWindowRight)
             {

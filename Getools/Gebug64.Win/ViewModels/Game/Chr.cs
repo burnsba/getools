@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Interop;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Gebug.Message;
@@ -34,6 +36,13 @@ namespace Gebug64.Win.ViewModels.Game
         private string _chrFlags2Text = string.Empty;
         private UInt16 _chrHidden = 0;
         private string _chrHiddenText = string.Empty;
+
+        private byte _attackType = 0;
+        private string _attackTypeText = string.Empty;
+        private UInt16 _aiOffset = 0;
+        private string _aiOffsetText = string.Empty;
+        private Single _distanceToBond2D = 0.0f;
+        private string _distanceToBond2DText = string.Empty;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Chr"/> class.
@@ -453,6 +462,79 @@ namespace Gebug64.Win.ViewModels.Game
         /// </summary>
         public string ChrHiddenText => _chrHiddenText;
 
+        /// <summary>
+        /// If the chr current action is ACT_ATTACK, this is the value of attacktype.
+        /// </summary>
+        public byte AttackType
+        {
+            get => _attackType;
+
+            set
+            {
+                if (_attackType != value)
+                {
+                    _attackType = value;
+                    _attackTypeText = string.Join(" | ", Getools.Lib.Formatters.FlagFormat.ResolveChrAttackTypeFriendlyName(value));
+                    OnPropertyChanged(nameof(AttackType));
+                    OnPropertyChanged(nameof(AttackTypeText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly display of <see cref="AttackType"/>.
+        /// </summary>
+        public string AttackTypeText => _attackTypeText;
+
+        /// <summary>
+        /// Current offset in the chr ailist.
+        /// </summary>
+        public UInt16 AiOffset
+        {
+            get => _aiOffset;
+
+            set
+            {
+                if (_aiOffset != value)
+                {
+                    _aiOffset = value;
+                    _aiOffsetText = _aiOffset.ToString();
+                    OnPropertyChanged(nameof(AiOffset));
+                    OnPropertyChanged(nameof(AiOffsetText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly display of <see cref="AiOffset"/>.
+        /// </summary>
+        public string AiOffsetText => _aiOffsetText;
+
+        /// <summary>
+        /// Distance between the chr and Bond position.
+        /// Calculated pc side.
+        /// </summary>
+        public Single DistanceToBond2D
+        {
+            get => _distanceToBond2D;
+
+            set
+            {
+                if (_distanceToBond2D != value)
+                {
+                    _distanceToBond2D = value;
+                    _distanceToBond2DText = _distanceToBond2D.ToString("0.00");
+                    OnPropertyChanged(nameof(DistanceToBond2D));
+                    OnPropertyChanged(nameof(DistanceToBond2DText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the friendly display of <see cref="DistanceToBond2D"/>.
+        /// </summary>
+        public string DistanceToBond2DText => _distanceToBond2DText;
+
         /// <inheritdoc />
         public override int PreferredId
         {
@@ -486,11 +568,17 @@ namespace Gebug64.Win.ViewModels.Game
             PropFlags = chr.PropFlags;
             ChrFlags2 = chr.ChrFlags2;
             ChrHidden = chr.ChrHidden;
+            AttackType = chr.AttackType;
+            AiOffset = chr.AiOffset;
+            DistanceToBond2D = chr.DistanceToBond2D;
         }
 
         /// <summary>
         /// Copies non-id values.
         /// </summary>
+        /// <remarks>
+        /// This is where the ui object is updated from console information.
+        /// </remarks>
         /// <param name="chr">Object to copy from.</param>
         public void UpdateFrom(RmonGuardPosition chr)
         {
@@ -507,6 +595,15 @@ namespace Gebug64.Win.ViewModels.Game
             PropFlags = chr.PropFlags;
             ChrFlags2 = chr.ChrFlags2;
             ChrHidden = chr.ChrHidden;
+            AttackType = chr.AttackType;
+            AiOffset = chr.AiOffset;
+            DistanceToBond2D = chr.DistanceToBond2D;
+
+            // make sure UI shows blank/zero even if nothing changed
+            OnPropertyChanged(nameof(AttackTypeText));
+            OnPropertyChanged(nameof(ChrHiddenText));
+            OnPropertyChanged(nameof(ChrFlagsText));
+            OnPropertyChanged(nameof(ChrFlags2Text));
         }
 
         private void GhostHpCommandHandler()
