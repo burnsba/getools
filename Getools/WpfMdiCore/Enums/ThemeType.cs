@@ -1,4 +1,4 @@
-﻿namespace WPF.MDI
+﻿namespace WpfMdiCore
 {
 	/// <summary>
 	/// Type of theme to use.

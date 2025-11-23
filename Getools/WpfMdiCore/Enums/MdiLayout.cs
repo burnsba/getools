@@ -1,4 +1,4 @@
-﻿namespace WPF.MDI
+﻿namespace WpfMdiCore
 {
 	/// <summary>
 	/// Specifies the layout of MdiChild windows in an MdiContainer control.

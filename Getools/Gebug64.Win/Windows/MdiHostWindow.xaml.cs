@@ -19,7 +19,7 @@ using Gebug64.Win.ViewModels.CategoryTabs;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows.Mdi;
 using Microsoft.Extensions.DependencyInjection;
-using WPF.MDI;
+using WpfMdiCore;
 
 namespace Gebug64.Win.Windows
 {

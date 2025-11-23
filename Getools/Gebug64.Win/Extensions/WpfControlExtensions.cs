@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using Gebug64.Win.Config;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows;
-using WPF.MDI;
+using WpfMdiCore;
 
 namespace Gebug64.Win.Extensions
 {

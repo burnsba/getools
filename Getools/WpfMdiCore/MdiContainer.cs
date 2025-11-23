@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using System.Windows.Data;
 
-namespace WPF.MDI
+namespace WpfMdiCore
 {
 	[ContentProperty("Children")]
 	public class MdiContainer : UserControl
@@ -32,41 +32,41 @@ namespace WPF.MDI
 		#region Dependency Properties
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiContainer.Theme dependency property.
+		/// Identifies the WpfMdiCore.MdiContainer.Theme dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiContainer.Theme property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiContainer.Theme property.</returns>
 		public static readonly DependencyProperty ThemeProperty =
 			DependencyProperty.Register("Theme", typeof(ThemeType), typeof(MdiContainer),
 			new UIPropertyMetadata(ThemeType.Aero, new PropertyChangedCallback(ThemeValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiContainer.Menu dependency property.
+		/// Identifies the WpfMdiCore.MdiContainer.Menu dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiContainer.Menu property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiContainer.Menu property.</returns>
 		public static readonly DependencyProperty MenuProperty =
 			DependencyProperty.Register("Menu", typeof(UIElement), typeof(MdiContainer),
 			new UIPropertyMetadata(null, new PropertyChangedCallback(MenuValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiContainer.MdiLayout dependency property.
+		/// Identifies the WpfMdiCore.MdiContainer.MdiLayout dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiContainer.MdiLayout property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiContainer.MdiLayout property.</returns>
 		public static readonly DependencyProperty MdiLayoutProperty =
 			DependencyProperty.Register("MdiLayout", typeof(MdiLayout), typeof(MdiContainer),
 			new UIPropertyMetadata(MdiLayout.ArrangeIcons, new PropertyChangedCallback(MdiLayoutValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiContainer.ActiveMdiChild dependency property.
+		/// Identifies the WpfMdiCore.MdiContainer.ActiveMdiChild dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.ActiveMdiChild.MdiLayout property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.ActiveMdiChild.MdiLayout property.</returns>
 		public static readonly DependencyProperty ActiveMdiChildProperty =
 			DependencyProperty.Register("ActiveMdiChild", typeof(MdiChild), typeof(MdiContainer),
 			new UIPropertyMetadata(null, new PropertyChangedCallback(ActiveMdiChildValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiContainer.Buttons dependency property.
+		/// Identifies the WpfMdiCore.MdiContainer.Buttons dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.ActiveMdiChild.Buttons property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.ActiveMdiChild.Buttons property.</returns>
 		internal static readonly DependencyProperty ButtonsProperty =
 			DependencyProperty.Register("Buttons", typeof(Panel), typeof(MdiContainer),
 			new UIPropertyMetadata(null, new PropertyChangedCallback(ButtonsValueChanged)));
@@ -470,10 +470,10 @@ namespace WPF.MDI
 			switch (themeType)
 			{
 				case ThemeType.Luna:
-					Application.Current.Resources.MergedDictionaries.Add(currentResourceDictionary = new ResourceDictionary { Source = new Uri(@"/WPF.MDI;component/Themes/Luna.xaml", UriKind.Relative) });
+					Application.Current.Resources.MergedDictionaries.Add(currentResourceDictionary = new ResourceDictionary { Source = new Uri(@"/WpfMdiCore;component/Themes/Luna.xaml", UriKind.Relative) });
 					break;
 				case ThemeType.Aero:
-					Application.Current.Resources.MergedDictionaries.Add(currentResourceDictionary = new ResourceDictionary { Source = new Uri(@"/WPF.MDI;component/Themes/Aero.xaml", UriKind.Relative) });
+					Application.Current.Resources.MergedDictionaries.Add(currentResourceDictionary = new ResourceDictionary { Source = new Uri(@"/WpfMdiCore;component/Themes/Aero.xaml", UriKind.Relative) });
 					break;
 			}
 

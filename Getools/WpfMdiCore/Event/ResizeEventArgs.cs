@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace WPF.MDI
+namespace WpfMdiCore
 {
     public class ResizeEventArgs : RoutedEventArgs
     {

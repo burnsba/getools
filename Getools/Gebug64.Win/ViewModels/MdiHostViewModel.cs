@@ -10,7 +10,7 @@ using Gebug64.Win.Controls;
 using Gebug64.Win.Mvvm;
 using Gebug64.Win.ViewModels.Config;
 using Gebug64.Win.Windows.Mdi;
-using WPF.MDI;
+using WpfMdiCore;
 
 namespace Gebug64.Win.ViewModels
 {

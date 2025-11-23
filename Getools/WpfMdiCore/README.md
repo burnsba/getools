@@ -14,7 +14,7 @@ The control supports both XAML and code use.
 To use the control in XAML, add the dll as a reference in the project and add the following line to the top of your XAML file underneath the xmlns declarations
 
 ```xml
-xmlns:mdi="clr-namespace:WPF.MDI;assembly=WPF.MDI"
+xmlns:mdi="clr-namespace:WpfMdiCore;assembly=WpfMdiCore"
 ```
 
 To create a container add the following code, it works much like a grid or panel does

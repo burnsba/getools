@@ -9,7 +9,7 @@ using System.Windows.Media;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace WPF.MDI
+namespace WpfMdiCore
 {
 	[ContentProperty("Content")]
 	public class MdiChild : Control
@@ -33,94 +33,94 @@ namespace WPF.MDI
 		#region Dependency Properties
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.ContentProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.ContentProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.ContentProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.ContentProperty property.</returns>
 		public static readonly DependencyProperty ContentProperty =
 			DependencyProperty.Register("Content", typeof(UIElement), typeof(MdiChild));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.TitleProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.TitleProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.TitleProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.TitleProperty property.</returns>
 		public static readonly DependencyProperty TitleProperty =
 			DependencyProperty.Register("Title", typeof(string), typeof(MdiChild));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.IconProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.IconProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.IconProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.IconProperty property.</returns>
 		public static readonly DependencyProperty IconProperty =
 			DependencyProperty.Register("Icon", typeof(ImageSource), typeof(MdiChild));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.ShowIconProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.ShowIconProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.ShowIconProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.ShowIconProperty property.</returns>
 		public static readonly DependencyProperty ShowIconProperty =
 			DependencyProperty.Register("ShowIcon", typeof(bool), typeof(MdiChild),
 			new UIPropertyMetadata(true));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.ResizableProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.ResizableProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.ResizableProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.ResizableProperty property.</returns>
 		public static readonly DependencyProperty ResizableProperty =
 			DependencyProperty.Register("Resizable", typeof(bool), typeof(MdiChild),
 			new UIPropertyMetadata(true));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.FocusedProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.FocusedProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.FocusedProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.FocusedProperty property.</returns>
 		public static readonly DependencyProperty FocusedProperty =
 			DependencyProperty.Register("Focused", typeof(bool), typeof(MdiChild),
 			new UIPropertyMetadata(false, new PropertyChangedCallback(FocusedValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.MinimizeBoxProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.MinimizeBoxProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.MinimizeBoxProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.MinimizeBoxProperty property.</returns>
 		public static readonly DependencyProperty MinimizeBoxProperty =
 			DependencyProperty.Register("MinimizeBox", typeof(bool), typeof(MdiChild),
 			new UIPropertyMetadata(true, new PropertyChangedCallback(MinimizeBoxValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.MaximizeBoxProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.MaximizeBoxProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.MaximizeBoxProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.MaximizeBoxProperty property.</returns>
 		public static readonly DependencyProperty MaximizeBoxProperty =
 			DependencyProperty.Register("MaximizeBox", typeof(bool), typeof(MdiChild),
 			new UIPropertyMetadata(true, new PropertyChangedCallback(MaximizeBoxValueChanged)));
 
         /// <summary>
-        /// Identifies the WPF.MDI.MdiChild.CloseBoxProperty dependency property.
+        /// Identifies the WpfMdiCore.MdiChild.CloseBoxProperty dependency property.
         /// </summary>
-        /// <returns>The identifier for the WPF.MDI.MdiChild.CloseBoxProperty property.</returns>
+        /// <returns>The identifier for the WpfMdiCore.MdiChild.CloseBoxProperty property.</returns>
         public static readonly DependencyProperty CloseBoxProperty =
             DependencyProperty.Register("CloseBox", typeof(bool), typeof(MdiChild),
             new UIPropertyMetadata(true, new PropertyChangedCallback(CloseBoxValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.WindowStateProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.WindowStateProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.WindowStateProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.WindowStateProperty property.</returns>
 		public static readonly DependencyProperty WindowStateProperty =
 			DependencyProperty.Register("WindowState", typeof(WindowState), typeof(MdiChild),
 			new UIPropertyMetadata(WindowState.Normal, new PropertyChangedCallback(WindowStateValueChanged)));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.PositionProperty dependency property.
+		/// Identifies the WpfMdiCore.MdiChild.PositionProperty dependency property.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.PositionProperty property.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.PositionProperty property.</returns>
 		public static readonly DependencyProperty PositionProperty =
 			DependencyProperty.Register("Position", typeof(Point), typeof(MdiChild),
 			new UIPropertyMetadata(new Point(-1, -1), new PropertyChangedCallback(PositionValueChanged)));
 
 		///// <summary>
-		///// Identifies the WPF.MDI.MdiChild.ButtonsProperty dependency property.
+		///// Identifies the WpfMdiCore.MdiChild.ButtonsProperty dependency property.
 		///// </summary>
-		///// <returns>The identifier for the WPF.MDI.MdiChild.ButtonsProperty property.</returns>
+		///// <returns>The identifier for the WpfMdiCore.MdiChild.ButtonsProperty property.</returns>
 		//public static readonly DependencyProperty ButtonsProperty =
 		//    DependencyProperty.Register("Buttons", typeof(Panel), typeof(MdiChild),
 		//    new UIPropertyMetadata(null));
@@ -131,30 +131,30 @@ namespace WPF.MDI
 		#region Dependency Events
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.ClosingEvent routed event.
+		/// Identifies the WpfMdiCore.MdiChild.ClosingEvent routed event.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.ClosingEvent routed event.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.ClosingEvent routed event.</returns>
 		public static readonly RoutedEvent ClosingEvent =
 			EventManager.RegisterRoutedEvent("Closing", RoutingStrategy.Bubble, typeof(ClosingEventArgs), typeof(MdiChild));
 
 		/// <summary>
-		/// Identifies the WPF.MDI.MdiChild.ClosedEvent routed event.
+		/// Identifies the WpfMdiCore.MdiChild.ClosedEvent routed event.
 		/// </summary>
-		/// <returns>The identifier for the WPF.MDI.MdiChild.ClosedEvent routed event.</returns>
+		/// <returns>The identifier for the WpfMdiCore.MdiChild.ClosedEvent routed event.</returns>
 		public static readonly RoutedEvent ClosedEvent =
 			EventManager.RegisterRoutedEvent("Closed", RoutingStrategy.Bubble, typeof(RoutedEventArgs), typeof(MdiChild));
 
         /// <summary>
-        /// Identifies the WPF.MDI.MdiChild.MoveEvent routed event.
+        /// Identifies the WpfMdiCore.MdiChild.MoveEvent routed event.
         /// </summary>
-        /// <returns>The identifier for the WPF.MDI.MdiChild.MoveEvent routed event.</returns>
+        /// <returns>The identifier for the WpfMdiCore.MdiChild.MoveEvent routed event.</returns>
         public static readonly RoutedEvent MoveEvent =
 			EventManager.RegisterRoutedEvent("Move", RoutingStrategy.Bubble, typeof(MoveEventArgs), typeof(MdiChild));
 
         /// <summary>
-        /// Identifies the WPF.MDI.MdiChild.MoveEvent routed event.
+        /// Identifies the WpfMdiCore.MdiChild.MoveEvent routed event.
         /// </summary>
-        /// <returns>The identifier for the WPF.MDI.MdiChild.MoveEvent routed event.</returns>
+        /// <returns>The identifier for the WpfMdiCore.MdiChild.MoveEvent routed event.</returns>
         public static readonly RoutedEvent ResizeEvent =
 			EventManager.RegisterRoutedEvent("Resize", RoutingStrategy.Bubble, typeof(ResizeEventArgs), typeof(MdiChild));
 

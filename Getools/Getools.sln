@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.33627.172
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11217.181 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Getools", "Getools\Getools.csproj", "{61F5B392-6954-4708-8B04-48CD812ECBE9}"
 EndProject
@@ -27,12 +27,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gebug64.Test", "Gebug64.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Getools.Utility", "Getools.Utility\Getools.Utility.csproj", "{7FC69A0B-BB14-49F2-A418-230641D5E05B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPF.MDI", "WPF.MDI\WPF.MDI.csproj", "{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2D8AA950-C82D-4490-9445-26E7DB342920}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfMdiCore", "WpfMdiCore\WpfMdiCore.csproj", "{8B25576C-3972-42AE-A2F3-069C8949E4A2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -188,18 +188,18 @@ Global
 		{7FC69A0B-BB14-49F2-A418-230641D5E05B}.Release|x64.Build.0 = Release|Any CPU
 		{7FC69A0B-BB14-49F2-A418-230641D5E05B}.Release|x86.ActiveCfg = Release|Any CPU
 		{7FC69A0B-BB14-49F2-A418-230641D5E05B}.Release|x86.Build.0 = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|x64.Build.0 = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Debug|x86.Build.0 = Debug|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|x64.ActiveCfg = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|x64.Build.0 = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|x86.ActiveCfg = Release|Any CPU
-		{BE1ED569-5E0B-4DF0-8964-33AD2AAE4C4A}.Release|x86.Build.0 = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|x64.Build.0 = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Debug|x86.Build.0 = Debug|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|x64.ActiveCfg = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|x64.Build.0 = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|x86.ActiveCfg = Release|Any CPU
+		{8B25576C-3972-42AE-A2F3-069C8949E4A2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

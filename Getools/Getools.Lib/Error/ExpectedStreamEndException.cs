@@ -36,15 +36,5 @@ namespace Getools.Lib.Error
             : base(message, innerException)
         {
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExpectedStreamEndException"/> class.
-        /// </summary>
-        /// <param name="info">Info.</param>
-        /// <param name="context">Context.</param>
-        protected ExpectedStreamEndException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
     }
 }
