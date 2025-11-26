@@ -285,7 +285,7 @@ namespace WpfMdiCore
 		/// <summary>
 		/// Gets buttons for window in maximized state.
 		/// </summary>
-		public Panel Buttons
+		public Panel? Buttons
 		{
 			//get { return (Panel)GetValue(ButtonsProperty); }
 			//private set { SetValue(ButtonsProperty, value); }
@@ -375,14 +375,20 @@ namespace WpfMdiCore
 			DefaultStyleKeyProperty.OverrideMetadata(typeof(MdiChild), new FrameworkPropertyMetadata(typeof(MdiChild)));
 		}
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="MdiChild"/> class.
-		/// </summary>
-		public MdiChild()
-		{
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MdiChild"/> class.
+        /// </summary>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+        public MdiChild()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+        {
 			Focusable = IsTabStop = false;
 
-			Loaded += MdiChild_Loaded;
+			MaximizeBox = true;
+			MinimizeBox = true;
+			CloseBox = true;
+
+            Loaded += MdiChild_Loaded;
 			GotFocus += MdiChild_GotFocus;
 			KeyDown += MdiChild_KeyDown;
         }
@@ -416,10 +422,15 @@ namespace WpfMdiCore
 			FrameworkElement currentControl = this;
 
 			while (currentControl != null && currentControl.GetType() != typeof(MdiContainer))
+			{
 				currentControl = (FrameworkElement)currentControl.Parent;
+			}
 
 			if (currentControl != null)
+			{
 				Container = (MdiContainer)currentControl;
+			}
+
 			//else throw new Exception("Unable to find MdiContainer parent.");
 		}
 
@@ -584,7 +595,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.RoutedEventArgs"/> instance containing the event data.</param>
-		private void minimizeButton_Click(object sender, RoutedEventArgs e)
+		private void minimizeButton_Click(object? sender, RoutedEventArgs? e)
 		{
 			if (WindowState == WindowState.Minimized)
 				WindowState = WindowState.Normal;
@@ -597,7 +608,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.RoutedEventArgs"/> instance containing the event data.</param>
-		private void maximizeButton_Click(object sender, RoutedEventArgs e)
+		private void maximizeButton_Click(object? sender, RoutedEventArgs? e)
 		{
 			if (WindowState == WindowState.Maximized)
 				WindowState = WindowState.Normal;
@@ -610,7 +621,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.RoutedEventArgs"/> instance containing the event data.</param>
-		private void closeButton_Click(object sender, RoutedEventArgs e)
+		private void closeButton_Click(object? sender, RoutedEventArgs? e)
 		{
 			ClosingEventArgs eventArgs = new ClosingEventArgs(ClosingEvent);
 			RaiseEvent(eventArgs);
@@ -645,7 +656,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
-		private void ResizeLeft_DragDelta(object sender, DragDeltaEventArgs e)
+		private void ResizeLeft_DragDelta(object? sender, DragDeltaEventArgs e)
 		{
 			if (Width - e.HorizontalChange < MinWidth)
 			{
@@ -700,7 +711,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
-		private void ResizeTop_DragDelta(object sender, DragDeltaEventArgs e)
+		private void ResizeTop_DragDelta(object? sender, DragDeltaEventArgs e)
 		{
             // 44: adjust for title bar height
             if (Height - e.VerticalChange < MinHeight + 44)
@@ -756,7 +767,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
-		private void ResizeRight_DragDelta(object sender, DragDeltaEventArgs e)
+		private void ResizeRight_DragDelta(object? sender, DragDeltaEventArgs e)
 		{
 			if (Width + e.HorizontalChange < MinWidth)
 			{
@@ -794,7 +805,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Windows.Controls.Primitives.DragDeltaEventArgs"/> instance containing the event data.</param>
-		private void ResizeBottom_DragDelta(object sender, DragDeltaEventArgs e)
+		private void ResizeBottom_DragDelta(object? sender, DragDeltaEventArgs e)
 		{
             // 44: adjust for title bar height
             if (Height + e.VerticalChange < MinHeight + 44)
@@ -955,7 +966,7 @@ namespace WpfMdiCore
 
 				if (!maximizeVisible)
 				{
-					if (mdiChild.maximizeButton != null)
+					if (mdiChild.minimizeButton != null)
 						mdiChild.minimizeButton.Visibility = Visibility.Visible;
 
 					if (mdiChild.maximizeButton != null)
@@ -1005,7 +1016,7 @@ namespace WpfMdiCore
 
 				if (!minimizeVisible)
 				{
-					if (mdiChild.maximizeButton != null)
+					if (mdiChild.minimizeButton != null)
 						mdiChild.minimizeButton.Visibility = Visibility.Visible;
 
 					if (mdiChild.maximizeButton != null)
@@ -1024,7 +1035,7 @@ namespace WpfMdiCore
 
 				if (!minimizeEnabled)
 				{
-					if (mdiChild.maximizeButton != null)
+					if (mdiChild.minimizeButton != null)
 						mdiChild.minimizeButton.Visibility = Visibility.Hidden;
 
 					if (mdiChild.maximizeButton != null)
@@ -1063,6 +1074,12 @@ namespace WpfMdiCore
 		private static void WindowStateValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
 		{
 			MdiChild mdiChild = (MdiChild)sender;
+
+			if (object.ReferenceEquals(null, mdiChild))
+			{
+				throw new NullReferenceException();
+			}
+
 			MdiContainer mdiContainer = mdiChild.Container;
 
 			WindowState previousWindowState = (WindowState)e.OldValue;
@@ -1089,7 +1106,7 @@ namespace WpfMdiCore
 					sv.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
 				}
 
-				mdiChild?.Buttons?.Children?.Clear();
+				mdiChild.Buttons?.Children?.Clear();
 				mdiChild.Buttons = null;
 				mdiChild.buttonsPanel.Children.Add(mdiChild.minimizeButton);
 				mdiChild.buttonsPanel.Children.Add(mdiChild.maximizeButton);
@@ -1209,8 +1226,15 @@ namespace WpfMdiCore
 					}
 					break;
 			}
+
 			if (mdiContainer.ActiveMdiChild == mdiChild)
-				mdiContainer.Buttons = mdiChild.Buttons;
+			{
+				if (!object.ReferenceEquals(null, mdiChild.Buttons))
+				{
+					mdiContainer.Buttons = mdiChild.Buttons;
+				}
+			}
+
 			mdiContainer.InvalidateSize();
 		}
 		

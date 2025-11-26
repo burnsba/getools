@@ -60,6 +60,9 @@
                 <MenuItem Header="{Binding ConnectCommandText}" Command="{Binding ConnectDeviceCommand}"/>
                 <MenuItem Header="Reset" Command="{Binding ResetConnectionCommand}" IsEnabled="{Binding CanResetConnection}"/>
 
+                <MenuItem Header="Virtual Console" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding FakeConsolePorts}" IsEnabled="{Binding IsConnected, Converter={StaticResource BoolToInvertedBoolConverter}}">
+                </MenuItem>
+
                 <MenuItem Header="Serial Port" Style="{StaticResource MivmMenuItem}" ItemsSource="{Binding MenuSerialPorts}" IsEnabled="{Binding IsConnected, Converter={StaticResource BoolToInvertedBoolConverter}}">
                 </MenuItem>
 

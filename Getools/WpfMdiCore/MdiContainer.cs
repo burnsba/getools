@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Collections.Generic;
 using System.Windows.Input;
 using System.Windows.Data;
+using System.Runtime.Serialization;
 
 namespace WpfMdiCore
 {
@@ -25,7 +26,7 @@ namespace WpfMdiCore
 
 		#region Static Members
 
-		private static ResourceDictionary currentResourceDictionary;
+		private static ResourceDictionary? currentResourceDictionary;
 
 		#endregion
 		
@@ -223,7 +224,10 @@ namespace WpfMdiCore
 		{
 			MdiContainer mdiContainer = (MdiContainer)sender;
 			if (mdiContainer.Children.Count < 2)
+			{
 				return;
+			}
+
 			switch (e.Key)
 			{
 				case Key.Tab:
@@ -234,7 +238,13 @@ namespace WpfMdiCore
 							if (Panel.GetZIndex(mdiChild) < minZindex)
 								minZindex = Panel.GetZIndex(mdiChild);
 						Panel.SetZIndex(mdiContainer.GetTopChild(), minZindex - 1);
-						mdiContainer.GetTopChild().Focus();
+
+						var topChild = mdiContainer.GetTopChild();
+						if (!object.ReferenceEquals(null, topChild))
+						{
+                            topChild.Focus();
+						}
+
 						e.Handled = true;
 					}
 					break;
@@ -273,7 +283,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-		private void MdiContainer_Activated(object sender, EventArgs e)
+		private void MdiContainer_Activated(object? sender, EventArgs e)
 		{
 			if (ActiveMdiChild == null)
 				return;
@@ -285,7 +295,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-		private void MdiContainer_Deactivated(object sender, EventArgs e)
+		private void MdiContainer_Deactivated(object? sender, EventArgs e)
 		{
 			if (Children.Count == 0)
 				return;
@@ -329,7 +339,7 @@ namespace WpfMdiCore
 		/// </summary>
 		/// <param name="sender">The source of the event.</param>
 		/// <param name="e">The <see cref="System.Collections.Specialized.NotifyCollectionChangedEventArgs"/> instance containing the event data.</param>
-		private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		private void Children_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			switch (e.Action)
 			{
@@ -366,9 +376,30 @@ namespace WpfMdiCore
 					break;
 				case NotifyCollectionChangedAction.Remove:
 					{
-						MdiChild oldChild = (MdiChild)e.OldItems[0];
-						_windowCanvas.Children.Remove(oldChild);
-						MdiChild newChild = GetTopChild();
+						if (object.ReferenceEquals(null, e))
+						{
+							throw new NullReferenceException();
+						}
+
+						if (object.ReferenceEquals(null, e.OldItems))
+						{
+							throw new NullReferenceException();
+						}
+
+						MdiChild? oldChild = (MdiChild)e.OldItems[0]!;
+
+                        if (object.ReferenceEquals(null, oldChild))
+                        {
+                            throw new NullReferenceException();
+                        }
+
+                        _windowCanvas.Children.Remove(oldChild);
+						MdiChild? newChild = GetTopChild();
+
+						if (object.ReferenceEquals(null, newChild))
+						{
+							throw new NullReferenceException();
+						}
 
 						ActiveMdiChild = newChild;
 						if (newChild != null && oldChild.WindowState == WindowState.Maximized)
@@ -430,10 +461,12 @@ namespace WpfMdiCore
 		/// <summary>
 		/// Gets MdiChild with maximum ZIndex.
 		/// </summary>
-		internal MdiChild GetTopChild()
+		internal MdiChild? GetTopChild()
 		{
 			if (Children.Count < 1)
+			{
 				return null;
+			}
 
 			int index = 0, maxZindex = Panel.GetZIndex(Children[0]);
 			for (int i = 1, zindex; i < Children.Count; i++)
@@ -462,10 +495,14 @@ namespace WpfMdiCore
 
 			bool max_mode = mdiContainer.ActiveMdiChild != null && mdiContainer.ActiveMdiChild.WindowState == WindowState.Maximized;
 			if (max_mode)
-				mdiContainer.ActiveMdiChild.WindowState = WindowState.Normal;
+			{
+				mdiContainer.ActiveMdiChild!.WindowState = WindowState.Normal;
+			}
 
 			if (currentResourceDictionary != null)
+			{
 				Application.Current.Resources.MergedDictionaries.Remove(currentResourceDictionary);
+			}
 
 			switch (themeType)
 			{
@@ -711,7 +748,7 @@ namespace WpfMdiCore
 		{
 			#region IComparer<MdiChild> Members
 
-			public int Compare(MdiChild x, MdiChild y)
+			public int Compare(MdiChild? x, MdiChild? y)
 			{
 				return -1 * Canvas.GetZIndex(x).CompareTo(Canvas.GetZIndex(y));
 			}
@@ -724,6 +761,6 @@ namespace WpfMdiCore
 		/// <summary>
 		/// Occurs when a multiple-document interface (MDI) child form is activated or closed within an MDI application.
 		/// </summary>
-		public event RoutedEventHandler MdiChildTitleChanged;
+		public event RoutedEventHandler? MdiChildTitleChanged;
 	}
 }
