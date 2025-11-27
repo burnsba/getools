@@ -279,6 +279,7 @@ namespace Gebug64.Win.ViewModels
             SendRomCommand = new CommandHandler(SendRomCommandHandler, () => CanSendRom);
             SaveLogCommand = new CommandHandler(SaveLogCommandHandler);
             ClearLogCommand = new CommandHandler(ClearLogCommandHandler);
+            QuitCommand = new CommandHandler(QuitCommandHandler);
 
             LoadFakeConsoles();
             RefreshAvailableSerialPortsCommandHandler();
@@ -509,6 +510,11 @@ namespace Gebug64.Win.ViewModels
         /// Command to connect to the flashcart.
         /// </summary>
         public ICommand ConnectDeviceCommand { get; set; }
+
+        /// <summary>
+        /// Command to exit the application.
+        /// </summary>
+        public ICommand QuitCommand { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether the current connection can be reset.
@@ -1805,6 +1811,13 @@ namespace Gebug64.Win.ViewModels
 
             var lastMenuItem = _menuSerialPortGroup.LastOrDefault()!;
             MenuSerialPortClick(lastMenuItem);
+        }
+
+        private void QuitCommandHandler()
+        {
+            Disconnect();
+
+            Workspace.Instance.SafeExit();
         }
 
         private class ConsoleMetaInfo

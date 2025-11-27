@@ -53,7 +53,7 @@
         
         <Menu Grid.Row="0">
             <MenuItem Header="File">
-                <MenuItem Header="Quit"/>
+                <MenuItem Header="Quit" Command="{Binding QuitCommand}"/>
             </MenuItem>
             <MenuItem Header="Connection">
 

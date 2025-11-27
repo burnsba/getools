@@ -498,5 +498,14 @@ namespace Gebug64.Win
                 }
             }
         }
+
+        /// <summary>
+        /// Common shutdown command.
+        /// </summary>
+        public void SafeExit()
+        {
+            Logger.Instance!.Shutdown();
+            Environment.Exit(0);
+        }
     }
 }
