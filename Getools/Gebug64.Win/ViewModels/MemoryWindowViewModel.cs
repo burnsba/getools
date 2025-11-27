@@ -43,7 +43,7 @@ namespace Gebug64.Win.ViewModels
 
         private HashSet<byte> _activeMemoryWatchIds = new HashSet<byte>();
         private string? _mapBuildFile;
-        private string? _addWatchSourceText;
+        //////private string? _addWatchSourceText;
         private string? _addWatchSizeText;
         private MapDetail _selectedWatchSource = new MapDetail();
         private string _selectedWatchSourceComboText = string.Empty;

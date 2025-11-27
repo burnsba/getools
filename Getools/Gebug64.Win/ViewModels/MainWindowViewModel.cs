@@ -22,6 +22,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Gebug64.FakeConsole.Lib;
+using Gebug64.FakeConsole.Lib.FakeConsole;
 using Gebug64.Unfloader;
 using Gebug64.Unfloader.Manage;
 using Gebug64.Unfloader.Protocol.Flashcart;
@@ -226,7 +228,19 @@ namespace Gebug64.Win.ViewModels
         /// </summary>
         private OnlyOneChecked<MenuItemViewModel, Guid> _menuSerialPortGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
 
+        /// <summary>
+        /// Window menu group for the list of fake consoles, such that only one element in the group can be checked.
+        /// </summary>
+        private OnlyOneChecked<MenuItemViewModel, Guid> _menuFakeConsoleGroup = new OnlyOneChecked<MenuItemViewModel, Guid>();
+
         private HashSet<MessageCategoryCommand> _excludeLogFilter = new HashSet<MessageCategoryCommand>();
+
+        private IFakeConsole? _selectedFakeConsole = null;
+        private Type? _selectedFakeConsoleType = null;
+        private bool _availableFakeConsolesLoaded = false;
+
+        // where T : IFakeConsole
+        private List<Type> _availableFakeConsoleTypes = new List<Type>();
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         /// <summary>
@@ -266,7 +280,11 @@ namespace Gebug64.Win.ViewModels
             SaveLogCommand = new CommandHandler(SaveLogCommandHandler);
             ClearLogCommand = new CommandHandler(ClearLogCommandHandler);
 
+            LoadFakeConsoles();
             RefreshAvailableSerialPortsCommandHandler();
+            RefreshAvailableFakeConsolesCommandHandler();
+            _dispatcher.BeginInvoke(() => ResolveConfigLoadConnection());
+
             SetConnectCommandText();
             SetAvailableFlashcarts();
             BuildMenuSendRom();
@@ -294,6 +312,11 @@ namespace Gebug64.Win.ViewModels
         public ObservableCollection<MenuItemViewModel> MenuSerialPorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
 
         /// <summary>
+        /// Window menu items for the list of fake consoles.
+        /// </summary>
+        public ObservableCollection<MenuItemViewModel> FakeConsolePorts { get; set; } = new ObservableCollection<MenuItemViewModel>();
+
+        /// <summary>
         /// Window menu items for send rom, and recently sent roms.
         /// </summary>
         public ObservableCollection<MenuItemViewModel> MenuSendRom { get; set; } = new ObservableCollection<MenuItemViewModel>();
@@ -315,8 +338,54 @@ namespace Gebug64.Win.ViewModels
                     return;
                 }
 
+                _selectedFakeConsoleType = null;
+
                 AppConfig!.Connection.SerialPort = value ?? string.Empty;
+                AppConfig!.Connection.FakeConsoleType = string.Empty;
                 OnPropertyChanged(nameof(CurrentSerialPort));
+                OnPropertyChanged(nameof(CurrentFakeConsoleTypeName));
+                OnPropertyChanged(nameof(CanConnect));
+
+                SaveAppSettings();
+            }
+        }
+
+        /// <summary>
+        /// Currently selected fake console.
+        /// </summary>
+        public string? CurrentFakeConsoleTypeName
+        {
+            get
+            {
+                return AppConfig?.Connection?.FakeConsoleType ?? string.Empty;
+            }
+
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    var type = _availableFakeConsoleTypes.FirstOrDefault(x => x.FullName == value);
+                    if (object.ReferenceEquals(null, type))
+                    {
+                        throw new InvalidOperationException($"Type {value} not found in known fake console types");
+                    }
+
+                    _selectedFakeConsoleType = type;
+                }
+                else
+                {
+                    _selectedFakeConsoleType = null;
+                }
+
+                if ((AppConfig?.Connection?.FakeConsoleType ?? string.Empty) == value)
+                {
+                    return;
+                }
+
+                AppConfig!.Connection.SerialPort = string.Empty;
+                AppConfig!.Connection.FakeConsoleType = value ?? string.Empty;
+                OnPropertyChanged(nameof(CurrentSerialPort));
+                OnPropertyChanged(nameof(CurrentFakeConsoleTypeName));
                 OnPropertyChanged(nameof(CanConnect));
 
                 SaveAppSettings();
@@ -423,7 +492,13 @@ namespace Gebug64.Win.ViewModels
         /// <summary>
         /// Gets a value indicating whether the app can attempt to connect to the flashcart.
         /// </summary>
-        public bool CanConnect => !_isConnecting && !string.IsNullOrEmpty(CurrentSerialPort) && _flashcartIsValid && _connectionError == false;
+        public bool CanConnect =>
+            !_isConnecting
+            && (
+                !string.IsNullOrEmpty(CurrentSerialPort)
+                || _selectedFakeConsoleType != null)
+            && _flashcartIsValid
+            && _connectionError == false;
 
         /// <summary>
         /// Connection level text to show in the status b ar.
@@ -755,10 +830,6 @@ namespace Gebug64.Win.ViewModels
 
             _dispatcher.BeginInvoke(() =>
             {
-                string loadPort = AppConfig?.Connection?.SerialPort ?? string.Empty;
-                MenuItemViewModel? loadInstance = null;
-                MenuItemViewModel? last = null;
-
                 foreach (var x in MenuSerialPorts)
                 {
                     _menuSerialPortGroup.RemoveItem(x.Id);
@@ -794,16 +865,8 @@ namespace Gebug64.Win.ViewModels
                     mivm.Command = new CommandHandler(dddd);
                     mivm.Value = port;
 
-                    // check each instance if this is what was saved in the config.
-                    if (loadPort == port)
-                    {
-                        loadInstance = mivm;
-                    }
-
                     _menuSerialPortGroup.AddItem(mivm, mivm.Id);
                     MenuSerialPorts.Add(mivm);
-
-                    last = mivm;
 
                     foundPorts.Add(port);
                 }
@@ -811,16 +874,6 @@ namespace Gebug64.Win.ViewModels
                 _logger.Log(LogLevel.Information, "Found ports: " + String.Join(", ", foundPorts));
 
                 IsRefreshing = false;
-
-                if (object.ReferenceEquals(null, loadInstance))
-                {
-                    loadInstance = last;
-                }
-
-                if (!object.ReferenceEquals(null, loadInstance))
-                {
-                    MenuSerialPortClick(loadInstance);
-                }
             });
         }
 
@@ -842,7 +895,28 @@ namespace Gebug64.Win.ViewModels
             }
 
             _menuSerialPortGroup.CheckOne(self.Id);
+            _menuFakeConsoleGroup.CheckNone();
             CurrentSerialPort = (string)self.Value;
+        }
+
+        private void MenuFakeConsoleClick(MenuItemViewModel self)
+        {
+            if (object.ReferenceEquals(null, self))
+            {
+                throw new NullReferenceException();
+            }
+
+            if (!typeof(Type).IsAssignableFrom(self.Value?.GetType()))
+            {
+                throw new NullReferenceException("Incorrect self.Value");
+            }
+
+            _menuFakeConsoleGroup.CheckOne(self.Id);
+            _menuSerialPortGroup.CheckNone();
+
+            // _selectedFakeConsoleType is set in the CurrentFakeConsoleTypeName property setter
+            var type = (Type)self.Value;
+            CurrentFakeConsoleTypeName = type.FullName;
         }
 
         /// <summary>
@@ -1622,6 +1696,129 @@ namespace Gebug64.Win.ViewModels
             OnPropertyChanged(nameof(RomMemorySize));
             OnPropertyChanged(nameof(HasExpansionBack));
             OnPropertyChanged(nameof(RomVersionString));
+        }
+
+        private void LoadFakeConsoles()
+        {
+            if (_availableFakeConsolesLoaded)
+            {
+                return;
+            }
+
+            _availableFakeConsolesLoaded = true;
+
+            var t = typeof(Gebug64.FakeConsole.Lib.FindMe);
+            var fakeConsoles = t.Assembly.GetTypes().Where(x => typeof(IFakeConsole).IsAssignableFrom(x)).ToList();
+
+            foreach (var x in fakeConsoles.Where(x => x != null))
+            {
+                _availableFakeConsoleTypes.Add(x);
+            }
+        }
+
+        /// <summary>
+        /// Clears existing <see cref="FakeConsolePorts"/> then rebuilds the menu.
+        /// </summary>
+        private void RefreshAvailableFakeConsolesCommandHandler()
+        {
+            _dispatcher.BeginInvoke(() =>
+            {
+                foreach (var x in FakeConsolePorts)
+                {
+                    _menuFakeConsoleGroup.RemoveItem(x.Id);
+                }
+
+                FakeConsolePorts.Clear();
+
+                var mivm = new MenuItemViewModel() { Header = "None" };
+
+                FakeConsolePorts.Add(mivm);
+
+                mivm = new MenuItemViewModel() { Header = "-----", IsEnabled = false };
+                FakeConsolePorts.Add(mivm);
+
+                List<ConsoleMetaInfo> consoleTypes = new List<ConsoleMetaInfo>();
+
+                // Iterate known types. Make sure they have a "friendly name" to display
+                // in the UI menu.
+                foreach (var console in _availableFakeConsoleTypes)
+                {
+                    var attribute = console.GetCustomAttribute<ConsoleDescriptionAttribute>();
+                    if (object.ReferenceEquals(null, attribute))
+                    {
+                        continue;
+                    }
+
+                    var friendlyName = attribute.FriendlyName;
+                    var displayOrder = attribute.DisplayOrder;
+
+                    consoleTypes.Add(new ConsoleMetaInfo(console)
+                    {
+                        FriendlyName = friendlyName,
+                        DisplayOrder = displayOrder,
+                    });
+                }
+
+                // Sort known types by display order.
+                foreach (var console in consoleTypes.OrderBy(x => x.DisplayOrder).ThenBy(x => x.FriendlyName))
+                {
+                    Action<object?> dddd = x => MenuFakeConsoleClick((MenuItemViewModel)x!);
+
+                    mivm = new MenuItemViewModel() { Header = console.FriendlyName, IsCheckable = true, IsChecked = false };
+                    mivm.Command = new CommandHandler(dddd);
+                    mivm.Value = console.Type;
+
+                    _menuFakeConsoleGroup.AddItem(mivm, mivm.Id);
+                    FakeConsolePorts.Add(mivm);
+                }
+            });
+        }
+
+        private void ResolveConfigLoadConnection()
+        {
+            string loadPort = AppConfig?.Connection?.SerialPort ?? string.Empty;
+            string loadFakeConsoleType = AppConfig?.Connection?.FakeConsoleType ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(loadFakeConsoleType))
+            {
+                var foundType = _availableFakeConsoleTypes.FirstOrDefault(x => x.FullName == loadFakeConsoleType);
+                if (!object.ReferenceEquals(null, foundType))
+                {
+                    var foundMenuItem = _menuFakeConsoleGroup.FirstOrDefault(x => x.Value != null && ((Type)x?.Value!)?.FullName == loadFakeConsoleType);
+                    if (!object.ReferenceEquals(null, foundMenuItem))
+                    {
+                        MenuFakeConsoleClick(foundMenuItem);
+                        return;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(loadPort))
+            {
+                var foundMenuItem = _menuSerialPortGroup.FirstOrDefault(x => x.Value != null && ((string)x?.Value!) == loadPort);
+                if (!object.ReferenceEquals(null, foundMenuItem))
+                {
+                    MenuSerialPortClick(foundMenuItem);
+                    return;
+                }
+            }
+
+            var lastMenuItem = _menuSerialPortGroup.LastOrDefault()!;
+            MenuSerialPortClick(lastMenuItem);
+        }
+
+        private class ConsoleMetaInfo
+        {
+            public ConsoleMetaInfo(Type type)
+            {
+                Type = type;
+            }
+
+            public string FriendlyName { get; set; } = string.Empty;
+
+            public int DisplayOrder { get; set; } = 0;
+
+            public Type Type { get; set; }
         }
     }
 }

@@ -39,6 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Gebug64.FakeConsole.Lib\Gebug64.FakeConsole.Lib.csproj" />
     <ProjectReference Include="..\Gebug64.Unfloader\Gebug64.Unfloader.csproj" />
     <ProjectReference Include="..\Getools.Lib\Getools.Lib.csproj" />
     <ProjectReference Include="..\Getools.Palantir\Getools.Palantir.csproj" />

@@ -110,8 +110,8 @@ namespace Gebug64.Win.Controls
             var mx = _scrollViewer.HorizontalOffset;
             var my = _scrollViewer.VerticalOffset;
 
-            string leftCondition = "in";
-            string topCondition = "in";
+            ////string leftCondition = "in";
+            ////string topCondition = "in";
 
             if (arg.Position.X < mapWindowLeft)
             {
@@ -120,14 +120,14 @@ namespace Gebug64.Win.Controls
                 // Left: subtract half screen
                 offset -= _scrollViewer.ActualWidth / 2.0;
 
-                leftCondition = "left";
+                ////leftCondition = "left";
                 _scrollViewer.ScrollToHorizontalOffset(offset);
             }
             else if (arg.Position.X > mapWindowRight)
             {
                 var offset = arg.Position.X * rx;
 
-                leftCondition = "right";
+                ////leftCondition = "right";
                 _scrollViewer.ScrollToHorizontalOffset(offset);
             }
 
@@ -138,14 +138,14 @@ namespace Gebug64.Win.Controls
                 // top: subtract half screen
                 offset -= _scrollViewer.ActualHeight / 2.0;
 
-                topCondition = "above";
+                ////topCondition = "above";
                 _scrollViewer.ScrollToVerticalOffset(offset);
             }
             else if (arg.Position.Y > mapWindowBottom)
             {
                 var offset = arg.Position.Y * ry;
 
-                topCondition = "below";
+                ////topCondition = "below";
                 _scrollViewer.ScrollToVerticalOffset(offset);
             }
 

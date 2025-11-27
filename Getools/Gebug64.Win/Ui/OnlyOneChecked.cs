@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace Gebug64.Win.Ui
 {
@@ -78,6 +79,74 @@ namespace Gebug64.Win.Ui
                     kvp.Value.IsChecked = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Iterates all the elements in the group, setting the <see cref="IIsCheckedabled.IsChecked"/>
+        /// property.
+        /// </summary>
+        public void CheckNone()
+        {
+            foreach (var kvp in _objects)
+            {
+                kvp.Value.IsChecked = false;
+            }
+        }
+
+        /// <summary>
+        /// Iterates the items in the group.
+        /// </summary>
+        /// <param name="predicate">Predeicate to filter items.</param>
+        /// <returns>First item matching predicate or default.</returns>
+        public T? FirstOrDefault(Func<T, bool>? predicate = null)
+        {
+            if (object.ReferenceEquals(null, predicate))
+            {
+                if (_objects.Any())
+                {
+                    return _objects.First().Value;
+                }
+            }
+            else
+            {
+                foreach (var kvp in _objects)
+                {
+                    if (predicate(kvp.Value))
+                    {
+                        return kvp.Value;
+                    }
+                }
+            }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Iterates the items in the group.
+        /// </summary>
+        /// <param name="predicate">Predeicate to filter items.</param>
+        /// <returns>Last item matching predicate or default.</returns>
+        public T? LastOrDefault(Func<T, bool>? predicate = null)
+        {
+            if (object.ReferenceEquals(null, predicate))
+            {
+                if (_objects.Any())
+                {
+                    return _objects.Last().Value;
+                }
+            }
+            else
+            {
+                foreach (var kvp in _objects.Reverse())
+                {
+                    if (predicate(kvp.Value))
+                    {
+                        return kvp.Value;
+                    }
+                }
+            }
+
+            return default;
         }
     }
 }

@@ -15,5 +15,10 @@ namespace Gebug64.Win.Config
         /// Currently selected serial port.
         /// </summary>
         public string? SerialPort { get; set; }
+
+        /// <summary>
+        /// Currently selected fake console.
+        /// </summary>
+        public string? FakeConsoleType { get; set; }
     }
 }

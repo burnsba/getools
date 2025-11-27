@@ -12,6 +12,7 @@ namespace Gebug64.Win.ViewModels.Config
     public class ConnectionSectionViewModel : ConfigViewModelBase, ISettingsViewModel
     {
         private string? _serialPort;
+        private string? _fakeConsoleType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionSectionViewModel"/> class.
@@ -31,6 +32,23 @@ namespace Gebug64.Win.ViewModels.Config
                 _serialPort = value;
 
                 if (_serialPort != value)
+                {
+                    IsDirty = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Currently selected fake console.
+        /// </summary>
+        public string? FakeConsoleType
+        {
+            get => _fakeConsoleType;
+            set
+            {
+                _fakeConsoleType = value;
+
+                if (_fakeConsoleType != value)
                 {
                     IsDirty = true;
                 }
