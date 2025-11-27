@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Gebug64.Win.Config;
+using Gebug64.Win.ViewModels.Config;
+using Gebug64.Win.Windows;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Gebug64.Win.Config;
-using Gebug64.Win.ViewModels.Config;
-using Gebug64.Win.Windows;
 using WpfMdiCore;
 
 namespace Gebug64.Win.Extensions
@@ -51,6 +52,7 @@ namespace Gebug64.Win.Extensions
                 WindowState = mdiChild.WindowState,
                 Left = mdiChild.Position.X,
                 Top = mdiChild.Position.Y,
+                ZIndex = Panel.GetZIndex(mdiChild),
             };
 
             return result;
@@ -141,6 +143,7 @@ namespace Gebug64.Win.Extensions
                 WindowState = window.WindowState,
                 Left = window.Left,
                 Top = window.Top,
+                ZIndex = Panel.GetZIndex(window),
             };
 
             return result;

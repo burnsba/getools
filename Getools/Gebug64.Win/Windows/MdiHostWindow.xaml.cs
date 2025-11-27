@@ -171,7 +171,7 @@ namespace Gebug64.Win.Windows
         /// </summary>
         public void LoadSavedChildLayout()
         {
-            var configWindowTypeNames = _appConfig.LayoutState.Windows.Select(x => x.TypeName);
+            var configWindowTypeNames = _appConfig.LayoutState.Windows.OrderBy(x => x.ZIndex).Select(x => x.TypeName);
 
             // Closeable windows should be tagged with ITransientChild.
             var assemblyTypes = System.Reflection.Assembly.GetExecutingAssembly().GetTypes();
@@ -181,9 +181,24 @@ namespace Gebug64.Win.Windows
                 && x.IsClass
                 && configWindowTypeNames.Contains(x.FullName));
 
+            // This will create non-permant windows in the correct order.
             foreach (var child in mdiChildTypesToLoad)
             {
                 FocusCreateChild(child, Gebug64.Win.Ui.Lang.GetDefaultWindowTitle(child));
+            }
+
+            // Permanent windows were created before non-permanent windows.
+            // Read the appsettings, order by the saved z-index, and apply that to all child mdi windows now.
+            int zindex = 0;
+            foreach (var loadConfig in _appConfig.LayoutState.Windows.OrderBy(x => x.ZIndex))
+            {
+                var containerChild = Container.Children.FirstOrDefault(x => x.Content.GetType().FullName == loadConfig.TypeName);
+                if (!object.ReferenceEquals(null, containerChild))
+                {
+                    Panel.SetZIndex(containerChild, zindex);
+                }
+
+                zindex++;
             }
         }
 

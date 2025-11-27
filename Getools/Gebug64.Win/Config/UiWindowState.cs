@@ -53,5 +53,10 @@ namespace Gebug64.Win.Config
         /// Distance from window top edge to its parent top.
         /// </summary>
         public double Top { get; init; }
+
+        /// <summary>
+        /// Layer ordering. Higher is on top.
+        /// </summary>
+        public int ZIndex { get; init; }
     }
 }
