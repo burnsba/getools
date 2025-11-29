@@ -17,6 +17,7 @@ using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
 using Gebug64.Unfloader.Protocol.Unfloader.Message.MessageType;
+using Gebug64.Unfloader.SerialPort;
 using Getools.Utility.Logging;
 using Microsoft.Extensions.Logging;
 
@@ -112,7 +113,7 @@ namespace Gebug64.Unfloader.Manage
         public TimeSpan SinceRomMessageReceived => _flashcart?.SinceFlashcartPacketReceived ?? TimeSpan.MaxValue;
 
         /// <inheritdoc />
-        public bool Start(string port)
+        public bool Start(ISerialPortRequest request)
         {
             if (_flashcart.IsConnected)
             {
@@ -122,7 +123,7 @@ namespace Gebug64.Unfloader.Manage
             // Allow background thread to work.
             _stop = false;
 
-            bool success = _flashcart.Connect(port);
+            bool success = _flashcart.Connect(request);
 
             if (!success)
             {
@@ -465,8 +466,18 @@ namespace Gebug64.Unfloader.Manage
                             else
                             {
                                 // Else, this is a single packet message, so convert to complete message accordingly.
-                                var gebugMessage = GebugMessage.FromPacket(packet, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
-                                _receiveMessages.Add(gebugMessage);
+                                try
+                                {
+                                    var gebugMessage = GebugMessage.FromPacket(packet, Protocol.Gebug.Parameter.ParameterUseDirection.ConsoleToPc);
+                                    _receiveMessages.Add(gebugMessage);
+                                }
+                                catch (Exception ex)
+                                {
+                                    string commandName = CommandResolver.ResolveCommand(packet.Category, packet.Command);
+
+                                    _logger.Log(LogLevel.Error, $"Error parsing message {packet.Category} {commandName}");
+                                    _logger.Log(LogLevel.Error, ex.ToString());
+                                }
                             }
                         }
                         else

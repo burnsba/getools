@@ -1,6 +1,7 @@
 ﻿using Gebug64.Unfloader.Protocol.Gebug;
 using Gebug64.Unfloader.Protocol.Gebug.Dto;
 using Gebug64.Unfloader.Protocol.Unfloader;
+using Gebug64.Unfloader.SerialPort;
 
 namespace Gebug64.Unfloader.Manage
 {
@@ -58,9 +59,9 @@ namespace Gebug64.Unfloader.Manage
         /// Starts the background worker thread.
         /// Connects the flashcart to the given port.
         /// </summary>
-        /// <param name="port">Serial port to connect to.</param>
+        /// <param name="request">Serial port to connect to.</param>
         /// <returns>True if not immediate connection error, false otherwise.</returns>
-        bool Start(string port);
+        bool Start(ISerialPortRequest request);
 
         /// <summary>
         /// Attempts to stop the background worker thread

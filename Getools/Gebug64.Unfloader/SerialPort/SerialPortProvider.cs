@@ -16,7 +16,8 @@ namespace Gebug64.Unfloader.SerialPort
     /// </summary>
     public class SerialPortProvider
     {
-        private readonly Dictionary<string, ISerialPort> _serialPorts = new();
+        private readonly Dictionary<Type, ISerialPort> _runtimePorts = new();
+        private readonly Dictionary<string, ISerialPort> _physicalPorts = new();
         private SerialPortFactory _factory;
 
         /// <summary>
@@ -33,20 +34,54 @@ namespace Gebug64.Unfloader.SerialPort
         /// a new instance is created and returned. Otherwise the existing
         /// instance associated to that port is returned.
         /// </summary>
-        /// <param name="port">Port to associate with a serial port.</param>
+        /// <param name="request">Serial port to connect to.</param>
         /// <returns>Serial port for port.</returns>
-        public ISerialPort CreatePort(string port)
+        public ISerialPort CreatePort(ISerialPortRequest request)
         {
-            if (_serialPorts.ContainsKey(port))
+            if (request is PhysicalSerialPortRequest physicalRequest)
             {
-                return _serialPorts[port];
+                return CreatePort(physicalRequest);
+            }
+            else if (request is RuntimeSerialPortRequest runtimeRequest)
+            {
+                return CreatePort(runtimeRequest);
+            }
+            else if (request is InstanceSerialPortRequest instanceRequest)
+            {
+                return instanceRequest.Port;
+            }
+
+            throw new NotSupportedException("Cannot resolve serial port request to known type");
+        }
+
+        private ISerialPort CreatePort(PhysicalSerialPortRequest request)
+        {
+            string port = request.PortName;
+
+            if (_physicalPorts.ContainsKey(port))
+            {
+                return _physicalPorts[port];
             }
 
             var commPort = _factory.Create(port);
 
-            _serialPorts.Add(port, commPort);
+            _physicalPorts.Add(port, commPort);
 
             return commPort;
+        }
+
+        private ISerialPort CreatePort(RuntimeSerialPortRequest request)
+        {
+            if (_runtimePorts.ContainsKey(request.Type))
+            {
+                return _runtimePorts[request.Type];
+            }
+
+            var vsp = _factory.Create(request.Type);
+
+            _runtimePorts.Add(request.Type, vsp);
+
+            return vsp;
         }
 
         /// <summary>
@@ -57,7 +92,7 @@ namespace Gebug64.Unfloader.SerialPort
         /// <exception cref="KeyNotFoundException">Will be thrown if there is no existing serial port for this port.</exception>
         public ISerialPort GetPort(string port)
         {
-            return _serialPorts[port];
+            return _physicalPorts[port];
         }
 
         /// <summary>

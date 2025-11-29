@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Gebug64.Unfloader.Protocol;
+using Gebug64.Unfloader.SerialPort;
+using Getools.Lib.Game.Asset.Intro;
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Gebug64.Unfloader.SerialPort;
 
 namespace Gebug64.FakeConsole.Lib.SerialPort
 {
@@ -13,9 +16,7 @@ namespace Gebug64.FakeConsole.Lib.SerialPort
     /// </summary>
     public class FakeSerialPort : ISerialPort
     {
-        private List<byte> _writeBuffer = new List<byte>();
-        private List<byte> _readBuffer = new List<byte>();
-        private FakeSerialPort? _connectedOther = null;
+        private Queue<IEncapsulate> _sendQueue = new Queue<IEncapsulate>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FakeSerialPort"/> class.
@@ -25,6 +26,9 @@ namespace Gebug64.FakeConsole.Lib.SerialPort
         {
             PortName = port;
         }
+
+        public Action<byte[],int,int>? ReadEventHandler { get; set; }
+        public Action<byte[],int,int>? WriteEventHandler { get; set; }
 
         /// <inheritdoc />
         public event System.IO.Ports.SerialDataReceivedEventHandler? DataReceived;
@@ -62,7 +66,7 @@ namespace Gebug64.FakeConsole.Lib.SerialPort
         /// <inheritdoc />
         public void Connect(ISerialPort other)
         {
-            _connectedOther = (FakeSerialPort)other;
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc />
@@ -84,38 +88,55 @@ namespace Gebug64.FakeConsole.Lib.SerialPort
         /// <inheritdoc />
         public void Read(byte[] buffer, int offset, int count)
         {
-            Array.Copy(_readBuffer.ToArray(), 0, buffer, offset, count);
-            _readBuffer.RemoveRange(0, count);
+            var adjust = 0;
 
-            BytesToRead -= count;
-            if (BytesToRead < 0)
+            while (_sendQueue.Any())
             {
-                BytesToRead = 0;
+                var item = _sendQueue.Dequeue();
+                int itemLength = item.GetOuterPacket().Length;
+
+                Array.Copy(item.GetOuterPacket(), 0, buffer, offset, itemLength);
+
+                offset += itemLength;
+                adjust += itemLength;
             }
+
+            BytesToRead -= adjust;
         }
 
         /// <inheritdoc />
         public void Write(byte[] buffer, int offset, int count)
         {
-            if (_connectedOther != null)
+            if (!object.ReferenceEquals(null, WriteEventHandler))
             {
-                _writeBuffer.AddRange(buffer.Skip(offset).Take(count));
-                _connectedOther._readBuffer.AddRange(_writeBuffer);
-                _connectedOther.BytesToRead = _connectedOther._readBuffer.Count;
-
-                if (_connectedOther.DataReceived != null)
-                {
-                    _connectedOther.DataReceived.Invoke(null!, null!);
-                }
+                WriteEventHandler(buffer, offset, count);
             }
-
-            _writeBuffer.Clear();
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
         }
+
+        public void SendEnqueue(IEncapsulate packet)
+        {
+            _sendQueue.Enqueue(packet);
+            BytesToRead += packet.GetOuterPacket().Length;
+        }
+
+        public void NotifyDataReadToSend(object sender)
+        {
+            ConstructorInfo constructor = typeof(SerialDataReceivedEventArgs).GetConstructor(
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new[] { typeof(SerialData) },
+                null)!;
+
+            SerialDataReceivedEventArgs eventArgs =
+                (SerialDataReceivedEventArgs)constructor.Invoke(new object[] { SerialData.Eof });
+
+            DataReceived?.Invoke(sender, eventArgs);
+        }
 
         /// <summary>
         /// Dispose.

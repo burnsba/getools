@@ -34,5 +34,16 @@ namespace Gebug64.Unfloader.SerialPort
         {
             return (ISerialPort)Activator.CreateInstance(_typeGetter.Type, port)!;
         }
+
+        /// <summary>
+        /// Calls <see cref="Activator.CreateInstance"/> to create an instance
+        /// of the serial port described by the <see cref="SerialPortFactoryTypeGetter"/>.
+        /// </summary>
+        /// <param name="type">Runtime type. Should implement <see cref="ISerialPort"/>.</param>
+        /// <returns>Instance of serial port.</returns>
+        public ISerialPort Create(Type type)
+        {
+            return (ISerialPort)Activator.CreateInstance(type)!;
+        }
     }
 }

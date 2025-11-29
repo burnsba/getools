@@ -16,12 +16,21 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Gebug64.FakeConsole.Lib.FakeConsole
 {
-    [ConsoleDescription("Simple", 1)]
-    public class SimpleConsole : FakeConsoleBase
+    [ConsoleDescription("BadGebug1", 2)]
+    public class BadGebug1 : FakeConsoleBase
     {
-        public SimpleConsole(ISerialPort serialPort, IFakeFlashcart flashcart)
+        public BadGebug1(ISerialPort serialPort, IFakeFlashcart flashcart)
             : base(serialPort, flashcart)
         {
+        }
+
+        protected override byte[] MutatePacket(GebugPacket packet)
+        {
+            var bytes = packet.ToByteArray();
+
+            bytes[4] += 10; // increase size by 10 bytes
+
+            return bytes;
         }
     }
 }

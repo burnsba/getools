@@ -70,5 +70,11 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         /// </summary>
         /// <param name="source">Message being replied to.</param>
         void ReplyTo(IGebugMessage source);
+
+        /// <summary>
+        /// Set appropriate values such as <see cref="AckId"/> in this message to reply to a message.
+        /// </summary>
+        /// <param name="source">Message being replied to.</param>
+        void ReplyTo(GebugPacket source);
     }
 }

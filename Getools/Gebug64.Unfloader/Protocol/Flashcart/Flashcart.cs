@@ -117,14 +117,14 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         }
 
         /// <inheritdoc />
-        public bool Connect(string port)
+        public bool Connect(ISerialPortRequest request)
         {
             if (IsConnected)
             {
                 Disconnect();
             }
 
-            _serialPort = _portProvider.CreatePort(port);
+            _serialPort = _portProvider.CreatePort(request);
             _serialPort.DataReceived += DataReceived;
             _serialPort.ReadTimeout = 1000;
             _serialPort.WriteTimeout = 1000;
@@ -136,7 +136,7 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error opening serial port {port} : {ex.Message}");
+                _logger.LogError($"Error opening serial port {request.DisplayName} : {ex.Message}");
 
                 _serialPort.DataReceived -= DataReceived;
                 _serialPort = null;

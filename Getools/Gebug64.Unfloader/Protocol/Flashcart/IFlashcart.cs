@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gebug64.Unfloader.SerialPort;
 
 namespace Gebug64.Unfloader.Protocol.Flashcart
 {
@@ -37,9 +38,9 @@ namespace Gebug64.Unfloader.Protocol.Flashcart
         /// <summary>
         /// Connects the flashcart to the given port.
         /// </summary>
-        /// <param name="port">Serial port to connect to.</param>
+        /// <param name="request">Serial port to connect to.</param>
         /// <returns>True if no immediate connection error, false otherwise.</returns>
-        bool Connect(string port);
+        bool Connect(ISerialPortRequest request);
 
         /// <summary>
         /// Gracefully disconnect the flashcart from the

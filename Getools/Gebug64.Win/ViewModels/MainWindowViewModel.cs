@@ -33,6 +33,7 @@ using Gebug64.Unfloader.Protocol.Gebug.Message;
 using Gebug64.Unfloader.Protocol.Gebug.Message.MessageType;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.Protocol.Unfloader.Message;
+using Gebug64.Unfloader.SerialPort;
 using Gebug64.Win.Config;
 using Gebug64.Win.Enum;
 using Gebug64.Win.Mvvm;
@@ -94,6 +95,7 @@ namespace Gebug64.Win.ViewModels
         private readonly IConnectionServiceProviderResolver _connectionServiceResolver;
         private readonly Dispatcher _dispatcher;
         private readonly MessageBus<IGebugMessage>? _appGebugMessageBus;
+        private readonly FakeConsoleManager _consoleManager;
 
         /// <summary>
         /// Size in bytes of attached ROM memory.
@@ -262,6 +264,7 @@ namespace Gebug64.Win.ViewModels
             _logger = logger;
             _dispatcher = Dispatcher.CurrentDispatcher;
             _connectionServiceResolver = deviceManagerResolver;
+            _consoleManager = new FakeConsoleManager();
 
             // Need to supply AppConfig early because some properties reference this.
             AppConfig = appConfig;
@@ -1065,7 +1068,25 @@ namespace Gebug64.Win.ViewModels
                 _messageBusGebugLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogGebugCallback);
                 _messageBusUnfloaderLogSubscription = _connectionServiceManager.Subscribe(MessageBusLogUnfloaderCallback);
 
-                bool success = _connectionServiceManager.Start(CurrentSerialPort!);
+                ISerialPortRequest portRequest;
+
+                if (!string.IsNullOrEmpty(CurrentSerialPort))
+                {
+                    portRequest = new PhysicalSerialPortRequest(CurrentSerialPort);
+                }
+                else if (!object.ReferenceEquals(null, _selectedFakeConsoleType))
+                {
+                    _selectedFakeConsole = _consoleManager.GetCreateConsole(_selectedFakeConsoleType);
+
+                    var vsp = _consoleManager.GetSerialPort();
+                    portRequest = new InstanceSerialPortRequest(vsp);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Cannot resolve port to connect to");
+                }
+
+                bool success = _connectionServiceManager.Start(portRequest!);
 
                 if (!success)
                 {

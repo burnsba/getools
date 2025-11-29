@@ -197,7 +197,7 @@ namespace Gebug64.Unfloader.Protocol.Gebug
         private string DebugFlags => ((GebugMessageFlags)Flags).ToString();
 
         /// <summary>
-        /// Reads bytes from incoming source and attempts to read as many as rquired to
+        /// Reads bytes from incoming source and attempts to read as many as required to
         /// parse a single gebug packet.
         /// </summary>
         /// <param name="data">Data to parse.</param>
