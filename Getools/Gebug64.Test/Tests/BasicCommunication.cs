@@ -47,13 +47,13 @@ namespace Gebug64.Test.Tests
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
             ConsoleHost.EchoData = true;
 
-            var serialPort = ConsoleHost.SerialPortProvider.GetPort(MockConsoleHost.PcSerialPortName);
+            var serialPort = ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!;
 
             // This is an UNFLoader Text packet of length 1, inside an Everdrive packet.
             serialPort.Write(new byte[] { (byte)'D', (byte)'M', (byte)'A', (byte)'@', 1, 0, 0, 1, (byte)'A', (byte)'C', (byte)'M', (byte)'P', (byte)'H' }, 0, 13);
@@ -71,7 +71,7 @@ namespace Gebug64.Test.Tests
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
@@ -103,13 +103,13 @@ namespace Gebug64.Test.Tests
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
             csp.ManagerActive = false;
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            var serialPort = ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!;
+            var serialPortRequest = new InstanceSerialPortRequest(serialPort);
+            csp.Start(serialPortRequest);
 
             Assert.Empty(flashcart.ReadPackets);
 
             ConsoleHost.InEverdriveMenu = true;
-
-            var serialPort = ConsoleHost.SerialPortProvider.GetPort(MockConsoleHost.PcSerialPortName);
 
             serialPort.Write(new byte[] { (byte)'c', (byte)'m', (byte)'d', (byte)'t', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0, 16);
 
@@ -129,7 +129,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
@@ -162,7 +162,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
@@ -203,7 +203,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
@@ -381,7 +381,7 @@ namespace Gebug64.Test.Tests
                     Assert.Equal(dataIndex % 255, packet.Body[bodyOffset]);
                     dataIndex++;
                 }
-                
+
                 packetNumber++;
             }
         }
@@ -396,7 +396,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             Assert.Empty(flashcart.ReadPackets);
 
@@ -455,7 +455,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             bool actualReply;
 
@@ -478,7 +478,7 @@ namespace Gebug64.Test.Tests
         {
             var flashcart = new Everdrive(ConsoleHost.SerialPortProvider, _logger);
             var csp = new ConnectionServiceProvider(flashcart, _logger);
-            csp.Start(MockConsoleHost.PcSerialPortName);
+            csp.Start(new InstanceSerialPortRequest(ConsoleHost.GetSerialPort(MockConsoleHost.PcSerialPortName)!));
 
             bool actualReply;
 

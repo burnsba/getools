@@ -15,6 +15,7 @@ using Gebug64.Unfloader.Protocol.Parse;
 using Gebug64.Unfloader.Protocol.Unfloader;
 using Gebug64.Unfloader.SerialPort;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic;
 
 namespace Gebug64.Test.Framework
 {
@@ -22,6 +23,8 @@ namespace Gebug64.Test.Framework
     {
         public const string ConsoleSerialPortName = "CONSOLE_COM1";
         public const string PcSerialPortName = "PC_COM1";
+
+        private List<ISerialPort> _serialPorts = new List<ISerialPort>();
 
         private List<byte> _readBuffer = new List<byte>();
         private object _lock = new();
@@ -36,13 +39,21 @@ namespace Gebug64.Test.Framework
         {
             SerialPortProvider = new SerialPortProvider(factory);
 
-            var consolePort = SerialPortProvider.CreatePort(ConsoleSerialPortName);
-            var pcPort = SerialPortProvider.CreatePort(PcSerialPortName);
+            var consolePort = SerialPortProvider.CreatePort(new InstanceSerialPortRequest(new VirtualSerialPort(ConsoleSerialPortName)));
+            var pcPort = SerialPortProvider.CreatePort(new InstanceSerialPortRequest(new VirtualSerialPort(PcSerialPortName)));
             SerialPortProvider.ConnectPorts(consolePort, pcPort);
+
+            _serialPorts.Add(consolePort);
+            _serialPorts.Add(pcPort);
 
             ConsoleSerialPort = consolePort;
 
             ConsoleSerialPort.DataReceived += SerialPort_DataReceived;
+        }
+
+        public ISerialPort? GetSerialPort(string name)
+        {
+            return _serialPorts.FirstOrDefault(x => x.PortName == name);
         }
 
         /// <summary>
@@ -64,10 +75,10 @@ namespace Gebug64.Test.Framework
             byte len = (byte)text.Length;
 
             var datas = new List<byte[]>();
-            
+
             // everdrive packet header
             datas.Add(new byte[] { (byte)'D', (byte)'M', (byte)'A', (byte)'@' });
-            
+
             // UNFLoader packet, type: text, length
             datas.Add(new byte[] { 1, 0, 0, len });
 
@@ -223,7 +234,7 @@ namespace Gebug64.Test.Framework
                                     replyPacketBase,
                                     // PcToConsole: Load header contents, but skip reading property values from body byte array.
                                     Unfloader.Protocol.Gebug.Parameter.ParameterUseDirection.PcToConsole);
-                                    
+
                                 replyMessage.VersionA = 0x11223344;
                                 replyMessage.VersionB = 0x22222222;
                                 replyMessage.VersionC = 0x44444444;
